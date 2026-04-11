@@ -1,8 +1,24 @@
 @echo off
 REM Max Mahon — Weekly Stock Analysis
-REM Schedule this with Windows Task Scheduler (every Sunday 9:00 AM)
+REM Runs every Sunday 9:00 via Task Scheduler
 
 cd /d "C:\WORKSPACE\projects\max"
-py scripts\run_weekly.py
 
-pause
+REM Week 1,3 of month: weekly only
+REM Week 2,4 of month: weekly + discovery (scan new stocks)
+set /a WEEK=%DATE:~8,2%/7+1
+if %WEEK%==2 goto discover
+if %WEEK%==4 goto discover
+
+:weekly
+echo [Max Mahon] Weekly analysis...
+py scripts\run_weekly.py
+goto end
+
+:discover
+echo [Max Mahon] Weekly + Discovery scan...
+py scripts\run_weekly.py --discover
+goto end
+
+:end
+echo [Max Mahon] Done.

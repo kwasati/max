@@ -1,5 +1,8 @@
-"""Max Mahon — weekly pipeline: fetch → analyze → done."""
+"""Max Mahon — weekly pipeline: fetch → analyze → done.
+Optional: --discover flag to also run stock screening + discovery.
+"""
 
+import argparse
 import subprocess
 import sys
 from pathlib import Path
@@ -22,11 +25,21 @@ def run(script: str):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Max Mahon weekly pipeline")
+    parser.add_argument("--discover", action="store_true", help="Also run stock screener + discovery")
+    args = parser.parse_args()
+
     run("fetch_data.py")
     run("analyze.py")
-    print("\n" + "=" * 50)
-    print("Max Mahon weekly analysis complete!")
-    print("=" * 50)
+
+    if args.discover:
+        run("screen_stocks.py")
+        run("discover.py")
+
+    print(f"\n{'='*50}")
+    mode = "weekly + discovery" if args.discover else "weekly analysis"
+    print(f"Max Mahon {mode} complete!")
+    print(f"{'='*50}")
 
 
 if __name__ == "__main__":

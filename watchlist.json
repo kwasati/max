@@ -12,6 +12,8 @@
     { "symbol": "MINT.BK", "name": "MINT", "reason": "ท่องเที่ยว recovery + global expansion" },
     { "symbol": "AOT.BK", "name": "AOT", "reason": "ผูกขาดสนามบิน tourism recovery" },
     { "symbol": "HMPRO.BK", "name": "HMPRO", "reason": "ปันผลดี ครองตลาด home improvement" },
-    { "symbol": "SAWAD.BK", "name": "SAWAD", "reason": "สินเชื่อ growth + ปันผลเริ่มดี" }
+    { "symbol": "SAWAD.BK", "name": "SAWAD", "reason": "สินเชื่อ growth + ปันผลเริ่มดี" },
+    { "symbol": "LH.BK", "name": "LH", "reason": "อสังหาปันผลสูง recurring income จากเช่า" },
+    { "symbol": "TISCO.BK", "name": "TISCO", "reason": "ธนาคารเล็ก ปันผลสูงสุดในกลุ่ม ROE ดี" }
   ]
 }
