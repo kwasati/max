@@ -18,6 +18,7 @@ def run(script: str):
     result = subprocess.run(
         [sys.executable, str(SCRIPTS / script)],
         cwd=str(ROOT),
+        timeout=600,
     )
     if result.returncode != 0:
         print(f"\n{script} failed with code {result.returncode}")

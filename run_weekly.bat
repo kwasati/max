@@ -6,7 +6,8 @@ cd /d "C:\WORKSPACE\projects\max"
 
 REM Week 1,3 of month: weekly only
 REM Week 2,4 of month: weekly + discovery (scan new stocks)
-set /a WEEK=%DATE:~8,2%/7+1
+REM Use Python to calculate week-of-month (locale-safe)
+for /f %%w in ('py -c "from datetime import date; d=date.today(); print((d.day-1)//7+1)"') do set WEEK=%%w
 if %WEEK%==2 goto discover
 if %WEEK%==4 goto discover
 

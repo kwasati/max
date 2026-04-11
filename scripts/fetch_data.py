@@ -12,13 +12,29 @@ WATCHLIST = ROOT / "watchlist.json"
 DATA_DIR = ROOT / "data"
 
 
+def normalize_yield(val):
+    """Normalize dividendYield: yfinance returns decimal (0.055) or percent (5.5)."""
+    if val is None:
+        return None
+    if val < 1:
+        return val * 100
+    return val
+
+
 def fetch_stock(symbol: str) -> dict:
     """Fetch fundamental data for a single stock."""
     tk = yf.Ticker(symbol)
     info = tk.info or {}
 
+    # Empty info detection: yfinance sometimes returns near-empty dict
+    if len(info) < 5:
+        return {"symbol": symbol, "error": f"near-empty info ({len(info)} keys)"}
+
     dividends = tk.dividends
     recent_divs = dividends.tail(8).tolist() if len(dividends) > 0 else []
+
+    raw_dy = info.get("dividendYield")
+    dy = normalize_yield(raw_dy)
 
     return {
         "symbol": symbol,
@@ -31,7 +47,7 @@ def fetch_stock(symbol: str) -> dict:
         "pe_ratio": info.get("trailingPE"),
         "forward_pe": info.get("forwardPE"),
         "pb_ratio": info.get("priceToBook"),
-        "dividend_yield": info.get("dividendYield"),
+        "dividend_yield": dy,
         "dividend_rate": info.get("dividendRate"),
         "payout_ratio": info.get("payoutRatio"),
         "five_year_avg_yield": info.get("fiveYearAvgDividendYield"),
