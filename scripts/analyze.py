@@ -103,7 +103,8 @@ def run_claude(prompt: str, output_path: Path):
     print("Max Mahon analyzing with Claude...")
 
     result = subprocess.run(
-        ["claude", "--print", "--model", "claude-sonnet-4-6", "-p", prompt],
+        ["claude.cmd", "--print", "--model", "claude-sonnet-4-6", "-p", "-"],
+        input=prompt,
         capture_output=True,
         text=True,
         encoding="utf-8",
