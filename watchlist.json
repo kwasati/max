@@ -1,0 +1,17 @@
+{
+  "agent": "Max Mahon",
+  "description": "Thai stock watchlist — dividend & growth focus",
+  "updated": "2026-04-11",
+  "stocks": [
+    { "symbol": "PTT.BK", "name": "PTT", "reason": "ปันผลสม่ำเสมอ ราคาถูก" },
+    { "symbol": "ADVANC.BK", "name": "ADVANC", "reason": "ปันผลสูง ผู้นำโทรคม" },
+    { "symbol": "CPALL.BK", "name": "CPALL", "reason": "เติบโตต่อเนื่อง ครองตลาด retail" },
+    { "symbol": "SCB.BK", "name": "SCB", "reason": "ปันผลดี banking leader" },
+    { "symbol": "GULF.BK", "name": "GULF", "reason": "พลังงานสะอาด growth play" },
+    { "symbol": "BDMS.BK", "name": "BDMS", "reason": "โรงพยาบาล defensive + growth" },
+    { "symbol": "MINT.BK", "name": "MINT", "reason": "ท่องเที่ยว recovery + global expansion" },
+    { "symbol": "AOT.BK", "name": "AOT", "reason": "ผูกขาดสนามบิน tourism recovery" },
+    { "symbol": "HMPRO.BK", "name": "HMPRO", "reason": "ปันผลดี ครองตลาด home improvement" },
+    { "symbol": "SAWAD.BK", "name": "SAWAD", "reason": "สินเชื่อ growth + ปันผลเริ่มดี" }
+  ]
+}
