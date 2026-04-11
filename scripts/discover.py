@@ -30,9 +30,12 @@ def build_prompt(screener_path: Path) -> str:
 
     def fmt_candidate(c):
         m = c["metrics"]
-        return f"""- **{c['name']}** ({c['symbol']}) | Sector: {c['sector']} | Score: {c['score']}/100
+        payout_str = f"{m['payout']*100:.0f}%" if m.get("payout") is not None else "N/A"
+        signals = c.get("signals", [])
+        sig_str = f" | Signals: [{', '.join(signals)}]" if signals else ""
+        return f"""- **{c['name']}** ({c['symbol']}) | Sector: {c['sector']} | Score: {c['score']}/100{sig_str}
   Yield: {m['dividend_yield']:.1f}% | P/E: {m['pe'] or 'N/A'} | Fwd P/E: {m['forward_pe'] or 'N/A'}
-  ROE: {m['roe']*100:.0f}% | D/E: {m['de']:.0f} | Payout: {m['payout']*100:.0f}%
+  ROE: {m['roe']*100:.0f}% | D/E: {m['de']:.0f} | Payout: {payout_str}
   Rev Growth: {m['rev_growth']*100:.0f}% | Earn Growth: {m['earn_growth']*100:.0f}%
   Reasons: {', '.join(c['reasons'])}"""
 
@@ -40,6 +43,7 @@ def build_prompt(screener_path: Path) -> str:
     existing_section = "\n".join(fmt_candidate(c) for c in existing) or "ไม่มีตัวใน watchlist ที่ผ่าน"
 
     return f"""คุณคือ Max Mahon — นักวิเคราะห์หุ้นไทย เชี่ยวชาญการคัดหุ้นปันผลและหุ้นเติบโต
+คุณเก่งเรื่องหาตัวที่คนอื่นมองข้าม — ไม่ใช่แค่คะแนนสูง แต่ต้องมี story ที่ดี
 
 วันที่: {data['date']}
 Scanned: {data['total_scanned']} ตัว | ผ่านเกณฑ์: {data['passed_filter']} ตัว | ตัวใหม่: {data['new_discoveries']} ตัว
@@ -48,8 +52,14 @@ Scanned: {data['total_scanned']} ตัว | ผ่านเกณฑ์: {data[
 - Dividend Yield ≥ {data['criteria']['min_dividend_yield']}%
 - P/E ≤ {data['criteria']['max_pe']}
 - ROE ≥ {data['criteria']['min_roe']}%
-- D/E ≤ {data['criteria']['max_debt_to_equity']}
+- D/E ≤ {data['criteria']['max_debt_to_equity']} (ธนาคาร/การเงิน: ≤ 2000)
 - Market Cap ≥ 5B THB
+
+## Signal Tags (ระบบให้ tag อัตโนมัติ)
+- **YIELD_TRAP** — yield สูงเกิน 8% แต่กำไรถดถอยหรือจ่ายเกินตัว (payout > 100%) → ⚠ ระวังปันผลจะหาย
+- **CONTRARIAN** — ราคาอยู่ใกล้จุดต่ำสุด 52 สัปดาห์ (< 20% จาก low) + yield ดี + กำไรไม่ถดถอย → อาจเป็นของถูก
+- **TURNAROUND** — forward PE ต่ำกว่า trailing PE มาก (< 70%) + revenue ยังโต → นักวิเคราะห์คาดกำไรจะฟื้น
+- **DIVIDEND_KING** — yield > 5% + payout สมดุล (30-70%) → ปันผลมั่นคง
 
 ## หุ้นใน Watchlist ปัจจุบัน ({len(watched_syms)} ตัว)
 {', '.join(watched_syms)}
@@ -68,13 +78,14 @@ Scanned: {data['total_scanned']} ตัว | ผ่านเกณฑ์: {data[
 
 1. **สรุปผลคัดกรอง** — ภาพรวม หุ้นไทยที่ผ่านเกณฑ์มีลักษณะร่วมอะไร (2-3 บรรทัด)
 
-2. **ตัวใหม่ที่น่าเพิ่ม Watchlist** — วิเคราะห์แต่ละตัวใหม่:
-   - ทำไมผ่านเกณฑ์
-   - จุดแข็ง / จุดเสี่ยง
-   - เหมาะกับสไตล์ "ปันผล + เติบโต" แค่ไหน
+2. **ตัวใหม่ที่น่าเพิ่ม Watchlist** — จัดลำดับตาม signal quality ไม่ใช่แค่ score สูง:
+   - ตัวที่มี CONTRARIAN หรือ TURNAROUND tag → น่าสนใจเป็นพิเศษ เพราะคนอื่นมองข้าม
+   - ตัวที่มี DIVIDEND_KING → มั่นคง เหมาะสะสมระยะยาว
+   - ตัวที่มี YIELD_TRAP → เตือนชัดเจนว่าเป็นกับดัก อย่าหลงทาง
+   - วิเคราะห์แต่ละตัว: ทำไมผ่านเกณฑ์ / จุดแข็ง / จุดเสี่ยง / เหมาะกับสไตล์ "ปันผล + เติบโต" แค่ไหน
    - แนะนำ: ✅ เพิ่ม watchlist / ⚠️ ติดตามก่อน / ❌ ข้ามได้
 
-3. **ตัวที่ควรออกจาก Watchlist** — มีตัวไหนใน watchlist ปัจจุบันที่ตัวเลขแย่ลงไหม
+3. **ตัวที่ควรออกจาก Watchlist** — มีตัวไหนใน watchlist ปัจจุบันที่ตัวเลขแย่ลง หรือมี YIELD_TRAP tag ไหม
 
 4. **Sector Insight** — sector ไหนมี value เยอะสุดตอนนี้
 
@@ -85,6 +96,7 @@ Scanned: {data['total_scanned']} ตัว | ผ่านเกณฑ์: {data[
 - ใช้ตัวเลขจริงจากข้อมูล ห้ามแต่ง
 - ถ้าข้อมูลไม่พอ บอกตรงๆ
 - ห้ามแนะนำซื้อขาย ให้ข้อมูลเท่านั้น
+- เน้นหาตัวที่คนอื่นมองข้าม มากกว่าตัวยอดนิยม
 """
 
 
