@@ -49,8 +49,19 @@ function tagClass(tag) {
   return map[tag] || 'warning';
 }
 
+const TAG_TH = {
+  COMPOUNDER: 'หุ้นเติบโต',
+  DIVIDEND_KING: 'ปันผลเด่น',
+  CASH_COW: 'เงินสดดี',
+  CONTRARIAN: 'สวนกระแส',
+  TURNAROUND: 'กำลังฟื้น',
+  YIELD_TRAP: 'กับดักปันผล',
+  DATA_WARNING: 'ข้อมูลผิดปกติ',
+  OVERPRICED: 'ราคาสูง',
+};
+
 function tagLabel(tag) {
-  return tag.replace(/_/g, ' ');
+  return TAG_TH[tag] || tag.replace(/_/g, ' ');
 }
 
 function barColor(score) {
@@ -155,10 +166,10 @@ function renderStockList() {
   const discCount = candidates.filter(c => !c.in_watchlist).length;
   const filteredCount = (sc.total_scanned || sc.total || 0) - passedCount;
 
-  if (tabs[0]) tabs[0].textContent = `All Passed (${passedCount})`;
-  if (tabs[1]) tabs[1].textContent = `Watchlist (${wlCount})`;
-  if (tabs[2]) tabs[2].textContent = `Discoveries (${discCount})`;
-  if (tabs[3]) tabs[3].textContent = `Filtered Out (${filteredCount})`;
+  if (tabs[0]) tabs[0].textContent = `ผ่านเกณฑ์ (${passedCount})`;
+  if (tabs[1]) tabs[1].textContent = `ติดตาม (${wlCount})`;
+  if (tabs[2]) tabs[2].textContent = `ค้นพบใหม่ (${discCount})`;
+  if (tabs[3]) tabs[3].textContent = `ไม่ผ่าน (${filteredCount})`;
 
   // Filter
   if (tab === 'watchlist') candidates = candidates.filter(c => c.in_watchlist);
@@ -193,23 +204,32 @@ function renderStockList() {
     const yldStr = yld != null ? Number(yld).toFixed(1) : '-';
     const yldColor = (yld != null && yld > 15) ? 'style="color: var(--red);"' : '';
     const selected = state.currentStock === sym ? ' selected' : '';
+    const val = c.valuation || {};
+    const valGrade = val.grade || '-';
+    const valLabel = val.label || '';
+    const valClass = valGrade === 'A' ? 'val-a' : valGrade === 'B' ? 'val-b' : valGrade === 'C' ? 'val-c' : valGrade === 'D' ? 'val-d' : 'val-f';
+    const fiveYrYld = c.five_year_avg_yield ?? c.metrics?.five_year_avg_yield;
+    const fiveYrStr = fiveYrYld != null ? Number(fiveYrYld).toFixed(1) : '-';
 
-    return `<div class="stock-row${selected}" data-symbol="${sym}">
-      <div class="stock-identity">
-        <h3>${sym.replace('.BK', '')}</h3>
-        <div class="sector">${sector}</div>
+    return `<div class="stock-card${selected}" data-symbol="${sym}">
+      <div class="card-top">
+        <div class="card-identity">
+          <h3>${sym.replace('.BK', '')}</h3>
+          <div class="sector">${sector}</div>
+        </div>
+        <div class="card-score"><div class="score-circle ${scoreClass(score)}">${score}</div></div>
       </div>
-      <div class="stock-score"><div class="score-circle ${scoreClass(score)}">${score}</div></div>
-      <div class="stock-tags">${signals.map(s => `<span class="tag ${tagClass(s)}">${tagLabel(s)}</span>`).join('')}</div>
-      <div class="stock-price">
-        <div class="current">${priceStr}</div>
-        <div class="yield" ${yldColor}>Yield ${yldStr}%</div>
+      <div class="card-metrics">
+        <div class="card-metric"><span class="label">Yield</span><span class="value" ${yldColor}>${yldStr}%</span></div>
+        <div class="card-metric"><span class="label">Avg 5y</span><span class="value">${fiveYrStr}%</span></div>
+        <div class="card-metric"><span class="label">ระดับราคา</span><span class="val-badge ${valClass}">${valGrade}</span></div>
       </div>
+      <div class="card-tags">${signals.map(s => `<span class="tag ${tagClass(s)}">${tagLabel(s)}</span>`).join('')}</div>
     </div>`;
   }).join('');
 
   // Bind clicks
-  el.querySelectorAll('.stock-row').forEach(row => {
+  el.querySelectorAll('.stock-card').forEach(row => {
     row.addEventListener('click', () => loadDetail(row.dataset.symbol));
   });
 }
