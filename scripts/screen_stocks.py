@@ -44,9 +44,9 @@ def hard_filter(data: dict) -> tuple:
     if len(roe_vals) >= 2:
         avg_roe = sum(roe_vals) / len(roe_vals)
         min_roe = min(roe_vals)
-        if avg_roe < HARD_FILTERS["min_roe_avg"]:
+        if avg_roe < HARD_FILTERS["min_roe_avg"] - 0.005:
             reasons.append(f"avg ROE {avg_roe*100:.0f}% < 15%")
-        if min_roe < HARD_FILTERS["min_roe_floor"]:
+        if min_roe < HARD_FILTERS["min_roe_floor"] - 0.005:
             reasons.append(f"min ROE {min_roe*100:.0f}% < 12%")
     elif data.get("roe") is not None:
         if data["roe"] < HARD_FILTERS["min_roe_avg"]:
