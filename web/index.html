@@ -6,7 +6,7 @@
 <title>Max Mahon — Stock Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
 
@@ -35,6 +35,7 @@
   <button class="tab" data-tab="discoveries">Discoveries</button>
   <button class="tab" data-tab="filtered">Filtered Out</button>
   <button class="tab" data-tab="requests">Requests</button>
+  <button class="tab" data-tab="dca">DCA Simulator</button>
 </div>
 
 <!-- ===== STOCK LIST ===== -->
@@ -66,6 +67,56 @@
   <div class="request-results" id="request-results"></div>
 </div>
 
-<script src="app.js" defer></script>
+<!-- ===== DCA PANEL ===== -->
+<div class="dca-panel" id="dca-panel" style="display:none;">
+  <h3>DCA Simulator</h3>
+  <p class="dca-desc">จำลองการลงทุนแบบ DCA + Compound ย้อนหลังและคาดการณ์อนาคต</p>
+  <div class="dca-form" id="dca-form">
+    <div class="dca-form-row">
+      <div class="dca-field">
+        <label>หุ้น (Symbol)</label>
+        <input type="text" id="dca-symbol" placeholder="เช่น PTT.BK" list="dca-symbols-list">
+        <datalist id="dca-symbols-list"></datalist>
+      </div>
+      <div class="dca-field">
+        <label>จำนวนเงินต่อครั้ง (บาท)</label>
+        <input type="number" id="dca-amount" value="5000" min="100" step="100">
+      </div>
+    </div>
+    <div class="dca-form-row">
+      <div class="dca-field dca-field-wide">
+        <label>วันที่ซื้อ (วันของเดือน)</label>
+        <div class="dca-days-chips" id="dca-days-chips">
+          <label class="dca-chip"><input type="checkbox" value="1" checked><span>1</span></label>
+          <label class="dca-chip"><input type="checkbox" value="5"><span>5</span></label>
+          <label class="dca-chip"><input type="checkbox" value="10"><span>10</span></label>
+          <label class="dca-chip"><input type="checkbox" value="15" checked><span>15</span></label>
+          <label class="dca-chip"><input type="checkbox" value="20"><span>20</span></label>
+          <label class="dca-chip"><input type="checkbox" value="25"><span>25</span></label>
+        </div>
+      </div>
+    </div>
+    <div class="dca-form-row">
+      <div class="dca-field">
+        <label>ระยะเวลาคาดการณ์ (ปี)</label>
+        <input type="number" id="dca-years" value="10" min="1" max="30">
+      </div>
+      <div class="dca-field">
+        <label>นำปันผลกลับไปลงทุน</label>
+        <label class="dca-toggle">
+          <input type="checkbox" id="dca-reinvest" checked>
+          <span class="dca-toggle-slider"></span>
+          <span class="dca-toggle-label">Reinvest</span>
+        </label>
+      </div>
+      <div class="dca-field">
+        <button class="dca-submit" id="dca-submit">คำนวณ</button>
+      </div>
+    </div>
+  </div>
+  <div class="dca-results" id="dca-results"></div>
+</div>
+
+<script src="app.js?v=2" defer></script>
 </body>
 </html>

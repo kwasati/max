@@ -116,13 +116,21 @@ function bindTabs() {
       renderStockList();
 
       const reqPanel = document.getElementById('request-panel');
+      const dcaPanel = document.getElementById('dca-panel');
       const detail = document.getElementById('detail');
       if (state.activeTab === 'requests') {
         reqPanel.style.display = '';
+        dcaPanel.style.display = 'none';
         detail.style.display = 'none';
         loadRequests();
+      } else if (state.activeTab === 'dca') {
+        reqPanel.style.display = 'none';
+        dcaPanel.style.display = '';
+        detail.style.display = 'none';
+        populateDCASymbols();
       } else {
         reqPanel.style.display = 'none';
+        dcaPanel.style.display = 'none';
       }
     });
   });
@@ -159,6 +167,9 @@ function renderStockList() {
     el.innerHTML = `<div class="loading">${filteredCount} stocks filtered out (ไม่ผ่านเกณฑ์)</div>`;
     return;
   } else if (tab === 'requests') {
+    el.innerHTML = '';
+    return;
+  } else if (tab === 'dca') {
     el.innerHTML = '';
     return;
   }
@@ -732,6 +743,7 @@ function renderDetail(d) {
         Revenue ต้องโตสม่ำเสมอ, Net Income/EPS ต้องโตตาม, ROE ต้องสูงทุกปี, D/E ต้องไม่เพิ่ม, FCF ต้องเป็นบวก, DPS ต้องไม่ลด
       </div>
     </details>
+    <div class="yoy-scroll">
     <table class="yoy-table">
       <thead>
         <tr><th></th>${years.map(y => `<th>${y}</th>`).join('')}<th>Trend</th></tr>
@@ -757,6 +769,7 @@ function renderDetail(d) {
         </tr>
       </tbody>
     </table>
+    </div>
 
     <!-- Dividend History -->
     <div class="section-title">Dividend History <span>${chartYears.length}+ ปี ย้อนหลัง</span></div>
@@ -909,6 +922,189 @@ function connectSSE() {
   };
 }
 
+// ===== DCA SIMULATOR =====
+function bindDCA() {
+  const btn = document.getElementById('dca-submit');
+  if (!btn) return;
+
+  // Populate symbol autocomplete from screener data
+  populateDCASymbols();
+
+  btn.addEventListener('click', runDCA);
+}
+
+function populateDCASymbols() {
+  const datalist = document.getElementById('dca-symbols-list');
+  if (!datalist) return;
+  const symbols = new Set();
+
+  if (state.screener && state.screener.candidates) {
+    state.screener.candidates.forEach(c => { if (c.symbol) symbols.add(c.symbol); });
+  }
+  if (state.watchlist && state.watchlist.stocks) {
+    state.watchlist.stocks.forEach(s => { if (s.symbol) symbols.add(s.symbol); });
+  }
+
+  datalist.innerHTML = [...symbols].sort().map(s => `<option value="${s}">`).join('');
+}
+
+async function runDCA() {
+  const symbolInput = document.getElementById('dca-symbol');
+  const amountInput = document.getElementById('dca-amount');
+  const yearsInput = document.getElementById('dca-years');
+  const reinvestInput = document.getElementById('dca-reinvest');
+  const resultsEl = document.getElementById('dca-results');
+  const btn = document.getElementById('dca-submit');
+
+  let symbol = symbolInput.value.trim();
+  if (!symbol) { alert('กรุณาใส่ชื่อหุ้น'); return; }
+
+  // Collect selected days
+  const dayCheckboxes = document.querySelectorAll('#dca-days-chips input[type="checkbox"]:checked');
+  const days = [...dayCheckboxes].map(cb => cb.value).join(',');
+  if (!days) { alert('กรุณาเลือกวันที่ซื้ออย่างน้อย 1 วัน'); return; }
+
+  const amount = parseFloat(amountInput.value) || 5000;
+  const years = parseInt(yearsInput.value) || 10;
+  const reinvest = reinvestInput.checked;
+
+  btn.disabled = true;
+  btn.textContent = 'กำลังคำนวณ...';
+  resultsEl.innerHTML = '<div class="loading">กำลังดึงข้อมูลและคำนวณ... (อาจใช้เวลา 10-30 วินาที)</div>';
+
+  try {
+    const params = new URLSearchParams({ days, amount, years, reinvest });
+    const res = await fetch(API + `/api/dca/${encodeURIComponent(symbol)}?${params}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Unknown error' }));
+      resultsEl.innerHTML = `<div class="loading" style="color:var(--red);">Error: ${err.detail || res.statusText}</div>`;
+      return;
+    }
+    const data = await res.json();
+    renderDCAResults(data);
+  } catch (e) {
+    resultsEl.innerHTML = `<div class="loading" style="color:var(--red);">Connection error: ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'คำนวณ';
+  }
+}
+
+function renderDCAResults(data) {
+  const el = document.getElementById('dca-results');
+  const bt = data.backtest;
+  const pj = data.projection;
+
+  function fmtMoney(v) {
+    if (v == null) return '-';
+    if (v >= 1e6) return (v / 1e6).toFixed(2) + 'M';
+    if (v >= 1e3) return (v / 1e3).toFixed(0) + 'K';
+    return v.toLocaleString();
+  }
+
+  // Summary cards
+  const summaryHTML = `
+    <div class="dca-summary">
+      <div class="dca-summary-card">
+        <div class="label">ลงทุนรวม (Backtest)</div>
+        <div class="value">${fmtMoney(bt.total_invested)}</div>
+        <div class="sub">${bt.years} ปี</div>
+      </div>
+      <div class="dca-summary-card">
+        <div class="label">มูลค่าปัจจุบัน</div>
+        <div class="value" style="color:var(--green);">${fmtMoney(bt.current_value)}</div>
+        <div class="sub">ราคา ${bt.current_price} บาท</div>
+      </div>
+      <div class="dca-summary-card">
+        <div class="label">Total Return</div>
+        <div class="value" style="color:${bt.total_return_pct >= 0 ? 'var(--green)' : 'var(--red)'};">${bt.total_return_pct}%</div>
+        <div class="sub">CAGR ${bt.cagr}%</div>
+      </div>
+      <div class="dca-summary-card">
+        <div class="label">ปันผลรวม</div>
+        <div class="value">${fmtMoney(bt.total_dividends)}</div>
+        <div class="sub">Yield on Cost ${bt.yield_on_cost}%</div>
+      </div>
+      <div class="dca-summary-card">
+        <div class="label">Projected Value (${data.projection_years}yr)</div>
+        <div class="value" style="color:var(--blue);">${fmtMoney(pj.projected_value)}</div>
+        <div class="sub">CAGR ${pj.cagr}%</div>
+      </div>
+    </div>
+  `;
+
+  // Backtest table
+  const btYearly = bt.yearly || [];
+  const btTableHTML = btYearly.length > 0 ? `
+    <div class="dca-section">
+      <div class="section-title">Historical Backtest <span>ผลจริงย้อนหลัง ${bt.years} ปี</span></div>
+      <div class="yoy-scroll">
+        <table class="yoy-table">
+          <thead>
+            <tr>
+              <th>ปี</th>
+              <th>ลงทุนปีนี้</th>
+              <th>หุ้นสะสม</th>
+              <th>ลงทุนรวม</th>
+              <th>มูลค่าพอร์ต</th>
+              <th>ปันผลปีนี้</th>
+              <th>ปันผลสะสม</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${btYearly.map(r => `<tr>
+              <td>${r.year}</td>
+              <td>${fmtMoney(r.invested_this_year)}</td>
+              <td>${r.total_shares.toLocaleString()}</td>
+              <td>${fmtMoney(r.total_invested)}</td>
+              <td>${fmtMoney(r.portfolio_value)}</td>
+              <td>${fmtMoney(r.dividends_received)}</td>
+              <td>${fmtMoney(r.total_dividends)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  ` : '';
+
+  // Projection table
+  const pjYearly = pj.yearly || [];
+  const pjTableHTML = pjYearly.length > 0 ? `
+    <div class="dca-section">
+      <div class="section-title">Forward Projection <span>${data.projection_years} ปีข้างหน้า (สมมติฐาน: ราคาโต ${pj.assumptions.price_growth_rate}%/ปี, ปันผลโต ${pj.assumptions.div_growth_rate}%/ปี)</span></div>
+      <div class="yoy-scroll">
+        <table class="yoy-table">
+          <thead>
+            <tr>
+              <th>ปีที่</th>
+              <th>ราคาคาด</th>
+              <th>หุ้นสะสม</th>
+              <th>ลงทุนรวม</th>
+              <th>มูลค่าพอร์ต</th>
+              <th>ปันผลปีนี้</th>
+              <th>ปันผลสะสม</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${pjYearly.map(r => `<tr>
+              <td>${r.year}</td>
+              <td>${r.price.toFixed(2)}</td>
+              <td>${r.total_shares.toLocaleString()}</td>
+              <td>${fmtMoney(r.total_invested)}</td>
+              <td>${fmtMoney(r.portfolio_value)}</td>
+              <td>${fmtMoney(r.dividends_this_year)}</td>
+              <td>${fmtMoney(r.total_dividends)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  ` : '';
+
+  el.innerHTML = summaryHTML + btTableHTML + pjTableHTML;
+}
+
 // ===== START =====
 init();
 bindPipeline();
+bindDCA();

@@ -496,6 +496,292 @@ async def on_shutdown():
 
 
 # ---------------------------------------------------------------------------
+# DCA Simulator API
+# ---------------------------------------------------------------------------
+
+@app.get("/api/dca/{symbol}")
+async def dca_simulate(symbol: str, days: str = "1,15", amount: float = 5000, years: int = 10, reinvest: bool = True):
+    """DCA backtest + forward projection for a stock."""
+    import yfinance as yf
+    import pandas as pd
+    from datetime import date, timedelta
+    import math
+
+    ticker_symbol = symbol if ".BK" in symbol.upper() else symbol + ".BK"
+    ticker_symbol = ticker_symbol.upper()
+
+    try:
+        ticker = yf.Ticker(ticker_symbol)
+    except Exception as e:
+        raise HTTPException(400, f"Cannot fetch ticker: {e}")
+
+    # Parse DCA days
+    try:
+        dca_days = sorted(set(int(d.strip()) for d in days.split(",") if d.strip()))
+    except ValueError:
+        raise HTTPException(400, "Invalid days format. Use comma-separated numbers e.g. 1,15")
+
+    if not dca_days or any(d < 1 or d > 28 for d in dca_days):
+        raise HTTPException(400, "Days must be between 1 and 28")
+
+    # Fetch historical price data (max available)
+    try:
+        hist = ticker.history(period="max", auto_adjust=True)
+    except Exception as e:
+        raise HTTPException(500, f"Failed to fetch history: {e}")
+
+    if hist.empty:
+        raise HTTPException(404, f"No price history for {ticker_symbol}")
+
+    # Fetch dividends
+    try:
+        dividends = ticker.dividends
+    except Exception:
+        dividends = None
+
+    # Get current stock data for forward projection
+    stock_agg = {}
+    scr_path = find_latest("screener_*.json", DATA_DIR)
+    if scr_path:
+        scr = read_json(scr_path)
+        for c in scr.get("candidates", []):
+            if c.get("symbol", "").upper() == ticker_symbol:
+                stock_agg = c.get("aggregates", {})
+                break
+    if not stock_agg:
+        snap_path = find_latest("snapshot_*.json", DATA_DIR)
+        if snap_path:
+            snap = read_json(snap_path)
+            for s in snap.get("stocks", []):
+                if s.get("symbol", "").upper() == ticker_symbol:
+                    stock_agg = s.get("aggregates", {})
+                    break
+
+    # ===== HISTORICAL BACKTEST =====
+    hist.index = hist.index.tz_localize(None) if hist.index.tz else hist.index
+    available_dates = hist.index.to_list()
+
+    if dividends is not None and not dividends.empty:
+        dividends.index = dividends.index.tz_localize(None) if dividends.index.tz else dividends.index
+
+    def find_next_trading_day(target_date, max_days=10):
+        """Find the next available trading day on or after target_date."""
+        for offset in range(max_days):
+            check = target_date + timedelta(days=offset)
+            if check in hist.index:
+                return check
+        return None
+
+    # Run backtest
+    total_shares = 0.0
+    total_invested = 0.0
+    total_dividends_received = 0.0
+    dividend_pool = 0.0  # accumulated dividends for reinvestment
+    yearly_backtest = []
+
+    start_year = hist.index[0].year
+    end_year = hist.index[-1].year
+
+    for year in range(start_year, end_year + 1):
+        year_shares_bought = 0.0
+        year_invested = 0.0
+        year_dividends = 0.0
+
+        for month in range(1, 13):
+            for day in dca_days:
+                try:
+                    target = date(year, month, day)
+                except ValueError:
+                    continue  # invalid date (e.g., Feb 30)
+
+                target_ts = pd.Timestamp(target)
+                trading_day = find_next_trading_day(target_ts)
+                if trading_day is None:
+                    continue
+
+                price = hist.loc[trading_day, "Close"]
+                if price <= 0:
+                    continue
+
+                invest_amount = amount
+                # Add dividend pool if reinvesting
+                if reinvest and dividend_pool > 0:
+                    invest_amount += dividend_pool
+                    dividend_pool = 0.0
+
+                shares = invest_amount / price
+                total_shares += shares
+                total_invested += amount  # track original investment only
+                year_shares_bought += shares
+                year_invested += amount
+
+        # Calculate dividends received this year
+        if dividends is not None and not dividends.empty:
+            year_divs = dividends[(dividends.index.year == year)]
+            for div_date, div_amount in year_divs.items():
+                div_received = div_amount * total_shares
+                year_dividends += div_received
+                total_dividends_received += div_received
+                if reinvest:
+                    dividend_pool += div_received
+
+        # End-of-year valuation
+        year_end_prices = hist[hist.index.year == year]
+        if not year_end_prices.empty:
+            eoy_price = year_end_prices.iloc[-1]["Close"]
+            portfolio_value = total_shares * eoy_price
+        else:
+            portfolio_value = 0
+
+        if year_invested > 0 or total_invested > 0:
+            yearly_backtest.append({
+                "year": year,
+                "shares_bought": round(year_shares_bought, 2),
+                "invested_this_year": round(year_invested, 0),
+                "total_shares": round(total_shares, 2),
+                "total_invested": round(total_invested, 0),
+                "portfolio_value": round(portfolio_value, 0),
+                "dividends_received": round(year_dividends, 0),
+                "total_dividends": round(total_dividends_received, 0),
+            })
+
+    # Current valuation
+    current_price = hist.iloc[-1]["Close"] if not hist.empty else 0
+    current_value = total_shares * current_price
+    total_return_pct = ((current_value + total_dividends_received - total_invested) / total_invested * 100) if total_invested > 0 else 0
+
+    # CAGR
+    years_elapsed = (hist.index[-1] - hist.index[0]).days / 365.25 if len(hist) > 1 else 1
+    if total_invested > 0 and years_elapsed > 0 and current_value > 0:
+        cagr = (((current_value + total_dividends_received) / total_invested) ** (1 / years_elapsed) - 1) * 100
+    else:
+        cagr = 0
+
+    # Yield on Cost
+    # Use last year's dividends per share * total shares / total invested
+    last_year = end_year
+    last_year_divs = dividends[(dividends.index.year == last_year)].sum() if dividends is not None and not dividends.empty else 0
+    annual_div_income = last_year_divs * total_shares
+    yield_on_cost = (annual_div_income / total_invested * 100) if total_invested > 0 else 0
+
+    avg_cost = total_invested / total_shares if total_shares > 0 else 0
+
+    backtest_result = {
+        "total_invested": round(total_invested, 0),
+        "current_value": round(current_value, 0),
+        "total_shares": round(total_shares, 2),
+        "avg_cost": round(avg_cost, 2),
+        "current_price": round(current_price, 2),
+        "total_return_pct": round(total_return_pct, 1),
+        "cagr": round(cagr, 1),
+        "total_dividends": round(total_dividends_received, 0),
+        "yield_on_cost": round(yield_on_cost, 1),
+        "years": round(years_elapsed, 1),
+        "yearly": yearly_backtest,
+    }
+
+    # ===== FORWARD PROJECTION =====
+    # Use growth rates from aggregates
+    price_growth_rate = stock_agg.get("eps_cagr") or stock_agg.get("revenue_cagr") or 0.08
+    if price_growth_rate < 0:
+        price_growth_rate = 0.03  # minimum 3% if negative
+
+    # Get current dividend yield
+    info = {}
+    try:
+        info = ticker.info or {}
+    except Exception:
+        pass
+    current_div_yield = info.get("dividendYield") or info.get("trailingAnnualDividendYield") or 0
+    if current_div_yield > 1:
+        current_div_yield = current_div_yield / 100  # normalize
+
+    # Dividend growth rate from aggregates
+    div_growth_rate = 0.05  # default 5%
+    if stock_agg.get("dividend_growth_streak", 0) > 5:
+        div_growth_rate = 0.07
+    elif stock_agg.get("dividend_growth_streak", 0) > 3:
+        div_growth_rate = 0.05
+    else:
+        div_growth_rate = 0.03
+
+    dca_per_year = amount * len(dca_days) * 12
+    proj_shares = 0.0
+    proj_invested = 0.0
+    proj_dividends = 0.0
+    proj_price = current_price
+    proj_div_yield = current_div_yield
+    yearly_projection = []
+
+    for yr in range(1, years + 1):
+        # Price grows
+        proj_price = current_price * ((1 + price_growth_rate) ** yr)
+
+        # Buy shares throughout the year at average price for that year
+        avg_price_this_year = current_price * ((1 + price_growth_rate) ** (yr - 0.5))
+        shares_this_year = dca_per_year / avg_price_this_year if avg_price_this_year > 0 else 0
+
+        # Reinvest dividends
+        div_income = 0
+        if proj_shares > 0:
+            # Dividend per share grows
+            dps_this_year = current_price * current_div_yield * ((1 + div_growth_rate) ** yr)
+            div_income = dps_this_year * proj_shares
+            proj_dividends += div_income
+            if reinvest and avg_price_this_year > 0:
+                shares_this_year += div_income / avg_price_this_year
+
+        proj_shares += shares_this_year
+        proj_invested += dca_per_year
+        portfolio_val = proj_shares * proj_price
+
+        yearly_projection.append({
+            "year": yr,
+            "price": round(proj_price, 2),
+            "shares_bought": round(shares_this_year, 2),
+            "total_shares": round(proj_shares, 2),
+            "total_invested": round(proj_invested, 0),
+            "portfolio_value": round(portfolio_val, 0),
+            "dividends_this_year": round(div_income, 0),
+            "total_dividends": round(proj_dividends, 0),
+        })
+
+    proj_final_value = proj_shares * proj_price if yearly_projection else 0
+    proj_total_return = ((proj_final_value + proj_dividends - proj_invested) / proj_invested * 100) if proj_invested > 0 else 0
+    proj_cagr = ((((proj_final_value + proj_dividends) / proj_invested) ** (1 / years)) - 1) * 100 if proj_invested > 0 and years > 0 else 0
+    proj_yoc = 0
+    if yearly_projection and proj_invested > 0:
+        last_div = yearly_projection[-1]["dividends_this_year"]
+        proj_yoc = (last_div / proj_invested * 100)
+
+    projection_result = {
+        "total_invested": round(proj_invested, 0),
+        "projected_value": round(proj_final_value, 0),
+        "total_shares": round(proj_shares, 2),
+        "total_return_pct": round(proj_total_return, 1),
+        "cagr": round(proj_cagr, 1),
+        "total_dividends": round(proj_dividends, 0),
+        "yield_on_cost": round(proj_yoc, 1),
+        "assumptions": {
+            "price_growth_rate": round(price_growth_rate * 100, 1),
+            "div_growth_rate": round(div_growth_rate * 100, 1),
+            "current_div_yield": round(current_div_yield * 100, 1),
+        },
+        "yearly": yearly_projection,
+    }
+
+    return {
+        "symbol": ticker_symbol,
+        "dca_days": dca_days,
+        "amount_per_dca": amount,
+        "reinvest_dividends": reinvest,
+        "projection_years": years,
+        "backtest": backtest_result,
+        "projection": projection_result,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Static files (SPA) — mount last so API routes take priority
 # ---------------------------------------------------------------------------
 if WEB_DIR.exists():
