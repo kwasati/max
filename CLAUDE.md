@@ -41,7 +41,7 @@
 - `data/` — snapshots + screener results (gitignored)
 
 ## Hard Filters (ต้องผ่านทุกข้อ)
-- ROE เฉลี่ย 4 ปี ≥ 15% (ไม่มีปีต่ำกว่า 12%) — Buffett
+- ROE เฉลี่ย ≥ 15% non-financial / ≥ 10% financial (ไม่มีปีต่ำกว่า 12% / 8%) — Buffett
 - Net Margin เฉลี่ย ≥ 10% (ยกเว้น financial sector)
 - D/E ≤ 1.5 (non-financial) / ≤ 10 (financial) — เซียนฮง
 - EPS บวกอย่างน้อย 3 จาก 4 ปี
@@ -52,7 +52,7 @@
 
 | ด้าน | คะแนน | เกณฑ์ |
 |---|---|---|
-| Profitability | 30 | ROE consistency (15) + Gross Margin (10) + Net Margin trend (5) |
+| Profitability | 30 | ROE consistency (15) + Gross Margin (7) + SG&A efficiency (3) + Net Margin trend (5) |
 | Growth | 25 | Revenue CAGR (10) + EPS CAGR (10) + Revenue consistency (5) |
 | Dividend | 25 | Yield (8) + Payout sustainability (7) + Dividend streak (10) |
 | Strength | 20 | D/E level (5) + Interest Coverage (5) + FCF consistency (5) + OCF/NI (5) |
@@ -79,7 +79,12 @@
 
 ## References
 - Buffett criteria: ROE ≥15% sustained, Gross Margin >40%, D/E <0.5, FCF positive (Validea, TradingCenter)
-- เซียนฮง สถาพร: P/E ≤15, yield ≥4-5%, growth ≥26%, D/E ≤1.0 (FinSpace, Kaohoon)
+- เซียนฮง สถาพร: เน้น cash flow quality, ความสม่ำเสมอ, หนี้น้อย (เกณฑ์ตัวเลขเช่น P/E ≤ 15 มาจากการวิเคราะห์พอร์ตโดย secondary sources ไม่ใช่เกณฑ์ที่แกประกาศ)
+
+## Data Quality Notes (yfinance .BK)
+- ธนาคารไทย: yearly_metrics ส่วนใหญ่ null → ใช้ info fallback
+- five_year_avg_yield: null บ่อย → fallback คำนวณจาก dividend_history
+- debt_to_equity จาก info: เป็น percentage (ต้อง /100)
 
 ## Rules
 - ห้ามแนะนำซื้อขายโดยตรง — วิเคราะห์ให้ข้อมูลเท่านั้น
