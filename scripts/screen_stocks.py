@@ -14,7 +14,7 @@ WATCHLIST = ROOT / "watchlist.json"
 sys.path.insert(0, str(ROOT / "scripts"))
 from fetch_data import fetch_multi_year, normalize_yield, FINANCIAL_SECTORS
 
-HARD_FILTERS = {
+DEFAULT_FILTERS = {
     "min_roe_avg": 0.15,
     "min_roe_floor": 0.12,
     "min_net_margin": 0.10,
@@ -24,6 +24,21 @@ HARD_FILTERS = {
     "min_fcf_positive_years": 3,
     "min_market_cap": 5_000_000_000,
 }
+
+
+def load_filters() -> dict:
+    """Load filters from config.json, fallback to defaults."""
+    config_path = ROOT / "config.json"
+    if config_path.exists():
+        try:
+            config = json.loads(config_path.read_text(encoding="utf-8"))
+            return {**DEFAULT_FILTERS, **config.get("filters", {})}
+        except Exception:
+            pass
+    return dict(DEFAULT_FILTERS)
+
+
+HARD_FILTERS = load_filters()
 
 
 def hard_filter(data: dict) -> tuple:
