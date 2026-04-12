@@ -1019,36 +1019,106 @@ details.section-explain[open] > summary::before { content: 'ซ่อนคำ�
 
 /* DCA Results */
 .dca-results { margin-top: 24px; }
-.dca-summary {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
+/* DCA Portfolio Summary — streaming style */
+.dca-portfolio {
   margin-bottom: 24px;
 }
-.dca-summary-card {
+.dca-portfolio-header {
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px 18px;
+  padding: 14px 20px;
+  margin-bottom: 12px;
+}
+.dca-port-row {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+.dca-port-item {}
+.dca-port-label {
+  font-size: 0.70rem;
+  color: var(--text3);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.dca-port-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+}
+.dca-port-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.dca-port-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
   box-shadow: var(--shadow);
 }
-.dca-summary-card .label {
+.dca-port-card-label {
   font-size: 0.72rem;
   color: var(--text3);
   font-weight: 500;
   margin-bottom: 4px;
 }
-.dca-summary-card .value {
-  font-size: 1.4rem;
+.dca-port-card-value {
+  font-size: 1.5rem;
   font-weight: 700;
   font-family: 'JetBrains Mono', monospace;
   line-height: 1.2;
 }
-.dca-summary-card .sub {
-  font-size: 0.72rem;
+.dca-port-card-sub {
+  font-size: 0.78rem;
   color: var(--text3);
-  margin-top: 2px;
+  margin-top: 4px;
+  font-weight: 500;
 }
+.dca-port-breakdown {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 20px;
+  margin-bottom: 12px;
+}
+.dca-port-break-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+}
+.dca-port-break-item + .dca-port-break-item {
+  border-top: 1px solid var(--border);
+}
+.dca-port-break-total {
+  font-weight: 700;
+  padding-top: 10px;
+}
+.dca-port-break-label {
+  font-size: 0.82rem;
+  color: var(--text2);
+}
+.dca-port-break-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+}
+.dca-port-forecast {
+  background: var(--blue-light);
+  border: 1px solid var(--blue);
+  border-radius: var(--radius);
+  padding: 14px 20px;
+}
+.dca-port-forecast .dca-port-card-label { color: var(--blue); }
+.dca-port-forecast .dca-port-card-value { color: var(--blue); }
+.dca-port-forecast .dca-port-card-sub { color: var(--text2); }
+
 .dca-section { margin-top: 20px; }
 .dca-assumptions {
   display: flex;
@@ -1068,16 +1138,20 @@ details.section-explain[open] > summary::before { content: 'ซ่อนคำ�
   .dca-panel { padding: 16px; }
   .dca-form-row { flex-direction: column; gap: 12px; }
   .dca-field-wide { min-width: unset; }
-  .dca-summary { grid-template-columns: repeat(2, 1fr); }
-  .dca-summary-card .value { font-size: 1.1rem; }
+  .dca-port-cards { grid-template-columns: 1fr 1fr; }
+  .dca-port-card-value { font-size: 1.2rem; }
+  .dca-port-row { gap: 16px; }
 }
 
 /* DCA responsive — phone */
 @media (max-width: 480px) {
   .dca-panel { padding: 12px; }
-  .dca-summary { grid-template-columns: 1fr; gap: 8px; }
-  .dca-summary-card { padding: 12px 14px; }
-  .dca-summary-card .value { font-size: 1rem; }
+  .dca-port-cards { grid-template-columns: 1fr; gap: 8px; }
+  .dca-port-card { padding: 12px 14px; }
+  .dca-port-card-value { font-size: 1.1rem; }
+  .dca-port-row { gap: 12px; }
   .dca-chip span { width: 34px; height: 30px; font-size: 0.76rem; }
   .dca-submit { width: 100%; }
+  .dca-port-breakdown { padding: 10px 14px; }
+  .dca-port-forecast { padding: 12px 14px; }
 }

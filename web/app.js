@@ -1046,38 +1046,75 @@ function renderDCAResults(data) {
 
   function fmtMoney(v) {
     if (v == null) return '-';
-    if (v >= 1e6) return (v / 1e6).toFixed(2) + 'M';
-    if (v >= 1e3) return (v / 1e3).toFixed(0) + 'K';
-    return v.toLocaleString();
+    if (Math.abs(v) >= 1e6) return (v / 1e6).toFixed(2) + ' ล้าน';
+    return Math.round(v).toLocaleString('th-TH');
   }
 
-  // Summary cards
+  function fmtFull(v) {
+    if (v == null) return '-';
+    return Math.round(v).toLocaleString('th-TH');
+  }
+
+  // Profit calculations
+  const profit = bt.current_value - bt.total_invested;
+  const profitSign = profit >= 0 ? '+' : '';
+  const profitColor = profit >= 0 ? 'var(--green)' : 'var(--red)';
+  const totalGain = profit + bt.total_dividends;
+  const totalGainSign = totalGain >= 0 ? '+' : '';
+  const totalGainColor = totalGain >= 0 ? 'var(--green)' : 'var(--red)';
+
+  // Summary — streaming portfolio style
   const summaryHTML = `
-    <div class="dca-summary">
-      <div class="dca-summary-card">
-        <div class="label">ลงทุนรวม (Backtest)</div>
-        <div class="value">${fmtMoney(bt.total_invested)}</div>
-        <div class="sub">${bt.years} ปี</div>
+    <div class="dca-portfolio">
+      <div class="dca-portfolio-header">
+        <div class="dca-port-row">
+          <div class="dca-port-item">
+            <div class="dca-port-label">จำนวนหุ้น</div>
+            <div class="dca-port-value">${bt.total_shares.toLocaleString('th-TH', {maximumFractionDigits: 0})}</div>
+          </div>
+          <div class="dca-port-item">
+            <div class="dca-port-label">ต้นทุนเฉลี่ย</div>
+            <div class="dca-port-value">${bt.avg_cost.toLocaleString('th-TH', {maximumFractionDigits: 2})} ฿</div>
+          </div>
+          <div class="dca-port-item">
+            <div class="dca-port-label">ราคาปัจจุบัน</div>
+            <div class="dca-port-value">${bt.current_price.toLocaleString('th-TH', {maximumFractionDigits: 2})} ฿</div>
+          </div>
+        </div>
       </div>
-      <div class="dca-summary-card">
-        <div class="label">มูลค่าปัจจุบัน</div>
-        <div class="value" style="color:var(--green);">${fmtMoney(bt.current_value)}</div>
-        <div class="sub">ราคา ${bt.current_price} บาท</div>
+
+      <div class="dca-port-cards">
+        <div class="dca-port-card">
+          <div class="dca-port-card-label">ลงทุนรวม</div>
+          <div class="dca-port-card-value">${fmtMoney(bt.total_invested)}</div>
+          <div class="dca-port-card-sub">${bt.years} ปี</div>
+        </div>
+        <div class="dca-port-card">
+          <div class="dca-port-card-label">มูลค่าปัจจุบัน</div>
+          <div class="dca-port-card-value" style="color:${profitColor};">${fmtMoney(bt.current_value)}</div>
+          <div class="dca-port-card-sub" style="color:${profitColor};">${profitSign}${fmtMoney(profit)} (${profitSign}${bt.total_return_pct}%)</div>
+        </div>
       </div>
-      <div class="dca-summary-card">
-        <div class="label">Total Return</div>
-        <div class="value" style="color:${bt.total_return_pct >= 0 ? 'var(--green)' : 'var(--red)'};">${bt.total_return_pct}%</div>
-        <div class="sub">CAGR ${bt.cagr}%</div>
+
+      <div class="dca-port-breakdown">
+        <div class="dca-port-break-item">
+          <span class="dca-port-break-label">กำไรจากราคาหุ้น</span>
+          <span class="dca-port-break-value" style="color:${profitColor};">${profitSign}${fmtMoney(profit)}</span>
+        </div>
+        <div class="dca-port-break-item">
+          <span class="dca-port-break-label">ปันผลสะสม</span>
+          <span class="dca-port-break-value" style="color:var(--green);">+${fmtMoney(bt.total_dividends)}</span>
+        </div>
+        <div class="dca-port-break-item dca-port-break-total">
+          <span class="dca-port-break-label">รวมเติบโตทั้งหมด</span>
+          <span class="dca-port-break-value" style="color:${totalGainColor};">${totalGainSign}${fmtMoney(totalGain)} (${totalGainSign}${bt.total_return_pct}%)</span>
+        </div>
       </div>
-      <div class="dca-summary-card">
-        <div class="label">ปันผลรวม</div>
-        <div class="value">${fmtMoney(bt.total_dividends)}</div>
-        <div class="sub">Yield on Cost ${bt.yield_on_cost}%</div>
-      </div>
-      <div class="dca-summary-card">
-        <div class="label">Projected Value (${data.forward_years}yr)</div>
-        <div class="value" style="color:var(--blue);">${fmtMoney(pj.projected_value)}</div>
-        <div class="sub">CAGR ${pj.cagr}%</div>
+
+      <div class="dca-port-forecast">
+        <div class="dca-port-card-label">คาดการณ์ ${data.forward_years} ปี</div>
+        <div class="dca-port-card-value" style="color:var(--blue);">${fmtMoney(pj.projected_value)}</div>
+        <div class="dca-port-card-sub">เติบโตเฉลี่ย ${pj.cagr}%/ปี &middot; Yield on Cost ${bt.yield_on_cost}%</div>
       </div>
     </div>
   `;
@@ -1103,12 +1140,12 @@ function renderDCAResults(data) {
           <tbody>
             ${btYearly.map(r => `<tr>
               <td>${r.year}</td>
-              <td>${fmtMoney(r.invested_this_year)}</td>
-              <td>${r.total_shares.toLocaleString()}</td>
-              <td>${fmtMoney(r.total_invested)}</td>
-              <td>${fmtMoney(r.portfolio_value)}</td>
-              <td>${fmtMoney(r.dividends_received)}</td>
-              <td>${fmtMoney(r.total_dividends)}</td>
+              <td>${fmtFull(r.invested_this_year)}</td>
+              <td>${r.total_shares.toLocaleString('th-TH', {maximumFractionDigits: 0})}</td>
+              <td>${fmtFull(r.total_invested)}</td>
+              <td>${fmtFull(r.portfolio_value)}</td>
+              <td>${fmtFull(r.dividends_received)}</td>
+              <td>${fmtFull(r.total_dividends)}</td>
             </tr>`).join('')}
           </tbody>
         </table>
@@ -1141,12 +1178,12 @@ function renderDCAResults(data) {
           <tbody>
             ${pjYearly.map(r => `<tr>
               <td>${r.year}</td>
-              <td>${r.price.toFixed(2)}</td>
-              <td>${r.total_shares.toLocaleString()}</td>
-              <td>${fmtMoney(r.total_invested)}</td>
-              <td>${fmtMoney(r.portfolio_value)}</td>
-              <td>${fmtMoney(r.dividends_this_year)}</td>
-              <td>${fmtMoney(r.total_dividends)}</td>
+              <td>${r.price.toLocaleString('th-TH', {maximumFractionDigits: 2})}</td>
+              <td>${r.total_shares.toLocaleString('th-TH', {maximumFractionDigits: 0})}</td>
+              <td>${fmtFull(r.total_invested)}</td>
+              <td>${fmtFull(r.portfolio_value)}</td>
+              <td>${fmtFull(r.dividends_this_year)}</td>
+              <td>${fmtFull(r.total_dividends)}</td>
             </tr>`).join('')}
           </tbody>
         </table>
