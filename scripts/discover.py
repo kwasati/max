@@ -1,6 +1,7 @@
 """Max Mahon v2 — Discovery: Claude analyzes quality-screened stocks for DCA candidates."""
 
 import json
+import shutil
 import subprocess
 import sys
 from datetime import datetime
@@ -159,8 +160,17 @@ def main():
     report_path = REPORTS_DIR / f"discovery_{today}.md"
 
     print("Max Mahon v2 analyzing discoveries with Claude...")
+
+    def find_claude_cli():
+        for name in ["claude.cmd", "claude"]:
+            p = shutil.which(name)
+            if p:
+                return p
+        raise FileNotFoundError("ไม่เจอ Claude CLI — กรุณาติดตั้ง")
+
+    claude_cmd = find_claude_cli()
     result = subprocess.run(
-        ["claude.cmd", "--print", "--model", "claude-sonnet-4-6", "-p", "-"],
+        [claude_cmd, "--print", "--model", "claude-sonnet-4-6", "-p", "-"],
         input=prompt,
         capture_output=True,
         text=True,

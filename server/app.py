@@ -6,6 +6,7 @@ Run: py -m uvicorn server.app:app --port 50089
 
 import asyncio
 import json
+import logging
 import os
 import subprocess
 import sys
@@ -24,6 +25,8 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
+
+from server.console import count_request, start_refresh_loop
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -67,6 +70,17 @@ pipeline_state = {
 # ---------------------------------------------------------------------------
 # Auth middleware
 # ---------------------------------------------------------------------------
+
+@app.middleware("http")
+async def request_logger(request: Request, call_next):
+    """Track requests for console display."""
+    response = await call_next(request)
+    path = request.url.path
+    # Only log API requests (skip static files + SSE events stream)
+    if path.startswith("/api/") and path != "/api/events":
+        count_request(request.method, path, response.status_code)
+    return response
+
 
 @app.middleware("http")
 async def auth_middleware(request: Request, call_next):
@@ -351,20 +365,24 @@ async def run_pipeline(action: str):
                 pipeline_state["current_task"] = script
                 script_path = SCRIPTS_DIR / script
                 result = subprocess.run(
-                    ["py", str(script_path)],
+                    [sys.executable, str(script_path)],
                     capture_output=True,
+                    text=True,
+                    encoding="utf-8",
                     cwd=str(PROJECT_DIR),
                     env=env,
                     timeout=600,
                 )
                 if result.returncode != 0:
-                    err_msg = result.stderr.decode("utf-8", errors="replace")
-                    pipeline_state["last_result"] = f"FAILED at {script}: {err_msg[:500]}"
+                    err_msg = result.stderr[:500] if result.stderr else ""
+                    out_msg = result.stdout[-500:] if result.stdout else ""
+                    pipeline_state["last_result"] = f"FAILED at {script}: {err_msg}"
+                    logging.error(f"[pipeline] {script} failed:\nSTDERR: {result.stderr}\nSTDOUT: {result.stdout}")
                     return
             pipeline_state["last_result"] = f"OK — {action} completed"
         except Exception as e:
             pipeline_state["last_result"] = f"ERROR: {e}"
-            print(f"[pipeline] error: {e}", file=sys.stderr)
+            logging.error(f"[pipeline] error: {e}")
         finally:
             pipeline_state["running"] = False
             pipeline_state["current_task"] = None
@@ -461,19 +479,23 @@ def scheduled_run():
             pipeline_state["current_task"] = script
             script_path = SCRIPTS_DIR / script
             result = subprocess.run(
-                ["py", str(script_path)],
+                [sys.executable, str(script_path)],
                 capture_output=True,
+                text=True,
+                encoding="utf-8",
                 cwd=str(PROJECT_DIR),
                 env=env,
                 timeout=600,
             )
             if result.returncode != 0:
-                err_msg = result.stderr.decode("utf-8", errors="replace")
-                pipeline_state["last_result"] = f"FAILED at {script}: {err_msg[:500]}"
+                err_msg = result.stderr[:500] if result.stderr else ""
+                pipeline_state["last_result"] = f"FAILED at {script}: {err_msg}"
+                logging.error(f"[scheduler] {script} failed:\nSTDERR: {result.stderr}\nSTDOUT: {result.stdout}")
                 return
         pipeline_state["last_result"] = f"OK — scheduled {action} completed"
     except Exception as e:
         pipeline_state["last_result"] = f"ERROR: {e}"
+        logging.error(f"[scheduler] error: {e}")
     finally:
         pipeline_state["running"] = False
         pipeline_state["current_task"] = None
@@ -487,7 +509,13 @@ scheduler.add_job(scheduled_run, "cron", day_of_week="sun", hour=9, minute=0)
 @app.on_event("startup")
 async def on_startup():
     scheduler.start()
-    print(f"[max-server] started on port 50089 — data: {DATA_DIR}")
+    start_refresh_loop(
+        port=50089,
+        pid=os.getpid(),
+        start_time=START_TIME,
+        pipeline_state=pipeline_state,
+        data_dir=DATA_DIR,
+    )
 
 
 @app.on_event("shutdown")
@@ -792,4 +820,11 @@ if WEB_DIR.exists():
 # Main
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    uvicorn.run("server.app:app", host="0.0.0.0", port=50089, reload=True)
+    uvicorn.run(
+        "server.app:app",
+        host="0.0.0.0",
+        port=50089,
+        reload=True,
+        log_level="warning",
+        access_log=False,
+    )

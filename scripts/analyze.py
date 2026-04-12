@@ -1,6 +1,7 @@
 """Max Mahon v2 — feed multi-year stock data to Claude for deep weekly analysis."""
 
 import json
+import shutil
 import subprocess
 import sys
 from datetime import datetime
@@ -161,11 +162,21 @@ def build_prompt(snapshot_path: Path) -> str:
 """
 
 
+def find_claude_cli():
+    """Find claude CLI executable on PATH."""
+    for name in ["claude.cmd", "claude"]:
+        p = shutil.which(name)
+        if p:
+            return p
+    raise FileNotFoundError("ไม่เจอ Claude CLI — กรุณาติดตั้ง")
+
+
 def run_claude(prompt: str, output_path: Path):
     print("Max Mahon v2 analyzing with Claude...")
 
+    claude_cmd = find_claude_cli()
     result = subprocess.run(
-        ["claude.cmd", "--print", "--model", "claude-sonnet-4-6", "-p", "-"],
+        [claude_cmd, "--print", "--model", "claude-sonnet-4-6", "-p", "-"],
         input=prompt,
         capture_output=True,
         text=True,
