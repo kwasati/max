@@ -442,7 +442,10 @@ async def get_report(report_type: str, date: Optional[str] = None):
         raise HTTPException(400, f"Unknown report type: {report_type}")
 
     if date:
-        path = REPORTS_DIR / f"{report_type}_{date}.md"
+        safe_date = "".join(c for c in date if c.isalnum() or c == '-')
+        path = REPORTS_DIR / f"{report_type}_{safe_date}.md"
+        if not path.resolve().is_relative_to(REPORTS_DIR.resolve()):
+            raise HTTPException(400, "Invalid date")
     else:
         path = find_latest(f"{report_type}_*.md", REPORTS_DIR)
 
