@@ -981,8 +981,11 @@ function populateDCASymbols() {
 async function runDCA() {
   const symbolInput = document.getElementById('dca-symbol');
   const amountInput = document.getElementById('dca-amount');
-  const yearsInput = document.getElementById('dca-years');
+  const backtestYearsInput = document.getElementById('dca-backtest-years');
+  const forwardYearsInput = document.getElementById('dca-forward-years');
   const reinvestInput = document.getElementById('dca-reinvest');
+  const priceGrowthInput = document.getElementById('dca-price-growth');
+  const divGrowthInput = document.getElementById('dca-div-growth');
   const resultsEl = document.getElementById('dca-results');
   const btn = document.getElementById('dca-submit');
 
@@ -995,7 +998,8 @@ async function runDCA() {
   if (!days) { alert('กรุณาเลือกวันที่ซื้ออย่างน้อย 1 วัน'); return; }
 
   const amount = parseFloat(amountInput.value) || 5000;
-  const years = parseInt(yearsInput.value) || 10;
+  const backtest_years = parseInt(backtestYearsInput.value) || 0;
+  const forward_years = parseInt(forwardYearsInput.value) || 10;
   const reinvest = reinvestInput.checked;
 
   btn.disabled = true;
@@ -1003,7 +1007,12 @@ async function runDCA() {
   resultsEl.innerHTML = '<div class="loading">กำลังดึงข้อมูลและคำนวณ... (อาจใช้เวลา 10-30 วินาที)</div>';
 
   try {
-    const params = new URLSearchParams({ days, amount, years, reinvest });
+    const params = new URLSearchParams({ days, amount, backtest_years, forward_years, reinvest });
+    // Add optional growth overrides
+    const pg = parseFloat(priceGrowthInput.value);
+    if (!isNaN(pg)) params.set('price_growth', (pg / 100).toFixed(4));
+    const dg = parseFloat(divGrowthInput.value);
+    if (!isNaN(dg)) params.set('div_growth', (dg / 100).toFixed(4));
     const res = await fetch(API + `/api/dca/${encodeURIComponent(symbol)}?${params}`);
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: 'Unknown error' }));
@@ -1056,7 +1065,7 @@ function renderDCAResults(data) {
         <div class="sub">Yield on Cost ${bt.yield_on_cost}%</div>
       </div>
       <div class="dca-summary-card">
-        <div class="label">Projected Value (${data.projection_years}yr)</div>
+        <div class="label">Projected Value (${data.forward_years}yr)</div>
         <div class="value" style="color:var(--blue);">${fmtMoney(pj.projected_value)}</div>
         <div class="sub">CAGR ${pj.cagr}%</div>
       </div>
@@ -1101,7 +1110,11 @@ function renderDCAResults(data) {
   const pjYearly = pj.yearly || [];
   const pjTableHTML = pjYearly.length > 0 ? `
     <div class="dca-section">
-      <div class="section-title">Forward Projection <span>${data.projection_years} ปีข้างหน้า (สมมติฐาน: ราคาโต ${pj.assumptions.price_growth_rate}%/ปี, ปันผลโต ${pj.assumptions.div_growth_rate}%/ปี)</span></div>
+      <div class="section-title">Forward Projection <span>${data.forward_years} ปีข้างหน้า</span></div>
+      <div class="dca-assumptions">
+        <span>ราคาโต ${pj.assumptions.price_growth_rate}%/ปี <small>(${pj.assumptions.price_growth_source})</small></span>
+        <span>ปันผลโต ${pj.assumptions.div_growth_rate}%/ปี <small>(${pj.assumptions.div_growth_source})</small></span>
+      </div>
       <div class="yoy-scroll">
         <table class="yoy-table">
           <thead>

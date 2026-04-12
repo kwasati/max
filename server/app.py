@@ -528,8 +528,22 @@ async def on_shutdown():
 # ---------------------------------------------------------------------------
 
 @app.get("/api/dca/{symbol}")
-async def dca_simulate(symbol: str, days: str = "1,15", amount: float = 5000, years: int = 10, reinvest: bool = True):
-    """DCA backtest + forward projection for a stock."""
+async def dca_simulate(
+    symbol: str,
+    days: str = "1,15",
+    amount: float = 5000,
+    backtest_years: int = 0,
+    forward_years: int = 10,
+    reinvest: bool = True,
+    price_growth: Optional[float] = None,
+    div_growth: Optional[float] = None,
+):
+    """DCA backtest + forward projection for a stock.
+
+    backtest_years: 0 = use all available history
+    forward_years: projection period
+    price_growth/div_growth: override auto-detected rates (as decimal, e.g. 0.08 = 8%)
+    """
     import yfinance as yf
     import pandas as pd
     from datetime import date, timedelta
@@ -587,6 +601,12 @@ async def dca_simulate(symbol: str, days: str = "1,15", amount: float = 5000, ye
 
     # ===== HISTORICAL BACKTEST =====
     hist.index = hist.index.tz_localize(None) if hist.index.tz else hist.index
+
+    # Filter to backtest_years if specified
+    if backtest_years > 0:
+        cutoff = hist.index[-1] - pd.DateOffset(years=backtest_years)
+        hist = hist[hist.index >= cutoff]
+
     available_dates = hist.index.to_list()
 
     if dividends is not None and not dividends.empty:
@@ -709,10 +729,11 @@ async def dca_simulate(symbol: str, days: str = "1,15", amount: float = 5000, ye
     }
 
     # ===== FORWARD PROJECTION =====
-    # Use growth rates from aggregates
-    price_growth_rate = stock_agg.get("eps_cagr") or stock_agg.get("revenue_cagr") or 0.08
-    if price_growth_rate < 0:
-        price_growth_rate = 0.03  # minimum 3% if negative
+    # Auto-detect growth rates from aggregates
+    auto_price_growth = stock_agg.get("eps_cagr") or stock_agg.get("revenue_cagr") or 0.08
+    if auto_price_growth < 0:
+        auto_price_growth = 0.03
+    auto_price_growth = min(max(auto_price_growth, 0.03), 0.15)
 
     # Get current dividend yield
     info = {}
@@ -724,14 +745,22 @@ async def dca_simulate(symbol: str, days: str = "1,15", amount: float = 5000, ye
     if current_div_yield > 1:
         current_div_yield = current_div_yield / 100  # normalize
 
-    # Dividend growth rate from aggregates
-    div_growth_rate = 0.05  # default 5%
-    if stock_agg.get("dividend_growth_streak", 0) > 5:
-        div_growth_rate = 0.07
+    # Auto dividend growth rate
+    dps_cagr = stock_agg.get("dps_cagr")
+    if dps_cagr and dps_cagr > 0:
+        auto_div_growth = min(max(dps_cagr, 0.02), 0.10)
+    elif stock_agg.get("dividend_growth_streak", 0) > 5:
+        auto_div_growth = 0.07
     elif stock_agg.get("dividend_growth_streak", 0) > 3:
-        div_growth_rate = 0.05
+        auto_div_growth = 0.05
     else:
-        div_growth_rate = 0.03
+        auto_div_growth = 0.03
+
+    # Use user overrides or auto
+    price_growth_auto = price_growth is None
+    div_growth_auto = div_growth is None
+    price_growth_rate = auto_price_growth if price_growth is None else price_growth
+    div_growth_rate = auto_div_growth if div_growth is None else div_growth
 
     dca_per_year = amount * len(dca_days) * 12
     proj_shares = 0.0
@@ -741,7 +770,7 @@ async def dca_simulate(symbol: str, days: str = "1,15", amount: float = 5000, ye
     proj_div_yield = current_div_yield
     yearly_projection = []
 
-    for yr in range(1, years + 1):
+    for yr in range(1, forward_years + 1):
         # Price grows
         proj_price = current_price * ((1 + price_growth_rate) ** yr)
 
@@ -776,7 +805,7 @@ async def dca_simulate(symbol: str, days: str = "1,15", amount: float = 5000, ye
 
     proj_final_value = proj_shares * proj_price if yearly_projection else 0
     proj_total_return = ((proj_final_value + proj_dividends - proj_invested) / proj_invested * 100) if proj_invested > 0 else 0
-    proj_cagr = ((((proj_final_value + proj_dividends) / proj_invested) ** (1 / years)) - 1) * 100 if proj_invested > 0 and years > 0 else 0
+    proj_cagr = ((((proj_final_value + proj_dividends) / proj_invested) ** (1 / forward_years)) - 1) * 100 if proj_invested > 0 and forward_years > 0 else 0
     proj_yoc = 0
     if yearly_projection and proj_invested > 0:
         last_div = yearly_projection[-1]["dividends_this_year"]
@@ -792,7 +821,9 @@ async def dca_simulate(symbol: str, days: str = "1,15", amount: float = 5000, ye
         "yield_on_cost": round(proj_yoc, 1),
         "assumptions": {
             "price_growth_rate": round(price_growth_rate * 100, 1),
+            "price_growth_source": f"จาก EPS CAGR {auto_price_growth*100:.1f}%" if price_growth_auto else "กำหนดเอง",
             "div_growth_rate": round(div_growth_rate * 100, 1),
+            "div_growth_source": f"จาก DPS CAGR {auto_div_growth*100:.1f}%" if div_growth_auto else "กำหนดเอง",
             "current_div_yield": round(current_div_yield * 100, 1),
         },
         "yearly": yearly_projection,
@@ -803,7 +834,8 @@ async def dca_simulate(symbol: str, days: str = "1,15", amount: float = 5000, ye
         "dca_days": dca_days,
         "amount_per_dca": amount,
         "reinvest_dividends": reinvest,
-        "projection_years": years,
+        "backtest_years": backtest_years,
+        "forward_years": forward_years,
         "backtest": backtest_result,
         "projection": projection_result,
     }
