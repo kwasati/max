@@ -394,36 +394,36 @@ def valuation_grade(data: dict, sector_medians: dict) -> dict:
 
     score = 0  # 0-100, higher = cheaper
 
-    # PEG ratio (25 pts)
+    # PEG ratio (20 pts)
     peg = pe / (eps_cagr * 100) if eps_cagr > 0 and pe else None
     if peg and peg < 1:
-        score += 25
+        score += 20
     elif peg and peg < 2:
-        score += 15
+        score += 12
     elif peg and peg < 3:
-        score += 5
+        score += 4
 
-    # P/E vs sector median (25 pts)
+    # P/E vs sector median (35 pts)
     if pe and pe < median_pe * 0.8:
-        score += 25
+        score += 35
     elif pe and pe < median_pe * 1.2:
-        score += 15
+        score += 21
     elif pe and pe < median_pe * 2:
-        score += 5
+        score += 7
 
-    # Yield vs 5y avg (25 pts)
+    # Yield vs 5y avg (30 pts)
     yield_now = data.get("dividend_yield", 0) or 0
     yield_5y = data.get("five_year_avg_yield", 0) or 0
     if yield_5y > 0:
         ratio = yield_now / yield_5y
         if ratio > 1.3:
-            score += 25
+            score += 30
         elif ratio > 0.9:
-            score += 15
+            score += 18
         elif ratio > 0.6:
-            score += 5
+            score += 6
 
-    # 52w position (25 pts)
+    # 52w position (15 pts)
     low_52w = data.get("52w_low")
     high_52w = data.get("52w_high")
     price = data.get("price")
@@ -432,11 +432,11 @@ def valuation_grade(data: dict, sector_medians: dict) -> dict:
     else:
         pos_52w = 0.5
     if pos_52w < 0.3:
-        score += 25
-    elif pos_52w < 0.6:
         score += 15
+    elif pos_52w < 0.6:
+        score += 9
     elif pos_52w < 0.8:
-        score += 5
+        score += 3
 
     # Grade mapping
     if score >= 80:
