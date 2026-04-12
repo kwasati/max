@@ -1,4 +1,4 @@
-"""Max Mahon — Discovery: Claude analyzes screener results, suggests new picks."""
+"""Max Mahon v2 — Discovery: Claude analyzes quality-screened stocks for DCA candidates."""
 
 import json
 import subprocess
@@ -20,6 +20,50 @@ def get_latest_screener() -> Path:
     return files[0]
 
 
+def fmt_candidate(c):
+    m = c.get("metrics", {})
+    agg = c.get("aggregates", {})
+    bd = c.get("breakdown", {})
+    signals = c.get("signals", [])
+    warnings = c.get("warnings", [])
+    yearly = c.get("yearly_metrics", [])
+    div_hist = c.get("dividend_history", {})
+
+    sig_str = f" | Signals: [{', '.join(signals)}]" if signals else ""
+    warn_str = f"\n  ⚠ Warnings: {'; '.join(warnings)}" if warnings else ""
+
+    # Yearly table
+    yearly_str = ""
+    if yearly:
+        rows = []
+        for y in yearly:
+            rev = f"{y['revenue']/1e9:.1f}B" if y.get('revenue') else "N/A"
+            ni = f"{y['net_income']/1e9:.1f}B" if y.get('net_income') else "N/A"
+            eps = f"{y['diluted_eps']:.2f}" if y.get('diluted_eps') else "N/A"
+            roe = f"{y['roe']*100:.0f}%" if y.get('roe') else "N/A"
+            nm = f"{y['net_margin']*100:.0f}%" if y.get('net_margin') else "N/A"
+            rows.append(f"    {y['year']}: Rev={rev} NI={ni} EPS={eps} ROE={roe} NM={nm}")
+        yearly_str = "\n  Yearly:\n" + "\n".join(rows)
+
+    # Dividend history
+    div_str = ""
+    if div_hist:
+        sorted_years = sorted(div_hist.keys(), key=lambda x: int(x))
+        recent = sorted_years[-8:] if len(sorted_years) > 8 else sorted_years
+        div_entries = [f"{y}:฿{div_hist[y]:.2f}" for y in recent]
+        div_str = f"\n  DPS History: {', '.join(div_entries)}"
+
+    payout_str = f"{m['payout']*100:.0f}%" if m.get("payout") is not None else "N/A"
+    rev_cagr = f"{agg.get('revenue_cagr', 0)*100:.0f}%" if agg.get('revenue_cagr') is not None else "N/A"
+    eps_cagr = f"{agg.get('eps_cagr', 0)*100:.0f}%" if agg.get('eps_cagr') is not None else "N/A"
+
+    return f"""- **{c['name']}** ({c['symbol']}) | Sector: {c['sector']} | Quality Score: {c['score']}/100 (P{bd.get('profitability',0)}+G{bd.get('growth',0)}+D{bd.get('dividend',0)}+S{bd.get('strength',0)}){sig_str}
+  Yield: {m.get('dividend_yield', 0):.1f}% | P/E: {m.get('pe') or 'N/A'} | Fwd P/E: {m.get('forward_pe') or 'N/A'}
+  Payout: {payout_str} | Rev CAGR: {rev_cagr} | EPS CAGR: {eps_cagr}
+  Div Streak: {agg.get('dividend_streak', 0)}yr | Avg ROE: {f"{agg.get('avg_roe', 0)*100:.0f}%" if agg.get('avg_roe') else 'N/A'}
+  Reasons: {', '.join(c.get('reasons', []))}{yearly_str}{div_str}{warn_str}"""
+
+
 def build_prompt(screener_path: Path) -> str:
     data = json.loads(screener_path.read_text(encoding="utf-8"))
     watchlist = json.loads(WATCHLIST.read_text(encoding="utf-8"))
@@ -28,46 +72,46 @@ def build_prompt(screener_path: Path) -> str:
     new_finds = [c for c in data["candidates"] if not c["in_watchlist"]]
     existing = [c for c in data["candidates"] if c["in_watchlist"]]
 
-    def fmt_candidate(c):
-        m = c["metrics"]
-        payout_str = f"{m['payout']*100:.0f}%" if m.get("payout") is not None else "N/A"
-        signals = c.get("signals", [])
-        sig_str = f" | Signals: [{', '.join(signals)}]" if signals else ""
-        return f"""- **{c['name']}** ({c['symbol']}) | Sector: {c['sector']} | Score: {c['score']}/100{sig_str}
-  Yield: {m['dividend_yield']:.1f}% | P/E: {m['pe'] or 'N/A'} | Fwd P/E: {m['forward_pe'] or 'N/A'}
-  ROE: {m['roe']*100:.0f}% | D/E: {m['de']:.0f} | Payout: {payout_str}
-  Rev Growth: {m['rev_growth']*100:.0f}% | Earn Growth: {m['earn_growth']*100:.0f}%
-  Reasons: {', '.join(c['reasons'])}"""
-
-    new_section = "\n".join(fmt_candidate(c) for c in new_finds[:20]) or "ไม่พบตัวใหม่ที่ผ่านเกณฑ์"
+    new_section = "\n".join(fmt_candidate(c) for c in new_finds[:15]) or "ไม่พบตัวใหม่ที่ผ่านเกณฑ์"
     existing_section = "\n".join(fmt_candidate(c) for c in existing) or "ไม่มีตัวใน watchlist ที่ผ่าน"
 
-    return f"""คุณคือ Max Mahon — นักวิเคราะห์หุ้นไทย เชี่ยวชาญการคัดหุ้นปันผลและหุ้นเติบโต
-คุณเก่งเรื่องหาตัวที่คนอื่นมองข้าม — ไม่ใช่แค่คะแนนสูง แต่ต้องมี story ที่ดี
+    return f"""คุณคือ Max Mahon — นักวิเคราะห์หุ้นไทย เชี่ยวชาญการคัดหุ้นคุณภาพสูงสำหรับ DCA ระยะยาว
+สไตล์: Warren Buffett (คุณภาพธุรกิจ + moat) + เซียนฮง สถาพร (ปันผลดี + growth)
+เป้าหมาย: หาหุ้นที่เหมาะ DCA 10-20 ปี ปันผลดีและเติบโตสม่ำเสมอ
 
 วันที่: {data['date']}
-Scanned: {data['total_scanned']} ตัว | ผ่านเกณฑ์: {data['passed_filter']} ตัว | ตัวใหม่: {data['new_discoveries']} ตัว
+Scanned: {data['total_scanned']} ตัว | ผ่าน Hard Filters: {data['passed_filter']} ตัว | ถูก filter ออก: {data.get('filtered_out', 0)} ตัว | ตัวใหม่: {data['new_discoveries']} ตัว
 
-เกณฑ์คัดกรอง:
-- Dividend Yield ≥ {data['criteria']['min_dividend_yield']}%
-- P/E ≤ {data['criteria']['max_pe']}
-- ROE ≥ {data['criteria']['min_roe']}%
-- D/E ≤ {data['criteria']['max_debt_to_equity']} (ธนาคาร/การเงิน: ≤ 2000)
+## Hard Filters (ต้องผ่านทุกข้อ — สไตล์ Buffett)
+- ROE เฉลี่ย 4 ปี ≥ 15% (ไม่มีปีต่ำกว่า 12%)
+- Net Margin เฉลี่ย ≥ 10% (ไม่บังคับ financial sector)
+- D/E ≤ 1.5 (non-financial) / ≤ 10 (financial)
+- EPS บวกอย่างน้อย 3 จาก 4 ปี
+- FCF บวกอย่างน้อย 3 จาก 4 ปี
 - Market Cap ≥ 5B THB
 
-## Signal Tags (ระบบให้ tag อัตโนมัติ)
-- **YIELD_TRAP** — yield สูงเกิน 8% แต่กำไรถดถอยหรือจ่ายเกินตัว (payout > 100%) → ⚠ ระวังปันผลจะหาย
-- **CONTRARIAN** — ราคาอยู่ใกล้จุดต่ำสุด 52 สัปดาห์ (< 20% จาก low) + yield ดี + กำไรไม่ถดถอย → อาจเป็นของถูก
-- **TURNAROUND** — forward PE ต่ำกว่า trailing PE มาก (< 70%) + revenue ยังโต → นักวิเคราะห์คาดกำไรจะฟื้น
-- **DIVIDEND_KING** — yield > 5% + payout สมดุล (30-70%) → ปันผลมั่นคง
+## Quality Score (100 คะแนน)
+- **Profitability (30):** ROE consistency + gross margin + net margin trend
+- **Growth (25):** Revenue CAGR + EPS CAGR + revenue consistency
+- **Dividend (25):** Yield + payout sustainability + dividend streak
+- **Strength (20):** D/E + interest coverage + FCF consistency + OCF/NI ratio
 
-## หุ้นใน Watchlist ปัจจุบัน ({len(watched_syms)} ตัว)
+## Signal Tags
+- **COMPOUNDER** — ROE ≥20% ทุกปี + revenue CAGR ≥10% + payout <60% → Buffett dream stock
+- **CASH_COW** — FCF yield >8% + payout <70% + D/E <0.5 → เครื่องจักรเงินสด
+- **DIVIDEND_KING** — yield ≥5% + payout 30-70% + streak ≥5 ปี → ปันผลมั่นคง
+- **CONTRARIAN** — ราคาใกล้ 52w low + quality score สูง → ของดีราคาถูก
+- **TURNAROUND** — forward PE ต่ำกว่า trailing มาก + revenue CAGR บวก
+- **YIELD_TRAP** — yield >8% + ROE ลดลงทุกปี + payout >100% → ⚠ กับดัก
+- **DATA_WARNING** — ข้อมูลผิดปกติ ห้ามใช้ตัดสินใจ
+
+## Watchlist ปัจจุบัน ({len(watched_syms)} ตัว)
 {', '.join(watched_syms)}
 
-## หุ้นใน Watchlist ที่ผ่านเกณฑ์
+## ตัวใน Watchlist ที่ผ่านเกณฑ์
 {existing_section}
 
-## หุ้นใหม่ที่ผ่านเกณฑ์ (ยังไม่อยู่ใน Watchlist)
+## ตัวใหม่ที่ผ่านเกณฑ์ (ยังไม่อยู่ใน Watchlist)
 {new_section}
 
 ---
@@ -76,27 +120,32 @@ Scanned: {data['total_scanned']} ตัว | ผ่านเกณฑ์: {data[
 
 สร้าง Discovery Report เป็น Markdown:
 
-1. **สรุปผลคัดกรอง** — ภาพรวม หุ้นไทยที่ผ่านเกณฑ์มีลักษณะร่วมอะไร (2-3 บรรทัด)
+1. **สรุปผลคัดกรอง** — ผ่าน hard filters กี่ตัวจากทั้งหมด ภาพรวมเป็นยังไง (2-3 บรรทัด)
 
-2. **ตัวใหม่ที่น่าเพิ่ม Watchlist** — จัดลำดับตาม signal quality ไม่ใช่แค่ score สูง:
-   - ตัวที่มี CONTRARIAN หรือ TURNAROUND tag → น่าสนใจเป็นพิเศษ เพราะคนอื่นมองข้าม
-   - ตัวที่มี DIVIDEND_KING → มั่นคง เหมาะสะสมระยะยาว
-   - ตัวที่มี YIELD_TRAP → เตือนชัดเจนว่าเป็นกับดัก อย่าหลงทาง
-   - วิเคราะห์แต่ละตัว: ทำไมผ่านเกณฑ์ / จุดแข็ง / จุดเสี่ยง / เหมาะกับสไตล์ "ปันผล + เติบโต" แค่ไหน
+2. **ตัวใหม่ที่น่าเพิ่ม Watchlist** — จัดลำดับตาม quality score + signal:
+   - ดู TREND หลายปีจาก Yearly data ไม่ใช่แค่ปีเดียว
+   - COMPOUNDER → เหมาะ DCA สุด เพราะ compound returns
+   - CASH_COW → เครื่องจักรเงินสด เหมาะ income portfolio
+   - CONTRARIAN → ของดีราคาถูก แต่ต้องตรวจว่าถูกจริงไม่ใช่ถูกเพราะแย่
+   - DATA_WARNING → เตือนชัดเจน ห้ามแนะนำ
+   - วิเคราะห์แต่ละตัว: Business Quality, Financial Health, Growth Consistency, Dividend Sustainability
+   - ให้ rating DCA: ⭐⭐⭐ / ⭐⭐ / ⭐
    - แนะนำ: ✅ เพิ่ม watchlist / ⚠️ ติดตามก่อน / ❌ ข้ามได้
 
-3. **ตัวที่ควรออกจาก Watchlist** — มีตัวไหนใน watchlist ปัจจุบันที่ตัวเลขแย่ลง หรือมี YIELD_TRAP tag ไหม
+3. **ตัวที่ควรออกจาก Watchlist** — ตัวไหนใน watchlist ปัจจุบันที่ไม่ผ่าน hard filters หรือ quality ต่ำ
 
-4. **Sector Insight** — sector ไหนมี value เยอะสุดตอนนี้
+4. **Sector Insight** — sector ไหนมี quality stocks เยอะสุด
 
 5. **สรุป Action Items** — ตัวไหนควรเพิ่ม ตัวไหนควรออก เป็น list ชัดเจน
 
 กฎ:
 - เขียนภาษาไทย
-- ใช้ตัวเลขจริงจากข้อมูล ห้ามแต่ง
-- ถ้าข้อมูลไม่พอ บอกตรงๆ
+- ใช้ตัวเลขจริง ห้ามแต่ง
+- ข้อมูลไม่พอ = บอกตรงๆ
 - ห้ามแนะนำซื้อขาย ให้ข้อมูลเท่านั้น
-- เน้นหาตัวที่คนอื่นมองข้าม มากกว่าตัวยอดนิยม
+- ถ้ามี DATA_WARNING ต้องระบุชัดเจน
+- เน้น TREND หลายปี — earnings กระโดด 100%+ ต้องตรวจว่าเป็น base effect หรือ growth จริง
+- ตัวที่ผ่าน hard filters แล้ว = คุณภาพพื้นฐานดี แต่ยังต้องดู valuation + growth + dividend ประกอบ
 """
 
 
@@ -109,7 +158,7 @@ def main():
     today = datetime.now().strftime("%Y-%m-%d")
     report_path = REPORTS_DIR / f"discovery_{today}.md"
 
-    print("Max Mahon analyzing discoveries with Claude...")
+    print("Max Mahon v2 analyzing discoveries with Claude...")
     result = subprocess.run(
         ["claude.cmd", "--print", "--model", "claude-sonnet-4-6", "-p", "-"],
         input=prompt,
@@ -124,7 +173,7 @@ def main():
         sys.exit(1)
 
     header = f"""---
-agent: Max Mahon
+agent: Max Mahon v2
 date: {today}
 type: discovery
 ---
