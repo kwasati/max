@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Max Mahon — Stock Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="header">
+  <h1><em>Max Mahon</em> Stock Dashboard</h1>
+  <div class="header-meta" id="header-meta">
+    <span>Scoring: <strong>Buffett + เซียนฮง v2</strong></span>
+    <span>Updated: <strong>-</strong></span>
+    <span>Scanned: <strong>-</strong></span>
+  </div>
+</div>
+
+<!-- ===== SUMMARY ===== -->
+<div class="summary-row" id="summary-row">
+  <div class="summary-card"><div class="label">Passed Filters</div><div class="value">-</div><div class="sub">-</div></div>
+  <div class="summary-card"><div class="label">Avg Quality</div><div class="value">-</div><div class="sub">จาก 100 คะแนน</div></div>
+  <div class="summary-card"><div class="label">Discoveries</div><div class="value">-</div><div class="sub">ตัวใหม่ที่ค้นพบ</div></div>
+  <div class="summary-card"><div class="label">Warnings</div><div class="value">-</div><div class="sub">ข้อมูลต้องตรวจสอบ</div></div>
+</div>
+
+<!-- ===== TABS ===== -->
+<div class="tabs" id="tabs">
+  <button class="tab active" data-tab="passed">All Passed</button>
+  <button class="tab" data-tab="watchlist">Watchlist</button>
+  <button class="tab" data-tab="discoveries">Discoveries</button>
+  <button class="tab" data-tab="filtered">Filtered Out</button>
+  <button class="tab" data-tab="requests">Requests</button>
+</div>
+
+<!-- ===== STOCK LIST ===== -->
+<div class="stock-list" id="stock-list">
+  <div class="loading">Loading...</div>
+</div>
+
+<!-- ===== DETAIL PANEL ===== -->
+<div class="detail-panel" id="detail" style="display:none;"></div>
+
+<!-- ===== REQUEST PANEL ===== -->
+<div class="request-panel" id="request-panel" style="display:none;">
+  <h3>Request Stock Analysis</h3>
+  <div class="request-form">
+    <input type="text" id="request-input" placeholder="CHG.BK, NYT.BK, ...">
+    <button id="request-submit">Submit</button>
+  </div>
+  <div class="request-results" id="request-results"></div>
+</div>
+
+<script src="app.js" defer></script>
+</body>
+</html>
