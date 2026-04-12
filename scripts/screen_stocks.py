@@ -59,13 +59,16 @@ def hard_filter(data: dict) -> tuple:
     if len(roe_vals) >= 2:
         avg_roe = sum(roe_vals) / len(roe_vals)
         min_roe = min(roe_vals)
-        if avg_roe < HARD_FILTERS["min_roe_avg"] - 0.005:
-            reasons.append(f"avg ROE {avg_roe*100:.0f}% < 15%")
-        if min_roe < HARD_FILTERS["min_roe_floor"] - 0.005:
-            reasons.append(f"min ROE {min_roe*100:.0f}% < 12%")
+        roe_target = 0.10 if is_financial else HARD_FILTERS["min_roe_avg"]
+        roe_floor = 0.08 if is_financial else HARD_FILTERS["min_roe_floor"]
+        if avg_roe < roe_target - 0.005:
+            reasons.append(f"avg ROE {avg_roe*100:.0f}% < {roe_target*100:.0f}%")
+        if min_roe < roe_floor - 0.005:
+            reasons.append(f"min ROE {min_roe*100:.0f}% < {roe_floor*100:.0f}%")
     elif data.get("roe") is not None:
-        if data["roe"] < HARD_FILTERS["min_roe_avg"]:
-            reasons.append(f"ROE {data['roe']*100:.0f}% < 15%")
+        roe_target = 0.10 if is_financial else HARD_FILTERS["min_roe_avg"]
+        if data["roe"] < roe_target:
+            reasons.append(f"ROE {data['roe']*100:.0f}% < {roe_target*100:.0f}%")
 
     # Net Margin — skip for financials
     if not is_financial:
