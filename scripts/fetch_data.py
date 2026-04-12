@@ -46,7 +46,10 @@ def normalize_yield(val):
     return val
 
 
-def compute_cagr(values):
+def compute_cagr(values, reject_negatives=False):
+    # If reject_negatives, return None if any value is negative (e.g. EPS with loss years)
+    if reject_negatives and any(v is not None and v < 0 for v in values):
+        return None
     clean = [(i, v) for i, v in enumerate(values) if v is not None and v > 0]
     if len(clean) < 2:
         return None
@@ -64,7 +67,8 @@ def compute_cagr(values):
 def count_dividend_streak(dps_by_year):
     if not dps_by_year:
         return 0
-    years = sorted(dps_by_year.keys(), reverse=True)
+    current_year = datetime.now().year
+    years = [y for y in sorted(dps_by_year.keys(), reverse=True) if y < current_year]
     streak = 0
     for y in years:
         if dps_by_year[y] > 0:
@@ -77,7 +81,8 @@ def count_dividend_streak(dps_by_year):
 def count_dividend_growth_streak(dps_by_year):
     if not dps_by_year:
         return 0
-    years = sorted(dps_by_year.keys(), reverse=True)
+    current_year = datetime.now().year
+    years = [y for y in sorted(dps_by_year.keys(), reverse=True) if y < current_year]
     streak = 0
     for i in range(len(years) - 1):
         if dps_by_year[years[i]] >= dps_by_year[years[i + 1]] and dps_by_year[years[i + 1]] > 0:
@@ -200,6 +205,8 @@ def fetch_multi_year(symbol: str) -> dict:
             de_ratio = safe_div(total_debt, equity)
             current_ratio = safe_div(current_assets, current_liab)
             interest_coverage = safe_div(ebitda, abs(interest_expense)) if interest_expense and interest_expense != 0 else None
+            if interest_coverage is not None and interest_coverage > 200:
+                interest_coverage = None
             ocf_ni_ratio = safe_div(ocf, net_income) if net_income and net_income > 0 else None
             capital_intensity = safe_div(abs(capex) if capex else None, ocf) if ocf and ocf > 0 else None
             sga_ratio = safe_div(sga, revenue)
@@ -253,7 +260,7 @@ def fetch_multi_year(symbol: str) -> dict:
     fcf_list = [m["fcf"] for m in yearly_metrics if m["fcf"] is not None]
 
     revenue_cagr = compute_cagr(revenues)
-    eps_cagr = compute_cagr(eps_list)
+    eps_cagr = compute_cagr(eps_list, reject_negatives=True)
     avg_roe = sum(roe_list) / len(roe_list) if roe_list else None
     avg_net_margin = sum(nm_list) / len(nm_list) if nm_list else None
     min_roe = min(roe_list) if roe_list else None
