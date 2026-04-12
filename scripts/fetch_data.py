@@ -130,6 +130,9 @@ def fetch_multi_year(symbol: str) -> dict:
     years_available = []
 
     if inc is not None and len(inc.columns) > 0:
+        # Banks like SCB may only have EPS rows — detect minimal data
+        has_full_financials = "Total Revenue" in inc.index or "Net Income" in inc.index
+
         for col in inc.columns:
             year = col.year if hasattr(col, 'year') else col.date().year
             year_str = str(year)
@@ -142,11 +145,32 @@ def fetch_multi_year(symbol: str) -> dict:
             interest_expense = safe_get(inc, "Interest Expense", col)
             diluted_eps = safe_get(inc, "Diluted EPS", col)
 
-            equity = safe_get(bs, "Stockholders Equity", col) if bs is not None else None
-            total_debt = safe_get(bs, "Total Debt", col) if bs is not None else None
-            total_assets = safe_get(bs, "Total Assets", col) if bs is not None else None
-            current_assets = safe_get(bs, "Current Assets", col) if bs is not None else None
-            current_liab = safe_get(bs, "Current Liabilities", col) if bs is not None else None
+            # Banks: try alternate row names
+            if net_income is None:
+                net_income = safe_get(inc, "Net Income Common Stockholders", col)
+            if revenue is None:
+                revenue = safe_get(inc, "Operating Revenue", col)
+            if revenue is None and is_financial:
+                revenue = safe_get(inc, "Net Interest Income", col)
+
+            # Match balance sheet by year (banks may have different column timestamps)
+            equity = None
+            total_debt = None
+            total_assets = None
+            current_assets = None
+            current_liab = None
+            if bs is not None and len(bs.columns) > 0:
+                for bs_col in bs.columns:
+                    bs_year = bs_col.year if hasattr(bs_col, 'year') else bs_col.date().year
+                    if bs_year == year:
+                        equity = safe_get(bs, "Stockholders Equity", bs_col)
+                        if equity is None:
+                            equity = safe_get(bs, "Common Stock Equity", bs_col)
+                        total_debt = safe_get(bs, "Total Debt", bs_col)
+                        total_assets = safe_get(bs, "Total Assets", bs_col)
+                        current_assets = safe_get(bs, "Current Assets", bs_col)
+                        current_liab = safe_get(bs, "Current Liabilities", bs_col)
+                        break
 
             # Cashflow — may have fewer columns, match by year
             ocf = None
@@ -163,7 +187,7 @@ def fetch_multi_year(symbol: str) -> dict:
                         div_paid = safe_get(cf, "Cash Dividends Paid", cf_col)
                         break
 
-            if revenue is None and net_income is None:
+            if revenue is None and net_income is None and diluted_eps is None:
                 continue
 
             roe = safe_div(net_income, equity)
