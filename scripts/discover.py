@@ -49,7 +49,7 @@ def fmt_candidate(c):
     # Dividend history
     div_str = ""
     if div_hist:
-        sorted_years = sorted(div_hist.keys(), key=lambda x: int(x))
+        sorted_years = sorted(div_hist.keys(), key=lambda x: int(x) if str(x).isdigit() else 0)
         recent = sorted_years[-8:] if len(sorted_years) > 8 else sorted_years
         div_entries = [f"{y}:฿{div_hist[y]:.2f}" for y in recent]
         div_str = f"\n  DPS History: {', '.join(div_entries)}"
