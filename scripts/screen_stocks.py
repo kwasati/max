@@ -127,26 +127,36 @@ def profitability_score(data: dict) -> tuple:
         score += 8
         reasons.append(f"ROE {data['roe']*100:.0f}% (TTM)")
 
-    # Gross Margin (10 pts) — skip for financials
+    # Gross Margin (7 pts) — skip for financials
     if not is_financial:
         gm_vals = [m["gross_margin"] for m in yearly if m.get("gross_margin") is not None]
         if gm_vals:
             avg_gm = sum(gm_vals) / len(gm_vals)
             if avg_gm >= 0.40:
-                score += 10
+                score += 7
                 reasons.append(f"gross margin สูง {avg_gm*100:.0f}%")
             elif avg_gm >= 0.30:
-                score += 7
+                score += 5
             elif avg_gm >= 0.20:
-                score += 4
+                score += 3
         elif data.get("gross_margins") is not None:
             gm = data["gross_margins"]
             if gm >= 0.40:
-                score += 10
-            elif gm >= 0.30:
                 score += 7
+            elif gm >= 0.30:
+                score += 5
             elif gm >= 0.20:
-                score += 4
+                score += 3
+
+        # SG&A efficiency (3 pts)
+        sga_vals = [m["sga_ratio"] for m in yearly if m.get("sga_ratio") is not None]
+        if sga_vals:
+            avg_sga = sum(sga_vals) / len(sga_vals)
+            if avg_sga < 0.30:
+                score += 3
+                reasons.append(f"SG&A ต่ำ {avg_sga*100:.0f}%")
+            elif avg_sga < 0.50:
+                score += 1
     else:
         nm_vals = [m["net_margin"] for m in yearly if m.get("net_margin") is not None]
         if nm_vals:
@@ -307,13 +317,13 @@ def strength_score(data: dict) -> tuple:
         elif fcf_pos >= fcf_total - 1:
             score += 3
 
-    # OCF/NI ratio (5 pts) — clean accounting
+    # OCF/NI ratio (5 pts) — clean accounting (wide range for depreciation-heavy biz)
     ocf_ni = agg.get("latest_ocf_ni_ratio")
     if ocf_ni is not None:
-        if 0.8 <= ocf_ni <= 1.5:
+        if 0.8 <= ocf_ni <= 3.0:
             score += 5
             reasons.append("กำไรมีเงินสดรองรับ")
-        elif 0.5 <= ocf_ni <= 2.0:
+        elif 0.5 <= ocf_ni:
             score += 3
         elif ocf_ni < 0.5:
             reasons.append("กำไรไม่สะท้อนเงินสดจริง")
