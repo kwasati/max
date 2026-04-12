@@ -453,6 +453,75 @@ async def get_report(report_type: str, date: Optional[str] = None):
 
 
 # ---------------------------------------------------------------------------
+# Config System
+# ---------------------------------------------------------------------------
+
+CONFIG_PATH = PROJECT_DIR / "config.json"
+DEFAULT_CONFIG = {
+    "schedule": {"enabled": True, "day_of_week": "sun", "hour": 9, "minute": 0},
+    "pipeline": {"odd_weeks": "weekly", "even_weeks": "discovery"},
+    "filters": {
+        "min_roe_avg": 0.15,
+        "min_roe_floor": 0.12,
+        "min_net_margin": 0.10,
+        "max_de_non_fin": 1.5,
+        "max_de_financial": 10,
+        "min_eps_positive_years": 3,
+        "min_fcf_positive_years": 3,
+        "min_market_cap": 5_000_000_000,
+    },
+}
+
+
+def load_config() -> dict:
+    """Load config from file, merged with defaults for missing keys."""
+    if CONFIG_PATH.exists():
+        try:
+            saved = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+            config = {}
+            for k in DEFAULT_CONFIG:
+                if isinstance(DEFAULT_CONFIG[k], dict):
+                    config[k] = {**DEFAULT_CONFIG[k], **(saved.get(k) or {})}
+                else:
+                    config[k] = saved.get(k, DEFAULT_CONFIG[k])
+            return config
+        except Exception as e:
+            logging.error(f"[config] failed to load: {e}")
+    return {k: (dict(v) if isinstance(v, dict) else v) for k, v in DEFAULT_CONFIG.items()}
+
+
+def save_config(config: dict):
+    """Write config to file."""
+    CONFIG_PATH.write_text(
+        json.dumps(config, ensure_ascii=False, indent=2, default=str),
+        encoding="utf-8",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Settings API
+# ---------------------------------------------------------------------------
+
+@app.get("/api/settings")
+async def get_settings():
+    return load_config()
+
+
+@app.post("/api/settings")
+async def post_settings(request: Request):
+    body = await request.json()
+    config = load_config()
+    for k in body:
+        if k in config and isinstance(config[k], dict) and isinstance(body[k], dict):
+            config[k].update(body[k])
+        else:
+            config[k] = body[k]
+    save_config(config)
+    apply_schedule(config)
+    return {"status": "ok", "config": config}
+
+
+# ---------------------------------------------------------------------------
 # Scheduler
 # ---------------------------------------------------------------------------
 
@@ -463,12 +532,17 @@ def get_week_of_month() -> int:
 
 
 def scheduled_run():
-    """Sunday 09:00 — weekly (week 1,3) or discovery (week 2,4)."""
+    """Run pipeline based on config — week logic from config['pipeline']."""
     if pipeline_state["running"]:
         print("[scheduler] pipeline already running, skip")
         return
+    config = load_config()
+    pipeline_cfg = config.get("pipeline", DEFAULT_CONFIG["pipeline"])
     week = get_week_of_month()
-    action = "weekly" if week in (1, 3) else "discovery"
+    action = pipeline_cfg["odd_weeks"] if week in (1, 3) else pipeline_cfg["even_weeks"]
+    if action not in PIPELINE_MAP:
+        logging.error(f"[scheduler] unknown action '{action}' in config, falling back to weekly")
+        action = "weekly"
     print(f"[scheduler] week {week} — running {action}")
     scripts = PIPELINE_MAP[action]
     pipeline_state["running"] = True
@@ -503,12 +577,33 @@ def scheduled_run():
 
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(scheduled_run, "cron", day_of_week="sun", hour=9, minute=0)
+
+
+def apply_schedule(config: dict):
+    """Add or remove scheduler job based on config."""
+    sched = config.get("schedule", DEFAULT_CONFIG["schedule"])
+    try:
+        scheduler.remove_job("max_pipeline")
+    except Exception:
+        pass
+    if sched.get("enabled", True):
+        scheduler.add_job(
+            scheduled_run,
+            "cron",
+            id="max_pipeline",
+            day_of_week=sched.get("day_of_week", "sun"),
+            hour=sched.get("hour", 9),
+            minute=sched.get("minute", 0),
+        )
+        logging.info(f"[scheduler] scheduled: {sched['day_of_week']} {sched['hour']:02d}:{sched['minute']:02d}")
+    else:
+        logging.info("[scheduler] disabled by config")
 
 
 @app.on_event("startup")
 async def on_startup():
     scheduler.start()
+    apply_schedule(load_config())
     start_refresh_loop(
         port=50089,
         pid=os.getpid(),
