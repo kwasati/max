@@ -36,6 +36,7 @@
   <button class="tab" data-tab="filtered">ไม่ผ่าน</button>
   <button class="tab" data-tab="requests">คำขอ</button>
   <button class="tab" data-tab="dca">จำลอง DCA</button>
+  <button class="tab" data-tab="settings">ตั้งค่า</button>
 </div>
 
 <!-- ===== STOCK LIST ===== -->
@@ -134,6 +135,50 @@
     </div>
   </div>
   <div class="dca-results" id="dca-results"></div>
+</div>
+
+<!-- ===== SETTINGS PANEL ===== -->
+<div class="settings-panel" id="settings-panel" style="display:none;">
+  <h3>ตั้งค่าการวิเคราะห์อัตโนมัติ</h3>
+
+  <div class="settings-section">
+    <div class="settings-section-title">รอบการวิเคราะห์</div>
+    <div class="settings-row">
+      <div class="settings-field">
+        <label for="sched-enabled">เปิด/ปิด Schedule</label>
+        <label class="dca-toggle">
+          <input type="checkbox" id="sched-enabled" checked>
+          <span class="dca-toggle-slider"></span>
+          <span class="dca-toggle-label">เปิด</span>
+        </label>
+      </div>
+      <div class="settings-field">
+        <label for="sched-day">วัน</label>
+        <select id="sched-day">
+          <option value="mon">จันทร์</option>
+          <option value="tue">อังคาร</option>
+          <option value="wed">พุธ</option>
+          <option value="thu">พฤหัสบดี</option>
+          <option value="fri">ศุกร์</option>
+          <option value="sat">เสาร์</option>
+          <option value="sun" selected>อาทิตย์</option>
+        </select>
+      </div>
+      <div class="settings-field">
+        <label for="sched-hour">เวลา</label>
+        <div class="settings-time">
+          <input type="number" id="sched-hour" value="9" min="0" max="23" step="1">
+          <span>:</span>
+          <input type="number" id="sched-minute" value="0" min="0" max="59" step="5">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-actions">
+    <button class="settings-save" id="settings-save">บันทึก</button>
+    <span class="settings-status" id="settings-status"></span>
+  </div>
 </div>
 
 <script src="app.js?v=2" defer></script>

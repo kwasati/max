@@ -128,20 +128,30 @@ function bindTabs() {
 
       const reqPanel = document.getElementById('request-panel');
       const dcaPanel = document.getElementById('dca-panel');
+      const settingsPanel = document.getElementById('settings-panel');
       const detail = document.getElementById('detail');
       if (state.activeTab === 'requests') {
         reqPanel.style.display = '';
         dcaPanel.style.display = 'none';
+        settingsPanel.style.display = 'none';
         detail.style.display = 'none';
         loadRequests();
       } else if (state.activeTab === 'dca') {
         reqPanel.style.display = 'none';
         dcaPanel.style.display = '';
+        settingsPanel.style.display = 'none';
         detail.style.display = 'none';
         populateDCASymbols();
+      } else if (state.activeTab === 'settings') {
+        reqPanel.style.display = 'none';
+        dcaPanel.style.display = 'none';
+        settingsPanel.style.display = '';
+        detail.style.display = 'none';
+        loadSettings();
       } else {
         reqPanel.style.display = 'none';
         dcaPanel.style.display = 'none';
+        settingsPanel.style.display = 'none';
       }
     });
   });
@@ -1147,7 +1157,94 @@ function renderDCAResults(data) {
   el.innerHTML = summaryHTML + btTableHTML + pjTableHTML;
 }
 
+// ===== SETTINGS =====
+const DAY_LABELS = { mon: 'จันทร์', tue: 'อังคาร', wed: 'พุธ', thu: 'พฤหัสบดี', fri: 'ศุกร์', sat: 'เสาร์', sun: 'อาทิตย์' };
+
+async function loadSettings() {
+  try {
+    const config = await fetch(API + '/api/settings').then(r => r.json());
+    const sched = config.schedule || {};
+    const el = (id) => document.getElementById(id);
+    if (el('sched-enabled')) el('sched-enabled').checked = sched.enabled !== false;
+    if (el('sched-day')) el('sched-day').value = sched.day_of_week || 'sun';
+    if (el('sched-hour')) el('sched-hour').value = sched.hour ?? 9;
+    if (el('sched-minute')) el('sched-minute').value = sched.minute ?? 0;
+
+    // Update pipeline bar schedule text
+    const schedText = document.querySelector('.pipeline-schedule');
+    if (schedText) {
+      if (sched.enabled === false) {
+        schedText.textContent = 'การรันอัตโนมัติ: ปิดอยู่';
+      } else {
+        const dayTh = DAY_LABELS[sched.day_of_week] || sched.day_of_week;
+        const h = String(sched.hour ?? 9).padStart(2, '0');
+        const m = String(sched.minute ?? 0).padStart(2, '0');
+        schedText.textContent = `รันอัตโนมัติทุก${dayTh} ${h}:${m}`;
+      }
+    }
+    return config;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function saveSettings() {
+  const el = (id) => document.getElementById(id);
+  const statusEl = el('settings-status');
+
+  const config = {
+    schedule: {
+      enabled: el('sched-enabled')?.checked ?? true,
+      day_of_week: el('sched-day')?.value || 'sun',
+      hour: parseInt(el('sched-hour')?.value) || 9,
+      minute: parseInt(el('sched-minute')?.value) || 0,
+    },
+  };
+
+  // Include pipeline + filter fields if they exist (Phase 2)
+  if (el('pipe-odd-weeks')) {
+    config.pipeline = {
+      odd_weeks: el('pipe-odd-weeks').value,
+      even_weeks: el('pipe-even-weeks').value,
+    };
+  }
+  if (el('filter-roe')) {
+    config.filters = {
+      min_roe_avg: parseFloat(el('filter-roe').value) / 100,
+      min_net_margin: parseFloat(el('filter-nm').value) / 100,
+      max_de_non_fin: parseFloat(el('filter-de').value),
+      min_market_cap: parseFloat(el('filter-mcap').value) * 1e6,
+    };
+  }
+
+  try {
+    const res = await fetch(API + '/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config),
+    });
+    if (res.ok) {
+      statusEl.textContent = 'บันทึกแล้ว';
+      statusEl.className = 'settings-status success';
+      loadSettings(); // refresh schedule display
+      setTimeout(() => { statusEl.textContent = ''; statusEl.className = 'settings-status'; }, 3000);
+    } else {
+      throw new Error('Server error');
+    }
+  } catch (e) {
+    statusEl.textContent = 'เกิดข้อผิดพลาด';
+    statusEl.className = 'settings-status error';
+  }
+}
+
+function bindSettings() {
+  const saveBtn = document.getElementById('settings-save');
+  if (saveBtn) saveBtn.addEventListener('click', saveSettings);
+}
+
 // ===== START =====
 init();
 bindPipeline();
 bindDCA();
+bindSettings();
+loadSettings(); // update schedule text on load

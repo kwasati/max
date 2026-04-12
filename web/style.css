@@ -783,6 +783,100 @@ details.section-explain[open] > summary::before { content: 'ซ่อนคำ�
   .dca-section { margin-top: 16px; }
 }
 
+/* ===== SETTINGS PANEL ===== */
+.settings-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow);
+}
+.settings-panel h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+.settings-section {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.settings-section:last-of-type { border-bottom: none; }
+.settings-section-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 12px;
+}
+.settings-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+}
+.settings-field label {
+  font-size: 0.78rem;
+  color: var(--text2);
+  font-weight: 500;
+}
+.settings-field select,
+.settings-field input[type="number"] {
+  padding: 6px 10px;
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 0.84rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.settings-field select:focus,
+.settings-field input:focus { border-color: var(--accent); }
+.settings-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.settings-time input { width: 52px; text-align: center; }
+.settings-time span { font-weight: 600; color: var(--text2); }
+.settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+.settings-save {
+  padding: 8px 20px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.settings-save:hover { opacity: 0.85; }
+.settings-status { font-size: 0.78rem; }
+.settings-status.success { color: var(--green); }
+.settings-status.error { color: var(--red); }
+.settings-hint { font-size: 0.72rem; color: var(--text3); margin-top: 2px; }
+
+@media (max-width: 480px) {
+  .settings-panel { padding: 12px 14px; }
+  .settings-row { flex-direction: column; gap: 12px; }
+  .settings-field { min-width: unset; width: 100%; }
+}
+
 /* ===== DCA SIMULATOR ===== */
 .dca-panel {
   background: var(--surface);
