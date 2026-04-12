@@ -110,7 +110,7 @@ function renderSummary() {
     const d = new Date(runDate);
     const dateStr = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     meta.innerHTML = `
-      <span>Scoring: <strong>Buffett + เซียนฮง v2</strong></span>
+      <span>Scoring: <strong>Buffett Quality + Value</strong></span>
       <span>Updated: <strong>${dateStr}</strong></span>
       <span>Scanned: <strong>${totalScanned} stocks</strong></span>
     `;
