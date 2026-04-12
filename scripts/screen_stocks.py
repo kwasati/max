@@ -531,6 +531,15 @@ def main():
             result = quality_score(data)
             in_watchlist = sym in watched
 
+            # five_year_avg_yield fallback — compute from dividend_history if null
+            five_yr_yield = data.get("five_year_avg_yield")
+            if five_yr_yield is None and data.get("dividend_history") and data.get("price"):
+                dh = data["dividend_history"]
+                recent_5 = sorted(dh.keys())[-5:]
+                if recent_5:
+                    avg_dps = sum(dh[y] for y in recent_5) / len(recent_5)
+                    five_yr_yield = avg_dps / data["price"] * 100 if data["price"] > 0 else None
+
             entry = {
                 "symbol": sym,
                 "name": data.get("name", sym),
@@ -545,7 +554,7 @@ def main():
                     "pe": data.get("pe_ratio"),
                     "forward_pe": data.get("forward_pe"),
                     "roe": data.get("roe"),
-                    "de": data.get("debt_to_equity"),
+                    "de": (data.get("debt_to_equity") or 0) / 100,
                     "payout": data.get("payout_ratio"),
                     "rev_growth": data.get("revenue_growth"),
                     "earn_growth": data.get("earnings_growth"),
@@ -555,7 +564,7 @@ def main():
                     "52w_low": data.get("52w_low"),
                     "52w_high": data.get("52w_high"),
                     "pb_ratio": data.get("pb_ratio"),
-                    "five_year_avg_yield": data.get("five_year_avg_yield"),
+                    "five_year_avg_yield": five_yr_yield,
                     "gross_margins": data.get("gross_margins"),
                     "operating_margins": data.get("operating_margins"),
                 },
