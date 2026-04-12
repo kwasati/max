@@ -190,6 +190,9 @@ def fetch_multi_year(symbol: str) -> dict:
             if revenue is None and net_income is None and diluted_eps is None:
                 continue
 
+            # SG&A
+            sga = safe_get(inc, "Selling General And Administration", col)
+
             roe = safe_div(net_income, equity)
             gross_margin = safe_div(gross_profit, revenue) if not is_financial else None
             net_margin = safe_div(net_income, revenue)
@@ -199,6 +202,7 @@ def fetch_multi_year(symbol: str) -> dict:
             interest_coverage = safe_div(ebitda, abs(interest_expense)) if interest_expense and interest_expense != 0 else None
             ocf_ni_ratio = safe_div(ocf, net_income) if net_income and net_income > 0 else None
             capital_intensity = safe_div(abs(capex) if capex else None, ocf) if ocf and ocf > 0 else None
+            sga_ratio = safe_div(sga, revenue)
 
             yearly_metrics.append({
                 "year": year_str,
@@ -209,6 +213,7 @@ def fetch_multi_year(symbol: str) -> dict:
                 "ebitda": ebitda,
                 "interest_expense": interest_expense,
                 "diluted_eps": diluted_eps,
+                "sga": sga,
                 "equity": equity,
                 "total_debt": total_debt,
                 "total_assets": total_assets,
@@ -220,6 +225,7 @@ def fetch_multi_year(symbol: str) -> dict:
                 "gross_margin": gross_margin,
                 "net_margin": net_margin,
                 "operating_margin": operating_margin,
+                "sga_ratio": sga_ratio,
                 "de_ratio": de_ratio,
                 "current_ratio": current_ratio,
                 "interest_coverage": interest_coverage,
@@ -242,6 +248,8 @@ def fetch_multi_year(symbol: str) -> dict:
     eps_list = [m["diluted_eps"] for m in yearly_metrics]
     roe_list = [m["roe"] for m in yearly_metrics if m["roe"] is not None]
     nm_list = [m["net_margin"] for m in yearly_metrics if m["net_margin"] is not None]
+    gm_list = [m["gross_margin"] for m in yearly_metrics if m["gross_margin"] is not None]
+    om_list = [m["operating_margin"] for m in yearly_metrics if m["operating_margin"] is not None]
     fcf_list = [m["fcf"] for m in yearly_metrics if m["fcf"] is not None]
 
     revenue_cagr = compute_cagr(revenues)
@@ -264,12 +272,17 @@ def fetch_multi_year(symbol: str) -> dict:
 
     latest = yearly_metrics[-1] if yearly_metrics else {}
 
+    avg_gross_margin = sum(gm_list) / len(gm_list) if gm_list else None
+    avg_operating_margin = sum(om_list) / len(om_list) if om_list else None
+
     aggregates = {
         "revenue_cagr": revenue_cagr,
         "eps_cagr": eps_cagr,
         "avg_roe": avg_roe,
         "min_roe": min_roe,
         "avg_net_margin": avg_net_margin,
+        "avg_gross_margin": avg_gross_margin,
+        "avg_operating_margin": avg_operating_margin,
         "revenue_growth_years": revenue_positive_years,
         "revenue_growth_total_comparisons": total_revenue_comparisons,
         "eps_positive_years": eps_positive_years,
