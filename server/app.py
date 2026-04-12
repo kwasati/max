@@ -10,6 +10,7 @@ import logging
 import os
 import subprocess
 import sys
+import threading
 import time
 from datetime import datetime
 from pathlib import Path
@@ -66,6 +67,7 @@ pipeline_state = {
     "last_run": None,
     "last_result": None,
 }
+_pipeline_lock = threading.Lock()
 
 # ---------------------------------------------------------------------------
 # Auth middleware
@@ -351,14 +353,18 @@ async def run_pipeline(action: str):
     if action not in PIPELINE_MAP:
         raise HTTPException(400, f"Unknown action: {action}. Valid: {list(PIPELINE_MAP.keys())}")
 
-    if pipeline_state["running"]:
-        raise HTTPException(409, f"Pipeline already running: {pipeline_state['current_task']}")
+    with _pipeline_lock:
+        if pipeline_state["running"]:
+            raise HTTPException(409, f"Pipeline already running: {pipeline_state['current_task']}")
 
     scripts = PIPELINE_MAP[action]
 
     def _execute_sync():
-        pipeline_state["running"] = True
-        pipeline_state["last_result"] = None
+        with _pipeline_lock:
+            if pipeline_state["running"]:
+                return
+            pipeline_state["running"] = True
+            pipeline_state["last_result"] = None
         try:
             env = {**os.environ, "PYTHONUTF8": "1"}
             for script in scripts:
@@ -388,7 +394,6 @@ async def run_pipeline(action: str):
             pipeline_state["current_task"] = None
             pipeline_state["last_run"] = datetime.now().isoformat()
 
-    import threading
     threading.Thread(target=_execute_sync, daemon=True).start()
     return {"status": "started", "action": action, "scripts": scripts}
 
@@ -533,9 +538,12 @@ def get_week_of_month() -> int:
 
 def scheduled_run():
     """Run pipeline based on config — week logic from config['pipeline']."""
-    if pipeline_state["running"]:
-        print("[scheduler] pipeline already running, skip")
-        return
+    with _pipeline_lock:
+        if pipeline_state["running"]:
+            print("[scheduler] pipeline already running, skip")
+            return
+        pipeline_state["running"] = True
+        pipeline_state["last_result"] = None
     config = load_config()
     pipeline_cfg = config.get("pipeline", DEFAULT_CONFIG["pipeline"])
     week = get_week_of_month()
@@ -545,8 +553,6 @@ def scheduled_run():
         action = "weekly"
     print(f"[scheduler] week {week} — running {action}")
     scripts = PIPELINE_MAP[action]
-    pipeline_state["running"] = True
-    pipeline_state["last_result"] = None
     try:
         env = {**os.environ, "PYTHONUTF8": "1"}
         for script in scripts:
