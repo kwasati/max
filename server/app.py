@@ -840,6 +840,17 @@ async def dca_simulate(
     if current_div_yield > 1:
         current_div_yield = current_div_yield / 100  # normalize
 
+    # Derive base DPS from historical dividends (fallback 3 years)
+    base_dps = 0
+    if dividends is not None and not dividends.empty:
+        for yr_check in [end_year, end_year - 1, end_year - 2]:
+            yr_divs = dividends[dividends.index.year == yr_check].sum()
+            if yr_divs > 0:
+                base_dps = yr_divs
+                break
+    if base_dps == 0:
+        base_dps = current_price * current_div_yield
+
     # Auto dividend growth rate
     dps_cagr = stock_agg.get("dps_cagr")
     if dps_cagr and dps_cagr > 0:
@@ -876,8 +887,8 @@ async def dca_simulate(
         # Reinvest dividends
         div_income = 0
         if proj_shares > 0:
-            # Dividend per share grows
-            dps_this_year = current_price * current_div_yield * ((1 + div_growth_rate) ** yr)
+            # Dividend per share grows from historical base DPS
+            dps_this_year = base_dps * ((1 + div_growth_rate) ** yr)
             div_income = dps_this_year * proj_shares
             proj_dividends += div_income
             if reinvest and avg_price_this_year > 0:
