@@ -3,7 +3,8 @@
 ## Architecture
 - **Agent:** Max Mahon — Thai stock analyst, Buffett + เซียนฮง style
 - **Stack:** Python + yfinance + Claude CLI
-- **Schedule:** Windows Task Scheduler ทุกอาทิตย์ 09:00
+- **Server:** FastAPI on port 50089, Cloudflare Tunnel → max.intensivetrader.com
+- **Schedule:** APScheduler ใน server (อาทิตย์ 09:00, สลับ weekly/discovery)
 - **Philosophy:** Warren Buffett (business quality + moat + long-term) + เซียนฮง สถาพร (dividend + growth)
 - **Goal:** คัดหุ้นสำหรับ DCA 10-20 ปี ปันผลดีและเติบโตสม่ำเสมอ
 
@@ -15,6 +16,14 @@
 - **Weekly (ทุกสัปดาห์):** fetch multi-year data → Claude วิเคราะห์ 6 ด้าน → weekly report
 - **Discovery (สัปดาห์ที่ 2,4):** screen SET 99 ตัว → hard filters → quality score → Claude คัดตัวใหม่
 
+### Server
+- **Port:** 50089
+- **URL:** https://max.intensivetrader.com
+- **Startup:** `max-server.bat` หรือ `py -m uvicorn server.app:app --port 50089`
+- **Auth:** `MAX_TOKEN` ใน `.env` (Bearer token สำหรับ API)
+- **Dashboard:** web/ → serve static ที่ `/`
+- **API:** `/api/watchlist`, `/api/screener`, `/api/stock/{symbol}`, `/api/run/{action}`, `/api/request`, `/api/events` (SSE)
+
 ## Key Files
 - `watchlist.json` — รายชื่อหุ้นที่ติดตาม
 - `data/set_universe.json` — SET universe สำหรับ screening (~99 ตัว)
@@ -23,6 +32,11 @@
 - `scripts/screen_stocks.py` — hard filters + quality score 100 + signal tags
 - `scripts/discover.py` — Claude วิเคราะห์ผล screener แนะนำตัวใหม่
 - `scripts/run_weekly.py` — pipeline runner (--discover flag)
+- `server/app.py` — FastAPI server (data API, pipeline control, scheduler, SSE, request analyze)
+- `web/index.html` — dashboard HTML
+- `web/style.css` — SET.or.th inspired theme
+- `web/app.js` — dashboard frontend (stock list, detail panel, pipeline controls)
+- `max-server.bat` — startup script
 - `reports/` — weekly + discovery reports
 - `data/` — snapshots + screener results (gitignored)
 
