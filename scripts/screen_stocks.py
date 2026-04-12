@@ -366,6 +366,93 @@ def assign_signals(data: dict, total_score: int) -> list:
     return signals
 
 
+def valuation_grade(data: dict, sector_medians: dict) -> dict:
+    """Evaluate price attractiveness — Grade A-F."""
+    pe = data.get("pe_ratio")
+    agg = data.get("aggregates", {})
+    eps_cagr = agg.get("eps_cagr", 0)
+    sector = data.get("sector", "unknown")
+    median_pe = sector_medians.get(sector, 20)
+
+    score = 0  # 0-100, higher = cheaper
+
+    # PEG ratio (25 pts)
+    peg = pe / (eps_cagr * 100) if eps_cagr > 0 and pe else None
+    if peg and peg < 1:
+        score += 25
+    elif peg and peg < 2:
+        score += 15
+    elif peg and peg < 3:
+        score += 5
+
+    # P/E vs sector median (25 pts)
+    if pe and pe < median_pe * 0.8:
+        score += 25
+    elif pe and pe < median_pe * 1.2:
+        score += 15
+    elif pe and pe < median_pe * 2:
+        score += 5
+
+    # Yield vs 5y avg (25 pts)
+    yield_now = data.get("dividend_yield", 0) or 0
+    yield_5y = data.get("five_year_avg_yield", 0) or 0
+    if yield_5y > 0:
+        ratio = yield_now / yield_5y
+        if ratio > 1.3:
+            score += 25
+        elif ratio > 0.9:
+            score += 15
+        elif ratio > 0.6:
+            score += 5
+
+    # 52w position (25 pts)
+    low_52w = data.get("52w_low")
+    high_52w = data.get("52w_high")
+    price = data.get("price")
+    if low_52w and high_52w and price and high_52w > low_52w:
+        pos_52w = (price - low_52w) / (high_52w - low_52w)
+    else:
+        pos_52w = 0.5
+    if pos_52w < 0.3:
+        score += 25
+    elif pos_52w < 0.6:
+        score += 15
+    elif pos_52w < 0.8:
+        score += 5
+
+    # Grade mapping
+    if score >= 80:
+        grade = "A"
+    elif score >= 60:
+        grade = "B"
+    elif score >= 40:
+        grade = "C"
+    elif score >= 20:
+        grade = "D"
+    else:
+        grade = "F"
+
+    labels = {
+        "A": "ราคาน่าสนใจมาก",
+        "B": "ราคาเหมาะสม",
+        "C": "ราคาปกติ",
+        "D": "ราคาค่อนข้างสูง",
+        "F": "ราคาสูงเกินจริง",
+    }
+
+    signals = []
+    if grade == "F":
+        signals.append("OVERPRICED")
+
+    return {
+        "grade": grade,
+        "label": labels[grade],
+        "score": score,
+        "peg": round(peg, 2) if peg else None,
+        "signals": signals,
+    }
+
+
 def quality_score(data: dict) -> dict:
     p_score, p_reasons = profitability_score(data)
     g_score, g_reasons = growth_score(data)
@@ -471,6 +558,33 @@ def main():
             print(f"  [{i+1}/{len(symbols)}] {sym} — error: {e}")
         finally:
             time.sleep(0.3)
+
+    # Compute sector median P/E from candidates
+    sector_pe = {}
+    for c in candidates:
+        pe = c["metrics"].get("pe")
+        if pe and 0 < pe < 100:
+            sector_pe.setdefault(c["sector"], []).append(pe)
+    sector_medians = {s: sorted(vals)[len(vals) // 2] for s, vals in sector_pe.items() if vals}
+
+    # Add valuation grade to each candidate
+    for c in candidates:
+        # Rebuild data dict for valuation_grade
+        val_data = {
+            "pe_ratio": c["metrics"].get("pe"),
+            "aggregates": c.get("aggregates", {}),
+            "sector": c.get("sector", "unknown"),
+            "dividend_yield": c["metrics"].get("dividend_yield"),
+            "five_year_avg_yield": c["metrics"].get("five_year_avg_yield"),
+            "52w_low": c["metrics"].get("52w_low"),
+            "52w_high": c["metrics"].get("52w_high"),
+            "price": c["metrics"].get("current_price"),
+        }
+        val = valuation_grade(val_data, sector_medians)
+        c["valuation"] = val
+        # Add OVERPRICED signal
+        if "OVERPRICED" in val["signals"] and "OVERPRICED" not in c["signals"]:
+            c["signals"].append("OVERPRICED")
 
     candidates.sort(key=lambda x: x["score"], reverse=True)
     new_finds = [c for c in candidates if not c["in_watchlist"]]
