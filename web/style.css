@@ -194,7 +194,11 @@ body {
   box-shadow: var(--shadow);
   flex-wrap: wrap;
 }
-.pipeline-actions { display: flex; gap: 6px; }
+.pipeline-actions { display: flex; gap: 6px; align-items: center; }
+.pipeline-advanced { display: flex; gap: 6px; width: 100%; padding-top: 8px; border-top: 1px solid var(--border); margin-top: 4px; }
+.pipeline-schedule { font-size: 0.72rem; color: var(--text3); width: 100%; }
+.toggle-advanced { font-size: 0.72rem; font-weight: 500; color: var(--text3); border: none; background: none; cursor: pointer; padding: 4px 8px; }
+.toggle-advanced:hover { color: var(--accent); }
 .pipe-btn {
   padding: 6px 14px;
   font-size: 0.78rem;

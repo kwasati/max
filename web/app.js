@@ -852,13 +852,23 @@ async function loadRequests() {
 
 // ===== PIPELINE CONTROL =====
 function bindPipeline() {
-  document.querySelectorAll('.pipe-btn').forEach(btn => {
+  document.querySelectorAll('.pipe-btn[data-action]').forEach(btn => {
     btn.addEventListener('click', () => {
       const action = btn.dataset.action;
       if (!confirm(`รัน ${action}?`)) return;
       runPipeline(action);
     });
   });
+  // Toggle advanced buttons
+  const toggleBtn = document.getElementById('toggle-advanced');
+  const advPanel = document.getElementById('pipeline-advanced');
+  if (toggleBtn && advPanel) {
+    toggleBtn.addEventListener('click', () => {
+      const visible = advPanel.style.display !== 'none';
+      advPanel.style.display = visible ? 'none' : 'flex';
+      toggleBtn.textContent = visible ? 'ขั้นสูง ▾' : 'ขั้นสูง ▴';
+    });
+  }
   // Start SSE listener
   connectSSE();
 }

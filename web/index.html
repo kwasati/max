@@ -46,11 +46,16 @@
 <!-- ===== PIPELINE CONTROL ===== -->
 <div class="pipeline-bar" id="pipeline-bar">
   <div class="pipeline-actions">
-    <button class="pipe-btn" data-action="fetch" title="ดึงข้อมูลหุ้น watchlist">Fetch Data</button>
-    <button class="pipe-btn" data-action="analyze" title="วิเคราะห์ watchlist">Analyze</button>
-    <button class="pipe-btn" data-action="screen" title="Screen SET universe">Screen</button>
-    <button class="pipe-btn primary" data-action="discovery" title="Full: fetch + screen + discover">Full Pipeline</button>
+    <button class="pipe-btn primary" data-action="discovery" title="ดึงข้อมูล + คัดกรอง + วิเคราะห์ทั้งหมด">วิเคราะห์ทั้งหมด</button>
+    <button class="pipe-btn toggle-advanced" id="toggle-advanced">ขั้นสูง ▾</button>
   </div>
+  <div class="pipeline-advanced" id="pipeline-advanced" style="display:none;">
+    <button class="pipe-btn" data-action="fetch" title="ดึงข้อมูลหุ้น watchlist">ดึงข้อมูล</button>
+    <button class="pipe-btn" data-action="analyze" title="วิเคราะห์ watchlist">วิเคราะห์</button>
+    <button class="pipe-btn" data-action="screen" title="Screen SET universe">คัดกรอง</button>
+    <button class="pipe-btn" data-action="weekly" title="ดึง + วิเคราะห์ watchlist">Weekly</button>
+  </div>
+  <div class="pipeline-schedule">รันอัตโนมัติทุกอาทิตย์ 09:00 (สลับ weekly/discovery)</div>
   <div class="pipeline-status" id="pipeline-status"></div>
 </div>
 
