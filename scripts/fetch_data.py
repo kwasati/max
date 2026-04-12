@@ -90,7 +90,7 @@ def count_dividend_growth_streak(dps_by_year):
 def validate_metrics(info, yearly_metrics):
     warnings = []
     dy = normalize_yield(info.get("dividendYield"))
-    if dy is not None and dy > 20:
+    if dy is not None and dy > 15:
         warnings.append(f"yield {dy:.0f}% ผิดปกติ — ตรวจสอบข้อมูล")
 
     eg = info.get("earningsGrowth")

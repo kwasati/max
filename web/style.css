@@ -180,6 +180,56 @@ body {
 }
 .stock-price .yield { font-size: 0.8rem; color: var(--green); font-weight: 500; }
 
+/* ===== PIPELINE BAR ===== */
+.pipeline-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  flex-wrap: wrap;
+}
+.pipeline-actions { display: flex; gap: 6px; }
+.pipe-btn {
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-family: inherit;
+  font-weight: 600;
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.pipe-btn:hover { border-color: var(--accent); color: var(--accent); }
+.pipe-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pipe-btn.primary:hover { opacity: 0.85; }
+.pipe-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.pipeline-status {
+  font-size: 0.78rem;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pipeline-status .running { color: var(--yellow); font-weight: 600; }
+.pipeline-status .done { color: var(--green); }
+.pipeline-status .error { color: var(--red); }
+.pipe-spinner {
+  width: 14px; height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--yellow);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* ===== DETAIL PANEL ===== */
 .detail-panel {
   background: var(--surface);

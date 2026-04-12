@@ -94,8 +94,9 @@ function renderSummary() {
 
   // Update header meta
   const meta = document.getElementById('header-meta');
-  if (meta && sc.run_date) {
-    const d = new Date(sc.run_date);
+  const runDate = sc.run_date || sc.date;
+  if (meta && runDate) {
+    const d = new Date(runDate);
     const dateStr = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     meta.innerHTML = `
       <span>Scoring: <strong>Buffett + เซียนฮง v2</strong></span>
@@ -836,5 +837,78 @@ async function loadRequests() {
   }
 }
 
+// ===== PIPELINE CONTROL =====
+function bindPipeline() {
+  document.querySelectorAll('.pipe-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.action;
+      if (!confirm(`รัน ${action}?`)) return;
+      runPipeline(action);
+    });
+  });
+  // Start SSE listener
+  connectSSE();
+}
+
+async function runPipeline(action) {
+  const btns = document.querySelectorAll('.pipe-btn');
+  btns.forEach(b => b.disabled = true);
+  const statusEl = document.getElementById('pipeline-status');
+  statusEl.innerHTML = '<div class="pipe-spinner"></div><span class="running">Starting...</span>';
+
+  try {
+    const res = await fetch(API + '/api/run/' + action, { method: 'POST' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      statusEl.innerHTML = `<span class="error">${err.detail || 'Error'}</span>`;
+      btns.forEach(b => b.disabled = false);
+    }
+  } catch (e) {
+    statusEl.innerHTML = `<span class="error">Connection failed</span>`;
+    btns.forEach(b => b.disabled = false);
+  }
+}
+
+function connectSSE() {
+  const statusEl = document.getElementById('pipeline-status');
+  if (!statusEl) return;
+
+  const es = new EventSource(API + '/api/events');
+  es.addEventListener('status', (e) => {
+    const data = JSON.parse(e.data);
+    const btns = document.querySelectorAll('.pipe-btn');
+
+    if (data.pipeline_running) {
+      btns.forEach(b => b.disabled = true);
+      const task = data.current_task || 'processing';
+      statusEl.innerHTML = `<div class="pipe-spinner"></div><span class="running">${task}</span>`;
+    } else {
+      btns.forEach(b => b.disabled = false);
+      if (data.last_result) {
+        const isOK = data.last_result.startsWith('OK');
+        const cls = isOK ? 'done' : 'error';
+        const time = data.last_run ? new Date(data.last_run).toLocaleTimeString('en-GB') : '';
+        statusEl.innerHTML = `<span class="${cls}">${data.last_result}</span> <span>${time}</span>`;
+        // Auto-refresh data after pipeline completes
+        if (isOK && statusEl.dataset.wasRunning === 'true') {
+          statusEl.dataset.wasRunning = 'false';
+          setTimeout(() => { init(); }, 1000);
+        }
+      } else {
+        statusEl.innerHTML = '';
+      }
+    }
+    statusEl.dataset.wasRunning = String(data.pipeline_running);
+  });
+
+  es.onerror = () => {
+    statusEl.innerHTML = '<span class="error">SSE disconnected</span>';
+    es.close();
+    // Reconnect after 5s
+    setTimeout(connectSSE, 5000);
+  };
+}
+
 // ===== START =====
 init();
+bindPipeline();

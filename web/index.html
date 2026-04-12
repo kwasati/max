@@ -42,6 +42,17 @@
   <div class="loading">Loading...</div>
 </div>
 
+<!-- ===== PIPELINE CONTROL ===== -->
+<div class="pipeline-bar" id="pipeline-bar">
+  <div class="pipeline-actions">
+    <button class="pipe-btn" data-action="fetch" title="ดึงข้อมูลหุ้น watchlist">Fetch Data</button>
+    <button class="pipe-btn" data-action="analyze" title="วิเคราะห์ watchlist">Analyze</button>
+    <button class="pipe-btn" data-action="screen" title="Screen SET universe">Screen</button>
+    <button class="pipe-btn primary" data-action="discovery" title="Full: fetch + screen + discover">Full Pipeline</button>
+  </div>
+  <div class="pipeline-status" id="pipeline-status"></div>
+</div>
+
 <!-- ===== DETAIL PANEL ===== -->
 <div class="detail-panel" id="detail" style="display:none;"></div>
 
