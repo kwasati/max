@@ -793,17 +793,22 @@ async def dca_simulate(
     current_value = total_shares * current_price
     total_return_pct = ((current_value + total_dividends_received - total_invested) / total_invested * 100) if total_invested > 0 else 0
 
-    # CAGR
+    # CAGR — clamp years_elapsed >= 1.0 to prevent explosion on short backtests
     years_elapsed = (hist.index[-1] - hist.index[0]).days / 365.25 if len(hist) > 1 else 1
+    years_elapsed = max(years_elapsed, 1.0)
     if total_invested > 0 and years_elapsed > 0 and current_value > 0:
         cagr = (((current_value + total_dividends_received) / total_invested) ** (1 / years_elapsed) - 1) * 100
     else:
         cagr = 0
 
-    # Yield on Cost
-    # Use last year's dividends per share * total shares / total invested
-    last_year = end_year
-    last_year_divs = dividends[(dividends.index.year == last_year)].sum() if dividends is not None and not dividends.empty else 0
+    # Yield on Cost — fallback 3 years if latest year has no dividend data
+    last_year_divs = 0
+    if dividends is not None and not dividends.empty:
+        for yr_check in [end_year, end_year - 1, end_year - 2]:
+            yr_sum = dividends[dividends.index.year == yr_check].sum()
+            if yr_sum > 0:
+                last_year_divs = yr_sum
+                break
     annual_div_income = last_year_divs * total_shares
     yield_on_cost = (annual_div_income / total_invested * 100) if total_invested > 0 else 0
 
