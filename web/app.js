@@ -1170,6 +1170,18 @@ async function loadSettings() {
     if (el('sched-hour')) el('sched-hour').value = sched.hour ?? 9;
     if (el('sched-minute')) el('sched-minute').value = sched.minute ?? 0;
 
+    // Pipeline
+    const pipe = config.pipeline || {};
+    if (el('pipe-odd-weeks')) el('pipe-odd-weeks').value = pipe.odd_weeks || 'weekly';
+    if (el('pipe-even-weeks')) el('pipe-even-weeks').value = pipe.even_weeks || 'discovery';
+
+    // Filters
+    const f = config.filters || {};
+    if (el('filter-roe')) el('filter-roe').value = Math.round((f.min_roe_avg || 0.15) * 100);
+    if (el('filter-nm')) el('filter-nm').value = Math.round((f.min_net_margin || 0.10) * 100);
+    if (el('filter-de')) el('filter-de').value = f.max_de_non_fin ?? 1.5;
+    if (el('filter-mcap')) el('filter-mcap').value = Math.round((f.min_market_cap || 5e9) / 1e6);
+
     // Update pipeline bar schedule text
     const schedText = document.querySelector('.pipeline-schedule');
     if (schedText) {
