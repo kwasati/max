@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Max Mahon — Stock Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* SET.or.th inspired palette */
+    --bg: #f5f5f5;
+    --surface: #ffffff;
+    --surface2: #fafafa;
+    --border: #e8e8e8;
+    --border2: #d9d9d9;
+
+    --text: #1a1a2e;
+    --text2: #555770;
+    --text3: #8e8ea0;
+    --number: #1a1a2e;
+
+    --accent: #1e6f5c;
+    --accent-light: #e9f5f0;
+    --blue: #2558a6;
+    --blue-light: #eaf1fb;
+    --green: #0d8050;
+    --green-light: #e6f4ed;
+    --red: #cf1322;
+    --red-light: #fff1f0;
+    --yellow: #d48806;
+    --yellow-light: #fffbe6;
+    --orange: #d46b08;
+    --orange-light: #fff7e6;
+    --purple: #531dab;
+    --purple-light: #f9f0ff;
+
+    --radius: 8px;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-lg: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 28px 32px;
+    max-width: 1360px;
+    margin: 0 auto;
+    font-size: 15px;
+  }
+
+  /* ===== HEADER ===== */
+  .header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .header h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .header h1 em { font-style: normal; color: var(--accent); }
+  .header-meta {
+    display: flex;
+    gap: 20px;
+    color: var(--text3);
+    font-size: 0.82rem;
+  }
+  .header-meta strong { color: var(--text); font-weight: 600; }
+
+  /* ===== SUMMARY ===== */
+  .summary-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+  }
+  .summary-card .label {
+    font-size: 0.78rem;
+    color: var(--text3);
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .summary-card .value {
+    font-size: 1.7rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.2;
+  }
+  .summary-card .sub { font-size: 0.78rem; color: var(--text3); margin-top: 2px; }
+
+  /* ===== TABS ===== */
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--border);
+  }
+  .tab {
+    padding: 10px 22px;
+    font-size: 0.88rem;
+    color: var(--text3);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.15s;
+    background: none;
+    border-top: none; border-left: none; border-right: none;
+    font-family: inherit;
+    font-weight: 500;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+  /* ===== STOCK LIST ===== */
+  .stock-list { display: grid; gap: 6px; margin-bottom: 28px; }
+  .stock-row {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: grid;
+    grid-template-columns: 180px 60px 1fr 120px;
+    align-items: center;
+    gap: 16px;
+    box-shadow: var(--shadow);
+  }
+  .stock-row:hover { border-color: var(--accent); box-shadow: var(--shadow-lg); }
+  .stock-row.selected { border-color: var(--accent); border-left: 3px solid var(--accent); }
+
+  .stock-identity h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text);
+  }
+  .stock-identity .sector { font-size: 0.75rem; color: var(--text3); }
+
+  .stock-score { text-align: center; }
+  .score-circle {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.95rem; font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    margin: 0 auto;
+  }
+  .score-circle.high { background: var(--green-light); color: var(--green); border: 2px solid var(--green); }
+  .score-circle.mid { background: var(--yellow-light); color: var(--yellow); border: 2px solid var(--yellow); }
+  .score-circle.low { background: var(--red-light); color: var(--red); border: 2px solid var(--red); }
+
+  .stock-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tag {
+    font-size: 0.68rem;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+  .tag.compounder { background: var(--green-light); color: var(--green); }
+  .tag.dividend-king { background: var(--yellow-light); color: var(--yellow); }
+  .tag.cash-cow { background: var(--purple-light); color: var(--purple); }
+  .tag.contrarian { background: var(--blue-light); color: var(--blue); }
+  .tag.turnaround { background: var(--orange-light); color: var(--orange); }
+  .tag.warning { background: var(--red-light); color: var(--red); }
+
+  .stock-price { text-align: right; }
+  .stock-price .current {
+    font-size: 1.05rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--number);
+  }
+  .stock-price .yield { font-size: 0.8rem; color: var(--green); font-weight: 500; }
+
+  /* ===== DETAIL PANEL ===== */
+  .detail-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    margin-bottom: 28px;
+    box-shadow: var(--shadow-lg);
+  }
+  .detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .detail-title h2 { font-size: 1.25rem; font-weight: 700; }
+  .detail-title .subtitle { color: var(--text3); font-size: 0.84rem; margin-top: 2px; }
+  .detail-price-block { text-align: right; }
+  .detail-price-block .price {
+    font-size: 2rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--number);
+  }
+  .detail-price-block .range { font-size: 0.78rem; color: var(--text3); margin-top: 4px; }
+
+  /* ===== SCORE BREAKDOWN ===== */
+  .score-breakdown {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .score-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    text-align: center;
+  }
+  .score-item .score-label {
+    font-size: 0.72rem;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .score-item .score-val {
+    font-size: 1.6rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--number);
+  }
+  .score-item .score-max { font-size: 0.72rem; color: var(--text3); }
+  .score-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .score-bar-fill { height: 100%; border-radius: 2px; }
+
+  /* ===== SECTION TITLE ===== */
+  .section-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 14px;
+    margin-top: 8px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--text);
+    color: var(--text);
+  }
+  .section-title span { color: var(--text3); font-weight: 400; font-size: 0.82rem; margin-left: 8px; }
+
+  /* ===== METRICS — FIXED 4 COLUMNS for Buffett, 2 for เซียนฮง ===== */
+  .metrics-4col {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin-bottom: 28px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .metrics-2col {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0;
+    margin-bottom: 28px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .metric-group {
+    padding: 18px 20px;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .metric-group:last-child { border-right: none; }
+
+  .metric-group h4 {
+    font-size: 0.72rem;
+    color: var(--accent);
+    margin-bottom: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Metric row */
+  details.metric-explain { margin-bottom: 0; }
+  details.metric-explain summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.84rem;
+  }
+  details.metric-explain:last-child summary { border-bottom: none; }
+  details.metric-explain summary::-webkit-details-marker { display: none; }
+
+  .metric-label {
+    color: var(--text2);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 400;
+  }
+  .metric-label::after {
+    content: '?';
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--border);
+    color: var(--text3);
+    font-size: 0.58rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  details.metric-explain[open] .metric-label::after {
+    background: var(--accent);
+    color: white;
+  }
+  details.metric-explain[open] summary { border-bottom: 1px solid var(--border); }
+
+  .metric-value {
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.84rem;
+    color: var(--number);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .metric-value.good { color: var(--green); }
+  .metric-value.warn { color: var(--yellow); }
+  .metric-value.bad { color: var(--red); }
+  .criterion {
+    font-size: 0.68rem;
+    font-family: 'Sarabun', sans-serif;
+    color: var(--text3);
+    font-weight: 400;
+    margin-left: 4px;
+  }
+
+  /* Explanation box */
+  .explain-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 12px;
+    margin: 6px 0 4px 0;
+    font-size: 0.78rem;
+    line-height: 1.7;
+    color: var(--text2);
+  }
+  .explain-box strong { color: var(--text); font-weight: 600; }
+  .explain-scale {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+  .scale-item { padding: 1px 7px; border-radius: 3px; font-size: 0.7rem; font-weight: 500; }
+  .scale-good { background: var(--green-light); color: var(--green); }
+  .scale-ok { background: var(--yellow-light); color: var(--yellow); }
+  .scale-bad { background: var(--red-light); color: var(--red); }
+
+  /* ===== YoY TABLE ===== */
+  .yoy-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+    margin-bottom: 28px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .yoy-table th {
+    text-align: right;
+    padding: 10px 14px;
+    background: var(--surface2);
+    color: var(--text3);
+    font-weight: 600;
+    border-bottom: 2px solid var(--border);
+    font-size: 0.76rem;
+  }
+  .yoy-table th:first-child { text-align: left; }
+  .yoy-table td {
+    text-align: right;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--number);
+  }
+  .yoy-table td:first-child {
+    text-align: left;
+    color: var(--text2);
+    font-weight: 500;
+    font-family: 'Sarabun', sans-serif;
+  }
+  .yoy-table td:last-child {
+    font-family: 'Sarabun', sans-serif;
+    font-weight: 500;
+    font-size: 0.78rem;
+  }
+  .yoy-table tr:hover { background: var(--surface2); }
+  .yoy-table tr:last-child td { border-bottom: none; }
+
+  /* ===== DIVIDEND CHART ===== */
+  .div-section { margin-bottom: 28px; }
+  .div-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 80px;
+    margin-bottom: 4px;
+  }
+  .div-bar {
+    flex: 1;
+    background: var(--accent);
+    border-radius: 2px 2px 0 0;
+    min-width: 12px;
+    position: relative;
+    transition: all 0.15s;
+    opacity: 0.6;
+  }
+  .div-bar:hover { opacity: 1; }
+  .div-bar .div-tip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text);
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+    z-index: 10;
+  }
+  .div-bar:hover .div-tip { display: block; }
+  .div-years {
+    display: flex;
+    gap: 3px;
+    font-size: 0.6rem;
+    color: var(--text3);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .div-years span { flex: 1; text-align: center; min-width: 12px; }
+
+  /* ===== DCA VERDICT ===== */
+  .verdict-box {
+    background: var(--green-light);
+    border: 1px solid rgba(13,128,80,0.15);
+    border-radius: var(--radius);
+    padding: 20px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+  .verdict-stars {
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+    color: var(--green);
+  }
+  .verdict-text { font-size: 0.86rem; color: var(--text2); line-height: 1.7; }
+  .verdict-text strong { color: var(--text); }
+
+  /* ===== SECTION EXPLAIN ===== */
+  details.section-explain { margin-bottom: 10px; }
+  details.section-explain > summary {
+    cursor: pointer;
+    font-size: 0.76rem;
+    color: var(--accent);
+    font-weight: 500;
+    padding: 4px 0;
+    list-style: none;
+  }
+  details.section-explain > summary::-webkit-details-marker { display: none; }
+  details.section-explain > summary::before { content: 'ดูคำอธิบาย >'; }
+  details.section-explain[open] > summary::before { content: 'ซ่อนคำอธิบาย'; }
+  .section-explain-content {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 14px;
+    margin-top: 6px;
+    font-size: 0.78rem;
+    line-height: 1.7;
+    color: var(--text2);
+  }
+  .section-explain-content strong { color: var(--text); }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 900px) {
+    body { padding: 12px; }
+    .summary-row { grid-template-columns: repeat(2, 1fr); }
+    .stock-row { grid-template-columns: 1fr; gap: 10px; }
+    .stock-price { text-align: left; }
+    .stock-score { text-align: left; }
+    .score-circle { margin: 0; }
+    .score-breakdown { grid-template-columns: repeat(2, 1fr); }
+    .metrics-4col { grid-template-columns: repeat(2, 1fr); }
+    .metrics-2col { grid-template-columns: 1fr; }
+    .metric-group { border-right: none; border-bottom: 1px solid var(--border); }
+    .metric-group:last-child { border-bottom: none; }
+    .detail-header { flex-direction: column; }
+    .detail-price-block { text-align: left; }
+    .detail-panel { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="header">
+  <h1><em>Max Mahon</em> Stock Dashboard</h1>
+  <div class="header-meta">
+    <span>Scoring: <strong>Buffett + เซียนฮง v2</strong></span>
+    <span>Updated: <strong>12 Apr 2026</strong></span>
+    <span>Scanned: <strong>99 stocks</strong></span>
+  </div>
+</div>
+
+<!-- ===== SUMMARY ===== -->
+<div class="summary-row">
+  <div class="summary-card">
+    <div class="label">Passed Filters</div>
+    <div class="value" style="color: var(--green);">11</div>
+    <div class="sub">จาก 99 ตัวที่ scan</div>
+  </div>
+  <div class="summary-card">
+    <div class="label">Avg Quality</div>
+    <div class="value" style="color: var(--accent);">74</div>
+    <div class="sub">จาก 100 คะแนน</div>
+  </div>
+  <div class="summary-card">
+    <div class="label">Discoveries</div>
+    <div class="value" style="color: var(--blue);">9</div>
+    <div class="sub">ตัวใหม่ที่ค้นพบ</div>
+  </div>
+  <div class="summary-card">
+    <div class="label">Warnings</div>
+    <div class="value" style="color: var(--red);">2</div>
+    <div class="sub">ข้อมูลต้องตรวจสอบ</div>
+  </div>
+</div>
+
+<!-- ===== TABS ===== -->
+<div class="tabs">
+  <button class="tab active">All Passed (11)</button>
+  <button class="tab">Watchlist (12)</button>
+  <button class="tab">Discoveries (9)</button>
+  <button class="tab">Filtered Out</button>
+</div>
+
+<!-- ===== STOCK LIST ===== -->
+<div class="stock-list">
+  <div class="stock-row selected">
+    <div class="stock-identity">
+      <h3>DELTA</h3>
+      <div class="sector">Industrials / Electronic Equipment</div>
+    </div>
+    <div class="stock-score"><div class="score-circle high">92</div></div>
+    <div class="stock-tags">
+      <span class="tag compounder">COMPOUNDER</span>
+      <span class="tag turnaround">TURNAROUND</span>
+    </div>
+    <div class="stock-price">
+      <div class="current">317.00</div>
+      <div class="yield">Yield 19.0%</div>
+    </div>
+  </div>
+  <div class="stock-row">
+    <div class="stock-identity">
+      <h3>BH</h3>
+      <div class="sector">Healthcare / Hospitals</div>
+    </div>
+    <div class="stock-score"><div class="score-circle high">83</div></div>
+    <div class="stock-tags"><span class="tag dividend-king">DIVIDEND KING</span></div>
+    <div class="stock-price">
+      <div class="current">172.50</div>
+      <div class="yield">Yield 2.9%</div>
+    </div>
+  </div>
+  <div class="stock-row">
+    <div class="stock-identity">
+      <h3>TISCO</h3>
+      <div class="sector">Financial / Banking</div>
+    </div>
+    <div class="stock-score"><div class="score-circle mid">71</div></div>
+    <div class="stock-tags"><span class="tag cash-cow">CASH COW</span></div>
+    <div class="stock-price">
+      <div class="current">92.75</div>
+      <div class="yield">Yield 5.4%</div>
+    </div>
+  </div>
+  <div class="stock-row">
+    <div class="stock-identity">
+      <h3>MTC</h3>
+      <div class="sector">Financial / Consumer Finance</div>
+    </div>
+    <div class="stock-score"><div class="score-circle mid">65</div></div>
+    <div class="stock-tags">
+      <span class="tag warning">DATA WARNING</span>
+      <span class="tag contrarian">CONTRARIAN</span>
+    </div>
+    <div class="stock-price">
+      <div class="current">32.50</div>
+      <div class="yield" style="color: var(--red);">Yield 95.0%</div>
+    </div>
+  </div>
+  <div class="stock-row">
+    <div class="stock-identity">
+      <h3>PTT</h3>
+      <div class="sector">Energy / Oil & Gas</div>
+    </div>
+    <div class="stock-score"><div class="score-circle mid">58</div></div>
+    <div class="stock-tags"><span class="tag contrarian">CONTRARIAN</span></div>
+    <div class="stock-price">
+      <div class="current">34.75</div>
+      <div class="yield">Yield 6.0%</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================= -->
+<!-- DETAIL PANEL — DELTA                                              -->
+<!-- ================================================================= -->
+<div class="detail-panel">
+
+  <div class="detail-header">
+    <div class="detail-title">
+      <h2>DELTA Electronics (Thailand)</h2>
+      <div class="subtitle">Industrials / Electronic Equipment &middot; Market Cap 490B &middot; 5 ปี data</div>
+    </div>
+    <div class="detail-price-block">
+      <div class="price">317.00</div>
+      <div class="range">52W: 220 — 380 (อยู่ที่ 61% ของ range)</div>
+    </div>
+  </div>
+
+  <!-- Quality Score -->
+  <div class="section-title">Quality Score <span>92 / 100</span></div>
+  <div class="score-breakdown">
+    <div class="score-item">
+      <div class="score-label">Profitability</div>
+      <div class="score-val">19</div>
+      <div class="score-max">/ 30</div>
+      <div class="score-bar"><div class="score-bar-fill" style="width: 63%; background: var(--green);"></div></div>
+    </div>
+    <div class="score-item">
+      <div class="score-label">Growth</div>
+      <div class="score-val">23</div>
+      <div class="score-max">/ 25</div>
+      <div class="score-bar"><div class="score-bar-fill" style="width: 92%; background: var(--green);"></div></div>
+    </div>
+    <div class="score-item">
+      <div class="score-label">Dividend</div>
+      <div class="score-val">22</div>
+      <div class="score-max">/ 25</div>
+      <div class="score-bar"><div class="score-bar-fill" style="width: 88%; background: var(--green);"></div></div>
+    </div>
+    <div class="score-item">
+      <div class="score-label">Strength</div>
+      <div class="score-val">19</div>
+      <div class="score-max">/ 20</div>
+      <div class="score-bar"><div class="score-bar-fill" style="width: 95%; background: var(--green);"></div></div>
+    </div>
+  </div>
+
+  <!-- ===== BUFFETT — 4 COLUMNS FIXED ===== -->
+  <div class="section-title">Buffett Checklist <span>คุณภาพธุรกิจ + ความแข็งแกร่ง</span></div>
+
+  <div class="metrics-4col">
+
+    <!-- COL 1: PROFITABILITY -->
+    <div class="metric-group">
+      <h4>Profitability</h4>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">Avg ROE (5yr)</span>
+          <span class="metric-value good">26.2% <span class="criterion">pass 15%</span></span>
+        </summary>
+        <div class="explain-box">
+          <strong>Return on Equity</strong> — กำไรที่บริษัทสร้างได้จากเงินของผู้ถือหุ้น ยิ่งสูงยิ่งดี Buffett มองว่า <strong>15% ขึ้นไปทุกปี</strong> คือธุรกิจคุณภาพ
+          <div class="explain-scale">
+            <span class="scale-item scale-good">20%+ ยอดเยี่ยม</span>
+            <span class="scale-item scale-ok">15-20% ดี</span>
+            <span class="scale-item scale-bad">&lt;15% ต่ำ</span>
+          </div>
+        </div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">Min ROE (5yr)</span>
+          <span class="metric-value good">21.4% <span class="criterion">pass 12%</span></span>
+        </summary>
+        <div class="explain-box"><strong>ROE ต่ำสุดใน 5 ปี</strong> — ดูว่าปีที่แย่ที่สุดยังรักษาคุณภาพได้ไหม ถ้าปีแย่สุดยัง >12% แปลว่าธุรกิจมี moat แข็ง</div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">Avg Net Margin</span>
+          <span class="metric-value good">14.8%</span>
+        </summary>
+        <div class="explain-box"><strong>อัตรากำไรสุทธิ</strong> — จากยอดขาย 100 บาท เหลือเป็นกำไรจริงกี่บาท ยิ่งสูง = มีอำนาจต่อรอง คู่แข่งแย่งยาก
+          <div class="explain-scale">
+            <span class="scale-item scale-good">15%+ มี moat</span>
+            <span class="scale-item scale-ok">10-15% ดี</span>
+            <span class="scale-item scale-bad">&lt;10% เสี่ยง</span>
+          </div>
+        </div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">Gross Margin</span>
+          <span class="metric-value good">28.3%</span>
+        </summary>
+        <div class="explain-box"><strong>อัตรากำไรขั้นต้น</strong> — สะท้อนมูลค่าเพิ่มของสินค้า Buffett ใช้ดู moat ถ้าสูงต่อเนื่อง = สินค้าขายได้ราคาดี
+          <div class="explain-scale">
+            <span class="scale-item scale-good">40%+ moat แข็ง</span>
+            <span class="scale-item scale-ok">20-40% ปานกลาง</span>
+            <span class="scale-item scale-bad">&lt;20% แข่งขันสูง</span>
+          </div>
+        </div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">Operating Margin</span>
+          <span class="metric-value good">18.1%</span>
+        </summary>
+        <div class="explain-box"><strong>อัตรากำไรจากการดำเนินงาน</strong> — กำไรจากธุรกิจหลัก ถ้าใกล้ Net Margin = โครงสร้างการเงินสะอาด</div>
+      </details>
+    </div>
+
+    <!-- COL 2: MOAT -->
+    <div class="metric-group">
+      <h4>Moat / Competitive Advantage</h4>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">ROE >15% ทุกปี?</span>
+          <span class="metric-value good">5/5 ปี</span>
+        </summary>
+        <div class="explain-box"><strong>ความสม่ำเสมอของ ROE</strong> — หัวใจ Buffett: ไม่ใช่แค่ปีเดียวเก่ง แต่ต้องเก่งทุกปี = moat จริง</div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">Gross Margin Trend</span>
+          <span class="metric-value good">ขยายตัว</span>
+        </summary>
+        <div class="explain-box"><strong>แนวโน้ม Gross Margin</strong> — เพิ่มขึ้น = อำนาจต่อรองมากขึ้น, ลดลง = คู่แข่งบีบราคา
+          <div class="explain-scale">
+            <span class="scale-item scale-good">ขยายตัว</span>
+            <span class="scale-item scale-ok">คงที่</span>
+            <span class="scale-item scale-bad">หดตัว</span>
+          </div>
+        </div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">SG&A / Revenue</span>
+          <span class="metric-value good">คงที่</span>
+        </summary>
+        <div class="explain-box"><strong>ค่าใช้จ่ายขาย+บริหาร ต่อ ยอดขาย</strong> — ลดลง = มี scale advantage, เพิ่มขึ้น = ค่าใช้จ่ายบาน</div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">Revenue Consistency</span>
+          <span class="metric-value good">4/4 ปี</span>
+        </summary>
+        <div class="explain-box"><strong>ยอดขายโตกี่ปี</strong> — โตทุกปี = demand สม่ำเสมอ ถ้ามีปีลด = อาจเป็น cyclical เสี่ยงกว่าสำหรับ DCA</div>
+      </details>
+    </div>
+
+    <!-- COL 3: FINANCIAL STRENGTH -->
+    <div class="metric-group">
+      <h4>Financial Strength</h4>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">D/E Ratio</span>
+          <span class="metric-value good">0.34 <span class="criterion">&lt;1.5</span></span>
+        </summary>
+        <div class="explain-box"><strong>Debt-to-Equity</strong> — หนี้สินเทียบกับทุน Buffett ชอบหนี้ต่ำ เพราะเศรษฐกิจแย่จะอยู่รอดได้
+          <div class="explain-scale">
+            <span class="scale-item scale-good">&lt;0.5 ยอดเยี่ยม</span>
+            <span class="scale-item scale-ok">0.5-1.5 พอได้</span>
+            <span class="scale-item scale-bad">&gt;1.5 สูง</span>
+          </div>
+        </div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">Interest Coverage</span>
+          <span class="metric-value good">42.5x <span class="criterion">&gt;5x</span></span>
+        </summary>
+        <div class="explain-box"><strong>ความสามารถจ่ายดอกเบี้ย</strong> — EBITDA / ดอกเบี้ยจ่าย 42.5x = กำไรมากกว่าดอกเบี้ย 42 เท่า ปลอดภัยมาก
+          <div class="explain-scale">
+            <span class="scale-item scale-good">&gt;10x ปลอดภัย</span>
+            <span class="scale-item scale-ok">5-10x โอเค</span>
+            <span class="scale-item scale-bad">&lt;3x อันตราย</span>
+          </div>
+        </div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">Current Ratio</span>
+          <span class="metric-value good">2.1</span>
+        </summary>
+        <div class="explain-box"><strong>สภาพคล่อง</strong> — สินทรัพย์หมุนเวียน / หนี้สินระยะสั้น >2.0 = จ่ายบิลได้สบาย
+          <div class="explain-scale">
+            <span class="scale-item scale-good">&gt;2.0 ดีมาก</span>
+            <span class="scale-item scale-ok">1.5-2.0 พอดี</span>
+            <span class="scale-item scale-bad">&lt;1.0 เสี่ยง</span>
+          </div>
+        </div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">FCF Positive</span>
+          <span class="metric-value good">4/4 ปี</span>
+        </summary>
+        <div class="explain-box"><strong>Free Cash Flow เป็นบวก</strong> — เงินสดจริงที่เหลือหลังลงทุน ถ้าบวกทุกปี = กำไรเป็นเงินจริง จ่ายปันผลได้จริง</div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">OCF / Net Income</span>
+          <span class="metric-value good">1.12x</span>
+        </summary>
+        <div class="explain-box"><strong>คุณภาพกำไร</strong> — เงินสดจริง / กำไรในบัญชี >1.0 = กำไรแท้ <0.7 = กำไรกระดาษ ระวัง
+          <div class="explain-scale">
+            <span class="scale-item scale-good">&gt;1.0 กำไรแท้</span>
+            <span class="scale-item scale-ok">0.8-1.0 พอได้</span>
+            <span class="scale-item scale-bad">&lt;0.7 ระวัง</span>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <!-- COL 4: GROWTH -->
+    <div class="metric-group">
+      <h4>Growth</h4>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">Revenue CAGR (5yr)</span>
+          <span class="metric-value good">18.7%</span>
+        </summary>
+        <div class="explain-box"><strong>อัตราเติบโตเฉลี่ยยอดขาย 5 ปี</strong> — 18.7% = ยอดขายเพิ่มเกือบเท่าตัวใน 5 ปี
+          <div class="explain-scale">
+            <span class="scale-item scale-good">&gt;15% โตเร็ว</span>
+            <span class="scale-item scale-ok">5-15% โตดี</span>
+            <span class="scale-item scale-bad">&lt;0% หดตัว</span>
+          </div>
+        </div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">EPS CAGR (5yr)</span>
+          <span class="metric-value good">17.4%</span>
+        </summary>
+        <div class="explain-box"><strong>อัตราเติบโตกำไรต่อหุ้น</strong> — ดูควบคู่ Revenue CAGR ถ้า EPS โตเร็วกว่า = margin ขยาย ถ้าช้ากว่า = margin หด</div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">EPS Positive</span>
+          <span class="metric-value good">5/5 ปี</span>
+        </summary>
+        <div class="explain-box"><strong>จำนวนปีที่มีกำไร</strong> — กำไรทุกปี = ธุรกิจพื้นฐานแข็ง สำหรับ DCA ต้องการสม่ำเสมอ</div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">Capital Intensity</span>
+          <span class="metric-value good">22%</span>
+        </summary>
+        <div class="explain-box"><strong>CapEx / Operating Cash Flow</strong> — ต่ำ = ธุรกิจเบา ไม่ต้องลงทุนเยอะ เงินเหลือจ่ายปันผล Buffett ชอบแบบนี้
+          <div class="explain-scale">
+            <span class="scale-item scale-good">&lt;30% เบา</span>
+            <span class="scale-item scale-ok">30-60% ปานกลาง</span>
+            <span class="scale-item scale-bad">&gt;60% หนัก</span>
+          </div>
+        </div>
+      </details>
+    </div>
+
+  </div>
+
+  <!-- ===== เซียนฮง — 2 COLUMNS FIXED ===== -->
+  <div class="section-title">เซียนฮง Checklist <span>ปันผล + มูลค่า</span></div>
+
+  <div class="metrics-2col">
+
+    <!-- COL 1: DIVIDEND -->
+    <div class="metric-group">
+      <h4>Dividend</h4>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">Dividend Yield</span>
+          <span class="metric-value good">19.0% <span class="criterion">pass 4%</span></span>
+        </summary>
+        <div class="explain-box"><strong>อัตราผลตอบแทนปันผล</strong> — ลงทุน 100 บาท ได้ปันผล 19 บาท/ปี เซียนฮงต้องการ 4-5%+ แต่ >15% ต้องระวัง yield trap
+          <div class="explain-scale">
+            <span class="scale-item scale-good">4-8% ดีมาก</span>
+            <span class="scale-item scale-ok">2-4% พอใช้</span>
+            <span class="scale-item scale-bad">&gt;15% ตรวจสอบ!</span>
+          </div>
+        </div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">5yr Avg Yield</span>
+          <span class="metric-value good">8.2%</span>
+        </summary>
+        <div class="explain-box"><strong>ค่าเฉลี่ย yield 5 ปี</strong> — เทียบกับ yield ปัจจุบันเพื่อดูว่า "ปกติ" หรือ "ผิดปกติ" ถ้าสูงกว่ามาก อาจเป็นราคาตก หรือปันผลพิเศษ</div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">Payout Ratio</span>
+          <span class="metric-value good">23.1%</span>
+        </summary>
+        <div class="explain-box"><strong>สัดส่วนจ่ายปันผล</strong> — จ่ายแค่ 23% ของกำไร เหลือ 77% ไป reinvest Payout ต่ำ = ยั่งยืน + มี room โต
+          <div class="explain-scale">
+            <span class="scale-item scale-good">30-60% สมดุล</span>
+            <span class="scale-item scale-ok">60-80% สูง</span>
+            <span class="scale-item scale-bad">&gt;100% อันตราย</span>
+          </div>
+        </div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">Dividend Streak</span>
+          <span class="metric-value good">27 ปี</span>
+        </summary>
+        <div class="explain-box"><strong>จ่ายปันผลต่อเนื่อง</strong> — 27 ปี ผ่านวิกฤตหลายรอบยังจ่ายได้ ตัวเลขสำคัญที่สุดสำหรับ DCA
+          <div class="explain-scale">
+            <span class="scale-item scale-good">&gt;10 ปี เชื่อถือได้</span>
+            <span class="scale-item scale-ok">5-10 ปี ดี</span>
+            <span class="scale-item scale-bad">&lt;3 ปี ยังไม่พิสูจน์</span>
+          </div>
+        </div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">Div Growth Streak</span>
+          <span class="metric-value good">5 ปีติด</span>
+        </summary>
+        <div class="explain-box"><strong>เพิ่มปันผลต่อเนื่อง</strong> — ไม่ใช่แค่จ่าย แต่เพิ่มทุกปีด้วย สำหรับ DCA yield on cost จะโตตามเวลา</div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">DPS Trend</span>
+          <span class="metric-value good">เพิ่มทุกปี</span>
+        </summary>
+        <div class="explain-box"><strong>แนวโน้ม Dividend Per Share</strong> — เพิ่มสม่ำเสมอ = ผู้บริหารให้ความสำคัญกับผู้ถือหุ้น</div>
+      </details>
+    </div>
+
+    <!-- COL 2: VALUATION -->
+    <div class="metric-group">
+      <h4>Valuation</h4>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">P/E (TTM)</span>
+          <span class="metric-value warn">158.5x</span>
+        </summary>
+        <div class="explain-box"><strong>ราคาต่อกำไร 12 เดือนล่าสุด</strong> — 158x สูงมาก แต่ถ้า forward P/E ต่ำกว่าเยอะ = turnaround เซียนฮงต้องการ P/E ไม่เกิน 15
+          <div class="explain-scale">
+            <span class="scale-item scale-good">&lt;15 ถูก</span>
+            <span class="scale-item scale-ok">15-25 เหมาะสม</span>
+            <span class="scale-item scale-bad">&gt;30 แพง</span>
+          </div>
+        </div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">Forward P/E</span>
+          <span class="metric-value good">12.8x <span class="criterion">pass 15</span></span>
+        </summary>
+        <div class="explain-box"><strong>P/E จากกำไรที่คาดการณ์</strong> — ต่ำกว่า TTM เยอะ = นักวิเคราะห์คาดกำไรจะเพิ่มมาก (turnaround signal)</div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">P/B Ratio</span>
+          <span class="metric-value">3.2x</span>
+        </summary>
+        <div class="explain-box"><strong>ราคาต่อมูลค่าทางบัญชี</strong> — 3.2x ปกติสำหรับ ROE สูง คนยอมจ่ายแพงเพราะบริษัทสร้างกำไรเก่ง
+          <div class="explain-scale">
+            <span class="scale-item scale-good">&lt;1.5 ถูก (ถ้า ROE ดี)</span>
+            <span class="scale-item scale-ok">1.5-3.0 สมเหตุสมผล</span>
+            <span class="scale-item scale-bad">&gt;5.0 แพงมาก</span>
+          </div>
+        </div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">FCF Yield</span>
+          <span class="metric-value good">8.4%</span>
+        </summary>
+        <div class="explain-box"><strong>ผลตอบแทนจากเงินสดจริง</strong> — FCF / Market Cap สูงกว่า Dividend Yield = มี room เพิ่มปันผลหรือ buyback ได้อีก</div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">52W Range Position</span>
+          <span class="metric-value">61%</span>
+        </summary>
+        <div class="explain-box"><strong>ตำแหน่งราคาเทียบ 52 สัปดาห์</strong> — 0% = ต่ำสุด 100% = สูงสุด 61% = กลางค่อนสูง สำหรับ DCA คุณภาพสำคัญกว่าราคา</div>
+      </details>
+      <details class="metric-explain">
+        <summary>
+          <span class="metric-label">Earnings Growth</span>
+          <span class="metric-value good">26%+/yr</span>
+        </summary>
+        <div class="explain-box"><strong>เกณฑ์เซียนฮง</strong> — กำไรโตอย่างน้อย 26%/ปี = เพิ่มเท่าตัวใน 3 ปี ผ่านเกณฑ์ + P/E ต่ำ + yield ดี = หุ้นในฝัน</div>
+      </details>
+    </div>
+
+  </div>
+
+  <!-- ===== Year-over-Year ===== -->
+  <div class="section-title">Year-over-Year Financials <span>Trend ย้อนหลัง 5 ปี</span></div>
+
+  <details class="section-explain">
+    <summary></summary>
+    <div class="section-explain-content">
+      ดู <strong>trend</strong> ไม่ใช่แค่ตัวเลขปีเดียว:
+      Revenue ต้องโตสม่ำเสมอ, Net Income/EPS ต้องโตตาม, ROE ต้องสูงทุกปี, D/E ต้องไม่เพิ่ม, FCF ต้องเป็นบวก, DPS ต้องไม่ลด
+    </div>
+  </details>
+
+  <table class="yoy-table">
+    <thead>
+      <tr><th></th><th>2020</th><th>2021</th><th>2022</th><th>2023</th><th>2024</th><th>Trend</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Revenue (B)</td><td>52.1</td><td>68.4</td><td>89.2</td><td>95.8</td><td style="color:var(--green);">108.3</td><td style="color:var(--green);">โตทุกปี</td></tr>
+      <tr><td>Net Income (B)</td><td>7.2</td><td>10.1</td><td>14.8</td><td>12.6</td><td style="color:var(--green);">16.2</td><td style="color:var(--green);">โตรวม</td></tr>
+      <tr><td>EPS</td><td>5.74</td><td>8.04</td><td>11.78</td><td>10.03</td><td style="color:var(--green);">12.89</td><td style="color:var(--green);">โตรวม</td></tr>
+      <tr><td>ROE</td><td>21.4%</td><td>25.8%</td><td>30.1%</td><td>24.2%</td><td style="color:var(--green);">28.1%</td><td style="color:var(--green);">สม่ำเสมอ &gt;20%</td></tr>
+      <tr><td>Net Margin</td><td>13.8%</td><td>14.8%</td><td>16.6%</td><td>13.2%</td><td>15.0%</td><td>คงที่ 13-17%</td></tr>
+      <tr><td>D/E</td><td>0.42</td><td>0.38</td><td>0.31</td><td>0.36</td><td style="color:var(--green);">0.34</td><td style="color:var(--green);">ลดลง</td></tr>
+      <tr><td>FCF (B)</td><td>5.8</td><td>8.2</td><td>12.4</td><td>10.8</td><td style="color:var(--green);">14.1</td><td style="color:var(--green);">บวกทุกปี</td></tr>
+      <tr><td>DPS</td><td>1.50</td><td>2.00</td><td>2.50</td><td>2.70</td><td style="color:var(--green);">3.00</td><td style="color:var(--green);">เพิ่มทุกปี</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ===== Dividend History ===== -->
+  <div class="section-title">Dividend History <span>10+ ปี ย้อนหลัง</span></div>
+
+  <details class="section-explain">
+    <summary></summary>
+    <div class="section-explain-content">
+      มองหา pattern: <strong>แท่งสูงขึ้นเรื่อยๆ</strong> = สุดยอด, <strong>คงที่</strong> = พอใช้, <strong>ขึ้นลง</strong> = ไม่มีนโยบายชัด, <strong>ลดลง</strong> = อันตราย — Hover ดู DPS แต่ละปี
+    </div>
+  </details>
+
+  <div class="div-section">
+    <div class="div-chart">
+      <div class="div-bar" style="height: 15%;"><div class="div-tip">2014: 0.45</div></div>
+      <div class="div-bar" style="height: 18%;"><div class="div-tip">2015: 0.55</div></div>
+      <div class="div-bar" style="height: 20%;"><div class="div-tip">2016: 0.60</div></div>
+      <div class="div-bar" style="height: 25%;"><div class="div-tip">2017: 0.75</div></div>
+      <div class="div-bar" style="height: 28%;"><div class="div-tip">2018: 0.85</div></div>
+      <div class="div-bar" style="height: 35%;"><div class="div-tip">2019: 1.05</div></div>
+      <div class="div-bar" style="height: 50%;"><div class="div-tip">2020: 1.50</div></div>
+      <div class="div-bar" style="height: 67%;"><div class="div-tip">2021: 2.00</div></div>
+      <div class="div-bar" style="height: 83%;"><div class="div-tip">2022: 2.50</div></div>
+      <div class="div-bar" style="height: 90%;"><div class="div-tip">2023: 2.70</div></div>
+      <div class="div-bar" style="height: 100%;"><div class="div-tip">2024: 3.00</div></div>
+    </div>
+    <div class="div-years">
+      <span>'14</span><span>'15</span><span>'16</span><span>'17</span><span>'18</span>
+      <span>'19</span><span>'20</span><span>'21</span><span>'22</span><span>'23</span><span>'24</span>
+    </div>
+  </div>
+
+  <!-- ===== DCA Verdict ===== -->
+  <div class="section-title">DCA Suitability <span>เหมาะสะสมระยะยาวไหม?</span></div>
+  <div class="verdict-box">
+    <div class="verdict-stars">5/5</div>
+    <div class="verdict-text">
+      <strong>เหมาะมากสำหรับ DCA ระยะยาว</strong> — ทำกำไรสม่ำเสมอไม่เคยต่ำกว่า 20% ของทุน, ยอดขายโตต่อเนื่อง 5 ปี, หนี้ต่ำและลดลงเรื่อยๆ, จ่ายปันผลมา 27 ปีไม่เคยขาดและเพิ่มขึ้นทุกปี 5 ปีติด, จ่ายแค่ 23% ของกำไรยังมี room เหลือเยอะ, เงินสดจริงรองรับทั้งปันผลและการขยายธุรกิจ ราคาปัจจุบันเทียบกำไรที่คาดว่าจะได้อยู่ในระดับสมเหตุสมผล
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

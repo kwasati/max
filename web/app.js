@@ -68,7 +68,7 @@ function renderSummary() {
   const passedCount = candidates.length;
   const totalScanned = sc.total_scanned || sc.total || 0;
   const avgScore = passedCount > 0
-    ? Math.round(candidates.reduce((s, c) => s + (c.quality_score || 0), 0) / passedCount)
+    ? Math.round(candidates.reduce((s, c) => s + (c.quality_score || c.score || 0), 0) / passedCount)
     : 0;
   const discoveries = candidates.filter(c => !c.in_watchlist).length;
   const warnings = candidates.filter(c => (c.signals || []).includes('DATA_WARNING')).length;
@@ -163,7 +163,7 @@ function renderStockList() {
   }
 
   // Sort by score desc
-  candidates.sort((a, b) => (b.quality_score || 0) - (a.quality_score || 0));
+  candidates.sort((a, b) => (b.quality_score || b.score || 0) - (a.quality_score || a.score || 0));
 
   if (candidates.length === 0) {
     el.innerHTML = '<div class="loading">No stocks in this category</div>';
@@ -173,11 +173,13 @@ function renderStockList() {
   el.innerHTML = candidates.map(c => {
     const sym = c.symbol || '';
     const sector = c.sector || '';
-    const score = c.quality_score || 0;
+    const score = c.quality_score || c.score || 0;
     const signals = c.signals || [];
-    const price = c.price != null ? safe(c.price, '2d') : '-';
-    const yld = c.dividend_yield != null ? c.dividend_yield.toFixed(1) : '-';
-    const yldColor = (c.dividend_yield != null && c.dividend_yield > 15) ? 'style="color: var(--red);"' : '';
+    const price = c.price ?? c.metrics?.current_price;
+    const priceStr = price != null ? safe(price, '2d') : '-';
+    const yld = c.dividend_yield ?? c.metrics?.dividend_yield;
+    const yldStr = yld != null ? Number(yld).toFixed(1) : '-';
+    const yldColor = (yld != null && yld > 15) ? 'style="color: var(--red);"' : '';
     const selected = state.currentStock === sym ? ' selected' : '';
 
     return `<div class="stock-row${selected}" data-symbol="${sym}">
@@ -188,8 +190,8 @@ function renderStockList() {
       <div class="stock-score"><div class="score-circle ${scoreClass(score)}">${score}</div></div>
       <div class="stock-tags">${signals.map(s => `<span class="tag ${tagClass(s)}">${tagLabel(s)}</span>`).join('')}</div>
       <div class="stock-price">
-        <div class="current">${price}</div>
-        <div class="yield" ${yldColor}>Yield ${yld}%</div>
+        <div class="current">${priceStr}</div>
+        <div class="yield" ${yldColor}>Yield ${yldStr}%</div>
       </div>
     </div>`;
   }).join('');
@@ -239,8 +241,8 @@ function renderDetail(d) {
   const ym = d.yearly_metrics || [];
   const totalYears = ym.length;
   const divHist = d.dividend_history || {};
-  const score = d.quality_score || 0;
-  const breakdown = d.score_breakdown || {};
+  const score = d.quality_score || d.score || 0;
+  const breakdown = d.score_breakdown || d.breakdown || {};
 
   // Score breakdown
   const profScore = breakdown.profitability != null ? breakdown.profitability : '-';

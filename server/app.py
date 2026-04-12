@@ -16,7 +16,7 @@ from typing import Optional
 
 import markdown
 import uvicorn
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -57,7 +57,6 @@ START_TIME = time.time()
 # ---------------------------------------------------------------------------
 # Pipeline state
 # ---------------------------------------------------------------------------
-pipeline_lock = asyncio.Lock()
 pipeline_state = {
     "running": False,
     "current_task": None,
@@ -135,9 +134,10 @@ async def get_screener():
 @app.get("/api/stock/{symbol}")
 async def get_stock(symbol: str):
     """Merge stock data from snapshot + screener."""
-    # Find in snapshot
-    snap_path = find_latest("snapshot_*.json", DATA_DIR)
     stock_data = None
+
+    # Try snapshot first (watchlist stocks)
+    snap_path = find_latest("snapshot_*.json", DATA_DIR)
     if snap_path:
         snap = read_json(snap_path)
         for s in snap.get("stocks", []):
@@ -145,23 +145,85 @@ async def get_stock(symbol: str):
                 stock_data = dict(s)
                 break
 
-    if stock_data is None:
-        raise HTTPException(404, f"Stock {symbol} not found")
-
-    # Enrich from screener
+    # Enrich or fallback from screener (discoveries + score)
     scr_path = find_latest("screener_*.json", DATA_DIR)
     if scr_path:
         scr = read_json(scr_path)
         for c in scr.get("candidates", []):
             if c.get("symbol", "").upper() == symbol.upper():
-                stock_data["score"] = c.get("score")
-                stock_data["breakdown"] = c.get("breakdown")
-                stock_data["signals"] = c.get("signals")
-                stock_data["reasons"] = c.get("reasons")
-                stock_data["screener_metrics"] = c.get("metrics")
+                if stock_data is None:
+                    # Not in watchlist — use screener as primary source
+                    stock_data = dict(c)
+                else:
+                    # Merge screener data into snapshot
+                    stock_data["score"] = c.get("score")
+                    stock_data["breakdown"] = c.get("breakdown")
+                    stock_data["signals"] = c.get("signals")
+                    stock_data["reasons"] = c.get("reasons")
+                    stock_data["screener_metrics"] = c.get("metrics")
+                    # Merge fields snapshot might not have
+                    for key in ("aggregates", "yearly_metrics", "dividend_history"):
+                        if key not in stock_data and key in c:
+                            stock_data[key] = c[key]
                 break
 
+    # Also check request files
+    if stock_data is None:
+        for req_file in sorted(DATA_DIR.glob("request_*.json"), reverse=True):
+            req = read_json(req_file)
+            for s in req.get("stocks", []):
+                if s.get("symbol", "").upper() == symbol.upper():
+                    stock_data = dict(s)
+                    break
+            if stock_data:
+                break
+
+    if stock_data is None:
+        raise HTTPException(404, f"Stock {symbol} not found")
+
+    # Normalize field names so frontend gets consistent schema
+    _normalize_stock(stock_data)
     return stock_data
+
+
+def _normalize_stock(d: dict):
+    """Ensure consistent field names regardless of data source."""
+    # Screener uses 'metrics' sub-dict for price/valuation data
+    m = d.pop("metrics", None) or {}
+
+    # Map screener fields → standard fields (snapshot-style)
+    _defaults = {
+        "price": m.get("current_price"),
+        "market_cap": m.get("mcap"),
+        "pe_ratio": m.get("pe"),
+        "forward_pe": m.get("forward_pe"),
+        "dividend_yield": m.get("dividend_yield"),
+        "payout_ratio": m.get("payout"),
+        "free_cashflow": m.get("fcf"),
+        "earnings_growth": m.get("earn_growth"),
+        "roe": m.get("roe"),
+        "debt_to_equity": m.get("de"),
+        "52w_low": m.get("52w_low"),
+        "52w_high": m.get("52w_high"),
+        "pb_ratio": m.get("pb_ratio"),
+        "five_year_avg_yield": m.get("five_year_avg_yield"),
+        "revenue_growth": m.get("rev_growth"),
+    }
+    for key, fallback in _defaults.items():
+        if d.get(key) is None and fallback is not None:
+            d[key] = fallback
+
+    # Normalize name (remove "SYMBOL_" prefix from screener format)
+    name = d.get("name", "")
+    if "_" in name:
+        parts = name.split("_", 1)
+        d["name"] = parts[1] if len(parts) > 1 else name
+
+    # Ensure score fields use consistent names
+    if "score" in d and "quality_score" not in d:
+        d["quality_score"] = d["score"]
+    if "breakdown" in d and "score_breakdown" not in d:
+        d["score_breakdown"] = d["breakdown"]
 
 
 @app.get("/api/history")
@@ -280,34 +342,36 @@ async def run_pipeline(action: str):
 
     scripts = PIPELINE_MAP[action]
 
-    async def _execute():
-        async with pipeline_lock:
-            pipeline_state["running"] = True
-            pipeline_state["last_result"] = None
-            try:
-                for script in scripts:
-                    pipeline_state["current_task"] = script
-                    script_path = SCRIPTS_DIR / script
-                    proc = await asyncio.create_subprocess_exec(
-                        "py", str(script_path),
-                        stdout=asyncio.subprocess.PIPE,
-                        stderr=asyncio.subprocess.PIPE,
-                        cwd=str(PROJECT_DIR),
-                    )
-                    stdout, stderr = await proc.communicate()
-                    if proc.returncode != 0:
-                        err_msg = stderr.decode("utf-8", errors="replace")
-                        pipeline_state["last_result"] = f"FAILED at {script}: {err_msg[:500]}"
-                        return
-                pipeline_state["last_result"] = f"OK — {action} completed"
-            except Exception as e:
-                pipeline_state["last_result"] = f"ERROR: {e}"
-            finally:
-                pipeline_state["running"] = False
-                pipeline_state["current_task"] = None
-                pipeline_state["last_run"] = datetime.now().isoformat()
+    def _execute_sync():
+        pipeline_state["running"] = True
+        pipeline_state["last_result"] = None
+        try:
+            env = {**os.environ, "PYTHONUTF8": "1"}
+            for script in scripts:
+                pipeline_state["current_task"] = script
+                script_path = SCRIPTS_DIR / script
+                result = subprocess.run(
+                    ["py", str(script_path)],
+                    capture_output=True,
+                    cwd=str(PROJECT_DIR),
+                    env=env,
+                    timeout=600,
+                )
+                if result.returncode != 0:
+                    err_msg = result.stderr.decode("utf-8", errors="replace")
+                    pipeline_state["last_result"] = f"FAILED at {script}: {err_msg[:500]}"
+                    return
+            pipeline_state["last_result"] = f"OK — {action} completed"
+        except Exception as e:
+            pipeline_state["last_result"] = f"ERROR: {e}"
+            print(f"[pipeline] error: {e}", file=sys.stderr)
+        finally:
+            pipeline_state["running"] = False
+            pipeline_state["current_task"] = None
+            pipeline_state["last_run"] = datetime.now().isoformat()
 
-    asyncio.create_task(_execute())
+    import threading
+    threading.Thread(target=_execute_sync, daemon=True).start()
     return {"status": "started", "action": action, "scripts": scripts}
 
 
@@ -380,41 +444,43 @@ def get_week_of_month() -> int:
     return (today.day - 1) // 7 + 1
 
 
-async def scheduled_run():
+def scheduled_run():
     """Sunday 09:00 — weekly (week 1,3) or discovery (week 2,4)."""
+    if pipeline_state["running"]:
+        print("[scheduler] pipeline already running, skip")
+        return
     week = get_week_of_month()
     action = "weekly" if week in (1, 3) else "discovery"
-    print(f"[scheduler] week {week} → running {action}")
-    # Trigger pipeline
+    print(f"[scheduler] week {week} — running {action}")
     scripts = PIPELINE_MAP[action]
-    async with pipeline_lock:
-        pipeline_state["running"] = True
-        pipeline_state["last_result"] = None
-        try:
-            for script in scripts:
-                pipeline_state["current_task"] = script
-                script_path = SCRIPTS_DIR / script
-                proc = await asyncio.create_subprocess_exec(
-                    "py", str(script_path),
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE,
-                    cwd=str(PROJECT_DIR),
-                )
-                stdout, stderr = await proc.communicate()
-                if proc.returncode != 0:
-                    err_msg = stderr.decode("utf-8", errors="replace")
-                    pipeline_state["last_result"] = f"FAILED at {script}: {err_msg[:500]}"
-                    return
-            pipeline_state["last_result"] = f"OK — scheduled {action} completed"
-        except Exception as e:
-            pipeline_state["last_result"] = f"ERROR: {e}"
-        finally:
-            pipeline_state["running"] = False
-            pipeline_state["current_task"] = None
-            pipeline_state["last_run"] = datetime.now().isoformat()
+    pipeline_state["running"] = True
+    pipeline_state["last_result"] = None
+    try:
+        env = {**os.environ, "PYTHONUTF8": "1"}
+        for script in scripts:
+            pipeline_state["current_task"] = script
+            script_path = SCRIPTS_DIR / script
+            result = subprocess.run(
+                ["py", str(script_path)],
+                capture_output=True,
+                cwd=str(PROJECT_DIR),
+                env=env,
+                timeout=600,
+            )
+            if result.returncode != 0:
+                err_msg = result.stderr.decode("utf-8", errors="replace")
+                pipeline_state["last_result"] = f"FAILED at {script}: {err_msg[:500]}"
+                return
+        pipeline_state["last_result"] = f"OK — scheduled {action} completed"
+    except Exception as e:
+        pipeline_state["last_result"] = f"ERROR: {e}"
+    finally:
+        pipeline_state["running"] = False
+        pipeline_state["current_task"] = None
+        pipeline_state["last_run"] = datetime.now().isoformat()
 
 
-scheduler = AsyncIOScheduler()
+scheduler = BackgroundScheduler()
 scheduler.add_job(scheduled_run, "cron", day_of_week="sun", hour=9, minute=0)
 
 
