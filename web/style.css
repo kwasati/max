@@ -36,6 +36,10 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* Hide all scrollbars */
+*::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
+
 body {
   font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   background: var(--bg);
@@ -134,8 +138,8 @@ body {
 .tab:hover { color: var(--text); }
 .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
 
-/* ===== APP LAYOUT ===== */
-.app-layout {
+/* ===== STOCK LAYOUT ===== */
+.stock-layout {
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -144,6 +148,11 @@ body {
   overflow: hidden;
   margin-bottom: 20px;
 }
+
+/* ===== PAGE PANELS (non-stock tabs) ===== */
+.page-panel { display: none; }
+.page-panel.active { display: block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
 /* ===== STOCK LIST ===== */
 .stock-list {
@@ -907,7 +916,7 @@ details.section-explain[open] > summary::before { content: 'ซ่อนคำ�
 
 /* Desktop */
 @media (min-width: 1024px) {
-  .app-layout {
+  .stock-layout {
     flex-direction: row;
     height: calc(100vh - 200px);
   }

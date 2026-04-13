@@ -30,31 +30,14 @@
 
 <!-- ===== TABS ===== -->
 <div class="tabs" id="tabs">
-  <button class="tab active" data-tab="passed">ผ่านเกณฑ์</button>
-  <button class="tab" data-tab="watchlist">ติดตาม</button>
-  <button class="tab" data-tab="discoveries">ค้นพบใหม่</button>
-  <button class="tab" data-tab="filtered">ไม่ผ่าน</button>
-  <button class="tab" data-tab="requests">คำขอ</button>
-  <button class="tab" data-tab="dca">จำลอง DCA</button>
-  <button class="tab" data-tab="settings">ตั้งค่า</button>
+  <button class="tab active" data-tab="passed" data-type="stock">ผ่านเกณฑ์</button>
+  <button class="tab" data-tab="watchlist" data-type="stock">ติดตาม</button>
+  <button class="tab" data-tab="discoveries" data-type="stock">ค้นพบใหม่</button>
+  <button class="tab" data-tab="filtered" data-type="stock">ไม่ผ่าน</button>
+  <button class="tab" data-tab="requests" data-type="page">คำขอ</button>
+  <button class="tab" data-tab="dca" data-type="page">จำลอง DCA</button>
+  <button class="tab" data-tab="settings" data-type="page">ตั้งค่า</button>
 </div>
-
-<!-- ===== APP LAYOUT ===== -->
-<div class="app-layout" id="app-layout">
-
-<!-- ===== STOCK LIST ===== -->
-<div class="stock-list" id="stock-list">
-  <div class="loading">Loading...</div>
-</div>
-
-<!-- ===== DETAIL PANEL ===== -->
-<div class="detail-panel" id="detail" style="display:none;">
-  <div class="detail-close" id="detail-close">
-    <button onclick="closeDetail()">← กลับ</button>
-  </div>
-</div>
-
-</div><!-- /app-layout -->
 
 <!-- ===== PIPELINE CONTROL ===== -->
 <div class="pipeline-bar" id="pipeline-bar">
@@ -72,171 +55,196 @@
   <div class="pipeline-status" id="pipeline-status"></div>
 </div>
 
-<!-- ===== REQUEST PANEL ===== -->
-<div class="request-panel" id="request-panel" style="display:none;">
-  <h3>Request Stock Analysis</h3>
-  <div class="request-form">
-    <input type="text" id="request-input" placeholder="LH, CHG, NYT (ไม่ต้องใส่ .BK)">
-    <button id="request-submit">ส่งคำขอ</button>
-  </div>
-  <div class="request-results" id="request-results"></div>
+<!-- ===== STOCK SECTION ===== -->
+<div id="stock-section">
+<div class="stock-layout grid-mode" id="stock-layout">
+
+<!-- ===== STOCK LIST ===== -->
+<div class="stock-list" id="stock-list">
+  <div class="loading">Loading...</div>
 </div>
 
-<!-- ===== DCA PANEL ===== -->
-<div class="dca-panel" id="dca-panel" style="display:none;">
-  <h3>DCA Simulator</h3>
-  <p class="dca-desc">จำลองการลงทุนแบบ DCA + Compound ย้อนหลังและคาดการณ์อนาคต</p>
-  <div class="dca-form" id="dca-form">
-    <div class="dca-form-row">
-      <div class="dca-field">
-        <label>หุ้น (Symbol)</label>
-        <input type="text" id="dca-symbol" placeholder="เช่น PTT.BK" list="dca-symbols-list">
-        <datalist id="dca-symbols-list"></datalist>
-      </div>
-      <div class="dca-field">
-        <label>จำนวนเงินต่อครั้ง (บาท)</label>
-        <input type="number" id="dca-amount" value="5000" min="100" step="100">
-      </div>
+<!-- ===== DETAIL PANEL ===== -->
+<div class="detail-panel" id="detail" style="display:none;">
+  <div class="detail-close" id="detail-close">
+    <button onclick="closeDetail()">← กลับ</button>
+  </div>
+</div>
+
+</div><!-- /stock-layout -->
+</div><!-- /stock-section -->
+
+<!-- ===== REQUEST PAGE ===== -->
+<div class="page-panel" id="page-requests">
+  <div class="request-panel" id="request-panel">
+    <h3>Request Stock Analysis</h3>
+    <div class="request-form">
+      <input type="text" id="request-input" placeholder="LH, CHG, NYT (ไม่ต้องใส่ .BK)">
+      <button id="request-submit">ส่งคำขอ</button>
     </div>
-    <div class="dca-form-row">
-      <div class="dca-field dca-field-wide">
-        <label>วันที่ซื้อ (วันของเดือน)</label>
-        <div class="dca-days-chips" id="dca-days-chips">
-          <label class="dca-chip"><input type="checkbox" value="1" checked><span>1</span></label>
-          <label class="dca-chip"><input type="checkbox" value="5"><span>5</span></label>
-          <label class="dca-chip"><input type="checkbox" value="10"><span>10</span></label>
-          <label class="dca-chip"><input type="checkbox" value="15" checked><span>15</span></label>
-          <label class="dca-chip"><input type="checkbox" value="20"><span>20</span></label>
-          <label class="dca-chip"><input type="checkbox" value="25"><span>25</span></label>
+    <div class="request-results" id="request-results"></div>
+  </div>
+</div>
+
+<!-- ===== DCA PAGE ===== -->
+<div class="page-panel" id="page-dca">
+  <div class="dca-panel" id="dca-panel">
+    <h3>DCA Simulator</h3>
+    <p class="dca-desc">จำลองการลงทุนแบบ DCA + Compound ย้อนหลังและคาดการณ์อนาคต</p>
+    <div class="dca-form" id="dca-form">
+      <div class="dca-form-row">
+        <div class="dca-field">
+          <label>หุ้น (Symbol)</label>
+          <input type="text" id="dca-symbol" placeholder="เช่น PTT.BK" list="dca-symbols-list">
+          <datalist id="dca-symbols-list"></datalist>
+        </div>
+        <div class="dca-field">
+          <label>จำนวนเงินต่อครั้ง (บาท)</label>
+          <input type="number" id="dca-amount" value="5000" min="100" step="100">
+        </div>
+      </div>
+      <div class="dca-form-row">
+        <div class="dca-field dca-field-wide">
+          <label>วันที่ซื้อ (วันของเดือน)</label>
+          <div class="dca-days-chips" id="dca-days-chips">
+            <label class="dca-chip"><input type="checkbox" value="1" checked><span>1</span></label>
+            <label class="dca-chip"><input type="checkbox" value="5"><span>5</span></label>
+            <label class="dca-chip"><input type="checkbox" value="10"><span>10</span></label>
+            <label class="dca-chip"><input type="checkbox" value="15" checked><span>15</span></label>
+            <label class="dca-chip"><input type="checkbox" value="20"><span>20</span></label>
+            <label class="dca-chip"><input type="checkbox" value="25"><span>25</span></label>
+          </div>
+        </div>
+      </div>
+      <div class="dca-form-row">
+        <div class="dca-field">
+          <label>ย้อนหลัง (ปี, 0=ทั้งหมด)</label>
+          <input type="number" id="dca-backtest-years" value="0" min="0" max="30">
+        </div>
+        <div class="dca-field">
+          <label>คาดการณ์ (ปี)</label>
+          <input type="number" id="dca-forward-years" value="10" min="1" max="30">
+        </div>
+        <div class="dca-field">
+          <label>นำปันผลกลับไปลงทุน</label>
+          <label class="dca-toggle">
+            <input type="checkbox" id="dca-reinvest" checked>
+            <span class="dca-toggle-slider"></span>
+            <span class="dca-toggle-label">Reinvest</span>
+          </label>
+        </div>
+      </div>
+      <div class="dca-form-row">
+        <div class="dca-field">
+          <label>ราคาโต (%/ปี) <span class="dca-auto-hint" id="dca-price-hint"></span></label>
+          <input type="number" id="dca-price-growth" placeholder="auto" min="0" max="50" step="0.1">
+        </div>
+        <div class="dca-field">
+          <label>ปันผลโต (%/ปี) <span class="dca-auto-hint" id="dca-div-hint"></span></label>
+          <input type="number" id="dca-div-growth" placeholder="auto" min="0" max="30" step="0.1">
+        </div>
+        <div class="dca-field">
+          <button class="dca-submit" id="dca-submit">คำนวณ</button>
         </div>
       </div>
     </div>
-    <div class="dca-form-row">
-      <div class="dca-field">
-        <label>ย้อนหลัง (ปี, 0=ทั้งหมด)</label>
-        <input type="number" id="dca-backtest-years" value="0" min="0" max="30">
-      </div>
-      <div class="dca-field">
-        <label>คาดการณ์ (ปี)</label>
-        <input type="number" id="dca-forward-years" value="10" min="1" max="30">
-      </div>
-      <div class="dca-field">
-        <label>นำปันผลกลับไปลงทุน</label>
-        <label class="dca-toggle">
-          <input type="checkbox" id="dca-reinvest" checked>
-          <span class="dca-toggle-slider"></span>
-          <span class="dca-toggle-label">Reinvest</span>
-        </label>
-      </div>
-    </div>
-    <div class="dca-form-row">
-      <div class="dca-field">
-        <label>ราคาโต (%/ปี) <span class="dca-auto-hint" id="dca-price-hint"></span></label>
-        <input type="number" id="dca-price-growth" placeholder="auto" min="0" max="50" step="0.1">
-      </div>
-      <div class="dca-field">
-        <label>ปันผลโต (%/ปี) <span class="dca-auto-hint" id="dca-div-hint"></span></label>
-        <input type="number" id="dca-div-growth" placeholder="auto" min="0" max="30" step="0.1">
-      </div>
-      <div class="dca-field">
-        <button class="dca-submit" id="dca-submit">คำนวณ</button>
-      </div>
-    </div>
+    <div class="dca-results" id="dca-results"></div>
   </div>
-  <div class="dca-results" id="dca-results"></div>
 </div>
 
-<!-- ===== SETTINGS PANEL ===== -->
-<div class="settings-panel" id="settings-panel" style="display:none;">
-  <h3>ตั้งค่าการวิเคราะห์อัตโนมัติ</h3>
+<!-- ===== SETTINGS PAGE ===== -->
+<div class="page-panel" id="page-settings">
+  <div class="settings-panel" id="settings-panel">
+    <h3>ตั้งค่าการวิเคราะห์อัตโนมัติ</h3>
 
-  <div class="settings-section">
-    <div class="settings-section-title">รอบการวิเคราะห์</div>
-    <div class="settings-row">
-      <div class="settings-field">
-        <label for="sched-enabled">เปิด/ปิด Schedule</label>
-        <label class="dca-toggle">
-          <input type="checkbox" id="sched-enabled" checked>
-          <span class="dca-toggle-slider"></span>
-          <span class="dca-toggle-label">เปิด</span>
-        </label>
-      </div>
-      <div class="settings-field">
-        <label for="sched-day">วัน</label>
-        <select id="sched-day">
-          <option value="mon">จันทร์</option>
-          <option value="tue">อังคาร</option>
-          <option value="wed">พุธ</option>
-          <option value="thu">พฤหัสบดี</option>
-          <option value="fri">ศุกร์</option>
-          <option value="sat">เสาร์</option>
-          <option value="sun" selected>อาทิตย์</option>
-        </select>
-      </div>
-      <div class="settings-field">
-        <label for="sched-hour">เวลา</label>
-        <div class="settings-time">
-          <input type="number" id="sched-hour" value="9" min="0" max="23" step="1">
-          <span>:</span>
-          <input type="number" id="sched-minute" value="0" min="0" max="59" step="5">
+    <div class="settings-section">
+      <div class="settings-section-title">รอบการวิเคราะห์</div>
+      <div class="settings-row">
+        <div class="settings-field">
+          <label for="sched-enabled">เปิด/ปิด Schedule</label>
+          <label class="dca-toggle">
+            <input type="checkbox" id="sched-enabled" checked>
+            <span class="dca-toggle-slider"></span>
+            <span class="dca-toggle-label">เปิด</span>
+          </label>
+        </div>
+        <div class="settings-field">
+          <label for="sched-day">วัน</label>
+          <select id="sched-day">
+            <option value="mon">จันทร์</option>
+            <option value="tue">อังคาร</option>
+            <option value="wed">พุธ</option>
+            <option value="thu">พฤหัสบดี</option>
+            <option value="fri">ศุกร์</option>
+            <option value="sat">เสาร์</option>
+            <option value="sun" selected>อาทิตย์</option>
+          </select>
+        </div>
+        <div class="settings-field">
+          <label for="sched-hour">เวลา</label>
+          <div class="settings-time">
+            <input type="number" id="sched-hour" value="9" min="0" max="23" step="1">
+            <span>:</span>
+            <input type="number" id="sched-minute" value="0" min="0" max="59" step="5">
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="settings-section">
-    <div class="settings-section-title">Pipeline อัตโนมัติ</div>
-    <div class="settings-row">
-      <div class="settings-field">
-        <label for="pipe-odd-weeks">สัปดาห์คี่ (1, 3)</label>
-        <select id="pipe-odd-weeks">
-          <option value="weekly">Weekly (ดึง + วิเคราะห์)</option>
-          <option value="discovery">Discovery (ดึง + คัดกรอง + วิเคราะห์)</option>
-          <option value="fetch">Fetch เท่านั้น</option>
-          <option value="screen">Screen เท่านั้น</option>
-        </select>
-      </div>
-      <div class="settings-field">
-        <label for="pipe-even-weeks">สัปดาห์คู่ (2, 4)</label>
-        <select id="pipe-even-weeks">
-          <option value="weekly">Weekly (ดึง + วิเคราะห์)</option>
-          <option value="discovery" selected>Discovery (ดึง + คัดกรอง + วิเคราะห์)</option>
-          <option value="fetch">Fetch เท่านั้น</option>
-          <option value="screen">Screen เท่านั้น</option>
-        </select>
+    <div class="settings-section">
+      <div class="settings-section-title">Pipeline อัตโนมัติ</div>
+      <div class="settings-row">
+        <div class="settings-field">
+          <label for="pipe-odd-weeks">สัปดาห์คี่ (1, 3)</label>
+          <select id="pipe-odd-weeks">
+            <option value="weekly">Weekly (ดึง + วิเคราะห์)</option>
+            <option value="discovery">Discovery (ดึง + คัดกรอง + วิเคราะห์)</option>
+            <option value="fetch">Fetch เท่านั้น</option>
+            <option value="screen">Screen เท่านั้น</option>
+          </select>
+        </div>
+        <div class="settings-field">
+          <label for="pipe-even-weeks">สัปดาห์คู่ (2, 4)</label>
+          <select id="pipe-even-weeks">
+            <option value="weekly">Weekly (ดึง + วิเคราะห์)</option>
+            <option value="discovery" selected>Discovery (ดึง + คัดกรอง + วิเคราะห์)</option>
+            <option value="fetch">Fetch เท่านั้น</option>
+            <option value="screen">Screen เท่านั้น</option>
+          </select>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="settings-section">
-    <div class="settings-section-title">เกณฑ์คัดกรองหุ้น (Hard Filters)</div>
-    <div class="settings-row">
-      <div class="settings-field">
-        <label for="filter-roe">ROE เฉลี่ย (%)</label>
-        <input type="number" id="filter-roe" value="15" min="5" max="50" step="1">
-        <span class="settings-hint">ค่าเริ่มต้น: 15%</span>
-      </div>
-      <div class="settings-field">
-        <label for="filter-nm">Net Margin (%)</label>
-        <input type="number" id="filter-nm" value="10" min="1" max="50" step="1">
-        <span class="settings-hint">ค่าเริ่มต้น: 10%</span>
-      </div>
-      <div class="settings-field">
-        <label for="filter-de">D/E Ratio สูงสุด</label>
-        <input type="number" id="filter-de" value="1.5" min="0.1" max="10" step="0.1">
-        <span class="settings-hint">ค่าเริ่มต้น: 1.5 (non-financial)</span>
-      </div>
-      <div class="settings-field">
-        <label for="filter-mcap">Market Cap ต่ำสุด (ล้าน฿)</label>
-        <input type="number" id="filter-mcap" value="5000" min="100" max="100000" step="500">
-        <span class="settings-hint">ค่าเริ่มต้น: 5,000 ล้าน</span>
+    <div class="settings-section">
+      <div class="settings-section-title">เกณฑ์คัดกรองหุ้น (Hard Filters)</div>
+      <div class="settings-row">
+        <div class="settings-field">
+          <label for="filter-roe">ROE เฉลี่ย (%)</label>
+          <input type="number" id="filter-roe" value="15" min="5" max="50" step="1">
+          <span class="settings-hint">ค่าเริ่มต้น: 15%</span>
+        </div>
+        <div class="settings-field">
+          <label for="filter-nm">Net Margin (%)</label>
+          <input type="number" id="filter-nm" value="10" min="1" max="50" step="1">
+          <span class="settings-hint">ค่าเริ่มต้น: 10%</span>
+        </div>
+        <div class="settings-field">
+          <label for="filter-de">D/E Ratio สูงสุด</label>
+          <input type="number" id="filter-de" value="1.5" min="0.1" max="10" step="0.1">
+          <span class="settings-hint">ค่าเริ่มต้น: 1.5 (non-financial)</span>
+        </div>
+        <div class="settings-field">
+          <label for="filter-mcap">Market Cap ต่ำสุด (ล้าน฿)</label>
+          <input type="number" id="filter-mcap" value="5000" min="100" max="100000" step="500">
+          <span class="settings-hint">ค่าเริ่มต้น: 5,000 ล้าน</span>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="settings-actions">
-    <button class="settings-save" id="settings-save">บันทึก</button>
-    <span class="settings-status" id="settings-status"></span>
+    <div class="settings-actions">
+      <button class="settings-save" id="settings-save">บันทึก</button>
+      <span class="settings-status" id="settings-status"></span>
+    </div>
   </div>
 </div>
 
