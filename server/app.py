@@ -1110,6 +1110,240 @@ async def delete_custom_list(list_name: str):
 
 
 # ---------------------------------------------------------------------------
+# Search API
+# ---------------------------------------------------------------------------
+
+# Operator functions for criteria matching
+_OPS = {
+    ">=": lambda a, b: a >= b,
+    "<=": lambda a, b: a <= b,
+    ">": lambda a, b: a > b,
+    "<": lambda a, b: a < b,
+    "==": lambda a, b: a == b,
+    "!=": lambda a, b: a != b,
+}
+
+
+def _load_all_stocks() -> list[dict]:
+    """Load stocks from screener candidates + snapshot + request files.
+
+    Each stock gets a normalized flat dict with common metrics.
+    Deduplicates by symbol (screener takes priority).
+    """
+    seen: dict[str, dict] = {}  # symbol → raw data
+
+    # 1. Screener candidates (richest data)
+    scr_path = find_latest("screener_*.json", DATA_DIR)
+    if scr_path:
+        scr = read_json(scr_path)
+        for c in scr.get("candidates", []):
+            sym = c.get("symbol", "").upper()
+            if sym:
+                seen[sym] = dict(c)
+
+    # 2. Snapshot (watchlist stocks — may have fields screener doesn't)
+    snap_path = find_latest("snapshot_*.json", DATA_DIR)
+    if snap_path:
+        snap = read_json(snap_path)
+        for s in snap.get("stocks", []):
+            sym = s.get("symbol", "").upper()
+            if sym and sym not in seen:
+                seen[sym] = dict(s)
+
+    # 3. Request files (ad-hoc analyzed stocks)
+    for req_file in sorted(DATA_DIR.glob("request_*.json"), reverse=True):
+        try:
+            req = read_json(req_file)
+            for s in req.get("stocks", []):
+                sym = s.get("symbol", "").upper()
+                if sym and sym not in seen:
+                    seen[sym] = dict(s)
+        except Exception:
+            pass
+
+    return list(seen.values())
+
+
+def _get_metric(stock: dict, metric: str, year: int | None = None):
+    """Extract a metric value from stock data, handling nested structures.
+
+    Returns float or None if not available.
+    """
+    # If year is specified, look up yearly_metrics
+    if year is not None:
+        for ym in stock.get("yearly_metrics", []):
+            if ym.get("year") == year:
+                val = ym.get(metric)
+                if val is not None:
+                    try:
+                        return float(val)
+                    except (ValueError, TypeError):
+                        return None
+        return None
+
+    # Map metric names to where they live in different data sources
+    # Try flat fields first (snapshot style)
+    FLAT_MAP = {
+        "dividend_yield": ["dividend_yield"],
+        "dps": ["dividend_rate", "dps"],
+        "five_year_avg_yield": ["five_year_avg_yield"],
+        "quality_score": ["quality_score", "score"],
+        "roe": ["roe"],
+        "net_margin": ["profit_margin", "net_margin"],
+        "de_ratio": ["debt_to_equity", "de_ratio"],
+        "pe_ratio": ["pe_ratio"],
+        "payout_ratio": ["payout_ratio"],
+        "market_cap": ["market_cap"],
+        "fcf": ["free_cashflow", "fcf"],
+    }
+
+    # Screener nested: metrics.{key}
+    METRICS_MAP = {
+        "dividend_yield": "dividend_yield",
+        "roe": "roe",
+        "de_ratio": "de",
+        "pe_ratio": "pe",
+        "payout_ratio": "payout",
+        "market_cap": "mcap",
+        "fcf": "fcf",
+        "five_year_avg_yield": "five_year_avg_yield",
+    }
+
+    # Aggregates nested: aggregates.{key}
+    AGG_MAP = {
+        "dividend_streak": "dividend_streak",
+        "net_margin": "avg_net_margin",
+        "roe": "avg_roe",
+    }
+
+    # 1. Try flat fields
+    if metric in FLAT_MAP:
+        for key in FLAT_MAP[metric]:
+            val = stock.get(key)
+            if val is not None:
+                try:
+                    return float(val)
+                except (ValueError, TypeError):
+                    pass
+
+    # 2. Try screener metrics sub-dict
+    m = stock.get("metrics") or {}
+    if metric in METRICS_MAP:
+        val = m.get(METRICS_MAP[metric])
+        if val is not None:
+            try:
+                return float(val)
+            except (ValueError, TypeError):
+                pass
+
+    # 3. Try aggregates sub-dict
+    agg = stock.get("aggregates") or {}
+    if metric in AGG_MAP:
+        val = agg.get(AGG_MAP[metric])
+        if val is not None:
+            try:
+                return float(val)
+            except (ValueError, TypeError):
+                pass
+
+    # 4. Direct field name as last resort
+    val = stock.get(metric)
+    if val is not None:
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            pass
+
+    return None
+
+
+def _matches_criteria(stock: dict, criteria: list[dict]) -> bool:
+    """Check if a stock matches all criteria. Stocks missing a metric are excluded."""
+    for c in criteria:
+        metric = c.get("metric", "")
+        op = c.get("op", ">=")
+        value = c.get("value")
+        year = c.get("year")
+
+        if op not in _OPS or value is None:
+            continue
+
+        actual = _get_metric(stock, metric, year)
+        if actual is None:
+            return False
+
+        try:
+            if not _OPS[op](actual, float(value)):
+                return False
+        except (ValueError, TypeError):
+            return False
+    return True
+
+
+def _extract_search_result(stock: dict) -> dict:
+    """Pick relevant fields for search response."""
+    # Normalize name
+    name = stock.get("name", "")
+    if "_" in name:
+        parts = name.split("_", 1)
+        name = parts[1] if len(parts) > 1 else name
+
+    m = stock.get("metrics") or {}
+    agg = stock.get("aggregates") or {}
+    val = stock.get("valuation") or {}
+
+    return {
+        "symbol": stock.get("symbol", ""),
+        "name": name,
+        "sector": stock.get("sector", ""),
+        "quality_score": stock.get("quality_score") or stock.get("score"),
+        "dividend_yield": stock.get("dividend_yield") or m.get("dividend_yield"),
+        "five_year_avg_yield": stock.get("five_year_avg_yield") or m.get("five_year_avg_yield"),
+        "dps": stock.get("dividend_rate") or stock.get("dps"),
+        "pe_ratio": stock.get("pe_ratio") or m.get("pe"),
+        "de_ratio": stock.get("debt_to_equity") or m.get("de"),
+        "roe": stock.get("roe") or m.get("roe"),
+        "net_margin": stock.get("profit_margin") or agg.get("avg_net_margin"),
+        "payout_ratio": stock.get("payout_ratio") or m.get("payout"),
+        "market_cap": stock.get("market_cap") or m.get("mcap"),
+        "dividend_streak": agg.get("dividend_streak"),
+        "valuation_grade": val.get("grade"),
+        "signals": stock.get("signals", []),
+    }
+
+
+@app.post("/api/search")
+async def search_stocks(request: Request):
+    body = await request.json()
+    criteria = body.get("criteria", [])
+    sort_by = body.get("sort_by", "quality_score")
+    sort_order = body.get("sort_order", "desc")
+    limit = min(body.get("limit", 50), 200)
+
+    # Load all available stock data
+    stocks = _load_all_stocks()
+
+    # Apply filters
+    results = []
+    for stock in stocks:
+        if _matches_criteria(stock, criteria):
+            results.append(_extract_search_result(stock))
+
+    # Sort
+    reverse = sort_order == "desc"
+    results.sort(
+        key=lambda x: x.get(sort_by) if x.get(sort_by) is not None else (0 if reverse else 999999),
+        reverse=reverse,
+    )
+
+    # Limit
+    total = len(results)
+    results = results[:limit]
+
+    return {"results": results, "total": total, "criteria_used": criteria}
+
+
+# ---------------------------------------------------------------------------
 # Static files (SPA) — mount last so API routes take priority
 # ---------------------------------------------------------------------------
 if WEB_DIR.exists():
