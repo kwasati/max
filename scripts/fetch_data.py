@@ -152,6 +152,19 @@ def _build_aggregates(yearly_metrics, dps_by_year):
     div_streak = count_dividend_streak(dps_by_year)
     div_growth_streak = count_dividend_growth_streak(dps_by_year)
 
+    # dps_cagr from dividend_history
+    dps_years = sorted([y for y in dps_by_year if dps_by_year[y] and dps_by_year[y] > 0])
+    if len(dps_years) >= 2:
+        first_dps = dps_by_year[dps_years[0]]
+        last_dps = dps_by_year[dps_years[-1]]
+        n_years = dps_years[-1] - dps_years[0]
+        if first_dps > 0 and n_years > 0:
+            dps_cagr = (last_dps / first_dps) ** (1 / n_years) - 1
+        else:
+            dps_cagr = None
+    else:
+        dps_cagr = None
+
     latest = yearly_metrics[-1] if yearly_metrics else {}
 
     avg_gross_margin = sum(gm_list) / len(gm_list) if gm_list else None
@@ -160,6 +173,7 @@ def _build_aggregates(yearly_metrics, dps_by_year):
     return {
         "revenue_cagr": revenue_cagr,
         "eps_cagr": eps_cagr,
+        "dps_cagr": dps_cagr,
         "avg_roe": avg_roe,
         "min_roe": min_roe,
         "avg_net_margin": avg_net_margin,
@@ -445,6 +459,7 @@ def main():
         time.sleep(0.3)
 
     today = datetime.now().strftime("%Y-%m-%d")
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
     out_path = DATA_DIR / f"snapshot_{today}.json"
     out_path.write_text(
         json.dumps(
