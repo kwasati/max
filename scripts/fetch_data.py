@@ -94,7 +94,7 @@ def count_dividend_growth_streak(dps_by_year):
     years = [y for y in sorted(dps_by_year.keys(), reverse=True) if y < current_year]
     streak = 0
     for i in range(len(years) - 1):
-        if dps_by_year[years[i]] >= dps_by_year[years[i + 1]] and dps_by_year[years[i + 1]] > 0:
+        if dps_by_year[years[i]] > dps_by_year[years[i + 1]] and dps_by_year[years[i + 1]] > 0:
             streak += 1
         else:
             break
@@ -117,7 +117,7 @@ def validate_metrics(info, yearly_metrics):
 
     for ym in yearly_metrics:
         roe = ym.get("roe")
-        if roe is not None and abs(roe) > 0.5:
+        if roe is not None and abs(roe) > 1.5:
             warnings.append(f"ROE {roe*100:.0f}% ปี {ym['year']} — สูงผิดปกติ")
             break
 
