@@ -282,12 +282,27 @@ class RequestBody(BaseModel):
     symbols: list[str]
 
 
+request_status: dict[str, str] = {}  # symbol → "processing" | "done" | "error"
+
+
 @app.post("/api/request")
-async def request_analyze(body: RequestBody, background_tasks=None):
+async def request_analyze(body: RequestBody):
     """Fetch & analyze specific stocks in background."""
-    symbols = body.symbols
+    # Normalize symbols — auto-append .BK if missing
+    symbols = []
+    for s in body.symbols:
+        s = s.strip().upper()
+        if not s:
+            continue
+        if not s.endswith(".BK"):
+            s += ".BK"
+        symbols.append(s)
+
     if not symbols:
         raise HTTPException(400, "symbols list is empty")
+
+    for s in symbols:
+        request_status[s] = "processing"
 
     async def _run():
         try:
@@ -300,8 +315,10 @@ async def request_analyze(body: RequestBody, background_tasks=None):
                 try:
                     data = fetch_multi_year(sym)
                     results.append(data)
+                    request_status[sym] = "done"
                 except Exception as e:
                     results.append({"symbol": sym, "error": str(e)})
+                    request_status[sym] = "error"
 
             today = datetime.now().strftime("%Y-%m-%d")
             joined = "_".join(s.replace(".BK", "") for s in symbols)
@@ -321,17 +338,37 @@ async def request_analyze(body: RequestBody, background_tasks=None):
                 encoding="utf-8",
             )
         except Exception as e:
+            for sym in symbols:
+                request_status[sym] = "error"
             print(f"[request] error: {e}", file=sys.stderr)
 
     asyncio.create_task(_run())
     return {"status": "processing", "symbols": symbols}
 
 
+@app.get("/api/request/status")
+async def get_request_status():
+    """Get processing status for requested symbols."""
+    return request_status
+
+
 @app.get("/api/requests")
 async def list_requests():
-    """List request result files."""
-    files = list_files(DATA_DIR, "request_*.json")
-    return {"requests": files}
+    """List request results with stock data."""
+    results = []
+    for f in sorted(DATA_DIR.glob("request_*.json"), reverse=True):
+        try:
+            data = read_json(f)
+            results.append({
+                "file": f.name,
+                "date": data.get("date"),
+                "symbols": data.get("symbols", []),
+                "stocks": data.get("stocks", []),
+                "count": len(data.get("stocks", [])),
+            })
+        except Exception:
+            pass
+    return {"requests": results}
 
 
 # ---------------------------------------------------------------------------

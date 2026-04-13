@@ -843,22 +843,32 @@ function bindRequests() {
   btn.addEventListener('click', async () => {
     const raw = input.value.trim();
     if (!raw) return;
-    const symbols = raw.split(',').map(s => s.trim()).filter(Boolean);
+    const symbols = raw.split(/[,\s]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
+
     btn.disabled = true;
-    btn.textContent = 'Submitting...';
+    btn.textContent = 'กำลังส่ง...';
+
+    const resultsEl = document.getElementById('request-results');
+    if (resultsEl) resultsEl.innerHTML = '<div class="loading">กำลังดึงข้อมูล...</div>';
+
     try {
-      await fetch(API + '/api/request', {
+      const resp = await fetch(API + '/api/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ symbols })
       });
+      if (!resp.ok) throw new Error('Request failed');
       input.value = '';
-      loadRequests();
+
+      // Poll for completion
+      setTimeout(() => loadRequests(), 3000);
+      setTimeout(() => loadRequests(), 10000);
+      setTimeout(() => loadRequests(), 30000);
     } catch (e) {
-      console.error('Request failed:', e);
+      if (resultsEl) resultsEl.innerHTML = '<div class="error">เกิดข้อผิดพลาด กรุณาลองใหม่</div>';
     }
     btn.disabled = false;
-    btn.textContent = 'Submit';
+    btn.textContent = 'ส่งคำขอ';
   });
 }
 
@@ -867,16 +877,32 @@ async function loadRequests() {
   if (!el) return;
   try {
     const data = await fetch(API + '/api/requests').then(r => r.json());
-    const items = data.requests || data || [];
-    el.innerHTML = items.map(r => {
-      const statusCls = r.status === 'done' ? 'done' : 'pending';
-      return `<div class="request-item">
-        <span class="symbol">${r.symbol}</span>
-        <span class="status ${statusCls}">${r.status || 'pending'}</span>
+    const requests = data.requests || [];
+    if (requests.length === 0) {
+      el.innerHTML = '<div class="loading">ยังไม่มีคำขอ</div>';
+      return;
+    }
+    el.innerHTML = requests.map(req => {
+      const stocks = req.stocks || [];
+      const stockCards = stocks.map(s => {
+        if (s.error) {
+          return `<div class="request-item error"><span class="symbol">${s.symbol}</span><span class="status error">ไม่พบข้อมูล</span></div>`;
+        }
+        const dy = s.dividend_yield != null ? s.dividend_yield.toFixed(1) + '%' : 'N/A';
+        const price = s.price != null ? '฿' + s.price.toFixed(2) : 'N/A';
+        return `<div class="request-item" onclick="selectStock('${s.symbol}')">
+          <span class="symbol">${(s.symbol || '').replace('.BK','')}</span>
+          <span class="price">${price}</span>
+          <span class="yield">${dy}</span>
+        </div>`;
+      }).join('');
+      return `<div class="request-group">
+        <div class="request-header">${req.date} (${req.count} stocks)</div>
+        ${stockCards}
       </div>`;
     }).join('');
   } catch (e) {
-    el.innerHTML = '<div class="loading">No requests</div>';
+    el.innerHTML = '<div class="loading">ไม่สามารถโหลดคำขอได้</div>';
   }
 }
 
