@@ -1,7 +1,13 @@
-"""Data adapter — thaifin (primary) + yfinance (fallback/supplement).
+"""Data adapter — thaifin (primary) + yfinance (supplement).
 
 thaifin provides 10+ years of Thai stock financials.
 yfinance supplements with realtime price, 52w range, forward PE, payout ratio, etc.
+
+Public API:
+    normalize_symbol(raw) → (tf_sym, yf_sym)
+    fetch_from_thaifin(symbol) → dict | None
+    fetch_yfinance_supplement(symbol) → dict
+    fetch_fundamentals(symbol) → dict | None  (combined thaifin + yfinance)
 """
 
 import logging
@@ -13,15 +19,22 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 
+def normalize_symbol(raw: str) -> tuple[str, str]:
+    """Normalize symbol: 'LH' or 'LH.BK' → ('LH', 'LH.BK')."""
+    base = raw.replace(".BK", "")
+    return (base, f"{base}.BK")
+
+
 def _to_yf_symbol(symbol: str) -> str:
     """Normalize symbol for yfinance: 'PTT' or 'PTT.BK' → 'PTT.BK'."""
-    base = symbol.replace(".BK", "")
-    return f"{base}.BK"
+    _, yf_sym = normalize_symbol(symbol)
+    return yf_sym
 
 
 def _to_tf_symbol(symbol: str) -> str:
     """Normalize symbol for thaifin: 'PTT.BK' or 'PTT' → 'PTT'."""
-    return symbol.replace(".BK", "")
+    tf_sym, _ = normalize_symbol(symbol)
+    return tf_sym
 
 
 def _safe(val):
@@ -306,6 +319,11 @@ def _fetch_yfinance_full(symbol: str) -> dict | None:
     except Exception as e:
         logger.warning("yfinance full fallback failed for %s: %s", symbol, e)
         return None
+
+
+# Public API aliases
+fetch_from_thaifin = _fetch_thaifin
+fetch_yfinance_supplement = _fetch_yfinance_supplement
 
 
 def fetch_fundamentals(symbol: str) -> dict:

@@ -16,6 +16,7 @@ import yfinance as yf
 import pandas as pd
 
 from scripts.data_adapter import fetch_fundamentals as _adapter_fetch
+from scripts.data_adapter import fetch_from_thaifin, fetch_yfinance_supplement, normalize_symbol
 
 ROOT = Path(__file__).resolve().parent.parent
 WATCHLIST = ROOT / "watchlist.json"
