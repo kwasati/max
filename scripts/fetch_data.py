@@ -15,6 +15,11 @@ from pathlib import Path
 import yfinance as yf
 import pandas as pd
 
+# Ensure project root is in sys.path for `from scripts.xxx` imports
+_project_root = str(Path(__file__).resolve().parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
 from scripts.data_adapter import fetch_fundamentals as _adapter_fetch
 from scripts.data_adapter import fetch_from_thaifin, fetch_yfinance_supplement, normalize_symbol
 
