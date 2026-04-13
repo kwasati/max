@@ -1,5 +1,12 @@
 # Max Mahon Changelog
 
+## 2026-04-13 — Sort Fix + Header Update
+
+- **แก้ Sort ไม่ทำงาน** — ข้อมูล yield/avg5y อยู่ใน metrics.* แต่ sort อ่านจาก top-level ที่เป็น null ทุกตัว → fallback ไป metrics แล้ว
+- **แก้ Sort dropdown ตำแหน่งผิด** — ย้าย toolbar ออกจาก flex container ที่จัดแนวนอน → อยู่บนสุดของ grid แล้ว
+- **แก้ Sort state ไม่ sync** — browser จำค่า dropdown จากครั้งก่อน แต่ state ยังเป็น score → sync ก่อน render แรก
+- **เปลี่ยน Scoring label** → "Buffett Hong Quality"
+
 ## 2026-04-13 — Dashboard Redesign + Pipeline Overhaul + Mobile Mockup
 
 **Dashboard ใหม่:**

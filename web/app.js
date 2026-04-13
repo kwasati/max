@@ -68,9 +68,9 @@ async function init() {
   state.watchlist = wl;
   state.screener = sc;
   renderSummary();
-  renderStockList();
   bindTabs();
-  bindSort();
+  bindSort();  // sync sortBy with dropdown before first render
+  renderStockList();
   bindRequests();
 }
 
@@ -167,7 +167,7 @@ function renderSummary() {
     const d = new Date(runDate);
     const dateStr = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     meta.innerHTML = `
-      <span>Scoring: <strong>Buffett Quality + Value</strong></span>
+      <span>Scoring: <strong>Buffett Hong Quality</strong></span>
       <span>Updated: <strong>${dateStr}</strong></span>
       <span>Scanned: <strong>${totalScanned} stocks</strong></span>
     `;
@@ -210,7 +210,12 @@ function bindTabs() {
 // ===== SORT =====
 function bindSort() {
   const sortSelect = document.getElementById('sort-select');
-  if (sortSelect) {
+  if (!sortSelect) return;
+  // Sync state with dropdown value (browser may remember selection across reloads)
+  state.sortBy = sortSelect.value;
+  // Avoid duplicate listeners on re-init
+  if (!sortSelect._bound) {
+    sortSelect._bound = true;
     sortSelect.addEventListener('change', () => {
       state.sortBy = sortSelect.value;
       renderStockList();
@@ -291,12 +296,15 @@ function renderStockList() {
     return;
   }
 
-  // Sort
+  // Sort — top-level fields may be null, fallback to metrics.*
+  const getDY = c => c.dividend_yield ?? c.metrics?.dividend_yield ?? 0;
+  const getAvg5 = c => c.five_year_avg_yield ?? c.metrics?.five_year_avg_yield ?? 0;
+  const getPE = c => c.pe_ratio ?? c.metrics?.pe ?? 999;
   const sortFns = {
     score: (a, b) => (b.quality_score || b.score || 0) - (a.quality_score || a.score || 0),
-    yield: (a, b) => (b.dividend_yield || 0) - (a.dividend_yield || 0),
-    avg5y: (a, b) => (b.five_year_avg_yield || 0) - (a.five_year_avg_yield || 0),
-    pe_asc: (a, b) => (a.pe_ratio || 999) - (b.pe_ratio || 999),
+    yield: (a, b) => getDY(b) - getDY(a),
+    avg5y: (a, b) => getAvg5(b) - getAvg5(a),
+    pe_asc: (a, b) => getPE(a) - getPE(b),
     de_asc: (a, b) => {
       const aDE = a.de_ratio ?? a.metrics?.de ?? 999;
       const bDE = b.de_ratio ?? b.metrics?.de ?? 999;
