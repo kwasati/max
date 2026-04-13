@@ -414,7 +414,7 @@ async def run_pipeline(action: str):
                     encoding="utf-8",
                     cwd=str(PROJECT_DIR),
                     env=env,
-                    timeout=600,
+                    timeout=1800,
                 )
                 if result.returncode != 0:
                     err_msg = result.stderr[:500] if result.stderr else ""
@@ -448,8 +448,8 @@ async def sse_events(request: Request):
                 "last_run": pipeline_state["last_run"],
                 "last_result": pipeline_state["last_result"],
             })
-            yield {"event": "status", "data": data}
-            await asyncio.sleep(2)
+            yield {"event": "status", "data": data, "retry": 10000}
+            await asyncio.sleep(5)
 
     return EventSourceResponse(event_generator())
 

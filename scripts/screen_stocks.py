@@ -650,8 +650,6 @@ def main():
 
         except Exception as e:
             print(f"  [{i+1}/{len(symbols)}] {sym} — error: {e}")
-        finally:
-            time.sleep(0.3)
 
     # Compute sector median P/E from candidates
     sector_pe = {}
