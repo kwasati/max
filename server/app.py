@@ -408,6 +408,53 @@ PIPELINE_MAP = {
 }
 
 
+def _get_scripts_for_mode(mode: str) -> list[str]:
+    """Return script list for a pipeline mode."""
+    if mode not in PIPELINE_MAP:
+        logging.error(f"[pipeline] unknown mode '{mode}', falling back to weekly")
+        mode = "weekly"
+    return PIPELINE_MAP[mode]
+
+
+def _execute_sync(scripts: list[str], label: str = "pipeline"):
+    """Run pipeline scripts sequentially. Blocks the calling thread.
+
+    Acquires pipeline_lock, updates pipeline_state throughout.
+    """
+    with _pipeline_lock:
+        if pipeline_state["running"]:
+            return
+        pipeline_state["running"] = True
+        pipeline_state["last_result"] = None
+    try:
+        env = {**os.environ, "PYTHONUTF8": "1"}
+        for script in scripts:
+            pipeline_state["current_task"] = script
+            script_path = SCRIPTS_DIR / script
+            result = subprocess.run(
+                [sys.executable, str(script_path)],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                cwd=str(PROJECT_DIR),
+                env=env,
+                timeout=1800,
+            )
+            if result.returncode != 0:
+                err_msg = result.stderr[:500] if result.stderr else ""
+                pipeline_state["last_result"] = f"FAILED at {script}: {err_msg}"
+                logging.error(f"[{label}] {script} failed:\nSTDERR: {result.stderr}\nSTDOUT: {result.stdout}")
+                return
+        pipeline_state["last_result"] = f"OK — {label} completed"
+    except Exception as e:
+        pipeline_state["last_result"] = f"ERROR: {e}"
+        logging.error(f"[{label}] error: {e}")
+    finally:
+        pipeline_state["running"] = False
+        pipeline_state["current_task"] = None
+        pipeline_state["last_run"] = datetime.now().isoformat()
+
+
 @app.post("/api/run/{action}")
 async def run_pipeline(action: str):
     if action not in PIPELINE_MAP:
@@ -418,43 +465,7 @@ async def run_pipeline(action: str):
             raise HTTPException(409, f"Pipeline already running: {pipeline_state['current_task']}")
 
     scripts = PIPELINE_MAP[action]
-
-    def _execute_sync():
-        with _pipeline_lock:
-            if pipeline_state["running"]:
-                return
-            pipeline_state["running"] = True
-            pipeline_state["last_result"] = None
-        try:
-            env = {**os.environ, "PYTHONUTF8": "1"}
-            for script in scripts:
-                pipeline_state["current_task"] = script
-                script_path = SCRIPTS_DIR / script
-                result = subprocess.run(
-                    [sys.executable, str(script_path)],
-                    capture_output=True,
-                    text=True,
-                    encoding="utf-8",
-                    cwd=str(PROJECT_DIR),
-                    env=env,
-                    timeout=1800,
-                )
-                if result.returncode != 0:
-                    err_msg = result.stderr[:500] if result.stderr else ""
-                    out_msg = result.stdout[-500:] if result.stdout else ""
-                    pipeline_state["last_result"] = f"FAILED at {script}: {err_msg}"
-                    logging.error(f"[pipeline] {script} failed:\nSTDERR: {result.stderr}\nSTDOUT: {result.stdout}")
-                    return
-            pipeline_state["last_result"] = f"OK — {action} completed"
-        except Exception as e:
-            pipeline_state["last_result"] = f"ERROR: {e}"
-            logging.error(f"[pipeline] error: {e}")
-        finally:
-            pipeline_state["running"] = False
-            pipeline_state["current_task"] = None
-            pipeline_state["last_run"] = datetime.now().isoformat()
-
-    threading.Thread(target=_execute_sync, daemon=True).start()
+    threading.Thread(target=_execute_sync, args=(scripts, action), daemon=True).start()
     return {"status": "started", "action": action, "scripts": scripts}
 
 
@@ -601,48 +612,18 @@ def get_week_of_month() -> int:
 
 def scheduled_run():
     """Run pipeline based on config — week logic from config['pipeline']."""
-    with _pipeline_lock:
-        if pipeline_state["running"]:
-            print("[scheduler] pipeline already running, skip")
-            return
-        pipeline_state["running"] = True
-        pipeline_state["last_result"] = None
     config = load_config()
+    sched = config.get("schedule", {})
+    if not sched.get("enabled", True):
+        return
+
     pipeline_cfg = config.get("pipeline", DEFAULT_CONFIG["pipeline"])
     week = get_week_of_month()
-    action = pipeline_cfg["odd_weeks"] if week in (1, 3) else pipeline_cfg["even_weeks"]
-    if action not in PIPELINE_MAP:
-        logging.error(f"[scheduler] unknown action '{action}' in config, falling back to weekly")
-        action = "weekly"
-    print(f"[scheduler] week {week} — running {action}")
-    scripts = PIPELINE_MAP[action]
-    try:
-        env = {**os.environ, "PYTHONUTF8": "1"}
-        for script in scripts:
-            pipeline_state["current_task"] = script
-            script_path = SCRIPTS_DIR / script
-            result = subprocess.run(
-                [sys.executable, str(script_path)],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                cwd=str(PROJECT_DIR),
-                env=env,
-                timeout=600,
-            )
-            if result.returncode != 0:
-                err_msg = result.stderr[:500] if result.stderr else ""
-                pipeline_state["last_result"] = f"FAILED at {script}: {err_msg}"
-                logging.error(f"[scheduler] {script} failed:\nSTDERR: {result.stderr}\nSTDOUT: {result.stdout}")
-                return
-        pipeline_state["last_result"] = f"OK — scheduled {action} completed"
-    except Exception as e:
-        pipeline_state["last_result"] = f"ERROR: {e}"
-        logging.error(f"[scheduler] error: {e}")
-    finally:
-        pipeline_state["running"] = False
-        pipeline_state["current_task"] = None
-        pipeline_state["last_run"] = datetime.now().isoformat()
+    mode = pipeline_cfg["odd_weeks"] if week in (1, 3) else pipeline_cfg["even_weeks"]
+    print(f"[scheduler] week {week} — running {mode}")
+
+    scripts = _get_scripts_for_mode(mode)
+    _execute_sync(scripts, f"scheduled {mode}")
 
 
 scheduler = BackgroundScheduler()
