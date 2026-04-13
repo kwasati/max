@@ -12,7 +12,7 @@ import subprocess
 import sys
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -283,11 +283,32 @@ class RequestBody(BaseModel):
 
 
 request_status: dict[str, str] = {}  # symbol → "processing" | "done" | "error"
+request_timestamps: dict[str, datetime] = {}  # symbol → when status was set
+
+
+def _cleanup_request_status():
+    """Remove entries older than 24 hours."""
+    cutoff = datetime.now() - timedelta(hours=24)
+    expired = [k for k, v in request_timestamps.items() if v < cutoff]
+    for k in expired:
+        del request_timestamps[k]
+        request_status.pop(k, None)
+
+
+def _fetch_one(sym: str):
+    """Blocking fetch — runs in thread pool."""
+    _project_root = str(PROJECT_DIR)
+    if _project_root not in sys.path:
+        sys.path.insert(0, _project_root)
+    from scripts.fetch_data import fetch_multi_year
+    return fetch_multi_year(sym)
 
 
 @app.post("/api/request")
 async def request_analyze(body: RequestBody):
     """Fetch & analyze specific stocks in background."""
+    _cleanup_request_status()
+
     # Normalize symbols — auto-append .BK if missing
     symbols = []
     for s in body.symbols:
@@ -301,24 +322,25 @@ async def request_analyze(body: RequestBody):
     if not symbols:
         raise HTTPException(400, "symbols list is empty")
 
+    now = datetime.now()
     for s in symbols:
         request_status[s] = "processing"
+        request_timestamps[s] = now
 
     async def _run():
+        loop = asyncio.get_event_loop()
         try:
-            # Import fetch_multi_year from scripts
-            sys.path.insert(0, str(SCRIPTS_DIR))
-            from fetch_data import fetch_multi_year
-
             results = []
             for sym in symbols:
                 try:
-                    data = fetch_multi_year(sym)
+                    data = await loop.run_in_executor(None, _fetch_one, sym)
                     results.append(data)
                     request_status[sym] = "done"
+                    request_timestamps[sym] = datetime.now()
                 except Exception as e:
                     results.append({"symbol": sym, "error": str(e)})
                     request_status[sym] = "error"
+                    request_timestamps[sym] = datetime.now()
 
             today = datetime.now().strftime("%Y-%m-%d")
             joined = "_".join(s.replace(".BK", "") for s in symbols)
@@ -340,6 +362,7 @@ async def request_analyze(body: RequestBody):
         except Exception as e:
             for sym in symbols:
                 request_status[sym] = "error"
+                request_timestamps[sym] = datetime.now()
             print(f"[request] error: {e}", file=sys.stderr)
 
     asyncio.create_task(_run())
