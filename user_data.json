@@ -1,0 +1,33 @@
+{
+  "watchlist": [
+    "ADVANC.BK",
+    "AOT.BK",
+    "BDMS.BK",
+    "CPALL.BK",
+    "GULF.BK",
+    "HMPRO.BK",
+    "LH.BK",
+    "MINT.BK",
+    "PTT.BK",
+    "SAWAD.BK",
+    "SCB.BK",
+    "TISCO.BK"
+  ],
+  "blacklist": [],
+  "notes": {
+    "PTT.BK": "ปันผลสม่ำเสมอ ราคาถูก",
+    "ADVANC.BK": "ปันผลสูง ผู้นำโทรคม",
+    "CPALL.BK": "เติบโตต่อเนื่อง ครองตลาด retail",
+    "SCB.BK": "ปันผลดี banking leader",
+    "GULF.BK": "พลังงานสะอาด growth play",
+    "BDMS.BK": "โรงพยาบาล defensive + growth",
+    "MINT.BK": "ท่องเที่ยว recovery + global expansion",
+    "AOT.BK": "ผูกขาดสนามบิน tourism recovery",
+    "HMPRO.BK": "ปันผลดี ครองตลาด home improvement",
+    "SAWAD.BK": "สินเชื่อ growth + ปันผลเริ่มดี",
+    "LH.BK": "อสังหาปันผลสูง recurring income จากเช่า",
+    "TISCO.BK": "ธนาคารเล็ก ปันผลสูงสุดในกลุ่ม ROE ดี"
+  },
+  "custom_lists": {},
+  "updated_at": "2026-04-13T00:00:00"
+}

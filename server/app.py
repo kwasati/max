@@ -999,6 +999,113 @@ async def dca_simulate(
 
 
 # ---------------------------------------------------------------------------
+# User Data API
+# ---------------------------------------------------------------------------
+
+USER_DATA_PATH = PROJECT_DIR / "user_data.json"
+
+
+def load_user_data() -> dict:
+    if USER_DATA_PATH.exists():
+        return json.loads(USER_DATA_PATH.read_text(encoding="utf-8"))
+    return {"watchlist": [], "blacklist": [], "notes": {}, "custom_lists": {}, "updated_at": None}
+
+
+def save_user_data(data: dict):
+    data["updated_at"] = datetime.now().isoformat()
+    USER_DATA_PATH.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def _normalize_symbol(s: str) -> str:
+    sym = s.strip().upper()
+    if not sym.endswith(".BK"):
+        sym += ".BK"
+    return sym
+
+
+@app.get("/api/user")
+async def get_user_data():
+    return load_user_data()
+
+
+class WatchlistUpdate(BaseModel):
+    add: list[str] = []
+    remove: list[str] = []
+
+
+@app.put("/api/user/watchlist")
+async def update_watchlist(body: WatchlistUpdate):
+    data = load_user_data()
+    wl = set(data["watchlist"])
+    for s in body.add:
+        wl.add(_normalize_symbol(s))
+    for s in body.remove:
+        wl.discard(_normalize_symbol(s))
+    data["watchlist"] = sorted(wl)
+    save_user_data(data)
+    return {"watchlist": data["watchlist"]}
+
+
+@app.put("/api/user/blacklist")
+async def update_blacklist(body: WatchlistUpdate):
+    data = load_user_data()
+    bl = set(data["blacklist"])
+    for s in body.add:
+        bl.add(_normalize_symbol(s))
+    for s in body.remove:
+        bl.discard(_normalize_symbol(s))
+    data["blacklist"] = sorted(bl)
+    save_user_data(data)
+    return {"blacklist": data["blacklist"]}
+
+
+class NoteUpdate(BaseModel):
+    note: str
+
+
+@app.put("/api/user/notes/{symbol}")
+async def update_note(symbol: str, body: NoteUpdate):
+    data = load_user_data()
+    sym = _normalize_symbol(symbol)
+    if body.note.strip():
+        data["notes"][sym] = body.note.strip()
+    else:
+        data["notes"].pop(sym, None)
+    save_user_data(data)
+    return {"notes": data["notes"]}
+
+
+class ListUpdate(BaseModel):
+    add: list[str] = []
+    remove: list[str] = []
+
+
+@app.put("/api/user/lists/{list_name}")
+async def update_custom_list(list_name: str, body: ListUpdate):
+    data = load_user_data()
+    cl = data.setdefault("custom_lists", {})
+    items = set(cl.get(list_name, []))
+    for s in body.add:
+        items.add(_normalize_symbol(s))
+    for s in body.remove:
+        items.discard(_normalize_symbol(s))
+    cl[list_name] = sorted(items)
+    save_user_data(data)
+    return {"list": list_name, "symbols": cl[list_name]}
+
+
+@app.delete("/api/user/lists/{list_name}")
+async def delete_custom_list(list_name: str):
+    data = load_user_data()
+    data.get("custom_lists", {}).pop(list_name, None)
+    save_user_data(data)
+    return {"deleted": list_name}
+
+
+# ---------------------------------------------------------------------------
 # Static files (SPA) — mount last so API routes take priority
 # ---------------------------------------------------------------------------
 if WEB_DIR.exists():
