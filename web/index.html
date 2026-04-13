@@ -6,7 +6,7 @@
 <title>Max Mahon — Stock Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 
@@ -39,10 +39,22 @@
   <button class="tab" data-tab="settings">ตั้งค่า</button>
 </div>
 
+<!-- ===== APP LAYOUT ===== -->
+<div class="app-layout" id="app-layout">
+
 <!-- ===== STOCK LIST ===== -->
 <div class="stock-list" id="stock-list">
   <div class="loading">Loading...</div>
 </div>
+
+<!-- ===== DETAIL PANEL ===== -->
+<div class="detail-panel" id="detail" style="display:none;">
+  <div class="detail-close" id="detail-close">
+    <button onclick="closeDetail()">← กลับ</button>
+  </div>
+</div>
+
+</div><!-- /app-layout -->
 
 <!-- ===== PIPELINE CONTROL ===== -->
 <div class="pipeline-bar" id="pipeline-bar">
@@ -59,9 +71,6 @@
   <div class="pipeline-schedule">รันอัตโนมัติทุกอาทิตย์ 09:00 (สลับ weekly/discovery)</div>
   <div class="pipeline-status" id="pipeline-status"></div>
 </div>
-
-<!-- ===== DETAIL PANEL ===== -->
-<div class="detail-panel" id="detail" style="display:none;"></div>
 
 <!-- ===== REQUEST PANEL ===== -->
 <div class="request-panel" id="request-panel" style="display:none;">
@@ -231,6 +240,7 @@
   </div>
 </div>
 
-<script src="app.js?v=3" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="app.js?v=4" defer></script>
 </body>
 </html>

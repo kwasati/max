@@ -3,8 +3,60 @@
 const API = '';  // same origin
 let state = { watchlist: null, screener: null, currentStock: null, activeTab: 'passed' };
 
+// === USER DATA ===
+let userData = { watchlist: [], blacklist: [], notes: {}, custom_lists: {} };
+
+async function loadUserData() {
+  try {
+    userData = await fetch(API + '/api/user').then(r => r.json());
+  } catch (e) { console.error('Failed to load user data:', e); }
+}
+
+async function toggleWatchlist(symbol, add) {
+  try {
+    await fetch(API + '/api/user/watchlist', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(add ? { add: [symbol] } : { remove: [symbol] })
+    });
+    await loadUserData();
+    renderStockList();
+  } catch (e) { console.error('Watchlist update failed:', e); }
+}
+
+async function toggleBlacklist(symbol, add) {
+  try {
+    await fetch(API + '/api/user/blacklist', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(add ? { add: [symbol] } : { remove: [symbol] })
+    });
+    await loadUserData();
+    renderStockList();
+  } catch (e) { console.error('Blacklist update failed:', e); }
+}
+
+async function saveNote(symbol, note) {
+  try {
+    await fetch(API + '/api/user/notes/' + encodeURIComponent(symbol), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note })
+    });
+    userData.notes[symbol] = note;
+  } catch (e) { console.error('Note save failed:', e); }
+}
+
+function closeDetail() {
+  const detail = document.getElementById('detail');
+  detail.style.display = 'none';
+  state.currentStock = null;
+  renderStockList();
+}
+
 // ===== INIT =====
 async function init() {
+  await loadUserData();
   const [wl, sc] = await Promise.all([
     fetch(API + '/api/watchlist').then(r => r.json()).catch(() => null),
     fetch(API + '/api/screener').then(r => r.json()).catch(() => null)
@@ -185,12 +237,39 @@ function renderStockList() {
   if (tab === 'watchlist') candidates = candidates.filter(c => c.in_watchlist);
   else if (tab === 'discoveries') candidates = candidates.filter(c => !c.in_watchlist);
   else if (tab === 'filtered') {
-    el.innerHTML = `<div class="loading">${filteredCount} stocks filtered out (ไม่ผ่านเกณฑ์)</div>`;
+    const filtered = sc.filtered_out_stocks || [];
+    if (filtered.length === 0) {
+      el.innerHTML = '<div class="loading">ไม่มีข้อมูลหุ้นที่ไม่ผ่าน</div>';
+      return;
+    }
+    el.innerHTML = '<div class="stock-grid">' + filtered.map(s => {
+      const metrics = s.basic_metrics || {};
+      const dy = metrics.dividend_yield != null ? metrics.dividend_yield.toFixed(1) + '%' : '-';
+      const roe = metrics.roe != null ? (metrics.roe * 100).toFixed(0) + '%' : '-';
+      const reasons = (s.reasons || []).join(', ');
+      return `<div class="stock-card filtered-card">
+        <div class="card-top">
+          <div class="card-identity">
+            <h3>${(s.symbol || '').replace('.BK','')}</h3>
+            <div class="sector">${s.sector || ''}</div>
+          </div>
+        </div>
+        <div class="card-name">${s.name || ''}</div>
+        <div class="filtered-reasons">${reasons}</div>
+        <div class="card-metrics">
+          <div class="card-metric"><span class="label">Yield</span><span class="value">${dy}</span></div>
+          <div class="card-metric"><span class="label">ROE</span><span class="value">${roe}</span></div>
+        </div>
+      </div>`;
+    }).join('') + '</div>';
     return;
   } else if (tab === 'requests') {
     el.innerHTML = '';
     return;
   } else if (tab === 'dca') {
+    el.innerHTML = '';
+    return;
+  } else if (tab === 'settings') {
     el.innerHTML = '';
     return;
   }
@@ -203,7 +282,7 @@ function renderStockList() {
     return;
   }
 
-  el.innerHTML = candidates.map(c => {
+  el.innerHTML = '<div class="stock-grid">' + candidates.map(c => {
     const sym = c.symbol || '';
     const sector = c.sector || '';
     const score = c.quality_score || c.score || 0;
@@ -221,7 +300,18 @@ function renderStockList() {
     const fiveYrYld = c.five_year_avg_yield ?? c.metrics?.five_year_avg_yield;
     const fiveYrStr = fiveYrYld != null ? Number(fiveYrYld).toFixed(1) : '-';
 
+    const isWatched = (userData.watchlist || []).includes(sym);
+    const isBlacklisted = (userData.blacklist || []).includes(sym);
+
     return `<div class="stock-card${selected}" data-symbol="${sym}">
+      <div class="card-actions">
+        <button class="action-btn ${isWatched ? 'active' : ''}" onclick="event.stopPropagation(); toggleWatchlist('${sym}', ${!isWatched})" title="${isWatched ? 'เอาออกจากติดตาม' : 'เพิ่มติดตาม'}">
+          ${isWatched ? '\u2605' : '\u2606'}
+        </button>
+        <button class="action-btn hide-btn ${isBlacklisted ? 'active' : ''}" onclick="event.stopPropagation(); toggleBlacklist('${sym}', ${!isBlacklisted})" title="${isBlacklisted ? 'เลิกซ่อน' : 'ซ่อน'}">
+          ${isBlacklisted ? '\uD83D\uDC41' : '\uD83D\uDEAB'}
+        </button>
+      </div>
       <div class="card-top">
         <div class="card-identity">
           <h3>${sym.replace('.BK', '')}</h3>
@@ -236,7 +326,7 @@ function renderStockList() {
       </div>
       <div class="card-tags">${signals.map(s => `<span class="tag ${tagClass(s)}">${tagLabel(s)}</span>`).join('')}</div>
     </div>`;
-  }).join('');
+  }).join('') + '</div>';
 
   // Bind clicks
   el.querySelectorAll('.stock-card').forEach(row => {
@@ -261,12 +351,171 @@ async function loadDetail(symbol) {
   }
 }
 
+// ===== CHART RENDERING =====
+function renderDetailCharts(stockData) {
+  const yearly = stockData.yearly_metrics || [];
+  if (yearly.length < 2 && Object.keys(stockData.dividend_history || {}).length < 2) return;
+
+  // Destroy existing charts
+  ['divChart', 'roeChart', 'revenueChart'].forEach(id => {
+    const existing = Chart.getChart(id);
+    if (existing) existing.destroy();
+  });
+
+  const chartTextColor = '#888';
+  const chartGridColor = 'rgba(0,0,0,0.05)';
+
+  // 1. Dividend chart (from dividend_history)
+  const divHistory = stockData.dividend_history || {};
+  const divYears = Object.keys(divHistory).sort().slice(-10);
+  const divValues = divYears.map(y => divHistory[y] || 0);
+
+  if (divYears.length > 0) {
+    const ctx1 = document.getElementById('divChart');
+    if (ctx1) {
+      new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: divYears,
+          datasets: [{
+            label: 'ปันผล/หุ้น (บาท)',
+            data: divValues,
+            backgroundColor: 'rgba(30, 111, 92, 0.7)',
+            borderRadius: 4,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, grid: { color: chartGridColor }, ticks: { color: chartTextColor } }, x: { grid: { display: false }, ticks: { color: chartTextColor } } }
+        }
+      });
+    }
+  }
+
+  // 2. ROE chart
+  const years = yearly.map(y => y.year);
+  const roeValues = yearly.map(y => y.roe != null ? (y.roe * 100).toFixed(1) : null);
+  const ctx2 = document.getElementById('roeChart');
+  if (ctx2 && yearly.length >= 2) {
+    new Chart(ctx2, {
+      type: 'line',
+      data: {
+        labels: years,
+        datasets: [{
+          label: 'ROE %',
+          data: roeValues,
+          borderColor: 'rgba(30, 111, 92, 0.8)',
+          backgroundColor: 'rgba(30, 111, 92, 0.1)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { grid: { color: chartGridColor }, ticks: { color: chartTextColor } }, x: { grid: { display: false }, ticks: { color: chartTextColor } } }
+      }
+    });
+  }
+
+  // 3. Revenue + Net Income chart
+  if (yearly.length >= 2) {
+    const revValues = yearly.map(y => y.revenue ? y.revenue / 1e9 : null);
+    const niValues = yearly.map(y => y.net_income ? y.net_income / 1e9 : null);
+    const ctx3 = document.getElementById('revenueChart');
+    if (ctx3) {
+      new Chart(ctx3, {
+        type: 'bar',
+        data: {
+          labels: years,
+          datasets: [
+            { label: 'Revenue (B฿)', data: revValues, backgroundColor: 'rgba(37, 88, 166, 0.6)', borderRadius: 4 },
+            { label: 'Net Income (B฿)', data: niValues, backgroundColor: 'rgba(13, 128, 80, 0.6)', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: chartTextColor, font: { size: 11 } } } },
+          scales: { y: { grid: { color: chartGridColor }, ticks: { color: chartTextColor } }, x: { grid: { display: false }, ticks: { color: chartTextColor } } }
+        }
+      });
+    }
+  }
+}
+
+// ===== DETAIL HELPERS =====
+function scoreCircleSVG(score) {
+  const pct = score / 100;
+  const color = score >= 75 ? 'var(--green)' : score >= 50 ? 'var(--yellow)' : 'var(--red)';
+  const circumference = 2 * Math.PI * 40;
+  const dashoffset = circumference * (1 - pct);
+  return `<svg width="100" height="100" viewBox="0 0 100 100" class="score-circle-svg">
+    <circle cx="50" cy="50" r="40" fill="none" stroke="var(--border)" stroke-width="8"/>
+    <circle cx="50" cy="50" r="40" fill="none" stroke="${color}" stroke-width="8"
+      stroke-dasharray="${circumference}" stroke-dashoffset="${dashoffset}"
+      stroke-linecap="round" transform="rotate(-90 50 50)"/>
+    <text x="50" y="50" text-anchor="middle" dominant-baseline="central"
+      fill="${color}" font-size="24" font-weight="bold" font-family="JetBrains Mono">${score}</text>
+  </svg>`;
+}
+
+function signalBadge(signal) {
+  const colors = {
+    'COMPOUNDER': 'var(--green)',
+    'DIVIDEND_KING': 'var(--yellow)',
+    'CASH_COW': 'var(--purple)',
+    'CONTRARIAN': 'var(--blue)',
+    'TURNAROUND': 'var(--accent)',
+    'YIELD_TRAP': 'var(--red)',
+    'DATA_WARNING': 'var(--orange)',
+    'OVERPRICED': 'var(--red)',
+    'NEAR_MISS_ROE': 'var(--yellow)',
+    'NEAR_MISS_NM': 'var(--yellow)',
+  };
+  const color = colors[signal] || 'var(--text3)';
+  return `<span class="signal-badge" style="background:color-mix(in srgb, ${color} 15%, transparent);color:${color};border:1px solid color-mix(in srgb, ${color} 30%, transparent)">${(TAG_TH[signal] || signal.replace(/_/g, ' '))}</span>`;
+}
+
+function valGradeBadge(val) {
+  if (!val || !val.grade) return '';
+  const colors = { A: 'var(--green)', B: 'var(--blue)', C: 'var(--yellow)', D: 'var(--orange)', F: 'var(--red)' };
+  const color = colors[val.grade] || 'var(--text3)';
+  return `<div class="val-grade" style="background:color-mix(in srgb, ${color} 10%, transparent);border-color:${color}">
+    <span class="val-letter" style="color:${color}">${val.grade}</span>
+    <span class="val-label">${val.label || ''}</span>
+  </div>`;
+}
+
+function buffettChecklist(data) {
+  const yearly = data.yearly_metrics || [];
+  const agg = data.aggregates || {};
+  const checks = [
+    { label: 'ROE \u226515% สม่ำเสมอ', pass: agg.avg_roe >= 0.15 && agg.min_roe >= 0.12 },
+    { label: 'Gross Margin \u226530%', pass: agg.avg_gross_margin >= 0.30 },
+    { label: 'หนี้ต่ำ (D/E < 1.0)', pass: yearly.length > 0 && yearly[yearly.length-1].de_ratio < 1.0 },
+    { label: 'FCF บวกทุกปี', pass: agg.fcf_positive_years >= agg.fcf_total_years && agg.fcf_total_years > 0 },
+    { label: 'ปันผล \u22655 ปีติด', pass: agg.dividend_streak >= 5 },
+    { label: 'EPS โตสม่ำเสมอ', pass: agg.eps_cagr > 0.05 },
+  ];
+  return checks.map(c =>
+    `<div class="checklist-item ${c.pass ? 'pass' : 'fail'}">
+      <span class="check-icon">${c.pass ? '\u2713' : '\u2717'}</span> ${c.label}
+    </div>`
+  ).join('');
+}
+
 // ===== RENDER DETAIL =====
 function renderDetail(d) {
   const detail = document.getElementById('detail');
   if (!d) { detail.innerHTML = '<div class="loading">No data</div>'; return; }
 
   const sym = (d.symbol || '').replace('.BK', '');
+  const fullSymbol = d.symbol || '';
   const name = d.name || d.long_name || sym;
   const sector = d.sector || '';
   const mktCap = d.market_cap != null ? Math.round(d.market_cap / 1e9) + 'B' : '-';
@@ -275,9 +524,6 @@ function renderDetail(d) {
   const high52 = d.fifty_two_week_high || d['52w_high'];
   const rangePos = (low52 != null && high52 != null && high52 !== low52)
     ? Math.round((d.price - low52) / (high52 - low52) * 100) : null;
-  const rangeText = (low52 != null && high52 != null)
-    ? `52W: ${safe(low52, '1d')} — ${safe(high52, '1d')}${rangePos != null ? ` (อยู่ที่ ${rangePos}% ของ range)` : ''}`
-    : '-';
 
   const agg = d.aggregates || {};
   const ym = d.yearly_metrics || [];
@@ -285,553 +531,118 @@ function renderDetail(d) {
   const divHist = d.dividend_history || {};
   const score = d.quality_score || d.score || 0;
   const breakdown = d.score_breakdown || d.breakdown || {};
+  const signals = d.signals || [];
+  const val = d.valuation || {};
 
-  // Score breakdown
-  const profScore = breakdown.profitability != null ? breakdown.profitability : '-';
-  const growthScore = breakdown.growth != null ? breakdown.growth : '-';
-  const divScore = breakdown.dividend != null ? breakdown.dividend : '-';
-  const strScore = breakdown.strength != null ? breakdown.strength : '-';
-
-  function scoreBarWidth(val, max) {
-    if (val == null || val === '-') return '0%';
-    return Math.round((val / max) * 100) + '%';
-  }
-
-  // Buffett metrics computation
+  // Quick metrics
   const latestYM = ym.length > 0 ? ym[ym.length - 1] : {};
-  const firstYM = ym.length > 0 ? ym[0] : {};
-
-  // ROE consistency count
-  const roeAbove15 = ym.filter(y => y.roe != null && y.roe >= 0.15).length;
-
-  // Gross margin trend
-  function computeTrend(firstVal, lastVal) {
-    if (firstVal == null || lastVal == null) return '-';
-    if (lastVal > firstVal * 1.02) return 'ขยายตัว';
-    if (lastVal < firstVal * 0.98) return 'หดตัว';
-    return 'คงที่';
-  }
-  const gmTrend = computeTrend(firstYM.gross_margin, latestYM.gross_margin);
-  const sgaTrend = (() => {
-    const first = firstYM.sga_ratio, last = latestYM.sga_ratio;
-    if (first == null || last == null) return '-';
-    if (last < first * 0.98) return 'ลดลง';
-    if (last > first * 1.02) return 'เพิ่มขึ้น';
-    return 'คงที่';
-  })();
-
-  // FCF positive years
-  const fcfPositiveYears = ym.filter(y => y.fcf != null && y.fcf > 0).length;
-
-  // EPS positive
-  const epsPositiveYears = agg.eps_positive_years != null ? agg.eps_positive_years : ym.filter(y => y.eps != null && y.eps > 0).length;
-  const epsTotalYears = agg.eps_total_years != null ? agg.eps_total_years : totalYears;
-
-  // Dividend metrics
   const divYield = d.dividend_yield;
-  const fiveYrYield = d.five_year_avg_yield;
   const payoutRatio = d.payout_ratio;
-  const divStreak = agg.dividend_streak;
-  const divGrowthStreak = agg.dividend_growth_streak;
   const peRatio = d.pe_ratio;
-  const forwardPe = d.forward_pe;
-  const pbRatio = d.pb_ratio;
-  const earningsGrowth = d.earnings_growth;
-  const freeCashflow = d.free_cashflow;
-  const marketCap = d.market_cap;
-  const fcfYield = (freeCashflow != null && marketCap != null && marketCap > 0)
-    ? (freeCashflow / marketCap * 100) : null;
 
-  // DPS Trend from dividend_history (last 5 years)
-  const divYears = Object.keys(divHist).map(Number).sort((a, b) => a - b);
-  const last5Div = divYears.slice(-5);
-  const dpsTrend = (() => {
-    if (last5Div.length < 2) return '-';
-    let increasing = 0, decreasing = 0;
-    for (let i = 1; i < last5Div.length; i++) {
-      if (divHist[last5Div[i]] > divHist[last5Div[i - 1]]) increasing++;
-      else if (divHist[last5Div[i]] < divHist[last5Div[i - 1]]) decreasing++;
-    }
-    if (increasing === last5Div.length - 1) return 'เพิ่มทุกปี';
-    if (increasing > decreasing) return 'เพิ่มรวม';
-    if (decreasing > increasing) return 'ลดรวม';
-    return 'ขึ้นลง';
-  })();
-
-  // Color helpers
-  function roeColor(v) { return v == null ? '' : v >= 0.15 ? 'good' : 'bad'; }
-  function netMarginColor(v) { return v == null ? '' : v >= 0.10 ? 'good' : 'bad'; }
-  function deColor(v) { return v == null ? '' : v < 0.5 ? 'good' : v <= 1.5 ? 'warn' : 'bad'; }
-  function icColor(v) { return v == null ? '' : v > 10 ? 'good' : v >= 5 ? 'warn' : v < 3 ? 'bad' : 'warn'; }
-  function payoutColor(v) {
-    if (v == null) return '';
-    if (v >= 0.3 && v <= 0.7) return 'good';
-    if (v > 0.7 && v <= 0.85) return 'warn';
-    if (v > 1.0) return 'bad';
-    return '';
-  }
-  function yieldColor(v) {
-    if (v == null) return '';
-    if (v > 15) return 'warn';
-    if (v >= 4) return 'good';
-    if (v >= 2) return 'warn';
-    return '';
-  }
-  function peColor(v) {
-    if (v == null) return '';
-    if (v < 15) return 'good';
-    if (v > 30) return 'warn';
-    return '';
-  }
-  function gmTrendColor(t) { return t === 'ขยายตัว' ? 'good' : t === 'หดตัว' ? 'bad' : ''; }
-  function sgaTrendColor(t) { return t === 'ลดลง' ? 'good' : t === 'เพิ่มขึ้น' ? 'bad' : ''; }
-  function consistencyColor(count, total) { return count === total ? 'good' : count >= total * 0.75 ? 'warn' : 'bad'; }
-  function dpsTrendColor(t) { return t === 'เพิ่มทุกปี' ? 'good' : t === 'เพิ่มรวม' ? 'good' : t === 'ลดรวม' ? 'bad' : ''; }
-  function currentRatioColor(v) { return v == null ? '' : v >= 2.0 ? 'good' : v >= 1.5 ? 'warn' : v < 1.0 ? 'bad' : 'warn'; }
-  function ocfNiColor(v) { return v == null ? '' : v >= 1.0 ? 'good' : v >= 0.8 ? 'warn' : 'bad'; }
-  function cagrColor(v) { return v == null ? '' : v > 0.15 ? 'good' : v > 0.05 ? '' : v < 0 ? 'bad' : ''; }
-  function capIntColor(v) { return v == null ? '' : v < 0.3 ? 'good' : v <= 0.6 ? 'warn' : 'bad'; }
-  function pbColor(v) { return v == null ? '' : v < 1.5 ? 'good' : v > 5 ? 'bad' : ''; }
-  function fcfYieldColor(v) { return v == null ? '' : v > 8 ? 'good' : v > 4 ? '' : 'warn'; }
-  function egColor(v) { return v == null ? '' : v > 0.26 ? 'good' : v > 0.10 ? '' : 'bad'; }
-  function streakColor(v) { return v == null ? '' : v > 10 ? 'good' : v >= 5 ? 'warn' : 'bad'; }
-
-  // Build metric HTML helper
-  function metric(label, value, colorClass, criterion, explainHtml) {
-    const critSpan = criterion ? ` <span class="criterion">${criterion}</span>` : '';
-    const cls = colorClass ? ` ${colorClass}` : '';
-    return `<details class="metric-explain">
-      <summary>
-        <span class="metric-label">${label}</span>
-        <span class="metric-value${cls}">${value}${critSpan}</span>
-      </summary>
-      <div class="explain-box">${explainHtml}</div>
-    </details>`;
-  }
-
-  // ===== YoY Table =====
+  // Yearly table data
   const years = ym.map(y => y.year).sort((a, b) => a - b);
-  function yoyRow(label, getter, fmtFn, trendFn) {
-    const vals = years.map(yr => {
-      const row = ym.find(y => y.year === yr);
-      return row ? getter(row) : null;
-    });
-    const trend = trendFn(vals);
-    const lastVal = vals[vals.length - 1];
-    const lastColor = trend.color ? ` style="color:var(--green);"` : '';
-    const trendColor = trend.color ? ` style="color:var(--green);"` : '';
-    return `<tr>
-      <td>${label}</td>
-      ${vals.map((v, i) => {
-        const isLast = i === vals.length - 1;
-        return `<td${isLast ? lastColor : ''}>${v != null ? fmtFn(v) : '-'}</td>`;
-      }).join('')}
-      <td${trendColor}>${trend.text}</td>
-    </tr>`;
+
+  function yearlyTableHTML() {
+    if (years.length === 0) return '';
+    const rows = [
+      { label: 'Revenue (B)', get: r => r.revenue, fmt: v => safe(v, 'B') },
+      { label: 'Net Income (B)', get: r => r.net_income, fmt: v => safe(v, 'B') },
+      { label: 'EPS', get: r => r.eps, fmt: v => safe(v, '2d') },
+      { label: 'ROE', get: r => r.roe, fmt: v => v != null ? (v * 100).toFixed(1) + '%' : '-' },
+      { label: 'Net Margin', get: r => r.net_margin, fmt: v => v != null ? (v * 100).toFixed(1) + '%' : '-' },
+      { label: 'D/E', get: r => r.de_ratio, fmt: v => safe(v, '2d') },
+      { label: 'FCF (B)', get: r => r.fcf, fmt: v => safe(v, 'B') },
+    ];
+
+    return '<div class="yearly-table-wrap"><table class="yearly-table"><thead><tr><th></th>'
+      + years.map(y => '<th>' + y + '</th>').join('')
+      + '</tr></thead><tbody>'
+      + rows.map(r => '<tr><td>' + r.label + '</td>'
+        + years.map(yr => {
+          const row = ym.find(y => y.year === yr);
+          const v = row ? r.get(row) : null;
+          return '<td>' + (v != null ? r.fmt(v) : '-') + '</td>';
+        }).join('')
+        + '</tr>').join('')
+      + '<tr><td>DPS</td>'
+      + years.map(yr => '<td>' + (divHist[yr] != null ? safe(divHist[yr], '2d') : '-') + '</td>').join('')
+      + '</tr></tbody></table></div>';
   }
 
-  function trendDirection(vals) {
-    const valid = vals.filter(v => v != null);
-    if (valid.length < 2) return { text: '-', color: false };
-    let up = 0, down = 0;
-    for (let i = 1; i < valid.length; i++) {
-      if (valid[i] > valid[i - 1]) up++;
-      else if (valid[i] < valid[i - 1]) down++;
-    }
-    const total = valid.length - 1;
-    if (up === total) return { text: 'โตทุกปี', color: true };
-    if (up > down && up >= total * 0.6) return { text: 'โตรวม', color: true };
-    if (down === total) return { text: 'ลดลง', color: false };
-    return { text: 'ขึ้นลง', color: false };
-  }
+  // Near miss signals
+  const nearMissSignals = signals.filter(s => s.startsWith('NEAR_MISS'));
+  const nearMissHTML = nearMissSignals.length > 0
+    ? '<div class="near-miss-banner">' + nearMissSignals.map(s => TAG_TH[s] || s.replace(/_/g, ' ')).join(', ') + ' (เกือบผ่านเกณฑ์)</div>'
+    : '';
 
-  function trendDecreasing(vals) {
-    const valid = vals.filter(v => v != null);
-    if (valid.length < 2) return { text: '-', color: false };
-    let down = 0;
-    for (let i = 1; i < valid.length; i++) {
-      if (valid[i] < valid[i - 1]) down++;
-    }
-    if (down === valid.length - 1) return { text: 'ลดลง', color: true };
-    if (down > (valid.length - 1) / 2) return { text: 'ลดรวม', color: true };
-    return { text: 'ขึ้นลง', color: false };
-  }
-
-  function trendStable(vals, label) {
-    const valid = vals.filter(v => v != null);
-    if (valid.length < 2) return { text: '-', color: false };
-    const min = Math.min(...valid);
-    const max = Math.max(...valid);
-    const allHigh = valid.every(v => v >= 0.20);
-    if (allHigh && label === 'ROE') return { text: `สม่ำเสมอ >${(min * 100).toFixed(0)}%`, color: true };
-    const range = `${(min * 100).toFixed(0)}-${(max * 100).toFixed(0)}%`;
-    return { text: `คงที่ ${range}`, color: false };
-  }
-
-  function trendPositive(vals) {
-    const valid = vals.filter(v => v != null);
-    const allPos = valid.every(v => v > 0);
-    if (allPos) return { text: 'บวกทุกปี', color: true };
-    return { text: `บวก ${valid.filter(v => v > 0).length}/${valid.length} ปี`, color: false };
-  }
-
-  function trendDPS(yrs) {
-    const divVals = yrs.map(yr => divHist[yr] != null ? divHist[yr] : null);
-    const valid = divVals.filter(v => v != null);
-    if (valid.length < 2) return { text: '-', color: false };
-    let up = 0;
-    for (let i = 1; i < valid.length; i++) {
-      if (valid[i] > valid[i - 1]) up++;
-    }
-    if (up === valid.length - 1) return { text: 'เพิ่มทุกปี', color: true };
-    if (up > (valid.length - 1) / 2) return { text: 'เพิ่มรวม', color: true };
-    return { text: 'ขึ้นลง', color: false };
-  }
-
-  // ===== Dividend Chart =====
-  const chartYears = divYears.slice(-15);
-  const maxDPS = chartYears.length > 0 ? Math.max(...chartYears.map(y => divHist[y] || 0)) : 1;
-
-  // ===== DCA Verdict =====
-  const stars = score >= 80 ? '5/5' : score >= 65 ? '4/5' : score >= 50 ? '3/5' : score >= 35 ? '2/5' : '1/5';
-  const verdictParts = [];
-  if (agg.avg_roe != null && agg.avg_roe > 0.2) verdictParts.push('ทำกำไรสม่ำเสมอไม่เคยต่ำกว่า 20% ของทุน');
-  if (divStreak != null && divStreak > 10) verdictParts.push(`จ่ายปันผลมา ${divStreak} ปีไม่เคยขาด`);
-  if (divGrowthStreak != null && divGrowthStreak > 0) verdictParts.push(`เพิ่มปันผลขึ้นทุกปี ${divGrowthStreak} ปีติด`);
-  if (agg.revenue_cagr != null && agg.revenue_cagr > 0.1) verdictParts.push('ยอดขายโตต่อเนื่อง');
-  if (latestYM.de_ratio != null && latestYM.de_ratio < 0.5) verdictParts.push('หนี้ต่ำ');
-  if (payoutRatio != null && payoutRatio < 0.6) verdictParts.push(`จ่ายแค่ ${(payoutRatio * 100).toFixed(0)}% ของกำไร ยังมี room เหลือ`);
-  if (fcfPositiveYears === totalYears && totalYears > 0) verdictParts.push('เงินสดจริงรองรับทั้งปันผลและการขยายธุรกิจ');
-
-  const verdictLabel = score >= 65 ? 'เหมาะมากสำหรับ DCA ระยะยาว' :
-    score >= 50 ? 'พอเหมาะสำหรับ DCA ระยะยาว' :
-    score >= 35 ? 'ต้องพิจารณาเพิ่มเติม' : 'ยังไม่แนะนำสำหรับ DCA';
-  const verdictSummary = verdictParts.length > 0
-    ? `<strong>${verdictLabel}</strong> — ${verdictParts.join(', ')}`
-    : `<strong>${verdictLabel}</strong>`;
+  // Note
+  const noteVal = (userData.notes || {})[d.symbol || ''] || '';
 
   // ===== BUILD HTML =====
   detail.innerHTML = `
+    <div class="detail-close" id="detail-close">
+      <button onclick="closeDetail()">\u2190 กลับ</button>
+    </div>
+
     <div class="detail-header">
-      <div class="detail-title">
-        <h2>${name}</h2>
-        <div class="subtitle">${sector} &middot; Market Cap ${mktCap} &middot; ${totalYears} ปี data</div>
+      <div class="detail-info">
+        <div class="detail-symbol">${sym}</div>
+        <div class="detail-name">${name}</div>
+        <div class="detail-sector">${sector} &middot; Market Cap ${mktCap}</div>
       </div>
-      <div class="detail-price-block">
-        <div class="price">${price}</div>
-        <div class="range">${rangeText}</div>
-      </div>
+      ${scoreCircleSVG(score)}
     </div>
 
-    <!-- Quality Score -->
-    <div class="section-title">Quality Score <span>${score} / 100</span></div>
-    <div class="score-breakdown">
-      <div class="score-item">
-        <div class="score-label">Profitability</div>
-        <div class="score-val">${profScore}</div>
-        <div class="score-max">/ 30</div>
-        <div class="score-bar"><div class="score-bar-fill" style="width: ${scoreBarWidth(profScore, 30)}; background: ${barColor(profScore === '-' ? 0 : profScore / 30 * 100)};"></div></div>
-      </div>
-      <div class="score-item">
-        <div class="score-label">Growth</div>
-        <div class="score-val">${growthScore}</div>
-        <div class="score-max">/ 25</div>
-        <div class="score-bar"><div class="score-bar-fill" style="width: ${scoreBarWidth(growthScore, 25)}; background: ${barColor(growthScore === '-' ? 0 : growthScore / 25 * 100)};"></div></div>
-      </div>
-      <div class="score-item">
-        <div class="score-label">Dividend</div>
-        <div class="score-val">${divScore}</div>
-        <div class="score-max">/ 25</div>
-        <div class="score-bar"><div class="score-bar-fill" style="width: ${scoreBarWidth(divScore, 25)}; background: ${barColor(divScore === '-' ? 0 : divScore / 25 * 100)};"></div></div>
-      </div>
-      <div class="score-item">
-        <div class="score-label">Strength</div>
-        <div class="score-val">${strScore}</div>
-        <div class="score-max">/ 20</div>
-        <div class="score-bar"><div class="score-bar-fill" style="width: ${scoreBarWidth(strScore, 20)}; background: ${barColor(strScore === '-' ? 0 : strScore / 20 * 100)};"></div></div>
-      </div>
+    <div class="signal-badges">
+      ${signals.map(s => signalBadge(s)).join('')}
     </div>
 
-    <!-- Buffett Checklist -->
-    <div class="section-title">Buffett Checklist <span>คุณภาพธุรกิจ + ความแข็งแกร่ง</span></div>
-    <div class="metrics-4col">
-      <!-- COL 1: PROFITABILITY -->
-      <div class="metric-group">
-        <h4>Profitability</h4>
-        ${metric('Avg ROE (5yr)', agg.avg_roe != null ? safe(agg.avg_roe, 'pct') : '-', roeColor(agg.avg_roe), 'pass 15%',
-          `<strong>Return on Equity</strong> — กำไรที่บริษัทสร้างได้จากเงินของผู้ถือหุ้น ยิ่งสูงยิ่งดี Buffett มองว่า <strong>15% ขึ้นไปทุกปี</strong> คือธุรกิจคุณภาพ
-          <div class="explain-scale">
-            <span class="scale-item scale-good">20%+ ยอดเยี่ยม</span>
-            <span class="scale-item scale-ok">15-20% ดี</span>
-            <span class="scale-item scale-bad">&lt;15% ต่ำ</span>
-          </div>`
-        )}
-        ${metric('Min ROE (5yr)', agg.min_roe != null ? safe(agg.min_roe, 'pct') : '-', roeColor(agg.min_roe), 'pass 12%',
-          `<strong>ROE ต่ำสุดใน 5 ปี</strong> — ดูว่าปีที่แย่ที่สุดยังรักษาคุณภาพได้ไหม ถ้าปีแย่สุดยัง >12% แปลว่าธุรกิจมี moat แข็ง`
-        )}
-        ${metric('Avg Net Margin', agg.avg_net_margin != null ? safe(agg.avg_net_margin, 'pct') : '-', netMarginColor(agg.avg_net_margin), '',
-          `<strong>อัตรากำไรสุทธิ</strong> — จากยอดขาย 100 บาท เหลือเป็นกำไรจริงกี่บาท ยิ่งสูง = มีอำนาจต่อรอง คู่แข่งแย่งยาก
-          <div class="explain-scale">
-            <span class="scale-item scale-good">15%+ มี moat</span>
-            <span class="scale-item scale-ok">10-15% ดี</span>
-            <span class="scale-item scale-bad">&lt;10% เสี่ยง</span>
-          </div>`
-        )}
-        ${metric('Gross Margin', agg.avg_gross_margin != null ? safe(agg.avg_gross_margin, 'pct') : '-', '', '',
-          `<strong>อัตรากำไรขั้นต้น</strong> — สะท้อนมูลค่าเพิ่มของสินค้า Buffett ใช้ดู moat ถ้าสูงต่อเนื่อง = สินค้าขายได้ราคาดี
-          <div class="explain-scale">
-            <span class="scale-item scale-good">40%+ moat แข็ง</span>
-            <span class="scale-item scale-ok">20-40% ปานกลาง</span>
-            <span class="scale-item scale-bad">&lt;20% แข่งขันสูง</span>
-          </div>`
-        )}
-        ${metric('Operating Margin', agg.avg_operating_margin != null ? safe(agg.avg_operating_margin, 'pct') : '-', '', '',
-          `<strong>อัตรากำไรจากการดำเนินงาน</strong> — กำไรจากธุรกิจหลัก ถ้าใกล้ Net Margin = โครงสร้างการเงินสะอาด`
-        )}
-      </div>
+    ${valGradeBadge(val)}
 
-      <!-- COL 2: MOAT -->
-      <div class="metric-group">
-        <h4>Moat / Competitive Advantage</h4>
-        ${metric('ROE >15% ทุกปี?', `${roeAbove15}/${totalYears} ปี`, consistencyColor(roeAbove15, totalYears), '',
-          `<strong>ความสม่ำเสมอของ ROE</strong> — หัวใจ Buffett: ไม่ใช่แค่ปีเดียวเก่ง แต่ต้องเก่งทุกปี = moat จริง`
-        )}
-        ${metric('Gross Margin Trend', gmTrend, gmTrendColor(gmTrend), '',
-          `<strong>แนวโน้ม Gross Margin</strong> — เพิ่มขึ้น = อำนาจต่อรองมากขึ้น, ลดลง = คู่แข่งบีบราคา
-          <div class="explain-scale">
-            <span class="scale-item scale-good">ขยายตัว</span>
-            <span class="scale-item scale-ok">คงที่</span>
-            <span class="scale-item scale-bad">หดตัว</span>
-          </div>`
-        )}
-        ${metric('SG&amp;A / Revenue', sgaTrend, sgaTrendColor(sgaTrend), '',
-          `<strong>ค่าใช้จ่ายขาย+บริหาร ต่อ ยอดขาย</strong> — ลดลง = มี scale advantage, เพิ่มขึ้น = ค่าใช้จ่ายบาน`
-        )}
-        ${metric('Revenue Consistency',
-          agg.revenue_growth_years != null ? `${agg.revenue_growth_years}/${agg.revenue_growth_total_comparisons} ปี` : '-',
-          agg.revenue_growth_years != null ? consistencyColor(agg.revenue_growth_years, agg.revenue_growth_total_comparisons) : '',
-          '',
-          `<strong>ยอดขายโตกี่ปี</strong> — โตทุกปี = demand สม่ำเสมอ ถ้ามีปีลด = อาจเป็น cyclical เสี่ยงกว่าสำหรับ DCA`
-        )}
-      </div>
+    ${nearMissHTML}
 
-      <!-- COL 3: FINANCIAL STRENGTH -->
-      <div class="metric-group">
-        <h4>Financial Strength</h4>
-        ${metric('D/E Ratio', latestYM.de_ratio != null ? safe(latestYM.de_ratio, '2d') : '-', deColor(latestYM.de_ratio), '&lt;1.5',
-          `<strong>Debt-to-Equity</strong> — หนี้สินเทียบกับทุน Buffett ชอบหนี้ต่ำ เพราะเศรษฐกิจแย่จะอยู่รอดได้
-          <div class="explain-scale">
-            <span class="scale-item scale-good">&lt;0.5 ยอดเยี่ยม</span>
-            <span class="scale-item scale-ok">0.5-1.5 พอได้</span>
-            <span class="scale-item scale-bad">&gt;1.5 สูง</span>
-          </div>`
-        )}
-        ${metric('Interest Coverage',
-          agg.latest_interest_coverage != null ? safe(agg.latest_interest_coverage, 'x') : '-',
-          icColor(agg.latest_interest_coverage), '&gt;5x',
-          `<strong>ความสามารถจ่ายดอกเบี้ย</strong> — EBITDA / ดอกเบี้ยจ่าย ยิ่งสูง = ปลอดภัยมาก
-          <div class="explain-scale">
-            <span class="scale-item scale-good">&gt;10x ปลอดภัย</span>
-            <span class="scale-item scale-ok">5-10x โอเค</span>
-            <span class="scale-item scale-bad">&lt;3x อันตราย</span>
-          </div>`
-        )}
-        ${metric('Current Ratio', latestYM.current_ratio != null ? safe(latestYM.current_ratio, '1d') : '-', currentRatioColor(latestYM.current_ratio), '',
-          `<strong>สภาพคล่อง</strong> — สินทรัพย์หมุนเวียน / หนี้สินระยะสั้น >2.0 = จ่ายบิลได้สบาย
-          <div class="explain-scale">
-            <span class="scale-item scale-good">&gt;2.0 ดีมาก</span>
-            <span class="scale-item scale-ok">1.5-2.0 พอดี</span>
-            <span class="scale-item scale-bad">&lt;1.0 เสี่ยง</span>
-          </div>`
-        )}
-        ${metric('FCF Positive', `${fcfPositiveYears}/${totalYears} ปี`, consistencyColor(fcfPositiveYears, totalYears), '',
-          `<strong>Free Cash Flow เป็นบวก</strong> — เงินสดจริงที่เหลือหลังลงทุน ถ้าบวกทุกปี = กำไรเป็นเงินจริง จ่ายปันผลได้จริง`
-        )}
-        ${metric('OCF / Net Income',
-          agg.latest_ocf_ni_ratio != null ? safe(agg.latest_ocf_ni_ratio, 'x') : '-',
-          ocfNiColor(agg.latest_ocf_ni_ratio), '',
-          `<strong>คุณภาพกำไร</strong> — เงินสดจริง / กำไรในบัญชี >1.0 = กำไรแท้ <0.7 = กำไรกระดาษ ระวัง
-          <div class="explain-scale">
-            <span class="scale-item scale-good">&gt;1.0 กำไรแท้</span>
-            <span class="scale-item scale-ok">0.8-1.0 พอได้</span>
-            <span class="scale-item scale-bad">&lt;0.7 ระวัง</span>
-          </div>`
-        )}
-      </div>
-
-      <!-- COL 4: GROWTH -->
-      <div class="metric-group">
-        <h4>Growth</h4>
-        ${metric('Revenue CAGR (5yr)', agg.revenue_cagr != null ? safe(agg.revenue_cagr, 'pct') : '-', cagrColor(agg.revenue_cagr), '',
-          `<strong>อัตราเติบโตเฉลี่ยยอดขาย 5 ปี</strong> — ยิ่งสูง = ธุรกิจขยายตัวเร็ว
-          <div class="explain-scale">
-            <span class="scale-item scale-good">&gt;15% โตเร็ว</span>
-            <span class="scale-item scale-ok">5-15% โตดี</span>
-            <span class="scale-item scale-bad">&lt;0% หดตัว</span>
-          </div>`
-        )}
-        ${metric('EPS CAGR (5yr)', agg.eps_cagr != null ? safe(agg.eps_cagr, 'pct') : '-', cagrColor(agg.eps_cagr), '',
-          `<strong>อัตราเติบโตกำไรต่อหุ้น</strong> — ดูควบคู่ Revenue CAGR ถ้า EPS โตเร็วกว่า = margin ขยาย ถ้าช้ากว่า = margin หด`
-        )}
-        ${metric('EPS Positive', `${epsPositiveYears}/${epsTotalYears} ปี`, consistencyColor(epsPositiveYears, epsTotalYears), '',
-          `<strong>จำนวนปีที่มีกำไร</strong> — กำไรทุกปี = ธุรกิจพื้นฐานแข็ง สำหรับ DCA ต้องการสม่ำเสมอ`
-        )}
-        ${metric('Capital Intensity',
-          agg.latest_capital_intensity != null ? safe(agg.latest_capital_intensity, 'pct') : '-',
-          capIntColor(agg.latest_capital_intensity), '',
-          `<strong>CapEx / Operating Cash Flow</strong> — ต่ำ = ธุรกิจเบา ไม่ต้องลงทุนเยอะ เงินเหลือจ่ายปันผล Buffett ชอบแบบนี้
-          <div class="explain-scale">
-            <span class="scale-item scale-good">&lt;30% เบา</span>
-            <span class="scale-item scale-ok">30-60% ปานกลาง</span>
-            <span class="scale-item scale-bad">&gt;60% หนัก</span>
-          </div>`
-        )}
-      </div>
+    <div class="quick-metrics">
+      <div class="qm-item"><div class="qm-label">Price</div><div class="qm-value">${price}</div></div>
+      <div class="qm-item"><div class="qm-label">P/E</div><div class="qm-value">${peRatio != null ? peRatio.toFixed(1) : '-'}</div></div>
+      <div class="qm-item"><div class="qm-label">Yield</div><div class="qm-value">${divYield != null ? divYield.toFixed(1) + '%' : '-'}</div></div>
+      <div class="qm-item"><div class="qm-label">Payout</div><div class="qm-value">${payoutRatio != null ? (payoutRatio * 100).toFixed(0) + '%' : '-'}</div></div>
+      <div class="qm-item"><div class="qm-label">D/E</div><div class="qm-value">${latestYM.de_ratio != null ? latestYM.de_ratio.toFixed(2) : '-'}</div></div>
     </div>
 
-    <!-- เซียนฮง Checklist -->
-    <div class="section-title">เซียนฮง Checklist <span>ปันผล + มูลค่า</span></div>
-    <div class="metrics-2col">
-      <!-- COL 1: DIVIDEND -->
-      <div class="metric-group">
-        <h4>Dividend</h4>
-        ${metric('Dividend Yield', divYield != null ? divYield.toFixed(1) + '%' : '-', yieldColor(divYield), 'pass 4%',
-          `<strong>อัตราผลตอบแทนปันผล</strong> — ลงทุน 100 บาท ได้ปันผลกี่บาท/ปี เซียนฮงต้องการ 4-5%+ แต่ >15% ต้องระวัง yield trap
-          <div class="explain-scale">
-            <span class="scale-item scale-good">4-8% ดีมาก</span>
-            <span class="scale-item scale-ok">2-4% พอใช้</span>
-            <span class="scale-item scale-bad">&gt;15% ตรวจสอบ!</span>
-          </div>`
-        )}
-        ${metric('5yr Avg Yield', fiveYrYield != null ? fiveYrYield.toFixed(1) + '%' : '-', '', '',
-          `<strong>ค่าเฉลี่ย yield 5 ปี</strong> — เทียบกับ yield ปัจจุบันเพื่อดูว่า "ปกติ" หรือ "ผิดปกติ" ถ้าสูงกว่ามาก อาจเป็นราคาตก หรือปันผลพิเศษ`
-        )}
-        ${metric('Payout Ratio', payoutRatio != null ? (payoutRatio * 100).toFixed(1) + '%' : '-', payoutColor(payoutRatio), '',
-          `<strong>สัดส่วนจ่ายปันผล</strong> — จ่ายกี่ % ของกำไร Payout ต่ำ = ยั่งยืน + มี room โต
-          <div class="explain-scale">
-            <span class="scale-item scale-good">30-60% สมดุล</span>
-            <span class="scale-item scale-ok">60-80% สูง</span>
-            <span class="scale-item scale-bad">&gt;100% อันตราย</span>
-          </div>`
-        )}
-        ${metric('Dividend Streak', divStreak != null ? divStreak + ' ปี' : '-', streakColor(divStreak), '',
-          `<strong>จ่ายปันผลต่อเนื่อง</strong> — ผ่านวิกฤตหลายรอบยังจ่ายได้ ตัวเลขสำคัญที่สุดสำหรับ DCA
-          <div class="explain-scale">
-            <span class="scale-item scale-good">&gt;10 ปี เชื่อถือได้</span>
-            <span class="scale-item scale-ok">5-10 ปี ดี</span>
-            <span class="scale-item scale-bad">&lt;3 ปี ยังไม่พิสูจน์</span>
-          </div>`
-        )}
-        ${metric('Div Growth Streak', divGrowthStreak != null ? divGrowthStreak + ' ปีติด' : '-', divGrowthStreak != null && divGrowthStreak >= 3 ? 'good' : '', '',
-          `<strong>เพิ่มปันผลต่อเนื่อง</strong> — ไม่ใช่แค่จ่าย แต่เพิ่มทุกปีด้วย สำหรับ DCA yield on cost จะโตตามเวลา`
-        )}
-        ${metric('DPS Trend', dpsTrend, dpsTrendColor(dpsTrend), '',
-          `<strong>แนวโน้ม Dividend Per Share</strong> — เพิ่มสม่ำเสมอ = ผู้บริหารให้ความสำคัญกับผู้ถือหุ้น`
-        )}
-      </div>
+    <div class="section-title">Buffett Checklist</div>
+    ${buffettChecklist(d)}
 
-      <!-- COL 2: VALUATION -->
-      <div class="metric-group">
-        <h4>Valuation</h4>
-        ${metric('P/E (TTM)', peRatio != null ? peRatio.toFixed(1) + 'x' : '-', peColor(peRatio), '',
-          `<strong>ราคาต่อกำไร 12 เดือนล่าสุด</strong> — เซียนฮงต้องการ P/E ไม่เกิน 15
-          <div class="explain-scale">
-            <span class="scale-item scale-good">&lt;15 ถูก</span>
-            <span class="scale-item scale-ok">15-25 เหมาะสม</span>
-            <span class="scale-item scale-bad">&gt;30 แพง</span>
-          </div>`
-        )}
-        ${metric('Forward P/E', forwardPe != null ? forwardPe.toFixed(1) + 'x' : '-', forwardPe != null && forwardPe < 15 ? 'good' : '', 'pass 15',
-          `<strong>P/E จากกำไรที่คาดการณ์</strong> — ต่ำกว่า TTM เยอะ = นักวิเคราะห์คาดกำไรจะเพิ่มมาก (turnaround signal)`
-        )}
-        ${metric('P/B Ratio', pbRatio != null ? pbRatio.toFixed(1) + 'x' : '-', pbColor(pbRatio), '',
-          `<strong>ราคาต่อมูลค่าทางบัญชี</strong> — สูงปกติสำหรับ ROE สูง คนยอมจ่ายแพงเพราะบริษัทสร้างกำไรเก่ง
-          <div class="explain-scale">
-            <span class="scale-item scale-good">&lt;1.5 ถูก (ถ้า ROE ดี)</span>
-            <span class="scale-item scale-ok">1.5-3.0 สมเหตุสมผล</span>
-            <span class="scale-item scale-bad">&gt;5.0 แพงมาก</span>
-          </div>`
-        )}
-        ${metric('FCF Yield', fcfYield != null ? fcfYield.toFixed(1) + '%' : '-', fcfYieldColor(fcfYield), '',
-          `<strong>ผลตอบแทนจากเงินสดจริง</strong> — FCF / Market Cap สูงกว่า Dividend Yield = มี room เพิ่มปันผลหรือ buyback ได้อีก`
-        )}
-        ${metric('52W Range Position', rangePos != null ? rangePos + '%' : '-', '', '',
-          `<strong>ตำแหน่งราคาเทียบ 52 สัปดาห์</strong> — 0% = ต่ำสุด 100% = สูงสุด สำหรับ DCA คุณภาพสำคัญกว่าราคา`
-        )}
-        ${metric('Earnings Growth', earningsGrowth != null ? (earningsGrowth * 100).toFixed(0) + '%/yr' : '-', egColor(earningsGrowth), '',
-          `<strong>เกณฑ์เซียนฮง</strong> — กำไรโตอย่างน้อย 26%/ปี = เพิ่มเท่าตัวใน 3 ปี ผ่านเกณฑ์ + P/E ต่ำ + yield ดี = หุ้นในฝัน`
-        )}
-      </div>
+    <div class="chart-section">
+      <h4>ปันผลต่อหุ้น (10 ปี)</h4>
+      <div class="chart-container"><canvas id="divChart"></canvas></div>
+    </div>
+    <div class="chart-section">
+      <h4>ROE %</h4>
+      <div class="chart-container"><canvas id="roeChart"></canvas></div>
+    </div>
+    <div class="chart-section">
+      <h4>รายได้ vs กำไร (พันล้าน฿)</h4>
+      <div class="chart-container"><canvas id="revenueChart"></canvas></div>
     </div>
 
-    <!-- Year-over-Year -->
-    <div class="section-title">Year-over-Year Financials <span>Trend ย้อนหลัง ${totalYears} ปี</span></div>
-    <details class="section-explain">
-      <summary></summary>
-      <div class="section-explain-content">
-        ดู <strong>trend</strong> ไม่ใช่แค่ตัวเลขปีเดียว:
-        Revenue ต้องโตสม่ำเสมอ, Net Income/EPS ต้องโตตาม, ROE ต้องสูงทุกปี, D/E ต้องไม่เพิ่ม, FCF ต้องเป็นบวก, DPS ต้องไม่ลด
-      </div>
-    </details>
-    <div class="yoy-scroll">
-    <table class="yoy-table">
-      <thead>
-        <tr><th></th>${years.map(y => `<th>${y}</th>`).join('')}<th>Trend</th></tr>
-      </thead>
-      <tbody>
-        ${yoyRow('Revenue (B)', r => r.revenue, v => safe(v, 'B'), trendDirection)}
-        ${yoyRow('Net Income (B)', r => r.net_income, v => safe(v, 'B'), trendDirection)}
-        ${yoyRow('EPS', r => r.eps, v => safe(v, '2d'), trendDirection)}
-        ${yoyRow('ROE', r => r.roe, v => (v * 100).toFixed(1) + '%', vs => trendStable(vs, 'ROE'))}
-        ${yoyRow('Net Margin', r => r.net_margin, v => (v * 100).toFixed(1) + '%', vs => trendStable(vs, 'Margin'))}
-        ${yoyRow('D/E', r => r.de_ratio, v => safe(v, '2d'), trendDecreasing)}
-        ${yoyRow('FCF (B)', r => r.fcf, v => safe(v, 'B'), trendPositive)}
-        <tr>
-          <td>DPS</td>
-          ${years.map((yr, i) => {
-            const dps = divHist[yr];
-            const isLast = i === years.length - 1;
-            const t = trendDPS(years);
-            const color = isLast && t.color ? ' style="color:var(--green);"' : '';
-            return `<td${color}>${dps != null ? safe(dps, '2d') : '-'}</td>`;
-          }).join('')}
-          <td${trendDPS(years).color ? ' style="color:var(--green);"' : ''}>${trendDPS(years).text}</td>
-        </tr>
-      </tbody>
-    </table>
-    </div>
+    <div class="section-title">Year-over-Year Financials</div>
+    ${yearlyTableHTML()}
 
-    <!-- Dividend History -->
-    <div class="section-title">Dividend History <span>${chartYears.length}+ ปี ย้อนหลัง</span></div>
-    <details class="section-explain">
-      <summary></summary>
-      <div class="section-explain-content">
-        มองหา pattern: <strong>แท่งสูงขึ้นเรื่อยๆ</strong> = สุดยอด, <strong>คงที่</strong> = พอใช้, <strong>ขึ้นลง</strong> = ไม่มีนโยบายชัด, <strong>ลดลง</strong> = อันตราย — Hover ดู DPS แต่ละปี
-      </div>
-    </details>
-    <div class="div-section">
-      <div class="div-chart">
-        ${chartYears.map(yr => {
-          const dps = divHist[yr] || 0;
-          const pct = maxDPS > 0 ? Math.round((dps / maxDPS) * 100) : 0;
-          return `<div class="div-bar" style="height: ${Math.max(pct, 2)}%;"><div class="div-tip">${yr}: ${safe(dps, '2d')}</div></div>`;
-        }).join('')}
-      </div>
-      <div class="div-years">
-        ${chartYears.map(yr => `<span>'${String(yr).slice(-2)}</span>`).join('')}
-      </div>
-    </div>
-
-    <!-- DCA Verdict -->
-    <div class="section-title">DCA Suitability <span>เหมาะสะสมระยะยาวไหม?</span></div>
-    <div class="verdict-box">
-      <div class="verdict-stars">${stars}</div>
-      <div class="verdict-text">${verdictSummary}</div>
+    <div class="note-section">
+      <label>บันทึก:</label>
+      <textarea class="note-input" id="note-${d.symbol || ''}" placeholder="เพิ่มบันทึก...">${noteVal}</textarea>
+      <button class="note-save" onclick="saveNote('${d.symbol || ''}', document.getElementById('note-${d.symbol || ''}').value)">บันทึก</button>
     </div>
   `;
 
-  // Scroll to detail
-  detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Render charts after DOM is ready
+  setTimeout(() => renderDetailCharts(d), 50);
+
+  // Scroll to detail (desktop only, mobile is fullscreen)
+  if (window.innerWidth >= 1024) {
+    detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 // ===== REQUEST PANEL =====
