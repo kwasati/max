@@ -298,53 +298,67 @@ def strength_score(data: dict) -> tuple:
     sector = data.get("sector", "")
     is_financial = sector in FINANCIAL_SECTORS
 
-    # D/E level (5 pts)
+    # D/E level (5 pts base)
     de_vals = [m["de_ratio"] for m in yearly if m.get("de_ratio") is not None]
     latest_de = de_vals[-1] if de_vals else None
+    de_score = 0
     if latest_de is not None:
         if is_financial:
             if latest_de < 2:
-                score += 5
+                de_score = 5
             elif latest_de < 5:
-                score += 3
+                de_score = 3
         else:
             if latest_de < 0.5:
-                score += 5
+                de_score = 5
                 reasons.append("หนี้ต่ำมาก")
             elif latest_de < 1.0:
-                score += 3
+                de_score = 3
 
     # Interest Coverage (5 pts)
     int_cov = agg.get("latest_interest_coverage")
-    if int_cov is not None:
+    ic_available = int_cov is not None
+    ic_score = 0
+    if ic_available:
         if int_cov > 10:
-            score += 5
+            ic_score = 5
             reasons.append(f"interest coverage {int_cov:.0f}x")
         elif int_cov > 5:
-            score += 3
+            ic_score = 3
         elif int_cov > 3:
-            score += 1
+            ic_score = 1
 
-    # FCF consistency (5 pts)
+    # FCF consistency (5 pts base)
     fcf_pos = agg.get("fcf_positive_years", 0)
     fcf_total = agg.get("fcf_total_years", 0)
+    fcf_score = 0
     if fcf_total >= 3:
         if fcf_pos == fcf_total:
-            score += 5
+            fcf_score = 5
             reasons.append("FCF บวกทุกปี")
         elif fcf_pos >= fcf_total - 1:
-            score += 3
+            fcf_score = 3
 
     # OCF/NI ratio (5 pts) — clean accounting (wide range for depreciation-heavy biz)
     ocf_ni = agg.get("latest_ocf_ni_ratio")
+    ocf_score = 0
     if ocf_ni is not None:
         if 0.8 <= ocf_ni <= 3.0:
-            score += 5
+            ocf_score = 5
             reasons.append("กำไรมีเงินสดรองรับ")
         elif 0.5 <= ocf_ni:
-            score += 3
+            ocf_score = 3
         elif ocf_ni < 0.5:
             reasons.append("กำไรไม่สะท้อนเงินสดจริง")
+
+    # When IC is unavailable, redistribute its 5 pts to D/E and FCF proportionally
+    if ic_available:
+        score = de_score + ic_score + fcf_score + ocf_score
+    else:
+        # Scale D/E and FCF from max 5 to max 7.5 each (total 15 instead of 10)
+        de_scaled = de_score / 5 * 7.5
+        fcf_scaled = fcf_score / 5 * 7.5
+        score = round(de_scaled + fcf_scaled + ocf_score)
 
     return score, reasons
 
