@@ -414,8 +414,9 @@ def assign_signals(data: dict, total_score: int) -> list:
             if payout is None or payout < 0.60:
                 signals.append("COMPOUNDER")
 
-    # CASH_COW
-    fcf = data.get("free_cashflow") or 0
+    # CASH_COW — use FCF from latest yearly_metrics (proper OCF - capex)
+    yearly_fcf = yearly[-1].get("fcf") if yearly else None
+    fcf = yearly_fcf or 0
     mcap = data.get("market_cap") or 1
     fcf_yield = fcf / mcap if mcap > 0 else 0
     de_vals = [m["de_ratio"] for m in yearly if m.get("de_ratio") is not None]
@@ -522,7 +523,7 @@ def quality_score(data: dict) -> dict:
     total = p_score + g_score + d_score + s_score
     signals = assign_signals(data, total)
 
-    # Signal adjustments
+    # Signal adjustments (no cap here — final cap applied after valuation modifier)
     if "YIELD_TRAP" in signals:
         total -= 20
     if "DATA_WARNING" in signals:
@@ -531,9 +532,6 @@ def quality_score(data: dict) -> dict:
         total += 5
     if "COMPOUNDER" in signals:
         total += 5
-
-    # Cap at 0-100
-    total = max(0, min(100, total))
 
     all_reasons = p_reasons + g_reasons + d_reasons + s_reasons
 
@@ -688,7 +686,7 @@ def main():
         }
         val = valuation_grade(val_data, sector_medians)
         c["valuation"] = val
-        # Apply valuation modifier to score
+        # Apply valuation modifier + final 0-100 cap (after all signal adjustments)
         val_modifier = {"A": 5, "B": 0, "C": -5, "D": -10, "F": -20}
         c["score"] = max(0, min(100, c["score"] + val_modifier.get(val["grade"], 0)))
         # Add OVERPRICED signal
