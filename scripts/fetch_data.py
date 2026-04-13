@@ -308,9 +308,30 @@ def _fetch_yfinance_legacy(symbol: str) -> dict:
     aggregates = _build_aggregates(yearly_metrics, dps_by_year)
     warnings = validate_metrics(info, yearly_metrics)
 
-    raw_dy = info.get("dividendYield")
-    dy = normalize_yield(raw_dy)
     recent_divs = divs.tail(8).tolist() if divs is not None and len(divs) > 0 else []
+
+    # DPS as source of truth
+    dps_current = info.get("dividendRate") or info.get("trailingAnnualDividendRate")
+    price = info.get("currentPrice") or info.get("regularMarketPrice")
+
+    # dividend_yield = DPS / price * 100 (percentage)
+    if dps_current is not None and price is not None and price > 0:
+        dy = dps_current / price * 100
+    else:
+        raw_dy = info.get("dividendYield")
+        dy = normalize_yield(raw_dy)
+
+    # five_year_avg_yield = avg DPS last 5 years / current price * 100
+    current_year = datetime.now().year
+    recent_dps_vals = [dps_by_year[y] for y in dps_by_year
+                       if y >= current_year - 5 and y < current_year
+                       and dps_by_year[y] is not None]
+    if recent_dps_vals and price is not None and price > 0:
+        avg_dps_5y = sum(recent_dps_vals) / len(recent_dps_vals)
+        five_year_avg_yield = avg_dps_5y / price * 100
+    else:
+        raw_5y = info.get("fiveYearAvgDividendYield")
+        five_year_avg_yield = normalize_yield(raw_5y)
 
     return {
         "symbol": symbol,
@@ -318,15 +339,16 @@ def _fetch_yfinance_legacy(symbol: str) -> dict:
         "sector": sector,
         "industry": info.get("industry", "N/A"),
         "currency": info.get("currency", "THB"),
-        "price": info.get("currentPrice") or info.get("regularMarketPrice"),
+        "price": price,
         "market_cap": info.get("marketCap"),
         "pe_ratio": info.get("trailingPE"),
         "forward_pe": info.get("forwardPE"),
         "pb_ratio": info.get("priceToBook"),
-        "dividend_yield": dy,
+        "dividend_yield": dy,  # percentage (e.g. 4.5 = 4.5%)
+        "dps": dps_current,  # actual dividend per share amount
         "dividend_rate": info.get("dividendRate"),
         "payout_ratio": info.get("payoutRatio"),
-        "five_year_avg_yield": info.get("fiveYearAvgDividendYield"),
+        "five_year_avg_yield": five_year_avg_yield,  # percentage
         "eps_trailing": info.get("trailingEps"),
         "eps_forward": info.get("forwardEps"),
         "revenue": info.get("totalRevenue"),

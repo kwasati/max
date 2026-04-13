@@ -279,7 +279,10 @@ def _fetch_thaifin(symbol: str) -> dict | None:
 
 
 def _fetch_yfinance_supplement(symbol: str) -> dict:
-    """Fetch supplementary data from yfinance (price, 52w, forward PE, etc.)."""
+    """Fetch supplementary data from yfinance (price, 52w, forward PE, etc.).
+
+    Also fetches: dividends history (DPS by year) — used to supplement thaifin data.
+    """
     try:
         import yfinance as yf
         yf_sym = _to_yf_symbol(symbol)
@@ -292,15 +295,24 @@ def _fetch_yfinance_supplement(symbol: str) -> dict:
         divs = tk.dividends
         recent_divs = divs.tail(8).tolist() if divs is not None and len(divs) > 0 else []
 
+        # DPS by year from dividends history
+        dps_by_year = {}
+        if divs is not None and len(divs) > 0:
+            for idx, val in divs.items():
+                y = idx.year
+                dps_by_year[y] = dps_by_year.get(y, 0) + round(float(val), 4)
+
         return {
             "info": info,
             "divs": divs,
             "recent_dividends": recent_divs,
+            "dps_by_year": dps_by_year,
         }
 
     except Exception as e:
         logger.warning("yfinance failed for %s: %s", symbol, e)
-        return {"info": {}, "divs": None, "recent_dividends": []}
+        return {"info": {}, "divs": None, "recent_dividends": [],
+                "dps_by_year": {}}
 
 
 def _fetch_yfinance_full(symbol: str) -> dict | None:
@@ -352,7 +364,12 @@ def fetch_fundamentals(symbol: str) -> dict:
         tf_info = tf_data["info"]
         tf_snap = tf_data["snapshot"]
         yearly_metrics = tf_data["yearly_metrics"]
-        dividend_history = tf_data["dividend_history"]
+
+        # --- DPS fix: use yfinance dividends as source of truth ---
+        yf_dps_by_year = yf_supp.get("dps_by_year", {})
+
+        # Build dividend_history from yfinance DPS (source of truth)
+        dividend_history = {y: round(dps, 4) for y, dps in yf_dps_by_year.items()}
 
         # Merge: thaifin base + yfinance supplement
         name = tf_info.get("name") or yf_info.get("shortName", yf_sym)
@@ -368,11 +385,35 @@ def fetch_fundamentals(symbol: str) -> dict:
         forward_pe = yf_info.get("forwardPE")
         pb_ratio = yf_info.get("priceToBook") or tf_snap.get("pb_ratio")
 
-        # Dividend: thaifin yield, yfinance rate/payout
-        dy = tf_snap.get("dividend_yield")  # already percentage
-        dividend_rate = yf_info.get("dividendRate")
+        # --- Dividend: DPS-first, yield = DPS/price ---
+        # Current DPS from yfinance (dividendRate = annual DPS)
+        dps_current = yf_info.get("dividendRate")
+        # Fallback: trailingAnnualDividendRate
+        if dps_current is None:
+            dps_current = yf_info.get("trailingAnnualDividendRate")
+
+        # dividend_yield = DPS / price * 100 (percentage)
+        if dps_current is not None and price is not None and price > 0:
+            dy = dps_current / price * 100
+        else:
+            # Fallback to thaifin snapshot (may be unreliable)
+            dy = tf_snap.get("dividend_yield")
+
+        # five_year_avg_yield = avg DPS last 5 years / current price * 100
+        current_year = datetime.now().year
+        recent_dps = [yf_dps_by_year[y] for y in yf_dps_by_year
+                      if y >= current_year - 5 and y < current_year
+                      and yf_dps_by_year[y] is not None]
+        if recent_dps and price is not None and price > 0:
+            avg_dps = sum(recent_dps) / len(recent_dps)
+            five_year_avg_yield = avg_dps / price * 100
+        else:
+            # Fallback: yfinance fiveYearAvgDividendYield (already percentage)
+            raw_5y = yf_info.get("fiveYearAvgDividendYield")
+            five_year_avg_yield = raw_5y if raw_5y is not None else None
+
+        dividend_rate = dps_current
         payout_ratio = yf_info.get("payoutRatio")
-        five_year_avg_yield = tf_snap.get("five_year_avg_yield") or yf_info.get("fiveYearAvgDividendYield")
 
         # EPS
         eps_trailing = tf_snap.get("eps_trailing") or yf_info.get("trailingEps")
@@ -389,6 +430,8 @@ def fetch_fundamentals(symbol: str) -> dict:
         roa = tf_snap.get("roa") or yf_info.get("returnOnAssets")
         debt_to_equity = tf_snap.get("debt_to_equity") or yf_info.get("debtToEquity")
         current_ratio = tf_snap.get("current_ratio") or yf_info.get("currentRatio")
+
+        # FCF: prefer yfinance (uses proper capex), fallback thaifin
         free_cashflow = yf_info.get("freeCashflow") or tf_snap.get("free_cashflow")
         operating_cashflow = yf_info.get("operatingCashflow") or tf_snap.get("operating_cashflow")
 
@@ -416,10 +459,11 @@ def fetch_fundamentals(symbol: str) -> dict:
         "pe_ratio": pe_ratio,
         "forward_pe": forward_pe,
         "pb_ratio": pb_ratio,
-        "dividend_yield": dy,
+        "dividend_yield": dy,  # percentage (e.g. 4.5 = 4.5%)
+        "dps": dps_current,  # actual dividend per share amount
         "dividend_rate": dividend_rate,
         "payout_ratio": payout_ratio,
-        "five_year_avg_yield": five_year_avg_yield,
+        "five_year_avg_yield": five_year_avg_yield,  # percentage
         "eps_trailing": eps_trailing,
         "eps_forward": eps_forward,
         "revenue": revenue,
