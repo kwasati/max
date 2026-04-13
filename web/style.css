@@ -168,7 +168,7 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 14px 16px;
   cursor: pointer;
   transition: all 0.15s;
   box-shadow: var(--shadow);
@@ -176,16 +176,40 @@ body {
 .stock-card:hover { border-color: var(--accent); box-shadow: var(--shadow-lg); }
 .stock-card.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-light); }
 
-.card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
-.card-identity h3 {
+/* Card layout — score left, info right */
+.card-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-score-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 1rem;
   font-weight: 700;
   font-family: 'JetBrains Mono', monospace;
-  color: var(--text);
+  flex-shrink: 0;
 }
-.card-identity .sector { font-size: 0.72rem; color: var(--text3); margin-top: 2px; }
+.card-score-circle.high { background: var(--green-light); color: var(--green); border: 2px solid var(--green); }
+.card-score-circle.mid { background: var(--yellow-light); color: var(--yellow); border: 2px solid var(--yellow); }
+.card-score-circle.low { background: var(--red-light); color: var(--red); border: 2px solid var(--red); }
 
-.card-score { flex-shrink: 0; }
+.card-info { flex: 1; min-width: 0; }
+.card-info h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+  line-height: 1.2;
+}
+.card-info .sector { font-size: 0.72rem; color: var(--text3); }
+
+/* Score circle for detail panel SVG (keep) */
 .score-circle {
   width: 44px; height: 44px;
   border-radius: 50%;
@@ -197,16 +221,16 @@ body {
 .score-circle.mid { background: var(--yellow-light); color: var(--yellow); border: 2px solid var(--yellow); }
 .score-circle.low { background: var(--red-light); color: var(--red); border: 2px solid var(--red); }
 
-.card-metrics {
+.card-metrics-row {
   display: flex;
-  gap: 12px;
-  margin-bottom: 10px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--border);
+  gap: 14px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
 }
 .card-metric { display: flex; flex-direction: column; }
-.card-metric .label { font-size: 0.68rem; color: var(--text3); }
-.card-metric .value { font-size: 0.88rem; font-weight: 600; font-family: 'JetBrains Mono', monospace; color: var(--number); }
+.card-metric .label { font-size: 0.66rem; color: var(--text3); }
+.card-metric .value { font-size: 0.84rem; font-weight: 600; font-family: 'JetBrains Mono', monospace; color: var(--number); }
 
 .val-badge {
   display: inline-block;
@@ -222,10 +246,10 @@ body {
 .val-badge.val-d { background: var(--orange-light); color: var(--orange); }
 .val-badge.val-f { background: var(--red-light); color: var(--red); }
 
-.card-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
 .tag {
-  font-size: 0.68rem;
-  padding: 2px 8px;
+  font-size: 0.66rem;
+  padding: 2px 7px;
   border-radius: 3px;
   font-weight: 600;
 }
@@ -714,30 +738,35 @@ details.section-explain[open] > summary::before { content: 'ซ่อนคำ�
   font-size: 0.9rem;
 }
 
-/* ===== CARD ACTIONS (star/hide) ===== */
+/* ===== CARD ACTIONS (hover only) ===== */
 .card-actions {
-  display: flex;
-  gap: 4px;
   position: absolute;
   top: 8px;
   right: 8px;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
 }
+.stock-card:hover .card-actions { opacity: 1; }
 .action-btn {
-  background: rgba(0,0,0,0.05);
-  border: none;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 4px 8px;
+  padding: 3px 6px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 14px;
   color: var(--text3);
-  min-width: 32px;
-  min-height: 32px;
+  min-width: 28px;
+  min-height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.15s;
 }
-.action-btn:hover, .action-btn.active { color: var(--yellow); background: var(--yellow-light); }
-.action-btn.hide-btn:hover, .action-btn.hide-btn.active { color: var(--red); background: var(--red-light); }
+.action-btn:hover { color: var(--yellow); background: var(--yellow-light); border-color: var(--yellow); }
+.action-btn.active { color: var(--yellow); }
+.action-btn.hide-btn:hover { color: var(--red); background: var(--red-light); border-color: var(--red); }
 .stock-card { position: relative; }
 
 /* ===== FILTERED CARDS ===== */
