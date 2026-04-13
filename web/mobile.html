@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Max Mahon — Mobile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f5f5;
+  --surface: #ffffff;
+  --surface2: #fafafa;
+  --border: #e8e8e8;
+  --border2: #d9d9d9;
+  --text: #1a1a2e;
+  --text2: #555770;
+  --text3: #8e8ea0;
+  --number: #1a1a2e;
+  --accent: #1e6f5c;
+  --accent-light: #e9f5f0;
+  --blue: #2558a6;
+  --blue-light: #eaf1fb;
+  --green: #0d8050;
+  --green-light: #e6f4ed;
+  --red: #cf1322;
+  --red-light: #fff1f0;
+  --yellow: #d48806;
+  --yellow-light: #fffbe6;
+  --orange: #d46b08;
+  --purple: #531dab;
+  --purple-light: #f9f0ff;
+  --radius: 10px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.08);
+  --bottom-nav-h: 56px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+*::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
+
+body {
+  font-family: 'Sarabun', -apple-system, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-tap-highlight-color: transparent;
+  padding-bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 8px);
+  overscroll-behavior-y: contain;
+}
+
+/* ===== TOP BAR ===== */
+.top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
+}
+.top-bar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.top-bar h1 {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.top-bar h1 em { font-style: normal; color: var(--accent); }
+.top-bar-meta {
+  font-size: 0.7rem;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+/* ===== SUMMARY STRIP ===== */
+.summary-strip {
+  display: flex;
+  gap: 6px;
+  padding: 10px 16px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+}
+.summary-chip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  min-width: 90px;
+  flex-shrink: 0;
+}
+.summary-chip .label { font-size: 0.65rem; color: var(--text3); font-weight: 500; }
+.summary-chip .value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.2;
+}
+
+/* ===== SUB TABS (stock filter) ===== */
+.sub-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+  background: var(--surface);
+}
+.sub-tab {
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: var(--text3);
+  font-weight: 500;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  background: none;
+  border-top: none; border-left: none; border-right: none;
+  font-family: inherit;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.sub-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+/* ===== STOCK CARDS ===== */
+.card-list {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stock-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: rgba(30,111,92,0.08);
+  min-height: 44px;
+}
+.stock-card:active { background: var(--accent-light); }
+
+.card-score {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.92rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0;
+}
+.card-score.high { background: var(--green-light); color: var(--green); border: 2px solid var(--green); }
+.card-score.mid { background: var(--yellow-light); color: var(--yellow); border: 2px solid var(--yellow); }
+.card-score.low { background: var(--red-light); color: var(--red); border: 2px solid var(--red); }
+
+.card-body { flex: 1; min-width: 0; }
+.card-sym {
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+.card-sector { font-size: 0.68rem; color: var(--text3); }
+.card-nums {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+  font-size: 0.75rem;
+}
+.card-nums .n-label { color: var(--text3); }
+.card-nums .n-val { font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+
+.card-arrow {
+  color: var(--text3);
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.card-tags {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-size: 0.62rem;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+.tag.green { background: var(--green-light); color: var(--green); }
+.tag.yellow { background: var(--yellow-light); color: var(--yellow); }
+.tag.blue { background: var(--blue-light); color: var(--blue); }
+.tag.purple { background: var(--purple-light); color: var(--purple); }
+
+/* Filtered card */
+.stock-card.filtered { border-left: 3px solid var(--red); }
+.filtered-reason { font-size: 0.72rem; color: var(--red); margin-top: 2px; }
+
+/* ===== DETAIL PAGE (full screen) ===== */
+.detail-page {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--bg);
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding-bottom: 24px;
+}
+.detail-page.open { transform: translateX(0); }
+
+.detail-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
+  min-height: 48px;
+}
+.detail-back {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: var(--accent);
+  cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+}
+.detail-nav-title {
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+.detail-nav-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+.detail-action-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text3);
+  border-radius: 8px;
+}
+.detail-action-btn:active { background: var(--accent-light); }
+.detail-action-btn.active { color: var(--yellow); }
+
+.detail-content { padding: 16px; }
+
+.detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.detail-info h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+.detail-info .sub { font-size: 0.78rem; color: var(--text3); }
+
+.detail-score-svg { display: block; }
+
+.signal-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.signal-badge {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.filtered-banner {
+  background: var(--red-light);
+  border: 1px solid rgba(207,19,34,0.2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  font-size: 0.82rem;
+  color: var(--red);
+  font-weight: 500;
+}
+
+.quick-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.qm {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+}
+.qm .label { font-size: 0.65rem; color: var(--text3); }
+.qm .value { font-size: 0.95rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+
+.section-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin: 16px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--text);
+}
+
+.checklist-item { padding: 4px 0; font-size: 0.82rem; }
+.checklist-item.pass { color: var(--green); }
+.checklist-item.fail { color: var(--text3); }
+
+.chart-placeholder {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text3);
+  font-size: 0.78rem;
+  margin-bottom: 12px;
+}
+
+.yearly-table-wrap {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+  margin: 8px 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.yearly-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+.yearly-table th, .yearly-table td {
+  padding: 8px 10px;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+.yearly-table th {
+  background: var(--surface2);
+  color: var(--text3);
+  font-weight: 500;
+  position: sticky;
+  top: 0;
+}
+.yearly-table th:first-child, .yearly-table td:first-child { text-align: left; position: sticky; left: 0; background: var(--surface); z-index: 1; }
+.yearly-table td { font-family: 'JetBrains Mono', monospace; }
+
+/* ===== DCA PAGE ===== */
+.page { display: none; padding: 16px; }
+.page.active { display: block; }
+.page h2 { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; }
+.page .desc { font-size: 0.78rem; color: var(--text3); margin-bottom: 16px; }
+
+.form-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.form-field { margin-bottom: 14px; }
+.form-field label { display: block; font-size: 0.78rem; color: var(--text2); font-weight: 500; margin-bottom: 4px; }
+.form-field input, .form-field select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.88rem;
+  outline: none;
+  min-height: 44px;
+  transition: border-color 0.15s;
+}
+.form-field input:focus, .form-field select:focus { border-color: var(--accent); }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.dca-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.dca-chip { cursor: pointer; }
+.dca-chip input { display: none; }
+.dca-chip span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 40px;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text2);
+}
+.dca-chip input:checked + span { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+.toggle-switch {
+  width: 44px;
+  height: 26px;
+  background: var(--border2);
+  border-radius: 13px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.toggle-switch.on { background: var(--accent); }
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+.toggle-switch.on::after { transform: translateX(18px); }
+
+.btn-primary {
+  width: 100%;
+  padding: 12px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 48px;
+}
+.btn-primary:active { opacity: 0.85; }
+
+/* DCA results mock */
+.dca-result-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.dca-r-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+.dca-r-label { font-size: 0.68rem; color: var(--text3); font-weight: 500; }
+.dca-r-value { font-size: 1.15rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; line-height: 1.3; }
+.dca-r-sub { font-size: 0.7rem; color: var(--text3); }
+
+.dca-forecast {
+  background: var(--blue-light);
+  border: 1px solid var(--blue);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+.dca-forecast .dca-r-label { color: var(--blue); }
+.dca-forecast .dca-r-value { color: var(--blue); }
+
+/* ===== REQUEST PAGE ===== */
+.request-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.request-form input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.88rem;
+  outline: none;
+  min-height: 44px;
+}
+.request-form button {
+  padding: 10px 16px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  min-height: 44px;
+}
+.req-group { margin-bottom: 12px; }
+.req-date { font-size: 0.72rem; color: var(--text3); padding-bottom: 4px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
+.req-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 4px;
+  min-height: 44px;
+}
+.req-item .sym { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+.req-item .yield { font-size: 0.72rem; padding: 2px 8px; border-radius: 4px; background: var(--green-light); color: var(--green); font-weight: 600; }
+
+/* ===== SETTINGS PAGE ===== */
+.settings-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.settings-section h3 {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 12px;
+}
+.settings-field { margin-bottom: 12px; }
+.settings-field label { display: block; font-size: 0.78rem; color: var(--text2); font-weight: 500; margin-bottom: 4px; }
+.settings-field input, .settings-field select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.84rem;
+  min-height: 44px;
+}
+.settings-hint { font-size: 0.68rem; color: var(--text3); margin-top: 2px; }
+
+/* ===== BOTTOM NAV ===== */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 90;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-around;
+  padding: 4px 0;
+  padding-bottom: calc(var(--safe-bottom) + 4px);
+  height: calc(var(--bottom-nav-h) + var(--safe-bottom));
+}
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 64px;
+  min-height: 48px;
+  color: var(--text3);
+  text-decoration: none;
+  font-size: 0.65rem;
+  font-weight: 500;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: inherit;
+  transition: color 0.15s;
+}
+.nav-item.active { color: var(--accent); }
+.nav-item svg { width: 22px; height: 22px; }
+.nav-item:active { color: var(--accent); }
+
+/* ===== PIPELINE FAB ===== */
+.fab {
+  position: fixed;
+  bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 16px);
+  right: 16px;
+  z-index: 80;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+.fab:active { opacity: 0.85; transform: scale(0.95); }
+
+/* ===== ANIMATIONS ===== */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.page.active { animation: slideUp 0.25s ease; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar" id="top-bar">
+  <div class="top-bar-row">
+    <h1><em>Max</em> Mahon</h1>
+    <div style="font-size:0.7rem;color:var(--text3)">12 Apr 2026</div>
+  </div>
+</div>
+
+<!-- ===== STOCK PAGE ===== -->
+<div class="page active" id="page-stocks">
+
+  <!-- Summary strip -->
+  <div class="summary-strip">
+    <div class="summary-chip">
+      <div class="label">Passed</div>
+      <div class="value" style="color:var(--green)">17</div>
+    </div>
+    <div class="summary-chip">
+      <div class="label">Quality</div>
+      <div class="value" style="color:var(--accent)">66</div>
+    </div>
+    <div class="summary-chip">
+      <div class="label">New</div>
+      <div class="value" style="color:var(--blue)">14</div>
+    </div>
+    <div class="summary-chip">
+      <div class="label">Warnings</div>
+      <div class="value" style="color:var(--red)">2</div>
+    </div>
+  </div>
+
+  <!-- Sub tabs -->
+  <div class="sub-tabs" id="sub-tabs">
+    <button class="sub-tab active" data-filter="passed">ผ่าน (17)</button>
+    <button class="sub-tab" data-filter="watchlist">ติดตาม (3)</button>
+    <button class="sub-tab" data-filter="new">ใหม่ (14)</button>
+    <button class="sub-tab" data-filter="filtered">ไม่ผ่าน (82)</button>
+  </div>
+
+  <!-- Card list -->
+  <div class="card-list" id="card-list"></div>
+</div>
+
+<!-- ===== DCA PAGE ===== -->
+<div class="page" id="page-dca">
+  <h2>DCA Simulator</h2>
+  <p class="desc">จำลองการลงทุนแบบ DCA + Compound</p>
+
+  <div class="form-card">
+    <div class="form-field">
+      <label>หุ้น</label>
+      <input type="text" placeholder="เช่น BDMS.BK" value="BDMS.BK">
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>เงินต่อครั้ง (บาท)</label>
+        <input type="number" value="5000" inputmode="numeric">
+      </div>
+      <div class="form-field">
+        <label>คาดการณ์ (ปี)</label>
+        <input type="number" value="10" inputmode="numeric">
+      </div>
+    </div>
+    <div class="form-field">
+      <label>วันที่ซื้อ</label>
+      <div class="dca-chips">
+        <label class="dca-chip"><input type="checkbox" checked><span>1</span></label>
+        <label class="dca-chip"><input type="checkbox"><span>5</span></label>
+        <label class="dca-chip"><input type="checkbox"><span>10</span></label>
+        <label class="dca-chip"><input type="checkbox" checked><span>15</span></label>
+        <label class="dca-chip"><input type="checkbox"><span>20</span></label>
+        <label class="dca-chip"><input type="checkbox"><span>25</span></label>
+      </div>
+    </div>
+    <div class="toggle-row">
+      <span style="font-size:0.82rem;color:var(--text2)">นำปันผลกลับไปลงทุน</span>
+      <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+    </div>
+    <button class="btn-primary" style="margin-top:12px">คำนวณ</button>
+  </div>
+
+  <!-- Results -->
+  <div class="dca-result-cards">
+    <div class="dca-r-card">
+      <div class="dca-r-label">ลงทุนรวม</div>
+      <div class="dca-r-value">1.20 ล.</div>
+      <div class="dca-r-sub">10 ปี</div>
+    </div>
+    <div class="dca-r-card">
+      <div class="dca-r-label">มูลค่าปัจจุบัน</div>
+      <div class="dca-r-value" style="color:var(--green)">1.85 ล.</div>
+      <div class="dca-r-sub" style="color:var(--green)">+54.2%</div>
+    </div>
+  </div>
+  <div class="dca-forecast">
+    <div class="dca-r-label">คาดการณ์ 10 ปี</div>
+    <div class="dca-r-value">4.32 ล.</div>
+    <div class="dca-r-sub">8.2%/ปี | YoC 6.8%</div>
+  </div>
+</div>
+
+<!-- ===== REQUEST PAGE ===== -->
+<div class="page" id="page-requests">
+  <h2>ขอวิเคราะห์หุ้น</h2>
+  <p class="desc">พิมพ์ชื่อหุ้น ระบบจะวิเคราะห์ให้อัตโนมัติ</p>
+
+  <div class="request-form">
+    <input type="text" placeholder="LH, CHG, NYT">
+    <button>ส่ง</button>
+  </div>
+
+  <div class="req-group">
+    <div class="req-date">12 Apr 2026 (3 stocks)</div>
+    <div class="req-item"><span class="sym">LH</span><span>฿8.95</span><span class="yield">5.2%</span></div>
+    <div class="req-item"><span class="sym">CHG</span><span>฿3.42</span><span class="yield">3.1%</span></div>
+    <div class="req-item"><span class="sym">NYT</span><span>฿15.80</span><span class="yield">2.8%</span></div>
+  </div>
+  <div class="req-group">
+    <div class="req-date">5 Apr 2026 (2 stocks)</div>
+    <div class="req-item"><span class="sym">HMPRO</span><span>฿12.30</span><span class="yield">4.1%</span></div>
+    <div class="req-item"><span class="sym">SAWAD</span><span>฿45.50</span><span class="yield">2.3%</span></div>
+  </div>
+</div>
+
+<!-- ===== SETTINGS PAGE ===== -->
+<div class="page" id="page-settings">
+  <h2>ตั้งค่า</h2>
+  <p class="desc">กำหนดเวลารัน + เกณฑ์คัดกรอง</p>
+
+  <div class="settings-section">
+    <h3>รอบการวิเคราะห์</h3>
+    <div class="toggle-row">
+      <span style="font-size:0.82rem">เปิด Schedule</span>
+      <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+    </div>
+    <div class="form-row" style="margin-top:10px">
+      <div class="settings-field">
+        <label>วัน</label>
+        <select><option>จันทร์</option><option>อังคาร</option><option>พุธ</option><option>พฤหัสบดี</option><option>ศุกร์</option><option>เสาร์</option><option selected>อาทิตย์</option></select>
+      </div>
+      <div class="settings-field">
+        <label>เวลา</label>
+        <input type="time" value="09:00">
+      </div>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <h3>Pipeline อัตโนมัติ</h3>
+    <div class="settings-field">
+      <label>สัปดาห์คี่</label>
+      <select><option selected>Weekly</option><option>Discovery</option><option>Fetch</option><option>Screen</option></select>
+    </div>
+    <div class="settings-field">
+      <label>สัปดาห์คู่</label>
+      <select><option>Weekly</option><option selected>Discovery</option><option>Fetch</option><option>Screen</option></select>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <h3>เกณฑ์คัดกรอง</h3>
+    <div class="form-row">
+      <div class="settings-field">
+        <label>ROE เฉลี่ย (%)</label>
+        <input type="number" value="15" inputmode="numeric">
+        <div class="settings-hint">ค่าเริ่มต้น: 15%</div>
+      </div>
+      <div class="settings-field">
+        <label>Net Margin (%)</label>
+        <input type="number" value="10" inputmode="numeric">
+        <div class="settings-hint">ค่าเริ่มต้น: 10%</div>
+      </div>
+    </div>
+    <div class="form-row" style="margin-top:10px">
+      <div class="settings-field">
+        <label>D/E สูงสุด</label>
+        <input type="number" value="1.5" step="0.1" inputmode="decimal">
+      </div>
+      <div class="settings-field">
+        <label>Market Cap (ล้าน)</label>
+        <input type="number" value="5000" inputmode="numeric">
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-primary">บันทึก</button>
+</div>
+
+<!-- ===== DETAIL PAGE (overlay) ===== -->
+<div class="detail-page" id="detail-page">
+  <div class="detail-nav">
+    <button class="detail-back" onclick="closeDetail()">&larr;</button>
+    <span class="detail-nav-title" id="detail-nav-title">BDMS</span>
+    <div class="detail-nav-actions">
+      <button class="detail-action-btn active">&#9733;</button>
+      <button class="detail-action-btn">&#128683;</button>
+    </div>
+  </div>
+  <div class="detail-content" id="detail-content"></div>
+</div>
+
+<!-- FAB -->
+<button class="fab" title="วิเคราะห์ทั้งหมด" id="fab-analyze">&#9654;</button>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="nav-item active" data-page="stocks">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+    <span>หุ้น</span>
+  </button>
+  <button class="nav-item" data-page="dca">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    <span>DCA</span>
+  </button>
+  <button class="nav-item" data-page="requests">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    <span>คำขอ</span>
+  </button>
+  <button class="nav-item" data-page="settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    <span>ตั้งค่า</span>
+  </button>
+</div>
+
+<script>
+// ===== DATA =====
+const STOCKS = [
+  { sym: 'DELTA', sector: 'Industrials', score: 89, yield: 19.0, avg5y: 0.5, grade: 'D', tags: ['หุ้นเติบโต', 'ปันผลเด่น'], tagColors: ['green','yellow'], watched: false },
+  { sym: 'CPN', sector: 'Real Estate', score: 81, yield: 3.8, avg5y: 2.3, grade: 'B', tags: [], tagColors: [], watched: false },
+  { sym: 'BDMS', sector: 'Healthcare', score: 81, yield: 4.3, avg5y: 2.6, grade: 'B', tags: ['สวนกระแส'], tagColors: ['blue'], watched: true },
+  { sym: 'CBG', sector: 'Consumer', score: 79, yield: 3.2, avg5y: 1.9, grade: 'B', tags: ['สวนกระแส'], tagColors: ['blue'], watched: false },
+  { sym: 'CPALL', sector: 'Consumer', score: 76, yield: 2.1, avg5y: 1.8, grade: 'C', tags: ['หุ้นเติบโต'], tagColors: ['green'], watched: true },
+  { sym: 'HMPRO', sector: 'Cyclical', score: 74, yield: 3.5, avg5y: 3.0, grade: 'B', tags: ['ปันผลเด่น'], tagColors: ['yellow'], watched: true },
+  { sym: 'SCC', sector: 'Industrials', score: 72, yield: 4.8, avg5y: 3.8, grade: 'B', tags: ['เงินสดดี'], tagColors: ['purple'], watched: false },
+  { sym: 'PTT', sector: 'Energy', score: 68, yield: 5.5, avg5y: 4.2, grade: 'A', tags: ['ปันผลเด่น'], tagColors: ['yellow'], watched: false },
+  { sym: 'ADVANC', sector: 'Comm', score: 61, yield: 4.2, avg5y: 3.8, grade: 'B', tags: ['ปันผลเด่น'], tagColors: ['yellow'], watched: false },
+  { sym: 'KBANK', sector: 'Financial', score: 58, yield: 3.8, avg5y: 3.2, grade: 'B', tags: [], tagColors: [], watched: false },
+];
+
+const FILTERED = [
+  { sym: 'BEAUTY', sector: 'Consumer', reasons: 'ROE < 15%, Net Margin < 10%' },
+  { sym: 'JAS', sector: 'Comm', reasons: 'D/E > 1.5, FCF negative' },
+  { sym: 'THANI', sector: 'Financial', reasons: 'Market Cap < 5B' },
+  { sym: 'WORK', sector: 'Services', reasons: 'ROE < 15%' },
+  { sym: 'COLOR', sector: 'Property', reasons: 'NM < 10%, D/E > 1.5' },
+];
+
+let currentFilter = 'passed';
+
+function scoreClass(s) { return s >= 75 ? 'high' : s >= 50 ? 'mid' : 'low'; }
+
+function renderCards() {
+  const el = document.getElementById('card-list');
+  if (currentFilter === 'filtered') {
+    el.innerHTML = FILTERED.map(s => `
+      <div class="stock-card filtered" onclick="openDetail('${s.sym}')">
+        <div class="card-body">
+          <div class="card-sym">${s.sym}</div>
+          <div class="card-sector">${s.sector}</div>
+          <div class="filtered-reason">${s.reasons}</div>
+        </div>
+        <div class="card-arrow">&rsaquo;</div>
+      </div>
+    `).join('');
+    return;
+  }
+
+  let stocks = STOCKS;
+  if (currentFilter === 'watchlist') stocks = STOCKS.filter(s => s.watched);
+  else if (currentFilter === 'new') stocks = STOCKS.filter(s => !s.watched);
+
+  el.innerHTML = stocks.map(s => `
+    <div class="stock-card" onclick="openDetail('${s.sym}')">
+      <div class="card-score ${scoreClass(s.score)}">${s.score}</div>
+      <div class="card-body">
+        <div class="card-sym">${s.sym}</div>
+        <div class="card-sector">${s.sector}</div>
+        <div class="card-nums">
+          <span><span class="n-label">Yield</span> <span class="n-val">${s.yield.toFixed(1)}%</span></span>
+          <span><span class="n-label">5y</span> <span class="n-val">${s.avg5y.toFixed(1)}%</span></span>
+          <span><span class="n-label">ราคา</span> <span class="n-val" style="font-size:0.72rem">${s.grade}</span></span>
+        </div>
+        ${s.tags.length ? '<div class="card-tags">' + s.tags.map((t,i) => `<span class="tag ${s.tagColors[i]}">${t}</span>`).join('') + '</div>' : ''}
+      </div>
+      <div class="card-arrow">&rsaquo;</div>
+    </div>
+  `).join('');
+}
+
+// Sub tabs
+document.querySelectorAll('.sub-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sub-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    renderCards();
+  });
+});
+
+// Bottom nav
+document.querySelectorAll('.nav-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const page = btn.dataset.page;
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+
+    // Show/hide stock-specific elements
+    const isStocks = page === 'stocks';
+    document.getElementById('fab-analyze').style.display = isStocks ? '' : 'none';
+  });
+});
+
+// Detail
+function openDetail(sym) {
+  const dp = document.getElementById('detail-page');
+  document.getElementById('detail-nav-title').textContent = sym;
+
+  const s = STOCKS.find(x => x.sym === sym) || FILTERED.find(x => x.sym === sym);
+  const isFiltered = FILTERED.some(x => x.sym === sym);
+  const score = s.score || 0;
+  const scoreColor = score >= 75 ? 'var(--green)' : score >= 50 ? 'var(--yellow)' : 'var(--red)';
+
+  document.getElementById('detail-content').innerHTML = `
+    <div class="detail-header">
+      <div class="detail-info">
+        <h2>${sym}</h2>
+        <div class="sub">${s.sector || ''} | Market Cap 120B</div>
+      </div>
+      ${score ? `<svg width="70" height="70" viewBox="0 0 100 100" class="detail-score-svg">
+        <circle cx="50" cy="50" r="40" fill="none" stroke="var(--border)" stroke-width="8"/>
+        <circle cx="50" cy="50" r="40" fill="none" stroke="${scoreColor}" stroke-width="8"
+          stroke-dasharray="${2*Math.PI*40}" stroke-dashoffset="${2*Math.PI*40*(1-score/100)}"
+          stroke-linecap="round" transform="rotate(-90 50 50)"/>
+        <text x="50" y="50" text-anchor="middle" dominant-baseline="central"
+          fill="${scoreColor}" font-size="22" font-weight="bold" font-family="JetBrains Mono">${score}</text>
+      </svg>` : ''}
+    </div>
+
+    ${isFiltered ? `<div class="filtered-banner">ไม่ผ่านเกณฑ์: ${s.reasons}</div>` : ''}
+
+    ${s.tags ? '<div class="signal-badges">' + (s.tags||[]).map((t,i) => {
+      const colors = { green: 'var(--green)', yellow: 'var(--yellow)', blue: 'var(--blue)', purple: 'var(--purple)' };
+      const c = colors[s.tagColors?.[i]] || 'var(--text3)';
+      return `<span class="signal-badge" style="background:color-mix(in srgb,${c} 15%,transparent);color:${c};border:1px solid color-mix(in srgb,${c} 30%,transparent)">${t}</span>`;
+    }).join('') + '</div>' : ''}
+
+    <div class="quick-metrics">
+      <div class="qm"><div class="label">Price</div><div class="value">25.50</div></div>
+      <div class="qm"><div class="label">P/E</div><div class="value">18.2</div></div>
+      <div class="qm"><div class="label">Yield</div><div class="value">${s.yield ? s.yield.toFixed(1)+'%' : '-'}</div></div>
+      <div class="qm"><div class="label">Payout</div><div class="value">62%</div></div>
+      <div class="qm"><div class="label">D/E</div><div class="value">0.45</div></div>
+      <div class="qm"><div class="label">ROE</div><div class="value">19.2%</div></div>
+    </div>
+
+    <div class="section-title">Buffett Checklist</div>
+    <div class="checklist-item pass">&#10003; ROE &ge;15% สม่ำเสมอ</div>
+    <div class="checklist-item pass">&#10003; Gross Margin &ge;30%</div>
+    <div class="checklist-item pass">&#10003; หนี้ต่ำ (D/E < 1.0)</div>
+    <div class="checklist-item pass">&#10003; FCF บวกทุกปี</div>
+    <div class="checklist-item pass">&#10003; ปันผล &ge;5 ปีติด</div>
+    <div class="checklist-item fail">&#10007; EPS โตสม่ำเสมอ</div>
+
+    <div class="section-title">ปันผลต่อหุ้น</div>
+    <div class="chart-placeholder">Chart.js bar</div>
+
+    <div class="section-title">ROE %</div>
+    <div class="chart-placeholder">Chart.js line</div>
+
+    <div class="section-title">รายได้ vs กำไร</div>
+    <div class="chart-placeholder">Chart.js grouped bar</div>
+
+    <div class="section-title">Year-over-Year</div>
+    <div class="yearly-table-wrap">
+      <table class="yearly-table">
+        <thead><tr><th></th><th>2020</th><th>2021</th><th>2022</th><th>2023</th><th>2024</th><th>2025</th></tr></thead>
+        <tbody>
+          <tr><td>Revenue</td><td>28.5</td><td>30.2</td><td>35.8</td><td>38.4</td><td>41.2</td><td>44.0</td></tr>
+          <tr><td>Net Inc</td><td>3.8</td><td>4.5</td><td>5.9</td><td>6.8</td><td>7.2</td><td>7.8</td></tr>
+          <tr><td>ROE</td><td>12.5%</td><td>14.8%</td><td>17.3%</td><td>18.9%</td><td>19.2%</td><td>20.1%</td></tr>
+          <tr><td>D/E</td><td>0.58</td><td>0.51</td><td>0.48</td><td>0.45</td><td>0.42</td><td>0.38</td></tr>
+          <tr><td>DPS</td><td>0.40</td><td>0.45</td><td>0.55</td><td>0.65</td><td>0.70</td><td>0.75</td></tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  dp.classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detail-page').classList.remove('open');
+}
+
+// Init
+renderCards();
+</script>
+</body>
+</html>
