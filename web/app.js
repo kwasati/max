@@ -1,7 +1,7 @@
 // Max Mahon Dashboard — app.js
 
 const API = '';  // same origin
-let state = { watchlist: null, screener: null, currentStock: null, activeTab: 'passed', filteredReasons: null };
+let state = { watchlist: null, screener: null, currentStock: null, activeTab: 'passed', filteredReasons: null, sortBy: 'score' };
 
 // === USER DATA ===
 let userData = { watchlist: [], blacklist: [], notes: {}, custom_lists: {} };
@@ -70,6 +70,7 @@ async function init() {
   renderSummary();
   renderStockList();
   bindTabs();
+  bindSort();
   bindRequests();
 }
 
@@ -206,6 +207,17 @@ function bindTabs() {
   });
 }
 
+// ===== SORT =====
+function bindSort() {
+  const sortSelect = document.getElementById('sort-select');
+  if (sortSelect) {
+    sortSelect.addEventListener('change', () => {
+      state.sortBy = sortSelect.value;
+      renderStockList();
+    });
+  }
+}
+
 // ===== STOCK LIST =====
 function renderStockList() {
   const el = document.getElementById('stock-list');
@@ -279,8 +291,19 @@ function renderStockList() {
     return;
   }
 
-  // Sort by score desc
-  candidates.sort((a, b) => (b.quality_score || b.score || 0) - (a.quality_score || a.score || 0));
+  // Sort
+  const sortFns = {
+    score: (a, b) => (b.quality_score || b.score || 0) - (a.quality_score || a.score || 0),
+    yield: (a, b) => (b.dividend_yield || 0) - (a.dividend_yield || 0),
+    avg5y: (a, b) => (b.five_year_avg_yield || 0) - (a.five_year_avg_yield || 0),
+    pe_asc: (a, b) => (a.pe_ratio || 999) - (b.pe_ratio || 999),
+    de_asc: (a, b) => {
+      const aDE = a.de_ratio ?? a.metrics?.de ?? 999;
+      const bDE = b.de_ratio ?? b.metrics?.de ?? 999;
+      return aDE - bDE;
+    },
+  };
+  candidates.sort(sortFns[state.sortBy] || sortFns.score);
 
   if (candidates.length === 0) {
     el.innerHTML = '<div class="loading">No stocks in this category</div>';

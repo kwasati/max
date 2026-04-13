@@ -184,6 +184,26 @@ body {
 .page-panel.active { display: block; animation: fadeIn 0.3s ease; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
+/* ===== STOCK TOOLBAR ===== */
+.stock-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 0 8px 0;
+}
+.sort-select {
+  padding: 6px 12px;
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  color: var(--text2);
+  background: var(--surface);
+  outline: none;
+  cursor: pointer;
+  min-height: 32px;
+}
+.sort-select:focus { border-color: var(--accent); }
+
 /* ===== STOCK LIST ===== */
 .stock-list {
   margin-bottom: 0;
