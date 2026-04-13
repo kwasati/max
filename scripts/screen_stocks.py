@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 UNIVERSE = DATA_DIR / "set_universe.json"
 WATCHLIST = ROOT / "watchlist.json"
+USER_DATA = ROOT / "user_data.json"
 
 sys.path.insert(0, str(ROOT / "scripts"))
 from fetch_data import fetch_multi_year, normalize_yield, FINANCIAL_SECTORS
@@ -515,8 +516,16 @@ def quality_score(data: dict) -> dict:
 
 def main():
     universe = json.loads(UNIVERSE.read_text(encoding="utf-8"))
-    watchlist = json.loads(WATCHLIST.read_text(encoding="utf-8"))
-    watched = {s["symbol"] for s in watchlist["stocks"]}
+
+    # Read user data (new format) or fallback to old watchlist.json
+    if USER_DATA.exists():
+        user_data = json.loads(USER_DATA.read_text(encoding="utf-8"))
+        watched = set(user_data.get("watchlist", []))
+        blacklisted = set(user_data.get("blacklist", []))
+    else:
+        watchlist = json.loads(WATCHLIST.read_text(encoding="utf-8"))
+        watched = {s["symbol"] for s in watchlist["stocks"]}
+        blacklisted = set()
 
     symbols = universe["symbols"]
     print(f"Max Mahon v2 screening {len(symbols)} stocks (quality scoring)...")
@@ -526,6 +535,10 @@ def main():
     filtered_out = 0
 
     for i, sym in enumerate(symbols):
+        if sym in blacklisted:
+            print(f"  [{i+1}/{len(symbols)}] {sym} — blacklisted, skipping")
+            continue
+
         try:
             data = fetch_multi_year(sym)
 

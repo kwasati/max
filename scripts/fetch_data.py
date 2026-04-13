@@ -20,6 +20,7 @@ from scripts.data_adapter import fetch_from_thaifin, fetch_yfinance_supplement, 
 
 ROOT = Path(__file__).resolve().parent.parent
 WATCHLIST = ROOT / "watchlist.json"
+USER_DATA = ROOT / "user_data.json"
 DATA_DIR = ROOT / "data"
 
 FINANCIAL_SECTORS = {"Financial Services", "Banking", "Insurance"}
@@ -381,8 +382,14 @@ def fetch_multi_year(symbol: str) -> dict:
 
 
 def main():
-    watchlist = json.loads(WATCHLIST.read_text(encoding="utf-8"))
-    symbols = [s["symbol"] for s in watchlist["stocks"]]
+    # Read from user_data.json (new format)
+    if USER_DATA.exists():
+        user_data = json.loads(USER_DATA.read_text(encoding="utf-8"))
+        symbols = user_data.get("watchlist", [])
+    else:
+        # Fallback to old watchlist.json
+        watchlist = json.loads(WATCHLIST.read_text(encoding="utf-8"))
+        symbols = [s["symbol"] for s in watchlist["stocks"]]
 
     print(f"Max Mahon v2 fetching {len(symbols)} stocks (multi-year)...")
     results = []
