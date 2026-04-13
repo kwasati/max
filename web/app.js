@@ -239,25 +239,33 @@ function renderStockList() {
       return;
     }
     el.innerHTML = '<div class="stock-grid">' + filtered.map(s => {
+      const sym = (s.symbol || '').replace('.BK','');
+      const fullSym = s.symbol || '';
+      const sector = s.sector || '';
       const metrics = s.basic_metrics || {};
       const dy = metrics.dividend_yield != null ? metrics.dividend_yield.toFixed(1) + '%' : '-';
       const roe = metrics.roe != null ? (metrics.roe * 100).toFixed(0) + '%' : '-';
       const reasons = (s.reasons || []).join(', ');
-      return `<div class="stock-card filtered-card">
-        <div class="card-top">
-          <div class="card-identity">
-            <h3>${(s.symbol || '').replace('.BK','')}</h3>
-            <div class="sector">${s.sector || ''}</div>
+      const selected = state.currentStock === fullSym ? ' selected' : '';
+      return `<div class="stock-card filtered-card${selected}" data-symbol="${fullSym}">
+        <div class="card-row">
+          <div class="card-info">
+            <h3>${sym}</h3>
+            <div class="sector">${sector}</div>
           </div>
         </div>
-        <div class="card-name">${s.name || ''}</div>
+        ${s.name ? '<div style="font-size:0.78rem;color:var(--text3);margin:4px 0;">' + s.name + '</div>' : ''}
         <div class="filtered-reasons">${reasons}</div>
-        <div class="card-metrics">
+        <div class="card-metrics-row">
           <div class="card-metric"><span class="label">Yield</span><span class="value">${dy}</span></div>
           <div class="card-metric"><span class="label">ROE</span><span class="value">${roe}</span></div>
         </div>
       </div>`;
     }).join('') + '</div>';
+
+    el.querySelectorAll('.stock-card').forEach(row => {
+      row.addEventListener('click', () => loadDetail(row.dataset.symbol));
+    });
     return;
   } else if (tab === 'requests') {
     el.innerHTML = '';

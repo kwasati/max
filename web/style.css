@@ -822,7 +822,10 @@ details.section-explain[open] > summary::before { content: 'ซ่อนคำ�
 /* ===== FILTERED CARDS ===== */
 .filtered-card {
   border-left: 3px solid var(--red);
-  opacity: 0.8;
+}
+.filtered-card:hover {
+  border-color: var(--red);
+  box-shadow: var(--shadow-lg);
 }
 .filtered-reasons {
   font-size: 0.8em;
