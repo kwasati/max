@@ -49,8 +49,11 @@ async function saveNote(symbol, note) {
 
 function closeDetail() {
   const detail = document.getElementById('detail');
-  detail.style.display = 'none';
   state.currentStock = null;
+  const layout = document.getElementById('stock-layout');
+  layout.classList.remove('split-mode');
+  layout.classList.add('grid-mode');
+  detail.innerHTML = '';
   renderStockList();
 }
 
@@ -305,14 +308,14 @@ function renderStockList() {
           ${isBlacklisted ? '\uD83D\uDC41' : '\uD83D\uDEAB'}
         </button>
       </div>
-      <div class="card-top">
-        <div class="card-identity">
+      <div class="card-row">
+        <div class="card-score-circle ${scoreClass(score)}">${score}</div>
+        <div class="card-info">
           <h3>${sym.replace('.BK', '')}</h3>
           <div class="sector">${sector}</div>
         </div>
-        <div class="card-score"><div class="score-circle ${scoreClass(score)}">${score}</div></div>
       </div>
-      <div class="card-metrics">
+      <div class="card-metrics-row">
         <div class="card-metric"><span class="label">Yield</span><span class="value" ${yldColor}>${yldStr}%</span></div>
         <div class="card-metric"><span class="label">Avg 5y</span><span class="value">${fiveYrStr}%</span></div>
         <div class="card-metric"><span class="label">ระดับราคา</span><span class="val-badge ${valClass}">${valGrade}</span></div>
@@ -330,10 +333,12 @@ function renderStockList() {
 // ===== LOAD DETAIL =====
 async function loadDetail(symbol) {
   state.currentStock = symbol;
+  const layout = document.getElementById('stock-layout');
+  layout.classList.remove('grid-mode');
+  layout.classList.add('split-mode');
   renderStockList(); // highlight selected
 
   const detail = document.getElementById('detail');
-  detail.style.display = '';
   detail.innerHTML = '<div class="loading">Loading...</div>';
 
   try {
@@ -574,6 +579,8 @@ function renderDetail(d) {
 
   // ===== BUILD HTML =====
   detail.innerHTML = `
+    <button class="detail-close-btn" onclick="closeDetail()">ปิด &times;</button>
+
     <div class="detail-close" id="detail-close">
       <button onclick="closeDetail()">\u2190 กลับ</button>
     </div>
