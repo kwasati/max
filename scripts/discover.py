@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 REPORTS_DIR = ROOT / "reports"
-WATCHLIST = ROOT / "watchlist.json"
+USER_DATA = ROOT / "user_data.json"
 
 
 def get_latest_screener() -> Path:
@@ -67,9 +67,13 @@ def fmt_candidate(c):
 
 def build_prompt(screener_path: Path) -> str:
     data = json.loads(screener_path.read_text(encoding="utf-8"))
-    watchlist = json.loads(WATCHLIST.read_text(encoding="utf-8"))
 
-    watched_syms = [s["symbol"] for s in watchlist["stocks"]]
+    if USER_DATA.exists():
+        user_data = json.loads(USER_DATA.read_text(encoding="utf-8"))
+    else:
+        user_data = {"watchlist": [], "notes": {}, "blacklist": []}
+
+    watched_syms = user_data.get("watchlist", [])
     new_finds = [c for c in data["candidates"] if not c["in_watchlist"]]
     existing = [c for c in data["candidates"] if c["in_watchlist"]]
 

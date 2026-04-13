@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 REPORTS_DIR = ROOT / "reports"
-WATCHLIST = ROOT / "watchlist.json"
+USER_DATA = ROOT / "user_data.json"
 
 
 def get_latest_snapshot() -> Path:
@@ -107,13 +107,18 @@ def build_stock_section(stock: dict, reason: str) -> str:
 
 def build_prompt(snapshot_path: Path) -> str:
     snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
-    watchlist = json.loads(WATCHLIST.read_text(encoding="utf-8"))
-    reasons = {s["symbol"]: s["reason"] for s in watchlist["stocks"]}
+
+    if USER_DATA.exists():
+        user_data = json.loads(USER_DATA.read_text(encoding="utf-8"))
+    else:
+        user_data = {"watchlist": [], "notes": {}, "blacklist": []}
+
+    notes = user_data.get("notes", {})
 
     stock_sections = []
     for stock in snapshot["stocks"]:
         sym = stock.get("symbol", "")
-        reason = reasons.get(sym, "")
+        reason = notes.get(sym, "")
         stock_sections.append(build_stock_section(stock, reason))
 
     stocks_text = "\n\n".join(stock_sections)
