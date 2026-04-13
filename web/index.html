@@ -6,7 +6,7 @@
 <title>Max Mahon — Stock Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 
@@ -81,14 +81,65 @@
 
 <!-- ===== REQUEST PAGE ===== -->
 <div class="page-panel" id="page-requests">
+
+  <!-- Search Section -->
+  <div class="search-section">
+    <h3>ค้นหาหุ้น</h3>
+
+    <!-- Preset buttons -->
+    <div class="search-presets">
+      <button class="preset-btn" data-preset="dividend">ปันผลดี</button>
+      <button class="preset-btn" data-preset="growth">เติบโตสม่ำเสมอ</button>
+      <button class="preset-btn" data-preset="value">ราคาถูก</button>
+      <button class="preset-btn" data-preset="quality">คุณภาพสูง</button>
+    </div>
+
+    <!-- Custom filter form -->
+    <div class="search-custom">
+      <div class="search-row">
+        <select id="search-metric" class="search-select">
+          <option value="dividend_yield">Dividend Yield (%)</option>
+          <option value="five_year_avg_yield">Avg 5y Yield (%)</option>
+          <option value="quality_score">คะแนนคุณภาพ</option>
+          <option value="pe_ratio">P/E Ratio</option>
+          <option value="de_ratio">D/E Ratio</option>
+          <option value="roe">ROE</option>
+          <option value="dividend_streak">ปันผลติดต่อ (ปี)</option>
+          <option value="market_cap">Market Cap</option>
+        </select>
+        <select id="search-op" class="search-select">
+          <option value=">=">&#8805;</option>
+          <option value="<=">&#8804;</option>
+          <option value=">">&gt;</option>
+          <option value="<">&lt;</option>
+        </select>
+        <input type="number" id="search-value" class="search-input" placeholder="ค่า" step="any">
+        <button id="search-add" class="search-add-btn">+ เพิ่ม</button>
+      </div>
+
+      <!-- Active filters (chips) -->
+      <div class="search-filters" id="search-filters"></div>
+
+      <div class="search-actions">
+        <button id="search-run" class="btn-search-run">ค้นหา</button>
+        <button id="search-clear" class="btn-search-clear">ล้าง</button>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="search-results" id="search-results"></div>
+  </div>
+
+  <!-- Request Section (existing) -->
   <div class="request-panel" id="request-panel">
-    <h3>Request Stock Analysis</h3>
+    <h3>ส่งคำขอวิเคราะห์</h3>
     <div class="request-form">
       <input type="text" id="request-input" placeholder="LH, CHG, NYT (ไม่ต้องใส่ .BK)">
       <button id="request-submit">ส่งคำขอ</button>
     </div>
     <div class="request-results" id="request-results"></div>
   </div>
+
 </div>
 
 <!-- ===== DCA PAGE ===== -->
@@ -254,6 +305,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="app.js?v=5" defer></script>
+<script src="app.js?v=6" defer></script>
 </body>
 </html>

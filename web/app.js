@@ -765,6 +765,140 @@ async function loadRequests() {
   }
 }
 
+// ===== SEARCH =====
+const SEARCH_PRESETS = {
+  dividend: {
+    label: 'ปันผลดี',
+    criteria: [
+      { metric: 'dividend_yield', op: '>=', value: 4 },
+      { metric: 'dividend_streak', op: '>=', value: 5 }
+    ],
+    sort_by: 'dividend_yield'
+  },
+  growth: {
+    label: 'เติบโตสม่ำเสมอ',
+    criteria: [
+      { metric: 'quality_score', op: '>=', value: 60 },
+      { metric: 'roe', op: '>=', value: 0.15 }
+    ],
+    sort_by: 'quality_score'
+  },
+  value: {
+    label: 'ราคาถูก',
+    criteria: [
+      { metric: 'pe_ratio', op: '<=', value: 15 },
+      { metric: 'de_ratio', op: '<=', value: 1.0 }
+    ],
+    sort_by: 'pe_ratio'
+  },
+  quality: {
+    label: 'คุณภาพสูง',
+    criteria: [
+      { metric: 'quality_score', op: '>=', value: 70 }
+    ],
+    sort_by: 'quality_score'
+  }
+};
+
+let searchCriteria = [];
+
+function bindSearch() {
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const preset = SEARCH_PRESETS[btn.dataset.preset];
+      if (!preset) return;
+      searchCriteria = [...preset.criteria];
+      renderSearchFilters();
+      runSearch(preset.sort_by);
+    });
+  });
+
+  document.getElementById('search-add')?.addEventListener('click', addSearchFilter);
+  document.getElementById('search-run')?.addEventListener('click', () => runSearch());
+  document.getElementById('search-clear')?.addEventListener('click', clearSearch);
+}
+
+function addSearchFilter() {
+  const metric = document.getElementById('search-metric').value;
+  const op = document.getElementById('search-op').value;
+  const value = parseFloat(document.getElementById('search-value').value);
+  if (isNaN(value)) return;
+  searchCriteria.push({ metric, op, value });
+  renderSearchFilters();
+  document.getElementById('search-value').value = '';
+}
+
+function renderSearchFilters() {
+  const el = document.getElementById('search-filters');
+  if (!el) return;
+  const METRIC_LABELS = {
+    dividend_yield: 'Yield', five_year_avg_yield: 'Avg 5y', quality_score: 'Score',
+    pe_ratio: 'P/E', de_ratio: 'D/E', roe: 'ROE', dividend_streak: 'Streak', market_cap: 'MCap'
+  };
+  el.innerHTML = searchCriteria.map((c, i) =>
+    `<span class="filter-chip">${METRIC_LABELS[c.metric] || c.metric} ${c.op} ${c.value} <button onclick="removeFilter(${i})">×</button></span>`
+  ).join('');
+}
+
+function removeFilter(index) {
+  searchCriteria.splice(index, 1);
+  renderSearchFilters();
+}
+
+function clearSearch() {
+  searchCriteria = [];
+  renderSearchFilters();
+  document.getElementById('search-results').innerHTML = '';
+}
+
+async function runSearch(sort_by) {
+  const el = document.getElementById('search-results');
+  if (!el || searchCriteria.length === 0) return;
+  el.innerHTML = '<div class="loading">กำลังค้นหา...</div>';
+
+  try {
+    const resp = await fetch(API + '/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ criteria: searchCriteria, sort_by: sort_by || 'quality_score', limit: 50 })
+    });
+    const data = await resp.json();
+    renderSearchResults(data);
+  } catch (e) {
+    el.innerHTML = '<div class="loading" style="color:var(--red)">เกิดข้อผิดพลาด</div>';
+  }
+}
+
+function renderSearchResults(data) {
+  const el = document.getElementById('search-results');
+  const results = data.results || [];
+  if (results.length === 0) {
+    el.innerHTML = '<div class="loading">ไม่พบหุ้นที่ตรงเงื่อนไข</div>';
+    return;
+  }
+  el.innerHTML = `<div class="search-count">พบ ${data.total} หุ้น</div>` +
+    '<div class="stock-grid">' + results.map(s => {
+      const sym = (s.symbol || '').replace('.BK', '');
+      const score = s.quality_score || 0;
+      const sc = score >= 75 ? 'high' : score >= 50 ? 'mid' : 'low';
+      const dy = s.dividend_yield != null ? s.dividend_yield.toFixed(1) + '%' : '-';
+      const pe = s.pe_ratio != null ? s.pe_ratio.toFixed(1) : '-';
+      return `<div class="stock-card" data-symbol="${s.symbol}" onclick="loadDetail('${s.symbol}')">
+        <div class="card-row">
+          <div class="card-score-circle ${sc}">${score}</div>
+          <div class="card-info">
+            <h3>${sym}</h3>
+            <div class="sector">${s.sector || ''}</div>
+          </div>
+        </div>
+        <div class="card-metrics-row">
+          <div class="card-metric"><span class="label">Yield</span><span class="value">${dy}</span></div>
+          <div class="card-metric"><span class="label">P/E</span><span class="value">${pe}</span></div>
+        </div>
+      </div>`;
+    }).join('') + '</div>';
+}
+
 // ===== PIPELINE CONTROL =====
 function bindPipeline() {
   document.querySelectorAll('.pipe-btn[data-action]').forEach(btn => {
@@ -1179,6 +1313,7 @@ function bindSettings() {
 // ===== START =====
 init();
 bindPipeline();
+bindSearch();
 bindDCA();
 bindSettings();
 loadSettings(); // update schedule text on load
