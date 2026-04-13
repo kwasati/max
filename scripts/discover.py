@@ -73,7 +73,7 @@ def build_prompt(screener_path: Path) -> str:
     new_finds = [c for c in data["candidates"] if not c["in_watchlist"]]
     existing = [c for c in data["candidates"] if c["in_watchlist"]]
 
-    new_section = "\n".join(fmt_candidate(c) for c in new_finds[:15]) or "ไม่พบตัวใหม่ที่ผ่านเกณฑ์"
+    new_section = "\n".join(fmt_candidate(c) for c in new_finds[:30]) or "ไม่พบตัวใหม่ที่ผ่านเกณฑ์"
     existing_section = "\n".join(fmt_candidate(c) for c in existing) or "ไม่มีตัวใน watchlist ที่ผ่าน"
 
     return f"""คุณคือ Max Mahon — นักวิเคราะห์หุ้นไทย เชี่ยวชาญการคัดหุ้นคุณภาพสูงสำหรับ DCA ระยะยาว
@@ -91,11 +91,11 @@ Scanned: {data['total_scanned']} ตัว | ผ่าน Hard Filters: {data['p
 - FCF บวกอย่างน้อย 3 จาก 4 ปี
 - Market Cap ≥ 5B THB
 
-## Quality Score (100 คะแนน)
-- **Profitability (30):** ROE consistency + gross margin + net margin trend
-- **Growth (25):** Revenue CAGR + EPS CAGR + revenue consistency
-- **Dividend (25):** Yield + payout sustainability + dividend streak
-- **Strength (20):** D/E + interest coverage + FCF consistency + OCF/NI ratio
+## Quality Score (100 คะแนน, Dividend-First)
+- **Dividend (35):** Yield 10 + Streak 10 + Payout 7 + Dividend Growth 8
+- **Profitability (25):** ROE consistency 12 + Margins 8 + Trend 5
+- **Growth (20):** Revenue CAGR 8 + EPS CAGR 8 + Consistency 4
+- **Strength (20):** D/E 5 + Interest Coverage 5 + FCF 5 + OCF/NI 5
 
 ## Signal Tags
 - **COMPOUNDER** — ROE ≥20% ทุกปี + revenue CAGR ≥10% + payout <60% → Buffett dream stock
