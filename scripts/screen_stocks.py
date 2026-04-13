@@ -43,6 +43,7 @@ HARD_FILTERS = load_filters()
 
 def hard_filter(data: dict) -> tuple:
     reasons = []
+    near_miss = []
     sector = data.get("sector", "")
     is_financial = sector in FINANCIAL_SECTORS
     agg = data.get("aggregates", {})
@@ -50,7 +51,7 @@ def hard_filter(data: dict) -> tuple:
 
     if info_mcap < HARD_FILTERS["min_market_cap"]:
         reasons.append(f"market cap {info_mcap/1e9:.0f}B < 5B")
-        return False, reasons
+        return False, reasons, near_miss
 
     # ROE check — need multi-year data
     yearly = data.get("yearly_metrics", [])
@@ -62,7 +63,10 @@ def hard_filter(data: dict) -> tuple:
         roe_target = 0.10 if is_financial else HARD_FILTERS["min_roe_avg"]
         roe_floor = 0.08 if is_financial else HARD_FILTERS["min_roe_floor"]
         if avg_roe < roe_target - 0.005:
-            reasons.append(f"avg ROE {avg_roe*100:.0f}% < {roe_target*100:.0f}%")
+            if avg_roe >= roe_target - 0.02:
+                near_miss.append(f"NEAR_MISS_ROE: avg {avg_roe*100:.0f}% (target {roe_target*100:.0f}%)")
+            else:
+                reasons.append(f"avg ROE {avg_roe*100:.0f}% < {roe_target*100:.0f}%")
         if min_roe < roe_floor - 0.005:
             reasons.append(f"min ROE {min_roe*100:.0f}% < {roe_floor*100:.0f}%")
     elif data.get("roe") is not None:
@@ -76,7 +80,10 @@ def hard_filter(data: dict) -> tuple:
         if len(nm_vals) >= 2:
             avg_nm = sum(nm_vals) / len(nm_vals)
             if avg_nm < HARD_FILTERS["min_net_margin"]:
-                reasons.append(f"avg net margin {avg_nm*100:.0f}% < 10%")
+                if avg_nm >= HARD_FILTERS["min_net_margin"] - 0.02:
+                    near_miss.append(f"NEAR_MISS_NM: avg {avg_nm*100:.0f}% (target {HARD_FILTERS['min_net_margin']*100:.0f}%)")
+                else:
+                    reasons.append(f"avg net margin {avg_nm*100:.0f}% < 10%")
         elif data.get("profit_margin") is not None:
             if data["profit_margin"] < HARD_FILTERS["min_net_margin"]:
                 reasons.append(f"net margin {data['profit_margin']*100:.0f}% < 10%")
@@ -102,7 +109,7 @@ def hard_filter(data: dict) -> tuple:
         if fcf_total >= 3 and fcf_pos < HARD_FILTERS["min_fcf_positive_years"]:
             reasons.append(f"FCF positive {fcf_pos}/{fcf_total}yr < 3")
 
-    return len(reasons) == 0, reasons
+    return len(reasons) == 0, reasons, near_miss
 
 
 def profitability_score(data: dict) -> tuple:
@@ -112,41 +119,41 @@ def profitability_score(data: dict) -> tuple:
     sector = data.get("sector", "")
     is_financial = sector in FINANCIAL_SECTORS
 
-    # ROE consistency (15 pts)
+    # ROE consistency (12 pts)
     roe_vals = [m["roe"] for m in yearly if m.get("roe") is not None]
     if roe_vals:
         years_above_15 = sum(1 for r in roe_vals if r >= 0.15)
-        pts = min(15, years_above_15 * 4)
+        pts = min(12, years_above_15 * 3)
         score += pts
         avg_roe = sum(roe_vals) / len(roe_vals)
-        if pts >= 12:
+        if pts >= 9:
             reasons.append(f"ROE เด่น avg {avg_roe*100:.0f}%")
-        elif pts >= 8:
+        elif pts >= 6:
             reasons.append(f"ROE ดี avg {avg_roe*100:.0f}%")
     elif data.get("roe") is not None and data["roe"] >= 0.15:
-        score += 8
+        score += 6
         reasons.append(f"ROE {data['roe']*100:.0f}% (TTM)")
 
-    # Gross Margin (7 pts) — skip for financials
+    # Gross Margin (5 pts) — skip for financials
     if not is_financial:
         gm_vals = [m["gross_margin"] for m in yearly if m.get("gross_margin") is not None]
         if gm_vals:
             avg_gm = sum(gm_vals) / len(gm_vals)
             if avg_gm >= 0.40:
-                score += 7
+                score += 5
                 reasons.append(f"gross margin สูง {avg_gm*100:.0f}%")
             elif avg_gm >= 0.30:
-                score += 5
-            elif avg_gm >= 0.20:
                 score += 3
+            elif avg_gm >= 0.20:
+                score += 2
         elif data.get("gross_margins") is not None:
             gm = data["gross_margins"]
             if gm >= 0.40:
-                score += 7
-            elif gm >= 0.30:
                 score += 5
-            elif gm >= 0.20:
+            elif gm >= 0.30:
                 score += 3
+            elif gm >= 0.20:
+                score += 2
 
         # SG&A efficiency (3 pts)
         sga_vals = [m["sga_ratio"] for m in yearly if m.get("sga_ratio") is not None]
@@ -162,11 +169,11 @@ def profitability_score(data: dict) -> tuple:
         if nm_vals:
             avg_nm = sum(nm_vals) / len(nm_vals)
             if avg_nm >= 0.30:
-                score += 10
+                score += 8
             elif avg_nm >= 0.20:
-                score += 7
+                score += 5
             elif avg_nm >= 0.10:
-                score += 4
+                score += 3
 
     # Net Margin trend (5 pts)
     nm_vals = [m["net_margin"] for m in yearly if m.get("net_margin") is not None]
@@ -186,42 +193,42 @@ def growth_score(data: dict) -> tuple:
     reasons = []
     agg = data.get("aggregates", {})
 
-    # Revenue CAGR (10 pts)
+    # Revenue CAGR (8 pts)
     rev_cagr = agg.get("revenue_cagr")
     if rev_cagr is not None:
         if rev_cagr >= 0.15:
-            score += 10
+            score += 8
             reasons.append(f"revenue CAGR {rev_cagr*100:.0f}%")
         elif rev_cagr >= 0.10:
-            score += 7
+            score += 6
             reasons.append(f"revenue CAGR {rev_cagr*100:.0f}%")
         elif rev_cagr >= 0.05:
-            score += 4
+            score += 3
         elif rev_cagr >= 0:
-            score += 2
+            score += 1
 
-    # EPS CAGR (10 pts)
+    # EPS CAGR (8 pts)
     eps_cagr = agg.get("eps_cagr")
     if eps_cagr is not None:
         if eps_cagr >= 0.15:
-            score += 10
+            score += 8
             reasons.append(f"EPS CAGR {eps_cagr*100:.0f}%")
         elif eps_cagr >= 0.10:
-            score += 7
+            score += 6
         elif eps_cagr >= 0.05:
-            score += 4
+            score += 3
         elif eps_cagr >= 0:
-            score += 2
+            score += 1
 
-    # Revenue consistency (5 pts)
+    # Revenue consistency (4 pts)
     growth_yrs = agg.get("revenue_growth_years", 0)
     total_comp = agg.get("revenue_growth_total_comparisons", 0)
     if total_comp >= 3:
         if growth_yrs == total_comp:
-            score += 5
+            score += 4
             reasons.append("revenue โตทุกปี")
         elif growth_yrs >= total_comp - 1:
-            score += 3
+            score += 2
 
     return score, reasons
 
@@ -231,19 +238,19 @@ def dividend_score(data: dict) -> tuple:
     reasons = []
     agg = data.get("aggregates", {})
 
-    # Yield (8 pts)
+    # Yield (10 pts)
     dy = data.get("dividend_yield")
     if dy is not None:
         if dy >= 6:
-            score += 8
+            score += 10
             reasons.append(f"yield สูง {dy:.1f}%")
         elif dy >= 4:
-            score += 6
+            score += 7
             reasons.append(f"yield ดี {dy:.1f}%")
         elif dy >= 3:
-            score += 4
+            score += 5
         elif dy >= 2:
-            score += 2
+            score += 3
 
     # Payout sustainability (7 pts)
     payout = data.get("payout_ratio")
@@ -267,6 +274,16 @@ def dividend_score(data: dict) -> tuple:
     elif streak >= 5:
         score += 5
     elif streak >= 3:
+        score += 3
+
+    # Dividend Growth (8 pts)
+    div_growth_streak = agg.get("dividend_growth_streak", 0)
+    if div_growth_streak >= 5:
+        score += 8
+        reasons.append(f"ปันผลเพิ่มต่อเนื่อง {div_growth_streak} ปี")
+    elif div_growth_streak >= 3:
+        score += 5
+    elif div_growth_streak >= 1:
         score += 3
 
     return score, reasons
@@ -492,16 +509,21 @@ def quality_score(data: dict) -> dict:
 
     # Signal adjustments
     if "YIELD_TRAP" in signals:
+        total -= 20
+    if "DATA_WARNING" in signals:
         total -= 15
     if "CONTRARIAN" in signals:
-        total += 10
+        total += 5
     if "COMPOUNDER" in signals:
-        total += 10
+        total += 5
+
+    # Cap at 0-100
+    total = max(0, min(100, total))
 
     all_reasons = p_reasons + g_reasons + d_reasons + s_reasons
 
     return {
-        "score": max(0, total),
+        "score": total,
         "breakdown": {
             "profitability": p_score,
             "growth": g_score,
@@ -532,13 +554,19 @@ def main():
                 print(f"  [{i+1}/{len(symbols)}] {sym} — error: {data['error']}")
                 continue
 
-            passed, filter_reasons = hard_filter(data)
+            passed, filter_reasons, near_miss = hard_filter(data)
             if not passed:
                 filtered_out += 1
                 print(f"  [{i+1}/{len(symbols)}] {sym} — filtered: {', '.join(filter_reasons[:2])}")
                 continue
 
             result = quality_score(data)
+
+            # Apply near-miss penalty
+            if near_miss:
+                result["score"] = max(0, result["score"] - 5 * len(near_miss))
+                result["signals"].extend([nm.split(":")[0] for nm in near_miss])
+                result["reasons"].extend(near_miss)
             in_watchlist = sym in watched
 
             # five_year_avg_yield fallback — compute from dividend_history if null
@@ -619,6 +647,9 @@ def main():
         }
         val = valuation_grade(val_data, sector_medians)
         c["valuation"] = val
+        # Apply valuation modifier to score
+        val_modifier = {"A": 5, "B": 0, "C": -5, "D": -10, "F": -20}
+        c["score"] = max(0, min(100, c["score"] + val_modifier.get(val["grade"], 0)))
         # Add OVERPRICED signal
         if "OVERPRICED" in val["signals"] and "OVERPRICED" not in c["signals"]:
             c["signals"].append("OVERPRICED")
