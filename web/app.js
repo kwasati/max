@@ -1,7 +1,7 @@
 // Max Mahon Dashboard — app.js
 
 const API = '';  // same origin
-let state = { watchlist: null, screener: null, currentStock: null, activeTab: 'passed' };
+let state = { watchlist: null, screener: null, currentStock: null, activeTab: 'passed', filteredReasons: null };
 
 // === USER DATA ===
 let userData = { watchlist: [], blacklist: [], notes: {}, custom_lists: {} };
@@ -50,6 +50,7 @@ async function saveNote(symbol, note) {
 function closeDetail() {
   const detail = document.getElementById('detail');
   state.currentStock = null;
+  state.filteredReasons = null;
   const layout = document.getElementById('stock-layout');
   layout.classList.remove('split-mode');
   layout.classList.add('grid-mode');
@@ -341,6 +342,12 @@ function renderStockList() {
 // ===== LOAD DETAIL =====
 async function loadDetail(symbol) {
   state.currentStock = symbol;
+
+  const filteredStock = (state.screener?.filtered_out_stocks || []).find(
+    s => s.symbol === symbol || s.symbol === symbol.replace('.BK','')
+  );
+  state.filteredReasons = filteredStock ? (filteredStock.reasons || []) : null;
+
   const layout = document.getElementById('stock-layout');
   layout.classList.remove('grid-mode');
   layout.classList.add('split-mode');
@@ -353,7 +360,10 @@ async function loadDetail(symbol) {
     const data = await fetch(API + '/api/stock/' + encodeURIComponent(symbol)).then(r => r.json());
     renderDetail(data);
   } catch (e) {
-    detail.innerHTML = '<div class="loading">Error loading stock data</div>';
+    detail.innerHTML = `<div class="loading">
+      <div style="margin-bottom:8px;">ไม่มีข้อมูลละเอียดสำหรับหุ้นนี้</div>
+      <div style="font-size:0.78rem;color:var(--text3);">ลองกดปุ่ม "วิเคราะห์ทั้งหมด" เพื่อดึงข้อมูลใหม่</div>
+    </div>`;
   }
 }
 
@@ -576,6 +586,11 @@ function renderDetail(d) {
       + '</tr></tbody></table></div>';
   }
 
+  // Filtered banner
+  const filteredBannerHTML = state.filteredReasons
+    ? `<div class="filtered-banner">ไม่ผ่านเกณฑ์: ${state.filteredReasons.join(', ')}</div>`
+    : '';
+
   // Near miss signals
   const nearMissSignals = signals.filter(s => s.startsWith('NEAR_MISS'));
   const nearMissHTML = nearMissSignals.length > 0
@@ -605,6 +620,8 @@ function renderDetail(d) {
     <div class="signal-badges">
       ${signals.map(s => signalBadge(s)).join('')}
     </div>
+
+    ${filteredBannerHTML}
 
     ${valGradeBadge(val)}
 

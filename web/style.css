@@ -827,6 +827,16 @@ details.section-explain[open] > summary::before { content: 'ซ่อนคำ�
   border-color: var(--red);
   box-shadow: var(--shadow-lg);
 }
+.filtered-banner {
+  background: var(--red-light);
+  border: 1px solid rgba(207, 19, 34, 0.2);
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+  color: var(--red);
+  font-weight: 500;
+}
 .filtered-reasons {
   font-size: 0.8em;
   color: var(--red);
