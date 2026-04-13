@@ -117,6 +117,8 @@ body {
   margin-bottom: 20px;
   border-bottom: 2px solid var(--border);
   scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
 }
 .tabs::-webkit-scrollbar { display: none; }
 .tab {
