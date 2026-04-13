@@ -1,8 +1,8 @@
-"""Max Mahon v2 — fetch multi-year Thai stock fundamentals from yfinance.
+"""Max Mahon v2 — fetch multi-year Thai stock fundamentals.
 
-Pulls 4-5 years of financial statements + 10+ years of dividend history,
-computes yearly metrics (ROE, margins, D/E, etc.), aggregates (CAGR, streaks),
-and sanity-checks for data anomalies.
+Primary: thaifin (10+ years Thai financials)
+Fallback: yfinance (4-5 years statements + realtime price)
+Supplement: yfinance always used for realtime price, 52w range, forward PE, etc.
 """
 
 import json
@@ -14,6 +14,8 @@ from pathlib import Path
 
 import yfinance as yf
 import pandas as pd
+
+from scripts.data_adapter import fetch_fundamentals as _adapter_fetch
 
 ROOT = Path(__file__).resolve().parent.parent
 WATCHLIST = ROOT / "watchlist.json"
@@ -115,7 +117,64 @@ def validate_metrics(info, yearly_metrics):
     return warnings
 
 
-def fetch_multi_year(symbol: str) -> dict:
+def _build_aggregates(yearly_metrics, dps_by_year):
+    """Compute aggregates from yearly_metrics and dividend history."""
+    revenues = [m["revenue"] for m in yearly_metrics]
+    eps_list = [m["diluted_eps"] for m in yearly_metrics]
+    roe_list = [m["roe"] for m in yearly_metrics if m["roe"] is not None]
+    nm_list = [m["net_margin"] for m in yearly_metrics if m["net_margin"] is not None]
+    gm_list = [m["gross_margin"] for m in yearly_metrics if m["gross_margin"] is not None]
+    om_list = [m["operating_margin"] for m in yearly_metrics if m["operating_margin"] is not None]
+    fcf_list = [m["fcf"] for m in yearly_metrics if m["fcf"] is not None]
+
+    revenue_cagr = compute_cagr(revenues)
+    eps_cagr = compute_cagr(eps_list, reject_negatives=True)
+    avg_roe = sum(roe_list) / len(roe_list) if roe_list else None
+    avg_net_margin = sum(nm_list) / len(nm_list) if nm_list else None
+    min_roe = min(roe_list) if roe_list else None
+
+    revenue_positive_years = sum(1 for i in range(1, len(revenues))
+                                  if revenues[i] is not None and revenues[i - 1] is not None
+                                  and revenues[i] > revenues[i - 1])
+    total_revenue_comparisons = sum(1 for i in range(1, len(revenues))
+                                     if revenues[i] is not None and revenues[i - 1] is not None)
+
+    eps_positive_years = sum(1 for e in eps_list if e is not None and e > 0)
+    fcf_positive_years = sum(1 for f in fcf_list if f > 0)
+
+    div_streak = count_dividend_streak(dps_by_year)
+    div_growth_streak = count_dividend_growth_streak(dps_by_year)
+
+    latest = yearly_metrics[-1] if yearly_metrics else {}
+
+    avg_gross_margin = sum(gm_list) / len(gm_list) if gm_list else None
+    avg_operating_margin = sum(om_list) / len(om_list) if om_list else None
+
+    return {
+        "revenue_cagr": revenue_cagr,
+        "eps_cagr": eps_cagr,
+        "avg_roe": avg_roe,
+        "min_roe": min_roe,
+        "avg_net_margin": avg_net_margin,
+        "avg_gross_margin": avg_gross_margin,
+        "avg_operating_margin": avg_operating_margin,
+        "revenue_growth_years": revenue_positive_years,
+        "revenue_growth_total_comparisons": total_revenue_comparisons,
+        "eps_positive_years": eps_positive_years,
+        "eps_total_years": len([e for e in eps_list if e is not None]),
+        "fcf_positive_years": fcf_positive_years,
+        "fcf_total_years": len(fcf_list),
+        "dividend_streak": div_streak,
+        "dividend_growth_streak": div_growth_streak,
+        "years_of_data": len(yearly_metrics),
+        "latest_interest_coverage": latest.get("interest_coverage"),
+        "latest_ocf_ni_ratio": latest.get("ocf_ni_ratio"),
+        "latest_capital_intensity": latest.get("capital_intensity"),
+    }
+
+
+def _fetch_yfinance_legacy(symbol: str) -> dict:
+    """Legacy yfinance-only fetch (fallback when thaifin fails)."""
     tk = yf.Ticker(symbol)
     info = tk.info or {}
 
@@ -125,19 +184,14 @@ def fetch_multi_year(symbol: str) -> dict:
     sector = info.get("sector", "N/A")
     is_financial = sector in FINANCIAL_SECTORS
 
-    # --- Income Statement ---
     inc = tk.income_stmt
     bs = tk.balance_sheet
     cf = tk.cashflow
     divs = tk.dividends
 
     yearly_metrics = []
-    years_available = []
 
     if inc is not None and len(inc.columns) > 0:
-        # Banks like SCB may only have EPS rows — detect minimal data
-        has_full_financials = "Total Revenue" in inc.index or "Net Income" in inc.index
-
         for col in inc.columns:
             year = col.year if hasattr(col, 'year') else col.date().year
             year_str = str(year)
@@ -150,7 +204,6 @@ def fetch_multi_year(symbol: str) -> dict:
             interest_expense = safe_get(inc, "Interest Expense", col)
             diluted_eps = safe_get(inc, "Diluted EPS", col)
 
-            # Banks: try alternate row names
             if net_income is None:
                 net_income = safe_get(inc, "Net Income Common Stockholders", col)
             if revenue is None:
@@ -158,7 +211,6 @@ def fetch_multi_year(symbol: str) -> dict:
             if revenue is None and is_financial:
                 revenue = safe_get(inc, "Net Interest Income", col)
 
-            # Match balance sheet by year (banks may have different column timestamps)
             equity = None
             total_debt = None
             total_assets = None
@@ -177,7 +229,6 @@ def fetch_multi_year(symbol: str) -> dict:
                         current_liab = safe_get(bs, "Current Liabilities", bs_col)
                         break
 
-            # Cashflow — may have fewer columns, match by year
             ocf = None
             fcf = None
             capex = None
@@ -195,7 +246,6 @@ def fetch_multi_year(symbol: str) -> dict:
             if revenue is None and net_income is None and diluted_eps is None:
                 continue
 
-            # SG&A
             sga = safe_get(inc, "Selling General And Administration", col)
 
             roe = safe_div(net_income, equity)
@@ -239,78 +289,20 @@ def fetch_multi_year(symbol: str) -> dict:
                 "ocf_ni_ratio": ocf_ni_ratio,
                 "capital_intensity": capital_intensity,
             })
-            years_available.append(year)
 
     yearly_metrics.sort(key=lambda x: x["year"])
 
-    # --- Dividends grouped by year ---
     dps_by_year = {}
     if divs is not None and len(divs) > 0:
         for idx, val in divs.items():
             y = idx.year
             dps_by_year[y] = dps_by_year.get(y, 0) + val
 
-    # --- Aggregates ---
-    revenues = [m["revenue"] for m in yearly_metrics]
-    eps_list = [m["diluted_eps"] for m in yearly_metrics]
-    roe_list = [m["roe"] for m in yearly_metrics if m["roe"] is not None]
-    nm_list = [m["net_margin"] for m in yearly_metrics if m["net_margin"] is not None]
-    gm_list = [m["gross_margin"] for m in yearly_metrics if m["gross_margin"] is not None]
-    om_list = [m["operating_margin"] for m in yearly_metrics if m["operating_margin"] is not None]
-    fcf_list = [m["fcf"] for m in yearly_metrics if m["fcf"] is not None]
-
-    revenue_cagr = compute_cagr(revenues)
-    eps_cagr = compute_cagr(eps_list, reject_negatives=True)
-    avg_roe = sum(roe_list) / len(roe_list) if roe_list else None
-    avg_net_margin = sum(nm_list) / len(nm_list) if nm_list else None
-    min_roe = min(roe_list) if roe_list else None
-
-    revenue_positive_years = sum(1 for i in range(1, len(revenues))
-                                  if revenues[i] is not None and revenues[i - 1] is not None
-                                  and revenues[i] > revenues[i - 1])
-    total_revenue_comparisons = sum(1 for i in range(1, len(revenues))
-                                     if revenues[i] is not None and revenues[i - 1] is not None)
-
-    eps_positive_years = sum(1 for e in eps_list if e is not None and e > 0)
-    fcf_positive_years = sum(1 for f in fcf_list if f > 0)
-
-    div_streak = count_dividend_streak(dps_by_year)
-    div_growth_streak = count_dividend_growth_streak(dps_by_year)
-
-    latest = yearly_metrics[-1] if yearly_metrics else {}
-
-    avg_gross_margin = sum(gm_list) / len(gm_list) if gm_list else None
-    avg_operating_margin = sum(om_list) / len(om_list) if om_list else None
-
-    aggregates = {
-        "revenue_cagr": revenue_cagr,
-        "eps_cagr": eps_cagr,
-        "avg_roe": avg_roe,
-        "min_roe": min_roe,
-        "avg_net_margin": avg_net_margin,
-        "avg_gross_margin": avg_gross_margin,
-        "avg_operating_margin": avg_operating_margin,
-        "revenue_growth_years": revenue_positive_years,
-        "revenue_growth_total_comparisons": total_revenue_comparisons,
-        "eps_positive_years": eps_positive_years,
-        "eps_total_years": len([e for e in eps_list if e is not None]),
-        "fcf_positive_years": fcf_positive_years,
-        "fcf_total_years": len(fcf_list),
-        "dividend_streak": div_streak,
-        "dividend_growth_streak": div_growth_streak,
-        "years_of_data": len(yearly_metrics),
-        "latest_interest_coverage": latest.get("interest_coverage"),
-        "latest_ocf_ni_ratio": latest.get("ocf_ni_ratio"),
-        "latest_capital_intensity": latest.get("capital_intensity"),
-    }
-
-    # --- Sanity check ---
+    aggregates = _build_aggregates(yearly_metrics, dps_by_year)
     warnings = validate_metrics(info, yearly_metrics)
 
-    # --- TTM snapshot (backward compat) ---
     raw_dy = info.get("dividendYield")
     dy = normalize_yield(raw_dy)
-
     recent_divs = divs.tail(8).tolist() if divs is not None and len(divs) > 0 else []
 
     return {
@@ -353,6 +345,38 @@ def fetch_multi_year(symbol: str) -> dict:
         "warnings": warnings,
         "fetched_at": datetime.now().isoformat(),
     }
+
+
+def fetch_multi_year(symbol: str) -> dict:
+    """Fetch multi-year fundamentals. thaifin primary, yfinance fallback."""
+    # Try thaifin + yfinance supplement via adapter
+    adapter_result = _adapter_fetch(symbol)
+
+    if adapter_result is not None and "error" not in adapter_result:
+        # Adapter succeeded — compute aggregates and finalize
+        yearly_metrics = adapter_result["yearly_metrics"]
+        dividend_history = adapter_result["dividend_history"]
+        aggregates = _build_aggregates(yearly_metrics, dividend_history)
+
+        # Validate
+        # Build a minimal info-like dict for validate_metrics
+        info_for_validate = {
+            "dividendYield": adapter_result.get("dividend_yield"),
+            "earningsGrowth": adapter_result.get("earnings_growth"),
+            "payoutRatio": adapter_result.get("payout_ratio"),
+        }
+        warnings = validate_metrics(info_for_validate, yearly_metrics)
+
+        adapter_result["aggregates"] = aggregates
+        adapter_result["warnings"] = warnings
+        adapter_result["fetched_at"] = datetime.now().isoformat()
+        return adapter_result
+
+    if adapter_result is not None and "error" in adapter_result:
+        return adapter_result
+
+    # Fallback: full yfinance legacy
+    return _fetch_yfinance_legacy(symbol)
 
 
 def main():
