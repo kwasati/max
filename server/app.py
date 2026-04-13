@@ -48,7 +48,7 @@ MAX_TOKEN = os.getenv("MAX_TOKEN", "")
 # ---------------------------------------------------------------------------
 # App
 # ---------------------------------------------------------------------------
-app = FastAPI(title="Max Mahon Server", version="1.0.0")
+app = FastAPI(title="Max Mahon Server", version="3.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

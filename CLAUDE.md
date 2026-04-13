@@ -1,20 +1,24 @@
-# Max Mahon v2 — Claude Instructions
+# Max Mahon v3 — Claude Instructions
 
 ## Architecture
-- **Agent:** Max Mahon — Thai stock analyst, Buffett + เซียนฮง style
-- **Stack:** Python + yfinance + Claude CLI
+- **Agent:** Max Mahon — Thai stock analyst, Dividend-First + Buffett Quality style
+- **Stack:** Python + thaifin + yfinance (supplement) + Claude CLI
 - **Server:** FastAPI on port 50089, Cloudflare Tunnel → max.intensivetrader.com
 - **Schedule:** APScheduler ใน server (อาทิตย์ 09:00, สลับ weekly/discovery)
-- **Philosophy:** Warren Buffett (business quality + moat + long-term) + เซียนฮง สถาพร (dividend + growth)
-- **Goal:** คัดหุ้นสำหรับ DCA 10-20 ปี ปันผลดีและเติบโตสม่ำเสมอ
+- **Philosophy:** Dividend-First (passive income DCA) + Warren Buffett (quality) + เซียนฮง สถาพร (value growth)
+- **Goal:** คัดหุ้นสำหรับ DCA 10-20 ปี ปันผลดีเป็นหลัก เติบโตสม่ำเสมอ
 
 ### Data Sources
-- **Primary:** yfinance — 4-5 ปี financial statements + 20+ ปี dividend history
-- **Planned:** SETSMART API (SET official) — เมื่อมี API key
+- **Primary:** thaifin — 10-16 ปี financial statements + ratios
+- **Supplement:** yfinance — realtime price, 52w range, forward PE, market cap
+- **Universe:** 933 stocks (SET 704 + mai 229) via thaifin
+
+### User Data
+- `user_data.json` — watchlist, blacklist, notes, custom lists (จัดการจาก UI ได้)
 
 ### Pipeline
 - **Weekly (ทุกสัปดาห์):** fetch multi-year data → Claude วิเคราะห์ 6 ด้าน → weekly report
-- **Discovery (สัปดาห์ที่ 2,4):** screen SET 99 ตัว → hard filters → quality score → Claude คัดตัวใหม่
+- **Discovery (สัปดาห์ที่ 2,4):** screen SET+mai 933 ตัว → hard filters → quality score → Claude คัดตัวใหม่
 
 ### Server
 - **Port:** 50089
@@ -25,8 +29,10 @@
 - **API:** `/api/watchlist`, `/api/screener`, `/api/stock/{symbol}`, `/api/run/{action}`, `/api/request`, `/api/events` (SSE)
 
 ## Key Files
-- `watchlist.json` — รายชื่อหุ้นที่ติดตาม
-- `data/set_universe.json` — SET universe สำหรับ screening (~99 ตัว)
+- `user_data.json` — user preferences (watchlist, blacklist, notes, lists)
+- `scripts/data_adapter.py` — thaifin + yfinance adapter
+- `scripts/update_universe.py` — ดึง list หุ้นทั้ง SET/mai
+- `scripts/migrate_watchlist.py` — migration จาก watchlist.json เดิม
 - `scripts/fetch_data.py` — ดึง multi-year financials + dividends + compute yearly metrics + sanity check
 - `scripts/analyze.py` — สร้าง prompt + Claude วิเคราะห์ watchlist (6 ด้าน)
 - `scripts/screen_stocks.py` — hard filters + quality score 100 + signal tags
@@ -48,14 +54,20 @@
 - FCF บวกอย่างน้อย 3 จาก 4 ปี (ยกเว้น financial)
 - Market Cap ≥ 5B THB
 
-## Quality Score (100 คะแนน)
+## Quality Score (100 คะแนน, Dividend-First)
 
 | ด้าน | คะแนน | เกณฑ์ |
 |---|---|---|
-| Profitability | 30 | ROE consistency (15) + Gross Margin (7) + SG&A efficiency (3) + Net Margin trend (5) |
-| Growth | 25 | Revenue CAGR (10) + EPS CAGR (10) + Revenue consistency (5) |
-| Dividend | 25 | Yield (8) + Payout sustainability (7) + Dividend streak (10) |
-| Strength | 20 | D/E level (5) + Interest Coverage (5) + FCF consistency (5) + OCF/NI (5) |
+| Dividend | 35 | Yield (10) + Streak (10) + Payout (7) + Dividend Growth (8) |
+| Profitability | 25 | ROE consistency (12) + Margins (8) + Trend (5) |
+| Growth | 20 | Revenue CAGR (8) + EPS CAGR (8) + Consistency (4) |
+| Strength | 20 | D/E (5) + Interest Coverage (5) + FCF (5) + OCF/NI (5) |
+
+### Modifiers
+- Valuation: A:+5, B:0, C:-5, D:-10, F:-20
+- Signals: COMPOUNDER +5, CONTRARIAN +5, YIELD_TRAP -20, DATA_WARNING -15
+- Soft zone: near-miss ROE/NM -5 pts
+- **Cap: 0-100 เสมอ**
 
 ## Signal Tags
 
@@ -80,11 +92,6 @@
 ## References
 - Buffett criteria: ROE ≥15% sustained, Gross Margin >40%, D/E <0.5, FCF positive (Validea, TradingCenter)
 - เซียนฮง สถาพร: เน้น cash flow quality, ความสม่ำเสมอ, หนี้น้อย (เกณฑ์ตัวเลขเช่น P/E ≤ 15 มาจากการวิเคราะห์พอร์ตโดย secondary sources ไม่ใช่เกณฑ์ที่แกประกาศ)
-
-## Data Quality Notes (yfinance .BK)
-- ธนาคารไทย: yearly_metrics ส่วนใหญ่ null → ใช้ info fallback
-- five_year_avg_yield: null บ่อย → fallback คำนวณจาก dividend_history
-- debt_to_equity จาก info: เป็น percentage (ต้อง /100)
 
 ## Rules
 - ห้ามแนะนำซื้อขายโดยตรง — วิเคราะห์ให้ข้อมูลเท่านั้น

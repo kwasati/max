@@ -1,4 +1,4 @@
-"""Max Mahon v2 — Discovery: Claude analyzes quality-screened stocks for DCA candidates."""
+"""Max Mahon v3 — Discovery: Claude analyzes quality-screened stocks for DCA candidates."""
 
 import json
 import shutil
@@ -159,7 +159,7 @@ def main():
     today = datetime.now().strftime("%Y-%m-%d")
     report_path = REPORTS_DIR / f"discovery_{today}.md"
 
-    print("Max Mahon v2 analyzing discoveries with Claude...")
+    print("Max Mahon v3 analyzing discoveries with Claude...")
 
     def find_claude_cli():
         for name in ["claude.cmd", "claude"]:
@@ -183,7 +183,7 @@ def main():
         sys.exit(1)
 
     header = f"""---
-agent: Max Mahon v2
+agent: Max Mahon v3
 date: {today}
 type: discovery
 ---

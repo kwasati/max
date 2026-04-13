@@ -1,4 +1,4 @@
-"""Max Mahon v2 — feed multi-year stock data to Claude for deep weekly analysis."""
+"""Max Mahon v3 — feed multi-year stock data to Claude for deep weekly analysis."""
 
 import json
 import shutil
@@ -172,7 +172,7 @@ def find_claude_cli():
 
 
 def run_claude(prompt: str, output_path: Path):
-    print("Max Mahon v2 analyzing with Claude...")
+    print("Max Mahon v3 analyzing with Claude...")
 
     claude_cmd = find_claude_cli()
     result = subprocess.run(
@@ -190,7 +190,7 @@ def run_claude(prompt: str, output_path: Path):
 
     today = datetime.now().strftime("%Y-%m-%d")
     header = f"""---
-agent: Max Mahon v2
+agent: Max Mahon v3
 date: {today}
 type: weekly-analysis
 ---
