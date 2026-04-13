@@ -281,7 +281,8 @@ def _fetch_thaifin(symbol: str) -> dict | None:
 def _fetch_yfinance_supplement(symbol: str) -> dict:
     """Fetch supplementary data from yfinance (price, 52w, forward PE, etc.).
 
-    Also fetches: dividends history (DPS by year) — used to supplement thaifin data.
+    Also fetches: dividends history (DPS by year), capex, operating income,
+    interest expense — used to supplement thaifin data.
     """
     try:
         import yfinance as yf
@@ -302,17 +303,51 @@ def _fetch_yfinance_supplement(symbol: str) -> dict:
                 y = idx.year
                 dps_by_year[y] = dps_by_year.get(y, 0) + round(float(val), 4)
 
+        # Capex, operating income, interest expense from statements
+        capex_by_year = {}
+        operating_income_by_year = {}
+        interest_expense_by_year = {}
+
+        try:
+            cf = tk.cashflow
+            if cf is not None and not cf.empty and "Capital Expenditure" in cf.index:
+                for col in cf.columns:
+                    y = col.year if hasattr(col, "year") else col.date().year
+                    val = _safe(cf.loc["Capital Expenditure", col])
+                    if val is not None:
+                        capex_by_year[y] = val  # negative = spending
+        except Exception:
+            pass
+
+        try:
+            inc = tk.income_stmt
+            if inc is not None and not inc.empty:
+                for col in inc.columns:
+                    y = col.year if hasattr(col, "year") else col.date().year
+                    oi = _safe(inc.loc["Operating Income", col]) if "Operating Income" in inc.index else None
+                    ie = _safe(inc.loc["Interest Expense", col]) if "Interest Expense" in inc.index else None
+                    if oi is not None:
+                        operating_income_by_year[y] = oi
+                    if ie is not None:
+                        interest_expense_by_year[y] = ie
+        except Exception:
+            pass
+
         return {
             "info": info,
             "divs": divs,
             "recent_dividends": recent_divs,
             "dps_by_year": dps_by_year,
+            "capex_by_year": capex_by_year,
+            "operating_income_by_year": operating_income_by_year,
+            "interest_expense_by_year": interest_expense_by_year,
         }
 
     except Exception as e:
         logger.warning("yfinance failed for %s: %s", symbol, e)
         return {"info": {}, "divs": None, "recent_dividends": [],
-                "dps_by_year": {}}
+                "dps_by_year": {}, "capex_by_year": {},
+                "operating_income_by_year": {}, "interest_expense_by_year": {}}
 
 
 def _fetch_yfinance_full(symbol: str) -> dict | None:
@@ -367,9 +402,41 @@ def fetch_fundamentals(symbol: str) -> dict:
 
         # --- DPS fix: use yfinance dividends as source of truth ---
         yf_dps_by_year = yf_supp.get("dps_by_year", {})
+        yf_capex_by_year = yf_supp.get("capex_by_year", {})
+        yf_oi_by_year = yf_supp.get("operating_income_by_year", {})
+        yf_ie_by_year = yf_supp.get("interest_expense_by_year", {})
 
         # Build dividend_history from yfinance DPS (source of truth)
         dividend_history = {y: round(dps, 4) for y, dps in yf_dps_by_year.items()}
+
+        # Patch yearly_metrics with capex, operating_income, interest data from yfinance
+        for m in yearly_metrics:
+            y = int(m["year"])
+
+            # FCF: OCF - capex (not OCF + investing_activities)
+            capex_val = yf_capex_by_year.get(y)
+            if capex_val is not None:
+                m["capex"] = capex_val  # negative = spending
+                if m["ocf"] is not None:
+                    m["fcf"] = m["ocf"] - abs(capex_val)
+            # else: keep original fcf (OCF + investing) as fallback
+
+            # Interest coverage: operating_income / interest_expense
+            oi_val = yf_oi_by_year.get(y)
+            ie_val = yf_ie_by_year.get(y)
+            if oi_val is not None:
+                m["operating_income"] = oi_val
+                m["operating_margin"] = _safe_div(oi_val, m.get("revenue"))
+            if ie_val is not None:
+                m["interest_expense"] = ie_val
+            if oi_val is not None and ie_val is not None and ie_val > 0:
+                cov = oi_val / ie_val
+                m["interest_coverage"] = cov if cov <= 200 else None
+            # Also fix EBITDA: use operating_income + DA instead of net_income + DA
+            if oi_val is not None and m.get("ebitda") is not None:
+                da_approx = m["ebitda"] - (m.get("net_income") or 0)  # DA from old calc
+                if da_approx > 0:
+                    m["ebitda"] = oi_val + da_approx
 
         # Merge: thaifin base + yfinance supplement
         name = tf_info.get("name") or yf_info.get("shortName", yf_sym)
