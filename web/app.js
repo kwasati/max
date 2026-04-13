@@ -176,34 +176,27 @@ function bindTabs() {
       document.querySelectorAll('#tabs .tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       state.activeTab = btn.dataset.tab;
-      renderStockList();
+      const type = btn.dataset.type; // 'stock' or 'page'
 
-      const reqPanel = document.getElementById('request-panel');
-      const dcaPanel = document.getElementById('dca-panel');
-      const settingsPanel = document.getElementById('settings-panel');
-      const detail = document.getElementById('detail');
-      if (state.activeTab === 'requests') {
-        reqPanel.style.display = '';
-        dcaPanel.style.display = 'none';
-        settingsPanel.style.display = 'none';
-        detail.style.display = 'none';
-        loadRequests();
-      } else if (state.activeTab === 'dca') {
-        reqPanel.style.display = 'none';
-        dcaPanel.style.display = '';
-        settingsPanel.style.display = 'none';
-        detail.style.display = 'none';
-        populateDCASymbols();
-      } else if (state.activeTab === 'settings') {
-        reqPanel.style.display = 'none';
-        dcaPanel.style.display = 'none';
-        settingsPanel.style.display = '';
-        detail.style.display = 'none';
-        loadSettings();
+      const stockSection = document.getElementById('stock-section');
+      const pipelineBar = document.getElementById('pipeline-bar');
+
+      // Hide all page panels
+      document.querySelectorAll('.page-panel').forEach(p => p.classList.remove('active'));
+
+      if (type === 'stock') {
+        stockSection.style.display = '';
+        pipelineBar.style.display = '';
+        renderStockList();
       } else {
-        reqPanel.style.display = 'none';
-        dcaPanel.style.display = 'none';
-        settingsPanel.style.display = 'none';
+        stockSection.style.display = 'none';
+        pipelineBar.style.display = 'none';
+        const panel = document.getElementById('page-' + btn.dataset.tab);
+        if (panel) panel.classList.add('active');
+        // Load data for specific tabs
+        if (btn.dataset.tab === 'requests') loadRequests();
+        else if (btn.dataset.tab === 'dca') populateDCASymbols();
+        else if (btn.dataset.tab === 'settings') loadSettings();
       }
     });
   });
