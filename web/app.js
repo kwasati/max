@@ -253,7 +253,7 @@ function renderStockList() {
   else if (tab === 'filtered') {
     const filtered = sc.filtered_out_stocks || [];
     if (filtered.length === 0) {
-      el.innerHTML = '<div class="loading">ไม่มีข้อมูลหุ้นที่ไม่ผ่าน</div>';
+      el.innerHTML = '<div class="loading">ไม่มีข้อมูลหุ้นที่ไม่ผ่าน — กดปุ่ม "คัดกรอง" เพื่อรันใหม่</div>';
       return;
     }
     el.innerHTML = '<div class="stock-grid">' + filtered.map(s => {
@@ -368,6 +368,21 @@ function renderStockList() {
   el.querySelectorAll('.stock-card').forEach(row => {
     row.addEventListener('click', () => loadDetail(row.dataset.symbol));
   });
+}
+
+// ===== SELECT STOCK (from requests/search — switch to stock tab first) =====
+function selectStock(symbol) {
+  // Switch to "passed" tab and show stock section
+  state.activeTab = 'passed';
+  const stockSection = document.getElementById('stock-section');
+  const pipelineBar = document.getElementById('pipeline-bar');
+  stockSection.style.display = '';
+  pipelineBar.style.display = '';
+  document.querySelectorAll('.page-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('#tabs .tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === 'passed');
+  });
+  loadDetail(symbol);
 }
 
 // ===== LOAD DETAIL =====

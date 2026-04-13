@@ -1,10 +1,12 @@
 # Max Mahon Changelog
 
-## 2026-04-13 — Sort Fix + Header Update
+## 2026-04-13 — Sort Fix + Request Detail + Header Update
 
 - **แก้ Sort ไม่ทำงาน** — ข้อมูล yield/avg5y อยู่ใน metrics.* แต่ sort อ่านจาก top-level ที่เป็น null ทุกตัว → fallback ไป metrics แล้ว
 - **แก้ Sort dropdown ตำแหน่งผิด** — ย้าย toolbar ออกจาก flex container ที่จัดแนวนอน → อยู่บนสุดของ grid แล้ว
 - **แก้ Sort state ไม่ sync** — browser จำค่า dropdown จากครั้งก่อน แต่ state ยังเป็น score → sync ก่อน render แรก
+- **แก้คำขอกดดูไม่ได้** — เพิ่ม selectStock() ที่สลับกลับ tab หลัก + โหลดรายละเอียด
+- **หุ้นไม่ผ่าน** — ข้อมูลยังไม่มีเพราะ screener เก่า ต้องรันคัดกรองใหม่ (ปรับข้อความแจ้ง)
 - **เปลี่ยน Scoring label** → "Buffett Hong Quality"
 
 ## 2026-04-13 — Dashboard Redesign + Pipeline Overhaul + Mobile Mockup
