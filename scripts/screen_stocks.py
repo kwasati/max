@@ -522,6 +522,7 @@ def main():
     print(f"Max Mahon v2 screening {len(symbols)} stocks (quality scoring)...")
 
     candidates = []
+    filtered_stocks = []
     filtered_out = 0
 
     for i, sym in enumerate(symbols):
@@ -535,6 +536,21 @@ def main():
             passed, filter_reasons = hard_filter(data)
             if not passed:
                 filtered_out += 1
+                filtered_stocks.append({
+                    "symbol": sym,
+                    "name": data.get("name", sym),
+                    "sector": data.get("sector", "N/A"),
+                    "reasons": filter_reasons,
+                    "basic_metrics": {
+                        "price": data.get("price"),
+                        "dividend_yield": data.get("dividend_yield"),
+                        "roe": data.get("roe"),
+                        "de": (data.get("debt_to_equity") or 0) / 100 if data.get("debt_to_equity") else None,
+                        "mcap": data.get("market_cap"),
+                        "pe": data.get("pe_ratio"),
+                        "eps": data.get("eps_trailing"),
+                    }
+                })
                 print(f"  [{i+1}/{len(symbols)}] {sym} — filtered: {', '.join(filter_reasons[:2])}")
                 continue
 
@@ -637,6 +653,7 @@ def main():
         "new_discoveries": len(new_finds),
         "hard_filters": HARD_FILTERS,
         "candidates": candidates,
+        "filtered_out_stocks": filtered_stocks,
     }
 
     out_path = DATA_DIR / f"screener_{today}.json"
