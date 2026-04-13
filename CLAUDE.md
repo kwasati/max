@@ -10,7 +10,9 @@
 
 ### Data Sources
 - **Primary:** thaifin — 10-16 ปี financial statements + ratios
-- **Supplement:** yfinance — realtime price, 52w range, forward PE, market cap
+- **Supplement:** yfinance — realtime price, 52w range, forward PE, market cap, DPS, capex, interest_expense
+- **DPS = Source of Truth** — ปันผลต่อหุ้นใช้จาก yfinance dividends history โดยตรง, yield% คำนวณจาก DPS/price
+- **FCF = OCF - capex** — ไม่ใช้ total investing activities
 - **Universe:** 933 stocks (SET 704 + mai 229) via thaifin
 
 ### User Data
@@ -26,7 +28,8 @@
 - **Startup:** `max-server.bat` หรือ `py -m uvicorn server.app:app --port 50089`
 - **Auth:** `MAX_TOKEN` ใน `.env` (Bearer token สำหรับ API)
 - **Dashboard:** web/ → serve static ที่ `/`
-- **API:** `/api/watchlist`, `/api/screener`, `/api/stock/{symbol}`, `/api/run/{action}`, `/api/request`, `/api/events` (SSE)
+- **API:** `/api/watchlist`, `/api/screener`, `/api/stock/{symbol}`, `/api/run/{action}`, `/api/request`, `/api/search` (POST), `/api/events` (SSE)
+- **Mobile:** `web/mobile.html` — แยก UI สำหรับมือถือ (mockup, ยังไม่ serve)
 
 ## Key Files
 - `user_data.json` — user preferences (watchlist, blacklist, notes, lists)
