@@ -431,7 +431,7 @@ def valuation_grade(data: dict, sector_medians: dict) -> dict:
     """Evaluate price attractiveness — Grade A-F."""
     pe = data.get("pe_ratio")
     agg = data.get("aggregates", {})
-    eps_cagr = agg.get("eps_cagr", 0)
+    eps_cagr = agg.get("eps_cagr") or 0
     sector = data.get("sector", "unknown")
     median_pe = sector_medians.get(sector, 20)
 
@@ -567,6 +567,7 @@ def main():
     candidates = []
     filtered_stocks = []
     filtered_out = 0
+    error_count = 0
 
     for i, sym in enumerate(symbols):
         if sym in blacklisted:
@@ -575,6 +576,10 @@ def main():
 
         try:
             data = fetch_multi_year(sym)
+
+            if data is None:
+                print(f"  [{i+1}/{len(symbols)}] {sym} — skipped: no data")
+                continue
 
             if "error" in data and not data.get("price"):
                 print(f"  [{i+1}/{len(symbols)}] {sym} — error: {data['error']}")
@@ -661,6 +666,7 @@ def main():
             print(f"  [{i+1}/{len(symbols)}] {marker} {sym} — {result['score']}/100 ({bd_str}){sig_str}")
 
         except Exception as e:
+            error_count += 1
             print(f"  [{i+1}/{len(symbols)}] {sym} — error: {e}")
 
     # Compute sector median P/E from candidates
@@ -714,7 +720,7 @@ def main():
     out_path.write_text(json.dumps(out, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
 
     print(f"\n{'='*60}")
-    print(f"Scanned: {len(symbols)} | Passed: {len(candidates)} | Filtered: {filtered_out} | New: {len(new_finds)}")
+    print(f"Scanned: {len(symbols)} | Passed: {len(candidates)} | Filtered: {filtered_out} | Errors: {error_count} | New: {len(new_finds)}")
     print(f"\nTop 10:")
     for c in candidates[:10]:
         marker = "★" if c["in_watchlist"] else "✦ NEW"
@@ -727,4 +733,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(f"screen_stocks fatal: {e}", file=sys.stderr)
+        sys.exit(1)

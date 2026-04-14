@@ -1,7 +1,7 @@
 """Max Mahon — Real-time console status panel.
 
-Clears screen and redraws status in-place (like KODE Server).
-No scrolling debug logs.
+Uses ANSI cursor-home to redraw in-place without clearing screen.
+No flickering, no selection loss.
 """
 
 import os
@@ -10,6 +10,8 @@ import threading
 import time
 from datetime import datetime
 from pathlib import Path
+
+_first_render = True
 
 
 # ANSI colors
@@ -69,9 +71,11 @@ def render(
     data_dir: Path,
     url: str = "https://max.intensivetrader.com",
 ):
-    """Clear screen and render the status panel."""
-    # Clear screen
-    os.system("cls" if os.name == "nt" else "clear")
+    """Render the status panel in-place (no flicker)."""
+    global _first_render
+    if _first_render:
+        os.system("cls" if os.name == "nt" else "clear")
+        _first_render = False
 
     uptime = time.time() - start_time
 
@@ -102,29 +106,34 @@ def render(
         req_count = _request_count
         recent = list(_last_requests)
 
-    print()
-    print(f"  {C.cyan}●{C.reset} {C.bold}Max Mahon Server{C.reset}")
-    print(f"{C.dim}    Port: {port} · PID: {pid} · Uptime: {_uptime_str(uptime)}{C.reset}")
-    print(f"{C.dim}    URL:  {url}{C.reset}")
-    print()
-    print(f"  {C.bold}Data{C.reset}")
-    print(f"    Snapshot:  {C.white}{last_date}{C.reset}")
-    print(f"    Screener:  {C.white}{screener_date}{C.reset}")
-    print()
-    print(f"  {C.bold}Pipeline{C.reset}")
-    print(f"    Status:    {pipe_icon} {pipe_text}")
-    print(f"    Last run:  {C.dim}{last_run_str}{C.reset}")
-    print(f"    Result:    {C.dim}{last_result}{C.reset}")
-    print()
-    print(f"  {C.bold}Requests{C.reset}  {C.dim}({req_count} total){C.reset}")
+    clr = "\x1b[K"
+    lines = [
+        f"{clr}",
+        f"  {C.cyan}●{C.reset} {C.bold}Max Mahon Server{C.reset}{clr}",
+        f"{C.dim}    Port: {port} · PID: {pid} · Uptime: {_uptime_str(uptime)}{C.reset}{clr}",
+        f"{C.dim}    URL:  {url}{C.reset}{clr}",
+        f"{clr}",
+        f"  {C.bold}Data{C.reset}{clr}",
+        f"    Snapshot:  {C.white}{last_date}{C.reset}{clr}",
+        f"    Screener:  {C.white}{screener_date}{C.reset}{clr}",
+        f"{clr}",
+        f"  {C.bold}Pipeline{C.reset}{clr}",
+        f"    Status:    {pipe_icon} {pipe_text}{clr}",
+        f"    Last run:  {C.dim}{last_run_str}{C.reset}{clr}",
+        f"    Result:    {C.dim}{last_result}{C.reset}{clr}",
+        f"{clr}",
+        f"  {C.bold}Requests{C.reset}  {C.dim}({req_count} total){C.reset}{clr}",
+    ]
     if recent:
         for r in recent:
-            print(f"    {r}")
+            lines.append(f"    {r}{clr}")
     else:
-        print(f"    {C.dim}No requests yet{C.reset}")
-    print()
-    print(f"{C.dim}  Ctrl+C to stop{C.reset}")
-    print()
+        lines.append(f"    {C.dim}No requests yet{C.reset}{clr}")
+    lines.append(f"{clr}")
+    lines.append(f"{C.dim}  Ctrl+C to stop{C.reset}{clr}")
+    lines.append(f"{clr}")
+
+    sys.stdout.write("\x1b[H" + "\n".join(lines))
     sys.stdout.flush()
 
 
