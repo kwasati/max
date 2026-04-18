@@ -420,6 +420,155 @@ table.watch tbody tr.selected { background: var(--forest-soft); }
   .sym { font-size: 1.1rem; }
 }
 
+/* ==== Deep Dive Panel (P5) ==== */
+.detail-panel#detail {
+  display: none;  /* hidden until populated */
+  margin-top: 2.5rem;
+  padding-top: 2.5rem;
+  border-top: 1px solid var(--rule);
+}
+.detail-panel#detail.open {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 3rem;
+}
+.dive-body { padding-right: 0.5rem; }
+.dive-kicker {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--burgundy);
+  margin-bottom: 0.75rem;
+}
+.dive-body h2.dive-headline {
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: clamp(1.75rem, 3.2vw, 2.75rem);
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+  margin: 0 0 0.85rem 0;
+}
+.dive-body h2.dive-headline em {
+  font-style: italic; font-weight: 400; color: var(--forest);
+}
+.dive-deck {
+  font-family: 'Fraunces', serif; font-style: italic;
+  font-size: 1.1rem; color: var(--ink-dim);
+  margin-bottom: 1.5rem;
+  max-width: 540px;
+}
+.dive-body p {
+  font-family: 'Fraunces', serif;
+  font-size: 1.02rem;
+  line-height: 1.6;
+  color: var(--ink-2);
+  margin: 0 0 0.85rem 0;
+  max-width: 580px;
+}
+.dive-body p strong { font-weight: 700; color: var(--ink); }
+.pull-quote {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 1.25rem;
+  line-height: 1.35;
+  color: var(--ink);
+  border-left: 3px solid var(--forest);
+  padding: 0.4rem 0 0.4rem 1.25rem;
+  margin: 1.5rem 0;
+}
+.pull-quote cite {
+  display: block;
+  font-style: normal;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem; letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-top: 0.6rem;
+}
+
+/* Analysis section (P5 restyle — preserve ID) */
+#analysis-section.analysis-section { margin-top: 1.5rem; }
+.analysis-loading {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  color: var(--ink-dim);
+  padding: 0.5rem 0;
+}
+.analysis-card {
+  background: var(--paper-3);
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--forest);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 0.75rem;
+}
+.analysis-card h4,
+.analysis-card .section-title {
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--ink);
+  margin: 0 0 0.4rem 0;
+}
+.analysis-card p { font-family: 'IBM Plex Sans Thai', sans-serif; color: var(--ink-2); font-size: 0.95rem; line-height: 1.55; }
+
+/* Aside: fact-sheet + mini charts */
+.dive-aside { display: flex; flex-direction: column; gap: 1.5rem; }
+.fact-sheet {
+  border: 1px solid var(--rule);
+  background: var(--paper-3);
+  padding: 1.5rem;
+  box-shadow: 4px 4px 0 var(--paper-2);
+}
+.fact-head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.7rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--ink-dim);
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--rule);
+  margin-bottom: 0.75rem;
+}
+.fact-symbol {
+  font-family: 'Fraunces', serif;
+  font-size: 1.5rem; font-weight: 900;
+  color: var(--ink); letter-spacing: -0.01em;
+}
+.fact-row {
+  display: flex; justify-content: space-between;
+  padding: 0.5rem 0;
+  font-size: 0.9rem;
+  border-bottom: 1px dotted var(--line);
+}
+.fact-row:last-child { border-bottom: none; }
+.fact-row .k { color: var(--ink-dim); }
+.fact-row .v { font-family: 'JetBrains Mono', monospace; color: var(--ink); font-weight: 500; }
+.fact-row .v.pos { color: var(--forest); }
+.fact-row .v.warn { color: var(--burgundy); }
+
+.mini-chart {
+  background: var(--paper-3);
+  border: 1px solid var(--rule);
+  box-shadow: 4px 4px 0 var(--paper-2);
+  padding: 1.25rem;
+}
+.mini-head {
+  display: flex; justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem; letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 0.75rem;
+}
+.mini-chart canvas {
+  width: 100% !important;
+  height: 160px !important;
+  display: block;
+}
+
+@media (max-width: 1024px) {
+  .detail-panel#detail.open { grid-template-columns: 1fr; gap: 2rem; }
+  .dive-body { padding-right: 0; }
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 /* Hide all scrollbars */

@@ -3,6 +3,19 @@
 const API = '';  // same origin
 let state = { watchlist: null, screener: null, currentStock: null, activeTab: 'passed', filteredReasons: null, sortBy: 'score' };
 
+// ==== Chart.js Editorial Theme (P5) ====
+if (typeof Chart !== 'undefined' && !Chart.__editorialThemed) {
+  Chart.__editorialThemed = true;
+  Chart.defaults.color = getComputedStyle(document.documentElement).getPropertyValue('--ink-dim').trim() || '#595c6b';
+  Chart.defaults.borderColor = getComputedStyle(document.documentElement).getPropertyValue('--line').trim() || '#d6cfbd';
+  Chart.defaults.font.family = 'JetBrains Mono, monospace';
+  Chart.defaults.font.size = 10;
+  Chart.defaults.responsive = true;
+  Chart.defaults.maintainAspectRatio = false;
+  Chart.defaults.plugins = Chart.defaults.plugins || {};
+  Chart.defaults.plugins.legend = { display: false };
+}
+
 // === USER DATA ===
 let userData = { watchlist: [], blacklist: [], notes: {}, custom_lists: {} };
 
@@ -54,6 +67,7 @@ function closeDetail() {
   const layout = document.getElementById('stock-layout');
   layout.classList.remove('split-mode');
   layout.classList.add('grid-mode');
+  detail.classList.remove('open');
   detail.innerHTML = '';
   renderStockList();
 }
@@ -465,20 +479,22 @@ async function loadDetail(symbol) {
   renderStockList(); // highlight selected
 
   const detail = document.getElementById('detail');
-  detail.innerHTML = '<div class="loading">Loading...</div>';
+  detail.classList.add('open');
+  detail.innerHTML = '<div class="dive-body"><div class="analysis-loading serif">กำลังโหลด…</div></div>';
 
   try {
     const data = await fetch(API + '/api/stock/' + encodeURIComponent(symbol)).then(r => r.json());
     renderDetail(data);
   } catch (e) {
-    detail.innerHTML = `<div class="loading">
-      <div style="margin-bottom:8px;">ไม่มีข้อมูลละเอียดสำหรับหุ้นนี้</div>
-      <div style="font-size:0.78rem;color:var(--text3);">ลองกดปุ่ม "วิเคราะห์ทั้งหมด" เพื่อดึงข้อมูลใหม่</div>
+    detail.classList.add('open');
+    detail.innerHTML = `<div class="dive-body">
+      <div class="analysis-loading serif" style="margin-bottom:8px;">ไม่มีข้อมูลละเอียดสำหรับหุ้นนี้</div>
+      <div class="analysis-loading serif" style="font-size:0.78rem;">ลองกดปุ่ม "วิเคราะห์ทั้งหมด" เพื่อดึงข้อมูลใหม่</div>
     </div>`;
   }
 }
 
-// ===== CHART RENDERING =====
+// ===== CHART RENDERING (P5 Editorial Palette) =====
 function renderDetailCharts(stockData) {
   const yearly = stockData.yearly_metrics || [];
   if (yearly.length < 2 && Object.keys(stockData.dividend_history || {}).length < 2) return;
@@ -489,10 +505,13 @@ function renderDetailCharts(stockData) {
     if (existing) existing.destroy();
   });
 
-  const chartTextColor = '#888';
-  const chartGridColor = 'rgba(0,0,0,0.05)';
+  const gridColor = 'rgba(30, 29, 26, 0.06)';
+  const FOREST = '#1d5b4f';
+  const AMBER = '#b45309';
+  const BURGUNDY = '#8a2e3e';
+  const NAVY = '#1f3f76';
 
-  // 1. Dividend chart (from dividend_history)
+  // 1. Dividend per share — line + area fill (forest)
   const divHistory = stockData.dividend_history || {};
   const divYears = Object.keys(divHistory).sort().slice(-10);
   const divValues = divYears.map(y => divHistory[y] || 0);
@@ -500,75 +519,140 @@ function renderDetailCharts(stockData) {
   if (divYears.length > 0) {
     const ctx1 = document.getElementById('divChart');
     if (ctx1) {
+      let divFill = 'rgba(29, 91, 79, 0.15)';
+      try {
+        const g = ctx1.getContext('2d').createLinearGradient(0, 0, 0, 160);
+        g.addColorStop(0, 'rgba(29, 91, 79, 0.35)');
+        g.addColorStop(1, 'rgba(29, 91, 79, 0)');
+        divFill = g;
+      } catch (_) { /* keep fallback */ }
+      const lastIdx = divValues.length - 1;
+      const pointRadii = divValues.map((_, i) => i === lastIdx ? 3.5 : 2.5);
+      const pointBorderColors = divValues.map((_, i) => i === lastIdx ? '#fff' : FOREST);
+      const pointBorderWidths = divValues.map((_, i) => i === lastIdx ? 2 : 0);
       new Chart(ctx1, {
-        type: 'bar',
+        type: 'line',
         data: {
           labels: divYears,
           datasets: [{
             label: 'ปันผล/หุ้น (บาท)',
             data: divValues,
-            backgroundColor: 'rgba(30, 111, 92, 0.7)',
-            borderRadius: 4,
+            borderColor: FOREST,
+            backgroundColor: divFill,
+            fill: true,
+            tension: 0.25,
+            borderWidth: 1.5,
+            pointBackgroundColor: FOREST,
+            pointBorderColor: pointBorderColors,
+            pointBorderWidth: pointBorderWidths,
+            pointRadius: pointRadii,
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: { legend: { display: false } },
-          scales: { y: { beginAtZero: true, grid: { color: chartGridColor }, ticks: { color: chartTextColor } }, x: { grid: { display: false }, ticks: { color: chartTextColor } } }
+          scales: {
+            y: { beginAtZero: true, grid: { color: gridColor, drawBorder: false }, ticks: { font: { size: 10 } } },
+            x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+          }
         }
       });
     }
   }
 
-  // 2. ROE chart
+  // 2. ROE — line + points (amber), optional 15% baseline
   const years = yearly.map(y => y.year);
-  const roeValues = yearly.map(y => y.roe != null ? (y.roe * 100).toFixed(1) : null);
+  const roeValues = yearly.map(y => y.roe != null ? +(y.roe * 100).toFixed(1) : null);
   const ctx2 = document.getElementById('roeChart');
   if (ctx2 && yearly.length >= 2) {
+    const datasets = [{
+      label: 'ROE %',
+      data: roeValues,
+      borderColor: AMBER,
+      backgroundColor: 'rgba(180, 83, 9, 0.08)',
+      fill: false,
+      tension: 0.3,
+      borderWidth: 1.75,
+      pointBackgroundColor: AMBER,
+      pointBorderColor: AMBER,
+      pointRadius: 3,
+    }, {
+      label: 'Baseline 15%',
+      data: years.map(() => 15),
+      borderColor: BURGUNDY,
+      borderDash: [4, 4],
+      borderWidth: 1,
+      pointRadius: 0,
+      fill: false,
+      tension: 0,
+    }];
     new Chart(ctx2, {
       type: 'line',
-      data: {
-        labels: years,
-        datasets: [{
-          label: 'ROE %',
-          data: roeValues,
-          borderColor: 'rgba(30, 111, 92, 0.8)',
-          backgroundColor: 'rgba(30, 111, 92, 0.1)',
-          fill: true,
-          tension: 0.3,
-          pointRadius: 4,
-        }]
-      },
+      data: { labels: years, datasets },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
-        scales: { y: { grid: { color: chartGridColor }, ticks: { color: chartTextColor } }, x: { grid: { display: false }, ticks: { color: chartTextColor } } }
+        scales: {
+          y: { grid: { color: gridColor, drawBorder: false }, ticks: { font: { size: 10 } } },
+          x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+        }
       }
     });
   }
 
-  // 3. Revenue + Net Income chart
+  // 3. Revenue — navy bars, optional amber average line
   if (yearly.length >= 2) {
-    const revValues = yearly.map(y => y.revenue ? y.revenue / 1e9 : null);
-    const niValues = yearly.map(y => y.net_income ? y.net_income / 1e9 : null);
+    const revValues = yearly.map(y => y.revenue ? y.revenue / 1e6 : null);
+    const niValues = yearly.map(y => y.net_income ? y.net_income / 1e6 : null);
     const ctx3 = document.getElementById('revenueChart');
     if (ctx3) {
-      new Chart(ctx3, {
+      const validRev = revValues.filter(v => v != null);
+      const avgRev = validRev.length ? validRev.reduce((a, b) => a + b, 0) / validRev.length : null;
+      const datasets = [{
         type: 'bar',
-        data: {
-          labels: years,
-          datasets: [
-            { label: 'Revenue (B฿)', data: revValues, backgroundColor: 'rgba(37, 88, 166, 0.6)', borderRadius: 4 },
-            { label: 'Net Income (B฿)', data: niValues, backgroundColor: 'rgba(13, 128, 80, 0.6)', borderRadius: 4 }
-          ]
-        },
+        label: 'Revenue (M฿)',
+        data: revValues,
+        backgroundColor: NAVY,
+        borderRadius: 2,
+        barPercentage: 0.65,
+        categoryPercentage: 0.75,
+      }];
+      if (avgRev != null) {
+        datasets.push({
+          type: 'line',
+          label: 'avg',
+          data: years.map(() => avgRev),
+          borderColor: AMBER,
+          borderDash: [4, 4],
+          borderWidth: 1,
+          pointRadius: 0,
+          fill: false,
+        });
+      }
+      // keep net income as faint secondary bar if useful
+      if (niValues.some(v => v != null)) {
+        datasets.push({
+          type: 'bar',
+          label: 'Net Income (M฿)',
+          data: niValues,
+          backgroundColor: 'rgba(31, 63, 118, 0.35)',
+          borderRadius: 2,
+          barPercentage: 0.65,
+          categoryPercentage: 0.75,
+        });
+      }
+      new Chart(ctx3, {
+        data: { labels: years, datasets },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { labels: { color: chartTextColor, font: { size: 11 } } } },
-          scales: { y: { grid: { color: chartGridColor }, ticks: { color: chartTextColor } }, x: { grid: { display: false }, ticks: { color: chartTextColor } } }
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { grid: { color: gridColor, drawBorder: false }, ticks: { font: { size: 10 } } },
+            x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+          }
         }
       });
     }
@@ -751,6 +835,95 @@ function reasonsListHTML(reasons) {
   return '<ul class="reasons-list">' + reasons.map(r => `<li>${r}</li>`).join('') + '</ul>';
 }
 
+// ===== DEEP DIVE COPY + FACT SHEET (P5) =====
+function detailCopy(c) {
+  const score = Math.round(c.quality_score ?? c.score ?? 0);
+  const y = c.dividend_yield ?? c.metrics?.dividend_yield;
+  const agg = c.aggregates || {};
+  const streak = c.dividend_streak ?? c.metrics?.dividend_streak ?? agg.dividend_streak;
+  const roe = c.roe ?? c.metrics?.roe ?? agg.avg_roe;
+  const roePct = roe != null && Math.abs(roe) <= 2 ? (roe * 100) : roe;
+  const sector = c.sector ?? c.metrics?.sector ?? '—';
+  const deRaw = c.de_ratio ?? c.debt_to_equity ?? c.metrics?.de;
+  const peRaw = c.pe_ratio ?? c.metrics?.pe;
+
+  let headline = 'คุณภาพที่ไม่ต้องลุ้น.';
+  if (score >= 85) headline = 'คุณภาพชั้นบน.';
+  else if (score >= 70) headline = 'ของดีในเรทสม่ำเสมอ.';
+  else if (score < 50) headline = 'ต้องดูใกล้ๆ.';
+
+  const parts = [];
+  if (score) parts.push(`คะแนนรวม ${score}`);
+  if (y != null) parts.push(`Yield ${Number(y).toFixed(1)}%`);
+  if (streak != null) parts.push(`จ่ายต่อเนื่อง ${Math.round(streak)} ปี`);
+  const deck = parts.join(' · ') || 'ข้อมูลสรุปโดย Max Mahon';
+
+  const p1 = `<p><strong>${c.name ?? c.symbol ?? ''}</strong> อยู่ในกลุ่ม ${sector}. ${score >= 70 ? 'ตัวเลขเบื้องหลังนิ่งสะอาด — ' : ''}ROE ${roePct != null ? Number(roePct).toFixed(1)+'%' : '—'}, D/E ${deRaw != null ? Number(deRaw).toFixed(2) : '—'}, P/E ${peRaw != null ? Number(peRaw).toFixed(1) : '—'}</p>`;
+  const p2 = (c.signals && c.signals.length)
+    ? `<p>สัญญาณ: <strong>${c.signals.join(' · ')}</strong></p>`
+    : '';
+  const prose = p1 + p2;
+
+  let insight;
+  if (c.analysis && c.analysis.insight) {
+    insight = `"${c.analysis.insight}"`;
+  } else if (score >= 85) {
+    insight = `"หุ้นแบบนี้ไม่ต้องดูทุกวัน — ถือได้ 10 ปี หลับได้ทุกคืน"`;
+  } else if (score < 50) {
+    insight = `"ตัวเลข yield สูงไม่ได้แปลว่าของดี — ROE กับ payout ต้องนิ่งด้วย"`;
+  } else {
+    insight = `"คุณภาพสม่ำเสมอชนะหวือหวาในระยะยาว"`;
+  }
+  return { headline, deck, prose, insight };
+}
+
+function factRowsHTML(c) {
+  const fmtPct = (v) => (v == null || !isFinite(v)) ? '—' : Number(v).toFixed(1) + '%';
+  const fmtNum = (v, d = 2) => (v == null || !isFinite(v)) ? '—' : Number(v).toFixed(d);
+  const fmtMcap = (v) => {
+    if (v == null || !isFinite(v)) return '—';
+    const n = Number(v);
+    if (n >= 1e12) return (n / 1e12).toFixed(2) + 'T';
+    if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+    return n.toFixed(0);
+  };
+  const agg = c.aggregates || {};
+  const roe = c.roe ?? c.metrics?.roe;
+  const roePct = roe != null && Math.abs(roe) <= 2 ? (roe * 100) : roe;
+  const nm = c.net_margin ?? c.profit_margin ?? c.metrics?.net_margin;
+  const nmPct = nm != null && Math.abs(nm) <= 2 ? (nm * 100) : nm;
+  const roeAvg = c.roe_5y_avg ?? c.metrics?.roe_5y_avg ?? agg.avg_roe ?? roe;
+  const roeAvgPct = roeAvg != null && Math.abs(roeAvg) <= 2 ? (roeAvg * 100) : roeAvg;
+  const payout = c.payout_ratio ?? c.metrics?.payout;
+  const payoutPct = payout != null && Math.abs(payout) <= 2 ? (payout * 100) : payout;
+  const mcap = c.market_cap ?? c.metrics?.mcap;
+  const fcfRaw = c.fcf ?? c.free_cashflow ?? c.metrics?.fcf;
+  let fcfY = c.fcf_yield ?? c.metrics?.fcf_yield;
+  if (fcfY == null && fcfRaw != null && mcap != null && mcap > 0) fcfY = (fcfRaw / mcap) * 100;
+  const fcfYPct = fcfY != null && Math.abs(fcfY) <= 2 ? (fcfY * 100) : fcfY;
+  const ic = c.interest_coverage ?? c.metrics?.interest_coverage ?? agg.latest_interest_coverage;
+  const deRaw = c.de_ratio ?? c.debt_to_equity ?? c.metrics?.de;
+  const streak = c.dividend_streak ?? c.metrics?.dividend_streak ?? agg.dividend_streak;
+  const score = c.quality_score ?? c.score;
+
+  const rows = [
+    ['Sector', c.sector ?? c.metrics?.sector ?? '—', ''],
+    ['Market cap', fmtMcap(mcap), ''],
+    ['ROE 5y avg', fmtPct(roeAvgPct), roeAvgPct != null && roeAvgPct >= 15 ? 'pos' : ''],
+    ['Net margin', fmtPct(nmPct), nmPct != null && nmPct >= 10 ? 'pos' : ''],
+    ['D/E', fmtNum(deRaw, 2), deRaw != null && deRaw <= 1 ? 'pos' : ''],
+    ['Payout ratio', fmtPct(payoutPct), ''],
+    ['Dividend streak', (streak != null ? Math.round(streak) + 'y' : '—'), ''],
+    ['FCF yield', fmtPct(fcfYPct), fcfYPct != null && fcfYPct >= 5 ? 'pos' : ''],
+    ['Interest coverage', ic != null ? Number(ic).toFixed(1) + '×' : '—', ic != null && ic >= 5 ? 'pos' : ''],
+    ['P/E trailing', fmtNum(c.pe_ratio ?? c.metrics?.pe, 1), ''],
+    ['P/E forward', fmtNum(c.forward_pe ?? c.metrics?.forward_pe, 1), ''],
+    ['Quality score', score != null ? `${Math.round(score)} / 100` : '—', score != null && score >= 70 ? 'pos' : (score != null && score < 50 ? 'warn' : '')]
+  ];
+  return rows.map(([k, v, cls]) => `<div class="fact-row"><span class="k">${k}</span><span class="v${cls ? ' ' + cls : ''}">${v}</span></div>`).join('');
+}
+
 // ===== RENDER DETAIL =====
 function renderDetail(d) {
   const detail = document.getElementById('detail');
@@ -758,156 +931,36 @@ function renderDetail(d) {
 
   const sym = (d.symbol || '').replace('.BK', '');
   const fullSymbol = d.symbol || '';
-  const name = d.name || d.long_name || sym;
-  const sector = d.sector || '';
-  const mktCap = d.market_cap != null ? Math.round(d.market_cap / 1e9) + 'B' : '-';
-  const price = d.price != null ? safe(d.price, '2d') : '-';
-  const low52 = d.fifty_two_week_low || d['52w_low'];
-  const high52 = d.fifty_two_week_high || d['52w_high'];
-  const rangePos = (low52 != null && high52 != null && high52 !== low52)
-    ? Math.round((d.price - low52) / (high52 - low52) * 100) : null;
+  const { headline, deck, prose, insight } = detailCopy(d);
 
-  const agg = d.aggregates || {};
-  const ym = d.yearly_metrics || [];
-  const totalYears = ym.length;
-  const divHist = d.dividend_history || {};
-  const score = d.quality_score || d.score || 0;
-  const breakdown = d.score_breakdown || d.breakdown || {};
-  const signals = d.signals || [];
-  const val = d.valuation || {};
-
-  // Quick metrics
-  const latestYM = ym.length > 0 ? ym[ym.length - 1] : {};
-  const divYield = d.dividend_yield;
-  const payoutRatio = d.payout_ratio;
-  const peRatio = d.pe_ratio;
-
-  // Yearly table data
-  const years = ym.map(y => y.year).sort((a, b) => a - b);
-
-  function yearlyTableHTML() {
-    if (years.length === 0) return '';
-    const rows = [
-      { label: 'Revenue (B)', get: r => r.revenue, fmt: v => safe(v, 'B') },
-      { label: 'Net Income (B)', get: r => r.net_income, fmt: v => safe(v, 'B') },
-      { label: 'EPS', get: r => r.eps, fmt: v => safe(v, '2d') },
-      { label: 'ROE', get: r => r.roe, fmt: v => v != null ? (v * 100).toFixed(1) + '%' : '-' },
-      { label: 'Net Margin', get: r => r.net_margin, fmt: v => v != null ? (v * 100).toFixed(1) + '%' : '-' },
-      { label: 'D/E', get: r => r.de_ratio, fmt: v => safe(v, '2d') },
-      { label: 'FCF (B)', get: r => r.fcf, fmt: v => safe(v, 'B') },
-    ];
-
-    return '<div class="yearly-table-wrap"><table class="yearly-table"><thead><tr><th></th>'
-      + years.map(y => '<th>' + y + '</th>').join('')
-      + '</tr></thead><tbody>'
-      + rows.map(r => '<tr><td>' + r.label + '</td>'
-        + years.map(yr => {
-          const row = ym.find(y => y.year === yr);
-          const v = row ? r.get(row) : null;
-          return '<td>' + (v != null ? r.fmt(v) : '-') + '</td>';
-        }).join('')
-        + '</tr>').join('')
-      + '<tr><td>DPS</td>'
-      + years.map(yr => '<td>' + (divHist[yr] != null ? safe(divHist[yr], '2d') : '-') + '</td>').join('')
-      + '</tr></tbody></table></div>';
-  }
-
-  // Filtered banner
-  const filteredBannerHTML = state.filteredReasons
-    ? `<div class="filtered-banner">ไม่ผ่านเกณฑ์: ${state.filteredReasons.join(', ')}</div>`
-    : '';
-
-  // Near miss signals
-  const nearMissSignals = signals.filter(s => s.startsWith('NEAR_MISS'));
-  const nearMissHTML = nearMissSignals.length > 0
-    ? '<div class="near-miss-banner">' + nearMissSignals.map(s => TAG_TH[s] || s.replace(/_/g, ' ')).join(', ') + ' (เกือบผ่านเกณฑ์)</div>'
-    : '';
-
-  // Note
-  const noteVal = (userData.notes || {})[d.symbol || ''] || '';
-
-  // Pre-compute checklists
-  const checklists = buffettChecklistSplit(d);
-
-  // ===== BUILD HTML =====
   detail.innerHTML = `
-    <button class="detail-close-btn" onclick="closeDetail()">ปิด &times;</button>
-
-    <div class="detail-close" id="detail-close">
-      <button onclick="closeDetail()">\u2190 กลับ</button>
-    </div>
-
-    <div class="detail-header">
-      <div class="detail-info">
-        <div class="detail-symbol">${sym}</div>
-        <div class="detail-name">${name}</div>
-        <div class="detail-sector">${sector} &middot; Market Cap ${mktCap}</div>
+    <div class="dive-body">
+      <div class="dive-kicker">DEEP DIVE &middot; ${sym}</div>
+      <h2 class="dive-headline serif">${sym}: <em>${headline}</em></h2>
+      <div class="dive-deck">${deck}</div>
+      ${prose}
+      <blockquote class="pull-quote">
+        ${insight}
+        <cite>— Max Analysis &middot; Claude Opus 4.7</cite>
+      </blockquote>
+      <div id="analysis-section" class="analysis-section">
+        <div class="analysis-loading serif">กำลังวิเคราะห์…</div>
       </div>
-      ${scoreCircleSVG(score)}
     </div>
-
-    <div class="signal-badges">
-      ${signals.map(s => signalBadge(s)).join('')}
-    </div>
-
-    ${filteredBannerHTML}
-
-    ${nearMissHTML}
-
-    <div class="section-title">Score Breakdown <span>${score}/100</span></div>
-    <div class="sb-grid">
-      ${scoreBreakdownHTML(breakdown, score)}
-    </div>
-
-    <div class="quick-metrics">
-      <div class="qm-item"><div class="qm-label">Price</div><div class="qm-value">${price}</div></div>
-      <div class="qm-item"><div class="qm-label">P/E</div><div class="qm-value">${peRatio != null ? peRatio.toFixed(1) : '-'}</div></div>
-      <div class="qm-item"><div class="qm-label">Yield</div><div class="qm-value">${divYield != null ? divYield.toFixed(1) + '%' : '-'}</div></div>
-      <div class="qm-item"><div class="qm-label">Payout</div><div class="qm-value">${payoutRatio != null ? (payoutRatio * 100).toFixed(0) + '%' : '-'}</div></div>
-      <div class="qm-item"><div class="qm-label">D/E</div><div class="qm-value">${latestYM.de_ratio != null ? latestYM.de_ratio.toFixed(2) : '-'}</div></div>
-    </div>
-
-    <div class="section-title">เกณฑ์ Buffett <span>Warren Buffett Quality</span></div>
-    ${checklists.buffett}
-
-    <div class="section-title">เกณฑ์เซียนฮง <span>สถาพร งามเสถียร — Cash Flow Quality</span></div>
-    ${checklists.hong}
-
-    <div class="section-title">Valuation Detail</div>
-    ${valuationDetailHTML(val, d)}
-
-    <div class="section-title">Key Growth Metrics</div>
-    ${keyMetricsHTML(d)}
-
-    ${(d.reasons && d.reasons.length > 0) ? '<div class="section-title">เหตุผลคะแนน</div>' + reasonsListHTML(d.reasons) : ''}
-
-    <div class="section-title">วิเคราะห์เชิงลึก</div>
-    <div id="analysis-section" class="analysis-section">
-      <div class="analysis-loading">กำลังวิเคราะห์...</div>
-    </div>
-
-    <div class="chart-section">
-      <h4>ปันผลต่อหุ้น (10 ปี)</h4>
-      <div class="chart-container"><canvas id="divChart"></canvas></div>
-    </div>
-    <div class="chart-section">
-      <h4>ROE %</h4>
-      <div class="chart-container"><canvas id="roeChart"></canvas></div>
-    </div>
-    <div class="chart-section">
-      <h4>รายได้ vs กำไร (พันล้าน฿)</h4>
-      <div class="chart-container"><canvas id="revenueChart"></canvas></div>
-    </div>
-
-    <div class="section-title">Year-over-Year Financials</div>
-    ${yearlyTableHTML()}
-
-    <div class="note-section">
-      <label>บันทึก:</label>
-      <textarea class="note-input" id="note-${d.symbol || ''}" placeholder="เพิ่มบันทึก...">${noteVal}</textarea>
-      <button class="note-save" onclick="saveNote('${d.symbol || ''}', document.getElementById('note-${d.symbol || ''}').value)">บันทึก</button>
-    </div>
+    <aside class="dive-aside">
+      <div class="fact-sheet">
+        <div class="fact-head">
+          <span>Fact sheet</span>
+          <span class="fact-symbol">${sym}</span>
+        </div>
+        ${factRowsHTML(d)}
+      </div>
+      <div class="mini-chart"><div class="mini-head"><span>Dividend per share</span><span>฿/share</span></div><canvas id="divChart"></canvas></div>
+      <div class="mini-chart"><div class="mini-head"><span>ROE history</span><span>%</span></div><canvas id="roeChart"></canvas></div>
+      <div class="mini-chart"><div class="mini-head"><span>Revenue trend</span><span>M฿</span></div><canvas id="revenueChart"></canvas></div>
+    </aside>
   `;
+  detail.classList.add('open');
 
   // Render charts after DOM is ready
   setTimeout(() => {
