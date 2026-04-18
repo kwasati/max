@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Max Mahon — The Weekly Dividend Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;0,9..144,900;1,9..144,400;1,9..144,700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f4f0e6;
+    --paper-2: #ebe5d4;
+    --paper-3: #ffffff;
+    --ink: #121420;
+    --ink-2: #2a2d3d;
+    --ink-dim: #595c6b;
+    --ink-soft: #8e8f9c;
+    --line: #d6cfbd;
+    --line-strong: #b0a98c;
+    --rule: #1a1a22;
+
+    --forest: #1d5b4f;
+    --forest-soft: #e4ede8;
+    --burgundy: #a02143;
+    --burgundy-soft: #f5e3e7;
+    --amber: #b45309;
+    --amber-soft: #f7eadb;
+    --gold: #c89b2c;
+    --navy: #1f3f76;
+    --navy-soft: #e5ebf5;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'IBM Plex Sans Thai', Georgia, serif;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(circle at 30% 20%, rgba(180,83,9,0.04), transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(29,91,79,0.05), transparent 50%);
+    pointer-events: none; z-index: 0;
+  }
+  a { color: inherit; text-decoration: none; }
+  .mono { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+  .serif { font-family: 'Fraunces', Georgia, serif; }
+
+  /* ========= MASTHEAD ========= */
+  .masthead {
+    border-bottom: 3px double var(--rule);
+    padding: 1.75rem 0 1.25rem;
+    background: var(--paper);
+    position: sticky; top: 0; z-index: 40;
+    backdrop-filter: blur(16px);
+  }
+  .mast-inner {
+    max-width: 1440px; margin: 0 auto;
+    padding: 0 2.5rem;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: end; gap: 2rem;
+  }
+  .mast-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--ink-dim);
+    line-height: 1.8;
+  }
+  .mast-meta strong { color: var(--ink); font-weight: 500; }
+  .mast-title {
+    text-align: center;
+  }
+  .mast-title h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: clamp(2.4rem, 5vw, 3.8rem);
+    line-height: 0.9;
+    letter-spacing: -0.03em;
+  }
+  .mast-title h1 em {
+    font-style: italic; font-weight: 400;
+    color: var(--forest);
+  }
+  .mast-title .sub {
+    font-family: 'Fraunces', serif;
+    font-style: italic; font-size: 0.95rem;
+    color: var(--ink-dim);
+    margin-top: 0.35rem;
+    letter-spacing: 0.02em;
+  }
+  .mast-right {
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--ink-dim);
+    line-height: 1.8;
+  }
+  .mast-right .issue {
+    display: inline-block;
+    border: 1px solid var(--rule);
+    padding: 0.3rem 0.6rem;
+    color: var(--ink); font-weight: 600;
+    margin-bottom: 0.4rem;
+  }
+
+  /* section nav */
+  .sec-nav {
+    border-bottom: 1px solid var(--rule);
+    background: var(--paper);
+    position: sticky; top: 108px; z-index: 35;
+  }
+  .sec-nav-inner {
+    max-width: 1440px; margin: 0 auto;
+    padding: 0.75rem 2.5rem;
+    display: flex; gap: 2rem; justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-size: 0.85rem; letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .sec-nav a {
+    color: var(--ink-dim);
+    border-bottom: 1px solid transparent;
+    padding-bottom: 2px;
+    transition: all .2s;
+  }
+  .sec-nav a:hover, .sec-nav a.active { color: var(--ink); border-color: var(--forest); }
+
+  /* ========= LEDE / HERO ========= */
+  .lede {
+    position: relative; z-index: 1;
+    max-width: 1440px; margin: 0 auto;
+    padding: 4rem 2.5rem 3rem;
+    display: grid;
+    grid-template-columns: 2.2fr 1fr;
+    gap: 3.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .kicker {
+    display: inline-flex; align-items: center; gap: 0.65rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem; text-transform: uppercase;
+    letter-spacing: 0.2em; color: var(--amber);
+    margin-bottom: 1.25rem;
+  }
+  .kicker::before {
+    content: ''; width: 20px; height: 1px; background: var(--amber);
+  }
+  .lede h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: clamp(2rem, 4.2vw, 3.5rem);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    margin-bottom: 1.25rem;
+  }
+  .lede h2 em { font-style: italic; font-weight: 400; color: var(--forest); }
+  .lede-body {
+    font-family: 'Fraunces', serif;
+    font-size: 1.2rem;
+    line-height: 1.55;
+    color: var(--ink-2);
+    max-width: 620px;
+  }
+  .lede-body::first-letter {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: 3.5em;
+    line-height: 0.85;
+    float: left;
+    padding: 0.1em 0.15em 0 0;
+    color: var(--forest);
+  }
+  .byline {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-top: 1.5rem;
+  }
+
+  /* summary stats panel */
+  .stats-panel {
+    border: 1px solid var(--rule);
+    padding: 1.75rem;
+    background: var(--paper-3);
+    align-self: start;
+    box-shadow: 4px 4px 0 var(--paper-2);
+  }
+  .stats-head {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 1.1rem;
+    color: var(--ink);
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .stat-item {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 0.55rem 0;
+    border-bottom: 1px dotted var(--line);
+  }
+  .stat-item:last-child { border-bottom: none; }
+  .stat-label {
+    font-size: 0.88rem; color: var(--ink-dim);
+  }
+  .stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.1rem; font-weight: 500;
+    color: var(--ink);
+  }
+  .stat-value.pos { color: var(--forest); }
+  .stat-value.warn { color: var(--burgundy); }
+
+  /* ========= FEATURED WATCHLIST TABLE ========= */
+  .section-head {
+    max-width: 1440px; margin: 0 auto;
+    padding: 3.5rem 2.5rem 1.5rem;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: end; gap: 2rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .section-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem; letter-spacing: 0.15em;
+    color: var(--ink-soft);
+    padding-bottom: 0.35rem;
+    border-bottom: 2px solid var(--forest);
+  }
+  .section-head h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: 2rem;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .section-head h3 em { font-style: italic; font-weight: 400; color: var(--amber); }
+  .section-sort {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem; letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+  .section-sort a { color: var(--ink); border-bottom: 1px solid var(--ink); }
+
+  .watch-wrap {
+    max-width: 1440px; margin: 0 auto;
+    padding: 0 2.5rem 4rem;
+  }
+  table.watch {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  table.watch thead th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem; letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    text-align: right;
+    padding: 1rem 0.75rem;
+    border-bottom: 1px solid var(--rule);
+    font-weight: 500;
+  }
+  table.watch thead th:first-child,
+  table.watch thead th:nth-child(2) { text-align: left; }
+  table.watch tbody td {
+    padding: 1.1rem 0.75rem;
+    border-bottom: 1px solid var(--line);
+    text-align: right;
+    vertical-align: middle;
+  }
+  table.watch tbody td:first-child,
+  table.watch tbody td:nth-child(2) { text-align: left; }
+  table.watch tbody tr:hover { background: var(--paper-2); }
+
+  .sym {
+    font-family: 'Fraunces', serif;
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .sym-name {
+    font-size: 0.78rem;
+    color: var(--ink-dim);
+    line-height: 1.2;
+    margin-top: 2px;
+  }
+
+  .score-cell {
+    display: inline-flex; align-items: center; gap: 0.65rem;
+  }
+  .score-bar {
+    width: 48px; height: 4px;
+    background: var(--line);
+    position: relative; border-radius: 2px; overflow: hidden;
+  }
+  .score-bar > i {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    background: var(--forest); display: block;
+  }
+  .score-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600; font-size: 1rem;
+    color: var(--ink);
+    min-width: 30px; text-align: right;
+  }
+  .num { font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+  .pct-up { color: var(--forest); }
+  .pct-down { color: var(--burgundy); }
+
+  .tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem; letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 3px 7px;
+    border: 1px solid var(--ink);
+    color: var(--ink);
+    border-radius: 2px;
+    font-weight: 500;
+    margin-right: 3px;
+  }
+  .tag.compounder { border-color: var(--forest); color: var(--forest); background: var(--forest-soft); }
+  .tag.king { border-color: var(--amber); color: var(--amber); background: var(--amber-soft); }
+  .tag.cow { border-color: var(--navy); color: var(--navy); background: var(--navy-soft); }
+  .tag.contra { border-color: var(--gold); color: var(--gold); }
+  .tag.trap { border-color: var(--burgundy); color: var(--burgundy); background: var(--burgundy-soft); }
+
+  /* ========= DEEP DIVE ========= */
+  .dive {
+    max-width: 1440px; margin: 0 auto;
+    padding: 2rem 2.5rem 4rem;
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 3rem;
+    border-top: 1px solid var(--rule);
+  }
+  .dive-body {
+    padding-right: 1rem;
+  }
+  .dive-kicker {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--burgundy);
+    margin-bottom: 0.75rem;
+  }
+  .dive h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: clamp(1.8rem, 3.2vw, 2.8rem);
+    line-height: 1;
+    letter-spacing: -0.025em;
+    margin-bottom: 1rem;
+  }
+  .dive h2 em { font-style: italic; font-weight: 400; color: var(--forest); }
+  .dive-deck {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 1.15rem; color: var(--ink-dim);
+    margin-bottom: 1.75rem;
+    max-width: 540px;
+  }
+  .dive-body p {
+    font-family: 'Fraunces', serif;
+    font-size: 1.05rem;
+    line-height: 1.65;
+    color: var(--ink-2);
+    margin-bottom: 1rem;
+    max-width: 580px;
+  }
+  .dive-body p strong {
+    font-weight: 700; color: var(--ink);
+  }
+  .pull-quote {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 1.35rem;
+    line-height: 1.35;
+    color: var(--ink);
+    border-left: 3px solid var(--forest);
+    padding: 0.5rem 0 0.5rem 1.25rem;
+    margin: 1.75rem 0;
+  }
+  .pull-quote cite {
+    display: block;
+    font-style: normal;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-top: 0.75rem;
+  }
+
+  /* dive sidebar */
+  .dive-aside { display: flex; flex-direction: column; gap: 1.5rem; }
+  .fact-sheet {
+    border: 1px solid var(--rule);
+    background: var(--paper-3);
+    padding: 1.5rem;
+    box-shadow: 4px 4px 0 var(--paper-2);
+  }
+  .fact-head {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--rule);
+    margin-bottom: 0.75rem;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .fact-symbol {
+    font-family: 'Fraunces', serif;
+    font-size: 1.5rem; font-weight: 900;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .fact-row {
+    display: flex; justify-content: space-between;
+    padding: 0.5rem 0;
+    font-size: 0.9rem;
+    border-bottom: 1px dotted var(--line);
+  }
+  .fact-row:last-child { border-bottom: none; }
+  .fact-row .k { color: var(--ink-dim); }
+  .fact-row .v {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--ink); font-weight: 500;
+  }
+  .fact-row .v.pos { color: var(--forest); }
+  .fact-row .v.warn { color: var(--burgundy); }
+
+  .mini-chart {
+    border: 1px solid var(--rule);
+    background: var(--paper-3);
+    padding: 1.25rem;
+    box-shadow: 4px 4px 0 var(--paper-2);
+  }
+  .mini-head {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    margin-bottom: 0.75rem;
+    display: flex; justify-content: space-between;
+  }
+  .mini-chart svg { width: 100%; height: auto; display: block; }
+
+  /* ========= DISCOVERY STRIP ========= */
+  .discoveries {
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    background: var(--paper-2);
+    padding: 3.5rem 0;
+  }
+  .discoveries-inner {
+    max-width: 1440px; margin: 0 auto;
+    padding: 0 2.5rem;
+  }
+  .disc-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: 2rem;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+    letter-spacing: -0.02em;
+  }
+  .disc-title em { font-style: italic; font-weight: 400; color: var(--amber); }
+  .disc-dek {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    color: var(--ink-dim);
+    margin-bottom: 2rem;
+  }
+  .disc-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+  .disc-card {
+    background: var(--paper-3);
+    border: 1px solid var(--line);
+    padding: 1.5rem;
+    transition: all .2s;
+  }
+  .disc-card:hover {
+    border-color: var(--forest);
+    transform: translateY(-2px);
+  }
+  .disc-sym {
+    font-family: 'Fraunces', serif;
+    font-size: 1.8rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.25rem;
+  }
+  .disc-name {
+    font-size: 0.82rem;
+    color: var(--ink-dim);
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .disc-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem 1rem;
+    margin-bottom: 1rem;
+  }
+  .disc-metric .k {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.66rem; letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .disc-metric .v {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem; font-weight: 600;
+    color: var(--ink);
+  }
+
+  /* ========= SIGNAL LEGEND ========= */
+  .legend-block {
+    max-width: 1440px; margin: 0 auto;
+    padding: 3rem 2.5rem 2rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+  }
+  .leg {
+    padding: 1rem 0;
+    border-top: 2px solid var(--ink);
+  }
+  .leg-head {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink); font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  .leg-head.forest { color: var(--forest); }
+  .leg-head.amber { color: var(--amber); }
+  .leg-head.navy { color: var(--navy); }
+  .leg-head.burgundy { color: var(--burgundy); }
+  .leg p {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--ink-dim);
+    line-height: 1.5;
+  }
+
+  /* ========= FOOTER ========= */
+  footer {
+    border-top: 3px double var(--rule);
+    padding: 2.5rem 2.5rem 3rem;
+    max-width: 1440px; margin: 2rem auto 0;
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem; letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+  footer .left span { display: block; margin-bottom: 0.3rem; }
+  footer .right { text-align: right; }
+
+  /* ========= RESPONSIVE ========= */
+  @media (max-width: 1024px) {
+    .lede { grid-template-columns: 1fr; }
+    .dive { grid-template-columns: 1fr; }
+    .disc-grid { grid-template-columns: 1fr 1fr; }
+    .legend-block { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 720px) {
+    .mast-inner { grid-template-columns: 1fr; text-align: center; gap: 1rem; }
+    .mast-meta, .mast-right { text-align: center; }
+    .sec-nav { top: 0; position: static; }
+    .sec-nav-inner { flex-wrap: wrap; gap: 1rem; justify-content: flex-start; }
+    .lede, .watch-wrap, .dive, .section-head, .discoveries-inner, .legend-block, footer {
+      padding-left: 1.25rem; padding-right: 1.25rem;
+    }
+    .section-head { grid-template-columns: 1fr; gap: 0.75rem; }
+    .disc-grid, .legend-block { grid-template-columns: 1fr; }
+    table.watch { font-size: 0.8rem; }
+    table.watch thead th, table.watch tbody td { padding: 0.75rem 0.35rem; }
+    table.watch thead th:nth-child(n+6), table.watch tbody td:nth-child(n+6) { display: none; }
+    footer { flex-direction: column; gap: 1rem; text-align: center; }
+    footer .right { text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== MASTHEAD ===== -->
+<header class="masthead">
+  <div class="mast-inner">
+    <div class="mast-meta">
+      <div>VOL. <strong>III</strong> · ISSUE <strong>№ 17</strong></div>
+      <div>SUN · <strong>18 APR 2026</strong></div>
+      <div>SET <strong class="mono">1,412.08</strong> · <span class="pct-up mono">+0.42%</span></div>
+    </div>
+    <div class="mast-title">
+      <h1><em>Max</em> Mahon</h1>
+      <div class="sub">The Weekly Dividend &amp; Quality Review · สำหรับนักลงทุนสายสะสม</div>
+    </div>
+    <div class="mast-right">
+      <div class="issue">AUTO · พรุ่งนี้ 09:00</div>
+      <div>SCANNED <strong class="mono">933</strong></div>
+      <div>PASSED <strong class="mono">47</strong></div>
+    </div>
+  </div>
+</header>
+
+<nav class="sec-nav">
+  <div class="sec-nav-inner">
+    <a href="#" class="active">ผ่านเกณฑ์</a>
+    <a href="#">ติดตาม</a>
+    <a href="#">ค้นพบใหม่</a>
+    <a href="#">ไม่ผ่าน</a>
+    <a href="#">คำขอ</a>
+    <a href="#">จำลอง DCA</a>
+    <a href="#">ตั้งค่า</a>
+  </div>
+</nav>
+
+<!-- ===== LEDE ===== -->
+<section class="lede">
+  <div>
+    <div class="kicker">THIS WEEK'S THESIS · ISSUE 17</div>
+    <h2>เมื่อดอกเบี้ยลด<br/>คุณภาพ <em>คือราคาจริง</em><br/>ของการถือยาว.</h2>
+    <div class="lede-body">
+      SET ปิดที่ 1,412 จุด โมเมนตัมสัปดาห์นี้มาจากกลุ่มพลังงานและค้าปลีก
+      แต่ในสายตาคนสะสมหุ้นปันผล สัญญาณสำคัญกว่าคือ yield ของ PTT ที่กลับมาเหนือ 6%
+      โดยที่ payout ratio ยังอยู่ต่ำกว่า 60% — จุดที่ Buffett จะเรียกว่า "เครื่องพิมพ์เงิน"
+      และสายเซียนฮงจะเรียกว่า "ของดีลดราคา" ในสัปดาห์เดียวกัน
+    </div>
+    <div class="byline">ANALYSIS BY MAX · QUALITY SCORE MODEL v3.2 · CLAUDE OPUS 4.7</div>
+  </div>
+
+  <aside class="stats-panel">
+    <div class="stats-head">At a glance</div>
+    <div class="stat-item"><span class="stat-label">หุ้นที่ผ่านเกณฑ์</span><span class="stat-value pos">47 <span style="font-size:.8em; color:var(--ink-soft);">/ 933</span></span></div>
+    <div class="stat-item"><span class="stat-label">คะแนนคุณภาพเฉลี่ย</span><span class="stat-value">72.4</span></div>
+    <div class="stat-item"><span class="stat-label">Yield เฉลี่ย (watchlist)</span><span class="stat-value pos">4.82%</span></div>
+    <div class="stat-item"><span class="stat-label">ค้นพบใหม่สัปดาห์นี้</span><span class="stat-value">3</span></div>
+    <div class="stat-item"><span class="stat-label">ข้อมูลต้องตรวจสอบ</span><span class="stat-value warn">2</span></div>
+  </aside>
+</section>
+
+<!-- ===== WATCHLIST ===== -->
+<div class="section-head" id="passed">
+  <span class="section-num">№ 01 / WATCHLIST</span>
+  <h3>หุ้นที่ผ่านเกณฑ์ <em>สัปดาห์นี้</em></h3>
+  <span class="section-sort">SORTED BY · <a href="#">QUALITY ↓</a></span>
+</div>
+
+<div class="watch-wrap">
+  <table class="watch">
+    <thead>
+      <tr>
+        <th>Stock</th>
+        <th>Signal</th>
+        <th>Score</th>
+        <th>Yield</th>
+        <th>5y Yield</th>
+        <th>P/E</th>
+        <th>D/E</th>
+        <th>ROE</th>
+        <th>Streak</th>
+        <th>Price</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><div class="sym">AOT</div><div class="sym-name">Airports of Thailand</div></td>
+        <td><span class="tag compounder">Compounder</span></td>
+        <td><span class="score-cell"><span class="score-bar"><i style="width:91%"></i></span><span class="score-num">91</span></span></td>
+        <td class="num pos">3.4%</td>
+        <td class="num">2.9%</td>
+        <td class="num">22.1</td>
+        <td class="num">0.38</td>
+        <td class="num">23.8%</td>
+        <td class="num">12y</td>
+        <td class="num">65.50 <span class="pct-up">+0.8%</span></td>
+      </tr>
+      <tr>
+        <td><div class="sym">PTT</div><div class="sym-name">PTT Public Co.</div></td>
+        <td><span class="tag king">Dividend King</span> <span class="tag cow">Cash Cow</span></td>
+        <td><span class="score-cell"><span class="score-bar"><i style="width:87%"></i></span><span class="score-num">87</span></span></td>
+        <td class="num pos">6.1%</td>
+        <td class="num">5.4%</td>
+        <td class="num">8.4</td>
+        <td class="num">0.47</td>
+        <td class="num">11.2%</td>
+        <td class="num">18y</td>
+        <td class="num">36.25 <span class="pct-down">−0.7%</span></td>
+      </tr>
+      <tr>
+        <td><div class="sym">CPALL</div><div class="sym-name">CP All</div></td>
+        <td><span class="tag compounder">Compounder</span></td>
+        <td><span class="score-cell"><span class="score-bar"><i style="width:84%"></i></span><span class="score-num">84</span></span></td>
+        <td class="num">2.2%</td>
+        <td class="num">1.9%</td>
+        <td class="num">24.6</td>
+        <td class="num">0.82</td>
+        <td class="num">21.1%</td>
+        <td class="num">14y</td>
+        <td class="num">58.00 <span class="pct-up">+0.4%</span></td>
+      </tr>
+      <tr>
+        <td><div class="sym">KBANK</div><div class="sym-name">Kasikornbank</div></td>
+        <td><span class="tag cow">Cash Cow</span> <span class="tag contra">Contrarian</span></td>
+        <td><span class="score-cell"><span class="score-bar"><i style="width:78%"></i></span><span class="score-num">78</span></span></td>
+        <td class="num pos">5.2%</td>
+        <td class="num">4.8%</td>
+        <td class="num">7.1</td>
+        <td class="num">6.80</td>
+        <td class="num">9.8%</td>
+        <td class="num">22y</td>
+        <td class="num">132.50 <span class="pct-up">+1.2%</span></td>
+      </tr>
+      <tr>
+        <td><div class="sym">TISCO</div><div class="sym-name">TISCO Financial</div></td>
+        <td><span class="tag king">Dividend King</span></td>
+        <td><span class="score-cell"><span class="score-bar"><i style="width:76%"></i></span><span class="score-num">76</span></span></td>
+        <td class="num pos">7.8%</td>
+        <td class="num">7.1%</td>
+        <td class="num">8.9</td>
+        <td class="num">5.40</td>
+        <td class="num">17.2%</td>
+        <td class="num">19y</td>
+        <td class="num">101.00 <span class="pct-up">+0.3%</span></td>
+      </tr>
+      <tr>
+        <td><div class="sym">LH</div><div class="sym-name">Land &amp; Houses</div></td>
+        <td><span class="tag king">Dividend King</span></td>
+        <td><span class="score-cell"><span class="score-bar"><i style="width:72%"></i></span><span class="score-num">72</span></span></td>
+        <td class="num pos">8.2%</td>
+        <td class="num">6.9%</td>
+        <td class="num">9.6</td>
+        <td class="num">0.95</td>
+        <td class="num">13.4%</td>
+        <td class="num">16y</td>
+        <td class="num">7.40 <span class="pct-down">−0.3%</span></td>
+      </tr>
+      <tr>
+        <td><div class="sym">CHG</div><div class="sym-name">Chularat Hospital</div></td>
+        <td><span class="tag compounder">Compounder</span></td>
+        <td><span class="score-cell"><span class="score-bar"><i style="width:69%"></i></span><span class="score-num">69</span></span></td>
+        <td class="num">2.8%</td>
+        <td class="num">2.4%</td>
+        <td class="num">19.4</td>
+        <td class="num">0.22</td>
+        <td class="num">22.7%</td>
+        <td class="num">11y</td>
+        <td class="num">3.22 <span class="pct-up">+0.6%</span></td>
+      </tr>
+      <tr>
+        <td><div class="sym">NYT</div><div class="sym-name">Namyong Terminal</div></td>
+        <td><span class="tag trap">Yield Trap?</span></td>
+        <td><span class="score-cell"><span class="score-bar" style="background:var(--burgundy-soft)"><i style="width:34%; background:var(--burgundy)"></i></span><span class="score-num" style="color:var(--burgundy)">34</span></span></td>
+        <td class="num warn">12.4%</td>
+        <td class="num">11.8%</td>
+        <td class="num">6.2</td>
+        <td class="num">0.18</td>
+        <td class="num warn">4.1%</td>
+        <td class="num">8y</td>
+        <td class="num">3.08 <span class="pct-down">−1.1%</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ===== DEEP DIVE ===== -->
+<section class="dive" id="dive">
+  <div class="dive-body">
+    <div class="dive-kicker">DEEP DIVE · № 02</div>
+    <h2>AOT: <em>สนามบิน</em><br/>ที่พิมพ์เงินได้.</h2>
+    <div class="dive-deck">
+      คะแนนคุณภาพ 91 ไม่ได้มาจากโชค — มาจาก ROE ที่ยืน 20%+ ต่อเนื่อง 12 ปี,
+      payout ratio 45% ที่ปลอดภัย, และ moat ที่รัฐฯ ค้ำไว้เอง
+    </div>
+
+    <p>
+      <strong>ถ้ามีหุ้นที่ Buffett น่าจะรักในตลาดไทย</strong> AOT คือคำตอบที่ชัดเจน —
+      ไม่ใช่เพราะ yield สูง (3.4% ถือว่าธรรมดา) แต่เพราะทุกตัวเลขเบื้องหลังมันนิ่งสะอาด
+      ROE เฉลี่ย 23.8% ติดต่อกัน 12 ปี, net margin 38%, D/E เพียง 0.38
+    </p>
+
+    <div class="pull-quote">
+      "หุ้นที่ดีไม่จำเป็นต้อง yield สูง — มันแค่ต้องทำให้คุณหลับได้ทุกคืน
+      แม้ตลาดจะแดงทั้งสัปดาห์"
+      <cite>— Max Analysis · 18 เม.ย. 2026</cite>
+    </div>
+
+    <p>
+      สัญญาณ <strong>COMPOUNDER</strong> ใน tag panel ด้านบนบอกสิ่งเดียวกัน:
+      เงินปันผลที่จ่ายออกมา 45% ของกำไร ที่เหลือ 55% กลับไปขยายกิจการ
+      ซึ่งทบต้นออกมาเป็น EPS CAGR 12.8% ต่อปีในรอบ 5 ปี
+    </p>
+
+    <p>
+      <strong>คำเตือน:</strong> valuation ปัจจุบัน P/E 22.1× ไม่ใช่ของถูก
+      ถ้ามึงกำลังสะสม DCA ก็โอเค — แต่ถ้าต้องการเข้า lump-sum
+      รอ pullback 15-20% ให้ P/E เข้าเขต 18× จะเซฟกว่า
+    </p>
+  </div>
+
+  <aside class="dive-aside">
+    <div class="fact-sheet">
+      <div class="fact-head">
+        <span>Fact sheet</span>
+        <span class="fact-symbol">AOT</span>
+      </div>
+      <div class="fact-row"><span class="k">Sector</span><span class="v">Transportation</span></div>
+      <div class="fact-row"><span class="k">Market cap</span><span class="v">935.2B</span></div>
+      <div class="fact-row"><span class="k">ROE 5y avg</span><span class="v pos">23.8%</span></div>
+      <div class="fact-row"><span class="k">Net margin</span><span class="v pos">38.2%</span></div>
+      <div class="fact-row"><span class="k">D/E</span><span class="v pos">0.38</span></div>
+      <div class="fact-row"><span class="k">Payout ratio</span><span class="v">45%</span></div>
+      <div class="fact-row"><span class="k">Dividend streak</span><span class="v">12y</span></div>
+      <div class="fact-row"><span class="k">FCF yield</span><span class="v pos">4.1%</span></div>
+      <div class="fact-row"><span class="k">Interest coverage</span><span class="v pos">28.4×</span></div>
+      <div class="fact-row"><span class="k">P/E (trailing)</span><span class="v">22.1</span></div>
+      <div class="fact-row"><span class="k">P/E (forward)</span><span class="v">19.6</span></div>
+      <div class="fact-row"><span class="k">Quality score</span><span class="v pos">91 / 100</span></div>
+    </div>
+
+    <div class="mini-chart">
+      <div class="mini-head"><span>Dividend per share · 10Y</span><span>฿/share</span></div>
+      <svg viewBox="0 0 320 140" preserveAspectRatio="none" aria-label="Dividend growth chart">
+        <defs>
+          <linearGradient id="divFill" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="#1d5b4f" stop-opacity="0.35"/>
+            <stop offset="1" stop-color="#1d5b4f" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <!-- grid -->
+        <g stroke="#d6cfbd" stroke-width="0.5">
+          <line x1="0" y1="35" x2="320" y2="35"/>
+          <line x1="0" y1="70" x2="320" y2="70"/>
+          <line x1="0" y1="105" x2="320" y2="105"/>
+        </g>
+        <!-- y labels -->
+        <g font-family="JetBrains Mono" font-size="8" fill="#8e8f9c">
+          <text x="2" y="32">2.5</text>
+          <text x="2" y="67">1.8</text>
+          <text x="2" y="102">1.1</text>
+        </g>
+        <!-- x labels -->
+        <g font-family="JetBrains Mono" font-size="8" fill="#8e8f9c" text-anchor="middle">
+          <text x="30" y="135">'17</text>
+          <text x="80" y="135">'19</text>
+          <text x="160" y="135">'21</text>
+          <text x="240" y="135">'23</text>
+          <text x="310" y="135">'26e</text>
+        </g>
+        <!-- area -->
+        <path d="M30,105 L60,99 L90,92 L120,86 L150,78 L180,65 L210,58 L240,50 L270,42 L300,30 L300,130 L30,130 Z" fill="url(#divFill)"/>
+        <!-- line -->
+        <path d="M30,105 L60,99 L90,92 L120,86 L150,78 L180,65 L210,58 L240,50 L270,42 L300,30" fill="none" stroke="#1d5b4f" stroke-width="1.8" stroke-linejoin="round"/>
+        <!-- points -->
+        <g fill="#1d5b4f">
+          <circle cx="30" cy="105" r="2.4"/>
+          <circle cx="60" cy="99" r="2.4"/>
+          <circle cx="90" cy="92" r="2.4"/>
+          <circle cx="120" cy="86" r="2.4"/>
+          <circle cx="150" cy="78" r="2.4"/>
+          <circle cx="180" cy="65" r="2.4"/>
+          <circle cx="210" cy="58" r="2.4"/>
+          <circle cx="240" cy="50" r="2.4"/>
+          <circle cx="270" cy="42" r="2.4"/>
+          <circle cx="300" cy="30" r="3" stroke="#fff" stroke-width="1.5"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="mini-chart">
+      <div class="mini-head"><span>Quality Score · Breakdown</span><span>/ 100</span></div>
+      <svg viewBox="0 0 320 140" preserveAspectRatio="none">
+        <g font-family="JetBrains Mono" font-size="8.5" fill="#2a2d3d">
+          <text x="0" y="16">Dividend</text>
+          <text x="0" y="44">Profitability</text>
+          <text x="0" y="72">Growth</text>
+          <text x="0" y="100">Strength</text>
+        </g>
+        <g>
+          <rect x="80" y="6" width="208" height="14" fill="#ebe5d4"/>
+          <rect x="80" y="6" width="188" height="14" fill="#1d5b4f"/>
+          <text x="295" y="16" font-family="JetBrains Mono" font-size="9" font-weight="600" fill="#121420">32/35</text>
+
+          <rect x="80" y="34" width="208" height="14" fill="#ebe5d4"/>
+          <rect x="80" y="34" width="195" height="14" fill="#b45309"/>
+          <text x="295" y="44" font-family="JetBrains Mono" font-size="9" font-weight="600" fill="#121420">23/25</text>
+
+          <rect x="80" y="62" width="208" height="14" fill="#ebe5d4"/>
+          <rect x="80" y="62" width="150" height="14" fill="#1f3f76"/>
+          <text x="295" y="72" font-family="JetBrains Mono" font-size="9" font-weight="600" fill="#121420">18/20</text>
+
+          <rect x="80" y="90" width="208" height="14" fill="#ebe5d4"/>
+          <rect x="80" y="90" width="186" height="14" fill="#c89b2c"/>
+          <text x="295" y="100" font-family="JetBrains Mono" font-size="9" font-weight="600" fill="#121420">18/20</text>
+        </g>
+        <g font-family="Fraunces" font-style="italic" font-size="10" fill="#595c6b">
+          <text x="0" y="128">รวม 91 — ติดอันดับ 1% บนของ universe</text>
+        </g>
+      </svg>
+    </div>
+  </aside>
+</section>
+
+<!-- ===== DISCOVERIES ===== -->
+<section class="discoveries" id="discoveries">
+  <div class="discoveries-inner">
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2rem;">
+      <div>
+        <div class="disc-title">ค้นพบใหม่ <em>สัปดาห์นี้</em></div>
+        <div class="disc-dek">3 ตัวที่ Claude คัดจาก screener รอบ discovery — ยังไม่อยู่ watchlist</div>
+      </div>
+      <span class="section-num">№ 03 / DISCOVERY</span>
+    </div>
+
+    <div class="disc-grid">
+      <article class="disc-card">
+        <div class="disc-sym">DELTA</div>
+        <div class="disc-name">Delta Electronics · Electronics</div>
+        <div class="disc-metrics">
+          <div class="disc-metric"><div class="k">Score</div><div class="v">73</div></div>
+          <div class="disc-metric"><div class="k">ROE</div><div class="v">28.4%</div></div>
+          <div class="disc-metric"><div class="k">Yield</div><div class="v">1.8%</div></div>
+          <div class="disc-metric"><div class="k">Streak</div><div class="v">8y</div></div>
+        </div>
+        <span class="tag compounder">Compounder</span>
+      </article>
+
+      <article class="disc-card">
+        <div class="disc-sym">BCH</div>
+        <div class="disc-name">Bangkok Chain Hospital · Healthcare</div>
+        <div class="disc-metrics">
+          <div class="disc-metric"><div class="k">Score</div><div class="v">68</div></div>
+          <div class="disc-metric"><div class="k">ROE</div><div class="v">18.2%</div></div>
+          <div class="disc-metric"><div class="k">Yield</div><div class="v">3.2%</div></div>
+          <div class="disc-metric"><div class="k">Streak</div><div class="v">9y</div></div>
+        </div>
+        <span class="tag contra">Contrarian</span>
+      </article>
+
+      <article class="disc-card">
+        <div class="disc-sym">HMPRO</div>
+        <div class="disc-name">Home Product Center · Retail</div>
+        <div class="disc-metrics">
+          <div class="disc-metric"><div class="k">Score</div><div class="v">71</div></div>
+          <div class="disc-metric"><div class="k">ROE</div><div class="v">20.7%</div></div>
+          <div class="disc-metric"><div class="k">Yield</div><div class="v">3.9%</div></div>
+          <div class="disc-metric"><div class="k">Streak</div><div class="v">14y</div></div>
+        </div>
+        <span class="tag king">Dividend King</span>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ===== LEGEND ===== -->
+<section class="legend-block">
+  <div class="leg">
+    <div class="leg-head forest">Compounder</div>
+    <p>ROE ≥20% ทุกปี + rev CAGR ≥10% + payout &lt;60% — หุ้นในฝันของ Buffett</p>
+  </div>
+  <div class="leg">
+    <div class="leg-head amber">Dividend King</div>
+    <p>yield ≥5% + payout 30-70% + streak ≥5 ปี — จ่ายสม่ำเสมอจาก cash จริง</p>
+  </div>
+  <div class="leg">
+    <div class="leg-head navy">Cash Cow</div>
+    <p>FCF yield &gt;8% + payout &lt;70% + D/E &lt;0.5 — เงินสดล้น หนี้ต่ำ</p>
+  </div>
+  <div class="leg">
+    <div class="leg-head burgundy">Yield Trap</div>
+    <p>yield &gt;8% + ROE ลดทุกปี + payout &gt;100% — หลอกตาด้วย yield สูง ข้างในโทรม</p>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div class="left">
+    <span>MAX MAHON · THE WEEKLY DIVIDEND REVIEW</span>
+    <span>SCHEDULED · SUN 09:00 · ALTERNATING WEEKLY/DISCOVERY</span>
+    <span>Data · thaifin · yfinance · SET/mai 933 stocks</span>
+  </div>
+  <div class="right">
+    <span>© 2026 · MAX MAHON v3</span>
+    <span>Designed with Claude Opus 4.7</span>
+    <span>Not investment advice · สำหรับการศึกษา</span>
+  </div>
+</footer>
+
+</body>
+</html>
