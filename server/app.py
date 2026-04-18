@@ -27,6 +27,14 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
+try:
+    import anthropic as _anthropic_mod
+    _anthropic_client = None
+except ImportError:
+    _anthropic_mod = None
+    _anthropic_client = None
+    logging.warning("anthropic package not installed — /api/stock/{symbol}/analysis disabled")
+
 from server.console import count_request, start_refresh_loop
 
 # ---------------------------------------------------------------------------
@@ -44,6 +52,13 @@ WEB_DIR = PROJECT_DIR / "web"
 # ---------------------------------------------------------------------------
 load_dotenv(Path("C:/WORKSPACE/.env"))
 MAX_TOKEN = os.getenv("MAX_TOKEN", "")
+
+if _anthropic_mod and _anthropic_client is None:
+    _ak = os.getenv("MAX_ANTHROPIC_API_KEY")
+    if _ak:
+        _anthropic_client = _anthropic_mod.Anthropic(api_key=_ak)
+    else:
+        logging.warning("MAX_ANTHROPIC_API_KEY not set — AI analysis disabled")
 
 # ---------------------------------------------------------------------------
 # App
@@ -1344,10 +1359,211 @@ async def search_stocks(request: Request):
 
 
 # ---------------------------------------------------------------------------
+# AI Analysis API
+# ---------------------------------------------------------------------------
+ANALYSIS_CACHE_PATH = DATA_DIR / "analysis_cache.json"
+
+
+def _load_analysis_cache() -> dict:
+    if ANALYSIS_CACHE_PATH.exists():
+        try:
+            return json.loads(ANALYSIS_CACHE_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+    return {}
+
+
+def _save_analysis_cache(cache: dict):
+    ANALYSIS_CACHE_PATH.write_text(
+        json.dumps(cache, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def _find_stock_for_analysis(symbol: str) -> tuple[Optional[dict], Optional[str]]:
+    """Find stock data from screener/snapshot. Returns (stock_dict, screener_date)."""
+    scr_path = find_latest("screener_*.json", DATA_DIR)
+    if scr_path:
+        scr = read_json(scr_path)
+        scr_date = scr.get("date", scr_path.stem.replace("screener_", ""))
+        for c in scr.get("candidates", []):
+            if c.get("symbol", "").upper() == symbol.upper():
+                return c, scr_date
+        for c in scr.get("filtered_out_stocks", []):
+            if c.get("symbol", "").upper() == symbol.upper():
+                return c, scr_date
+
+    snap_path = find_latest("snapshot_*.json", DATA_DIR)
+    if snap_path:
+        snap = read_json(snap_path)
+        snap_date = snap_path.stem.replace("snapshot_", "")
+        for s in snap.get("stocks", []):
+            if s.get("symbol", "").upper() == symbol.upper():
+                return s, snap_date
+
+    return None, None
+
+
+def _build_analysis_prompt(stock: dict) -> str:
+    sym = stock.get("symbol", "")
+    name = stock.get("name", sym)
+    score = stock.get("score", 0)
+    bd = stock.get("breakdown", {})
+    sector = stock.get("sector", "")
+    m = stock.get("metrics", {})
+    agg = stock.get("aggregates", {})
+    val = stock.get("valuation", {})
+    signals = stock.get("signals", [])
+    reasons = stock.get("reasons", [])
+
+    mcap = m.get("mcap")
+    mcap_str = f"{mcap / 1e9:.1f}B" if mcap else "-"
+    avg_roe = agg.get("avg_roe")
+    avg_roe_str = f"{avg_roe * 100:.1f}" if avg_roe else "-"
+    avg_gm = agg.get("avg_gross_margin")
+    avg_gm_str = f"{avg_gm * 100:.1f}" if avg_gm else "-"
+    avg_nm = agg.get("avg_net_margin")
+    avg_nm_str = f"{avg_nm * 100:.1f}" if avg_nm else "-"
+    de = m.get("de")
+    de_str = f"{de:.2f}" if de else "-"
+    int_cov = agg.get("latest_interest_coverage")
+    int_cov_str = f"{int_cov:.1f}" if int_cov else "-"
+    ocf_ni = agg.get("latest_ocf_ni_ratio")
+    ocf_ni_str = f"{ocf_ni:.1f}" if ocf_ni else "-"
+    rev_cagr = agg.get("revenue_cagr")
+    rev_cagr_str = f"{rev_cagr * 100:.1f}" if rev_cagr else "-"
+    eps_cagr = agg.get("eps_cagr")
+    eps_cagr_str = f"{eps_cagr * 100:.1f}" if eps_cagr else "-"
+    div_yield = m.get("dividend_yield")
+    yield_str = f"{div_yield:.1f}" if div_yield else "-"
+    payout = m.get("payout")
+    payout_str = f"{payout * 100:.0f}" if payout else "-"
+    streak = agg.get("dividend_streak", 0)
+    fcf_pos = agg.get("fcf_positive_years", 0)
+    fcf_total = agg.get("fcf_total_years", 0)
+    grade = val.get("grade", "-")
+    label = val.get("label", "-")
+    peg = val.get("peg")
+    peg_str = f"{peg:.2f}" if peg else "-"
+    price = m.get("current_price")
+    price_str = f"{price:.2f}" if price else "-"
+    low52 = m.get("52w_low", "-")
+    high52 = m.get("52w_high", "-")
+    signals_str = ", ".join(signals) if signals else "-"
+    reasons_str = ", ".join(reasons) if reasons else "-"
+
+    return f"""คุณคือนักวิเคราะห์หุ้นไทย กำลังวิเคราะห์หุ้น {sym} ({name}) จาก 3 มุมมอง
+
+ข้อมูลหุ้น:
+- คะแนนคุณภาพ: {score}/100 (กำไร {bd.get('profitability', 0)}/25, เติบโต {bd.get('growth', 0)}/20, ปันผล {bd.get('dividend', 0)}/35, แข็งแกร่ง {bd.get('strength', 0)}/20)
+- Sector: {sector}, Market Cap: {mcap_str}
+- ROE เฉลี่ย: {avg_roe_str}%, Gross Margin: {avg_gm_str}%, Net Margin: {avg_nm_str}%
+- D/E: {de_str}, Interest Coverage: {int_cov_str}x, OCF/NI: {ocf_ni_str}x
+- Revenue CAGR: {rev_cagr_str}%, EPS CAGR: {eps_cagr_str}%
+- Dividend Yield: {yield_str}%, Payout: {payout_str}%, จ่ายปันผล {streak} ปีติด
+- FCF บวก {fcf_pos}/{fcf_total} ปี
+- Valuation: ระดับ {grade} ({label}), PEG: {peg_str}
+- ราคาปัจจุบัน: {price_str}, 52w range: {low52}-{high52}
+- สัญญาณ: {signals_str}
+- เหตุผลคะแนน: {reasons_str}
+
+เขียนวิเคราะห์ 3 มุมมอง เป็นภาษาไทยง่ายๆ เหมือนเพื่อนอธิบายให้ฟัง:
+
+1. **มุมมอง Buffett** — เน้นคุณภาพธุรกิจ moat ความสม่ำเสมอของกำไร margin สูง ความได้เปรียบในการแข่งขัน
+2. **มุมมองเซียนฮง** — เน้น cash flow quality กำไรเป็นเงินสดจริงไหม หนี้เยอะไหม ดอกเบี้ยจ่ายไหวไหม ความสม่ำเสมอของรายได้
+3. **Max Mahon สรุป** — เน้น passive income เหมาะ DCA ระยะยาว 10-20 ปีไหม yield on cost จะเป็นเท่าไหร่ในอนาคต ความเสี่ยงสำหรับนักลงทุนปันผล แผนการลงทุน
+
+แต่ละมุมมอง 3-5 ประโยค กระชับ ตรงประเด็น ไม่ต้องขึ้นต้นด้วย "จากข้อมูล" หรือ "เมื่อดูจาก"
+ถ้าตัวนี้มีจุดอ่อนชัดเจน ต้องพูดตรงๆ ไม่ต้องเกรงใจ
+
+ตอบเป็น JSON format:
+{{"buffett": "...", "hong": "...", "max": "..."}}"""
+
+
+@app.get("/api/stock/{symbol}/analysis")
+async def get_stock_analysis(symbol: str):
+    """AI-powered stock analysis from 3 perspectives."""
+    if _anthropic_client is None:
+        raise HTTPException(503, "anthropic package not installed")
+
+    stock, scr_date = _find_stock_for_analysis(symbol)
+    if stock is None:
+        raise HTTPException(404, f"Stock {symbol} not found")
+
+    cache_key = f"{symbol.upper()}_{scr_date}"
+    cache = _load_analysis_cache()
+    if cache_key in cache:
+        entry = cache[cache_key]
+        return {
+            "symbol": symbol,
+            "buffett": entry["buffett"],
+            "hong": entry["hong"],
+            "max": entry["max"],
+            "cached": True,
+            "generated_at": entry.get("generated_at", ""),
+        }
+
+    prompt = _build_analysis_prompt(stock)
+
+    try:
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None,
+            lambda: _anthropic_client.messages.create(
+                model="claude-opus-4-7",
+                max_tokens=2000,
+                messages=[{"role": "user", "content": prompt}],
+                timeout=60.0,
+            ),
+        )
+        raw_text = response.content[0].text.strip()
+
+        if raw_text.startswith("```"):
+            lines = raw_text.split("\n")
+            lines = [l for l in lines if not l.startswith("```")]
+            raw_text = "\n".join(lines).strip()
+
+        parsed = json.loads(raw_text)
+    except json.JSONDecodeError:
+        raise HTTPException(502, "Failed to parse AI response as JSON")
+    except Exception as e:
+        logging.error(f"[analysis] Claude API error: {e}")
+        raise HTTPException(502, f"AI analysis failed: {str(e)}")
+
+    generated_at = datetime.now().isoformat()
+    cache[cache_key] = {
+        "buffett": parsed.get("buffett", ""),
+        "hong": parsed.get("hong", ""),
+        "max": parsed.get("max", ""),
+        "generated_at": generated_at,
+    }
+    _save_analysis_cache(cache)
+
+    return {
+        "symbol": symbol,
+        "buffett": parsed.get("buffett", ""),
+        "hong": parsed.get("hong", ""),
+        "max": parsed.get("max", ""),
+        "cached": False,
+        "generated_at": generated_at,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Static files (SPA) — mount last so API routes take priority
 # ---------------------------------------------------------------------------
+@app.get("/", response_class=HTMLResponse)
+async def serve_index():
+    index_path = WEB_DIR / "index.html"
+    html = index_path.read_text(encoding="utf-8")
+    css_mtime = int((WEB_DIR / "style.css").stat().st_mtime)
+    js_mtime = int((WEB_DIR / "app.js").stat().st_mtime)
+    html = html.replace("style.css?v=__CB__", f"style.css?v={css_mtime}")
+    html = html.replace("app.js?v=__CB__", f"app.js?v={js_mtime}")
+    return HTMLResponse(html)
+
 if WEB_DIR.exists():
-    app.mount("/", StaticFiles(directory=str(WEB_DIR), html=True), name="static")
+    app.mount("/", StaticFiles(directory=str(WEB_DIR)), name="static")
 
 
 # ---------------------------------------------------------------------------

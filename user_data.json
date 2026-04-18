@@ -3,15 +3,21 @@
     "ADVANC.BK",
     "AOT.BK",
     "BDMS.BK",
+    "CBG.BK",
     "CPALL.BK",
+    "DITTO.BK",
     "GULF.BK",
     "HMPRO.BK",
     "LH.BK",
     "MINT.BK",
+    "MOSHI.BK",
     "PTT.BK",
+    "SAPPE.BK",
     "SAWAD.BK",
     "SCB.BK",
-    "TISCO.BK"
+    "TISCO.BK",
+    "TQM.BK",
+    "TTW.BK"
   ],
   "blacklist": [],
   "notes": {
@@ -29,5 +35,5 @@
     "TISCO.BK": "ธนาคารเล็ก ปันผลสูงสุดในกลุ่ม ROE ดี"
   },
   "custom_lists": {},
-  "updated_at": "2026-04-13T00:00:00"
+  "updated_at": "2026-04-15T14:16:54.596318"
 }

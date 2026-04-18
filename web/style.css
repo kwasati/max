@@ -167,16 +167,17 @@ body {
   min-width: 380px;
   flex-shrink: 0;
   overflow-y: auto;
-  max-height: calc(100vh - 280px);
+  height: calc(100vh - 200px);
+  position: sticky;
+  top: 12px;
   border-right: 1px solid var(--border);
   padding-right: 12px;
 }
 .stock-layout.split-mode .detail-panel {
   flex: 1;
   opacity: 1;
-  overflow-y: auto;
-  max-height: calc(100vh - 280px);
-  padding: 0 0 0 24px;
+  padding: 20px 24px 24px 24px;
+  min-width: 0;
 }
 
 /* ===== PAGE PANELS (non-stock tabs) ===== */
@@ -376,6 +377,9 @@ body {
   padding: 16px;
   overflow-y: auto;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
 /* Detail close button (rendered by JS) */
@@ -1062,14 +1066,7 @@ details.section-explain[open] > summary::before { content: 'ซ่อนคำ�
 .qm-label { font-size: 0.7em; color: var(--text3); }
 .qm-value { font-size: 1em; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
 
-/* ===== BUFFETT CHECKLIST (new) ===== */
-.checklist-item {
-  padding: 4px 0;
-  font-size: 0.85em;
-}
-.checklist-item.pass { color: var(--green); }
-.checklist-item.fail { color: var(--text3); }
-.check-icon { font-weight: bold; margin-right: 4px; }
+/* ===== BUFFETT CHECKLIST (see split checklists in new section above) ===== */
 
 /* ===== NEAR MISS BANNER ===== */
 .near-miss-banner {
@@ -1084,6 +1081,213 @@ details.section-explain[open] > summary::before { content: 'ซ่อนคำ�
 
 /* ===== SCORE CIRCLE SVG ===== */
 .score-circle-svg { display: block; margin: 0 auto; }
+
+/* ===== SCORE BREAKDOWN BARS ===== */
+.sb-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.sb-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sb-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 160px;
+  flex-shrink: 0;
+}
+.sb-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.sb-sub {
+  font-size: 0.65rem;
+  font-weight: 400;
+  color: var(--text3);
+}
+.sb-bar {
+  flex: 1;
+  height: 8px;
+  background: #e8e0d0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.sb-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--accent), #c9a84c);
+}
+.sb-pts {
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  min-width: 42px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ===== SPLIT CHECKLISTS ===== */
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 0.84rem;
+  border-bottom: 1px solid var(--border);
+}
+.checklist-item:first-child { border-top: 1px solid var(--border); }
+.checklist-item.pass { background: rgba(40, 167, 69, 0.04); }
+.checklist-item.fail { background: rgba(220, 53, 69, 0.04); }
+.checklist-item.pass .check-icon { color: var(--green); }
+.checklist-item.fail .check-icon { color: var(--red); }
+.checklist-item.pass .check-text { color: var(--text); }
+.checklist-item.fail .check-text { color: var(--text3); }
+.check-icon { font-weight: 700; font-size: 1rem; flex-shrink: 0; width: 20px; text-align: center; }
+.check-text { flex: 1; min-width: 0; }
+.check-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--number);
+  flex-shrink: 0;
+  text-align: right;
+  min-width: 60px;
+}
+
+/* ===== VALUATION DETAIL CARD ===== */
+.val-detail-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+.val-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px 20px;
+}
+.vd-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.vd-label {
+  font-size: 0.72rem;
+  color: var(--text3);
+}
+.vd-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--number);
+}
+.w52-section {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.w52-label {
+  font-size: 0.7rem;
+  color: var(--text3);
+  margin-bottom: 6px;
+}
+.w52-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.w52-lo, .w52-hi {
+  font-size: 0.72rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+.w52-bar {
+  flex: 1;
+  height: 8px;
+  background: linear-gradient(90deg, var(--green-light), var(--yellow-light), var(--red-light));
+  border-radius: 4px;
+  position: relative;
+}
+.w52-marker {
+  position: absolute;
+  top: -3px;
+  width: 14px;
+  height: 14px;
+  background: var(--accent);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.w52-pct {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.62rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ===== KEY METRICS GRID ===== */
+.key-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.km-item {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.km-label {
+  font-size: 0.72rem;
+  color: var(--text3);
+}
+.km-value {
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--number);
+}
+
+/* ===== REASONS LIST ===== */
+.reasons-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+}
+.reasons-list li {
+  padding: 5px 0 5px 18px;
+  font-size: 0.84rem;
+  color: var(--text2);
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.reasons-list li:last-child { border-bottom: none; }
+.reasons-list li::before {
+  content: '•';
+  position: absolute;
+  left: 4px;
+  color: var(--accent);
+  font-weight: 700;
+}
 
 /* ===== YEARLY TABLE WRAP ===== */
 .yearly-table-wrap {
@@ -1194,6 +1398,11 @@ details.section-explain[open] > summary::before { content: 'ซ่อนคำ�
   .stock-list { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
   .stock-card { padding: 12px; }
 
+  /* Score breakdown bars — tablet */
+  .sb-grid { flex-direction: column; }
+  .val-detail-grid { grid-template-columns: repeat(2, 1fr); }
+  .key-metrics-grid { grid-template-columns: repeat(3, 1fr); }
+
   /* Score breakdown */
   .score-breakdown { grid-template-columns: repeat(2, 1fr); }
 
@@ -1255,6 +1464,14 @@ details.section-explain[open] > summary::before { content: 'ซ่อนคำ�
   .card-score-circle { width: 36px; height: 36px; font-size: 0.82rem; }
   .card-metrics-row { gap: 8px; }
   .tag { font-size: 0.62rem; padding: 2px 6px; }
+
+  /* Score breakdown bars */
+  .sb-grid { flex-direction: column; }
+  .sb-head { min-width: 120px; }
+  /* Valuation detail */
+  .val-detail-grid { grid-template-columns: repeat(2, 1fr); }
+  /* Key metrics */
+  .key-metrics-grid { grid-template-columns: repeat(2, 1fr); }
 
   /* Score breakdown — single column */
   .score-breakdown { grid-template-columns: 1fr; gap: 8px; }
@@ -1665,4 +1882,37 @@ details.section-explain[open] > summary::before { content: 'ซ่อนคำ�
   .dca-submit { width: 100%; }
   .dca-port-breakdown { padding: 10px 14px; }
   .dca-port-forecast { padding: 12px 14px; }
+}
+
+/* AI Analysis Cards */
+.analysis-section { margin-bottom: 24px; }
+.analysis-loading { color: var(--text3); font-size: 0.84rem; padding: 12px 0; }
+.analysis-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 12px;
+}
+.analysis-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+.analysis-icon { font-size: 1.1rem; }
+.analysis-text {
+  font-size: 0.86rem;
+  line-height: 1.65;
+  color: var(--text2);
+  margin: 0;
+}
+.analysis-cached {
+  font-size: 0.72rem;
+  color: var(--text3);
+  text-align: right;
+  margin-top: -4px;
 }

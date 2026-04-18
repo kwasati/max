@@ -553,22 +553,137 @@ function valGradeBadge(val) {
   </div>`;
 }
 
-function buffettChecklist(data) {
+function buffettChecklistSplit(data) {
   const yearly = data.yearly_metrics || [];
   const agg = data.aggregates || {};
-  const checks = [
-    { label: 'ROE \u226515% สม่ำเสมอ', pass: agg.avg_roe >= 0.15 && agg.min_roe >= 0.12 },
-    { label: 'Gross Margin \u226530%', pass: agg.avg_gross_margin >= 0.30 },
-    { label: 'หนี้ต่ำ (D/E < 1.0)', pass: yearly.length > 0 && yearly[yearly.length-1].de_ratio < 1.0 },
-    { label: 'FCF บวกทุกปี', pass: agg.fcf_positive_years >= agg.fcf_total_years && agg.fcf_total_years > 0 },
-    { label: 'ปันผล \u22655 ปีติด', pass: agg.dividend_streak >= 5 },
-    { label: 'EPS โตสม่ำเสมอ', pass: agg.eps_cagr > 0.05 },
+  const m = data.metrics || {};
+  const latestDE = yearly.length > 0 ? yearly[yearly.length-1].de_ratio : null;
+
+  const buffett = [
+    { label: 'ROE ≥15% สม่ำเสมอ', pass: agg.avg_roe >= 0.15, value: safe(agg.avg_roe, 'pct') },
+    { label: 'Gross Margin ≥30%', pass: agg.avg_gross_margin >= 0.30, value: safe(agg.avg_gross_margin, 'pct') },
+    { label: 'หนี้ต่ำ (D/E < 1.0)', pass: latestDE != null && latestDE < 1.0, value: latestDE != null ? latestDE.toFixed(2) : '-' },
+    { label: 'FCF บวกทุกปี', pass: agg.fcf_positive_years >= agg.fcf_total_years && agg.fcf_total_years > 0, value: (agg.fcf_positive_years || 0) + '/' + (agg.fcf_total_years || 0) + ' ปี' },
+    { label: 'ปันผล ≥5 ปีติด', pass: agg.dividend_streak >= 5, value: (agg.dividend_streak || 0) + ' ปี' },
+    { label: 'EPS โตสม่ำเสมอ', pass: agg.eps_cagr > 0, value: safe(agg.eps_cagr, 'pct') },
   ];
-  return checks.map(c =>
-    `<div class="checklist-item ${c.pass ? 'pass' : 'fail'}">
-      <span class="check-icon">${c.pass ? '\u2713' : '\u2717'}</span> ${c.label}
-    </div>`
-  ).join('');
+
+  const payoutVal = data.payout_ratio != null ? data.payout_ratio : m.payout;
+  const payoutPct = payoutVal != null ? (payoutVal * 100) : null;
+  const ocfNi = agg.latest_ocf_ni_ratio;
+  const intCov = agg.latest_interest_coverage;
+  const revGrowthYears = agg.revenue_growth_years || 0;
+  const totalYears = agg.revenue_total_years || (yearly.length > 1 ? yearly.length - 1 : 0);
+
+  const hong = [
+    { label: 'กำไรมีเงินสดรองรับ (OCF/NI 0.8-3.0)', pass: ocfNi != null && ocfNi >= 0.8 && ocfNi <= 3.0, value: ocfNi != null ? ocfNi.toFixed(2) + 'x' : '-' },
+    { label: 'Interest Coverage >5x', pass: intCov != null && intCov > 5, value: intCov != null ? intCov.toFixed(1) + 'x' : '-' },
+    { label: 'Payout Ratio 30-70%', pass: payoutPct != null && payoutPct >= 30 && payoutPct <= 70, value: payoutPct != null ? payoutPct.toFixed(0) + '%' : '-' },
+    { label: 'Revenue โตสม่ำเสมอ', pass: totalYears > 0 && revGrowthYears >= totalYears, value: revGrowthYears + '/' + totalYears + ' ปี' },
+    { label: 'Net Margin ≥10%', pass: agg.avg_net_margin >= 0.10, value: safe(agg.avg_net_margin, 'pct') },
+    { label: 'หนี้ต่ำ (D/E < 1.5)', pass: latestDE != null && latestDE < 1.5, value: latestDE != null ? latestDE.toFixed(2) : '-' },
+  ];
+
+  function renderChecks(checks) {
+    return checks.map(c =>
+      `<div class="checklist-item ${c.pass ? 'pass' : 'fail'}">
+        <span class="check-icon">${c.pass ? '✓' : '✗'}</span>
+        <span class="check-text">${c.label}</span>
+        <span class="check-val">${c.value}</span>
+      </div>`
+    ).join('');
+  }
+
+  return { buffett: renderChecks(buffett), hong: renderChecks(hong) };
+}
+
+function scoreBreakdownHTML(breakdown, score) {
+  const cats = [
+    { key: 'profitability', label: 'กำไร', max: 25, sub: 'Buffett' },
+    { key: 'growth', label: 'เติบโต', max: 20, sub: '' },
+    { key: 'dividend', label: 'ปันผล', max: 35, sub: 'Dividend-First' },
+    { key: 'strength', label: 'แข็งแกร่ง', max: 20, sub: 'เซียนฮง' },
+  ];
+  return cats.map(c => {
+    const val = breakdown[c.key] != null ? breakdown[c.key] : 0;
+    const pct = c.max > 0 ? Math.min(val / c.max * 100, 100) : 0;
+    return `<div class="sb-item">
+      <div class="sb-head">
+        <span class="sb-label">${c.label}${c.sub ? ' <span class="sb-sub">' + c.sub + '</span>' : ''}</span>
+      </div>
+      <div class="sb-bar"><div class="sb-bar-fill" style="width:${pct}%"></div></div>
+      <span class="sb-pts">${val}/${c.max}</span>
+    </div>`;
+  }).join('');
+}
+
+function valuationDetailHTML(val, d) {
+  if (!val) return '';
+  const m = d.metrics || {};
+  const agg = d.aggregates || {};
+  const peg = val.peg != null ? val.peg.toFixed(2) : 'N/A';
+  const pe = d.pe_ratio != null ? d.pe_ratio.toFixed(1) : '-';
+  const fwdPE = m.forward_pe != null ? m.forward_pe.toFixed(1) : '-';
+  const curYield = d.dividend_yield != null ? d.dividend_yield.toFixed(1) + '%' : '-';
+  const avgYield = m.five_year_avg_yield != null ? m.five_year_avg_yield.toFixed(1) + '%' : '-';
+  const low52 = d.fifty_two_week_low || d['52w_low'] || m['52w_low'];
+  const high52 = d.fifty_two_week_high || d['52w_high'] || m['52w_high'];
+  const price = d.price;
+  let w52Pct = null;
+  if (low52 != null && high52 != null && high52 !== low52 && price != null) {
+    w52Pct = Math.round((price - low52) / (high52 - low52) * 100);
+    w52Pct = Math.max(0, Math.min(100, w52Pct));
+  }
+  const colors = { A: 'var(--green)', B: 'var(--blue)', C: 'var(--yellow)', D: 'var(--orange)', F: 'var(--red)' };
+  const gradeColor = colors[val.grade] || 'var(--text3)';
+
+  return `<div class="val-detail-card">
+    <div class="val-detail-grid">
+      <div class="vd-item"><span class="vd-label">PEG Ratio</span><span class="vd-value">${peg}</span></div>
+      <div class="vd-item"><span class="vd-label">P/E</span><span class="vd-value">${pe}</span></div>
+      <div class="vd-item"><span class="vd-label">Forward P/E</span><span class="vd-value">${fwdPE}</span></div>
+      <div class="vd-item"><span class="vd-label">Yield ปัจจุบัน</span><span class="vd-value">${curYield}</span></div>
+      <div class="vd-item"><span class="vd-label">Yield เฉลี่ย 5 ปี</span><span class="vd-value">${avgYield}</span></div>
+      <div class="vd-item"><span class="vd-label">สรุประดับราคา</span><span class="vd-value" style="color:${gradeColor};font-weight:700">${val.grade || '-'} — ${val.label || ''}</span></div>
+    </div>
+    ${w52Pct != null ? `<div class="w52-section">
+      <div class="w52-label">52-Week Range</div>
+      <div class="w52-bar-wrap">
+        <span class="w52-lo">${low52 != null ? low52.toFixed(2) : '-'}</span>
+        <div class="w52-bar"><div class="w52-marker" style="left:${w52Pct}%"><span class="w52-pct">${w52Pct}%</span></div></div>
+        <span class="w52-hi">${high52 != null ? high52.toFixed(2) : '-'}</span>
+      </div>
+    </div>` : ''}
+  </div>`;
+}
+
+function keyMetricsHTML(d) {
+  const agg = d.aggregates || {};
+  const m = d.metrics || {};
+  const revCAGR = agg.revenue_cagr != null ? (agg.revenue_cagr * 100).toFixed(1) + '%' : '-';
+  const epsCAGR = agg.eps_cagr != null ? (agg.eps_cagr * 100).toFixed(1) + '%' : '-';
+  const dpsCAGR = agg.dps_cagr != null ? (agg.dps_cagr * 100).toFixed(1) + '%' : '-';
+  const fwdPE = m.forward_pe != null ? m.forward_pe.toFixed(1) : '-';
+  const pb = m.pb_ratio != null ? m.pb_ratio.toFixed(1) : '-';
+  const fcf = m.fcf; const mcap = m.mcap || d.market_cap;
+  const fcfYield = (fcf != null && mcap != null && mcap > 0) ? (fcf / mcap * 100).toFixed(1) + '%' : '-';
+
+  const items = [
+    { label: 'Revenue CAGR', value: revCAGR },
+    { label: 'EPS CAGR', value: epsCAGR },
+    { label: 'DPS CAGR', value: dpsCAGR },
+    { label: 'Forward P/E', value: fwdPE },
+    { label: 'P/B Ratio', value: pb },
+    { label: 'FCF Yield', value: fcfYield },
+  ];
+  return '<div class="key-metrics-grid">' + items.map(i =>
+    `<div class="km-item"><span class="km-label">${i.label}</span><span class="km-value">${i.value}</span></div>`
+  ).join('') + '</div>';
+}
+
+function reasonsListHTML(reasons) {
+  if (!reasons || reasons.length === 0) return '';
+  return '<ul class="reasons-list">' + reasons.map(r => `<li>${r}</li>`).join('') + '</ul>';
 }
 
 // ===== RENDER DETAIL =====
@@ -646,6 +761,9 @@ function renderDetail(d) {
   // Note
   const noteVal = (userData.notes || {})[d.symbol || ''] || '';
 
+  // Pre-compute checklists
+  const checklists = buffettChecklistSplit(d);
+
   // ===== BUILD HTML =====
   detail.innerHTML = `
     <button class="detail-close-btn" onclick="closeDetail()">ปิด &times;</button>
@@ -669,9 +787,12 @@ function renderDetail(d) {
 
     ${filteredBannerHTML}
 
-    ${valGradeBadge(val)}
-
     ${nearMissHTML}
+
+    <div class="section-title">Score Breakdown <span>${score}/100</span></div>
+    <div class="sb-grid">
+      ${scoreBreakdownHTML(breakdown, score)}
+    </div>
 
     <div class="quick-metrics">
       <div class="qm-item"><div class="qm-label">Price</div><div class="qm-value">${price}</div></div>
@@ -681,8 +802,24 @@ function renderDetail(d) {
       <div class="qm-item"><div class="qm-label">D/E</div><div class="qm-value">${latestYM.de_ratio != null ? latestYM.de_ratio.toFixed(2) : '-'}</div></div>
     </div>
 
-    <div class="section-title">Buffett Checklist</div>
-    ${buffettChecklist(d)}
+    <div class="section-title">เกณฑ์ Buffett <span>Warren Buffett Quality</span></div>
+    ${checklists.buffett}
+
+    <div class="section-title">เกณฑ์เซียนฮง <span>สถาพร งามเสถียร — Cash Flow Quality</span></div>
+    ${checklists.hong}
+
+    <div class="section-title">Valuation Detail</div>
+    ${valuationDetailHTML(val, d)}
+
+    <div class="section-title">Key Growth Metrics</div>
+    ${keyMetricsHTML(d)}
+
+    ${(d.reasons && d.reasons.length > 0) ? '<div class="section-title">เหตุผลคะแนน</div>' + reasonsListHTML(d.reasons) : ''}
+
+    <div class="section-title">วิเคราะห์เชิงลึก</div>
+    <div id="analysis-section" class="analysis-section">
+      <div class="analysis-loading">กำลังวิเคราะห์...</div>
+    </div>
 
     <div class="chart-section">
       <h4>ปันผลต่อหุ้น (10 ปี)</h4>
@@ -708,12 +845,62 @@ function renderDetail(d) {
   `;
 
   // Render charts after DOM is ready
-  setTimeout(() => renderDetailCharts(d), 50);
+  setTimeout(() => {
+    renderDetailCharts(d);
+    fetchAnalysis(fullSymbol);
+  }, 50);
 
   // Scroll to detail (desktop only, mobile is fullscreen)
   if (window.innerWidth >= 1024) {
     detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
+}
+
+async function fetchAnalysis(symbol) {
+  const section = document.getElementById('analysis-section');
+  if (!section) return;
+  try {
+    const res = await fetch(API + '/api/stock/' + encodeURIComponent(symbol) + '/analysis');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      section.innerHTML = '<div class="analysis-loading">' + (err.detail || 'ไม่สามารถวิเคราะห์ได้') + '</div>';
+      return;
+    }
+    const data = await res.json();
+    section.innerHTML = `
+      <div class="analysis-card">
+        <div class="analysis-header">
+          <span class="analysis-icon">\uD83C\uDFA9</span>
+          <span class="analysis-name">มุมมอง Buffett</span>
+        </div>
+        <p class="analysis-text">${escapeHtml(data.buffett || '')}</p>
+      </div>
+      <div class="analysis-card">
+        <div class="analysis-header">
+          <span class="analysis-icon">\uD83D\uDCB0</span>
+          <span class="analysis-name">มุมมองเซียนฮง</span>
+        </div>
+        <p class="analysis-text">${escapeHtml(data.hong || '')}</p>
+      </div>
+      <div class="analysis-card">
+        <div class="analysis-header">
+          <span class="analysis-icon">\uD83D\uDCCA</span>
+          <span class="analysis-name">Max Mahon สรุป</span>
+        </div>
+        <p class="analysis-text">${escapeHtml(data.max || '')}</p>
+      </div>
+      ${data.cached ? '<div class="analysis-cached">cached</div>' : ''}
+    `;
+  } catch (e) {
+    console.error('Analysis fetch failed:', e);
+    section.innerHTML = '<div class="analysis-loading">ไม่สามารถวิเคราะห์ได้</div>';
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 // ===== REQUEST PANEL =====
