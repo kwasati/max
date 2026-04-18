@@ -160,18 +160,24 @@ function renderSummary() {
     cards[3].querySelector('.value').style.color = 'var(--red)';
   }
 
-  // Update header meta
-  const meta = document.getElementById('header-meta');
+  // Update header meta (editorial masthead — P2)
+  const setField = (sel, val) => {
+    const el = document.querySelector(sel);
+    if (el) el.textContent = val ?? '—';
+  };
   const runDate = sc.run_date || sc.date;
-  if (meta && runDate) {
-    const d = new Date(runDate);
-    const dateStr = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    meta.innerHTML = `
-      <span>Scoring: <strong>Buffett Hong Quality</strong></span>
-      <span>Updated: <strong>${dateStr}</strong></span>
-      <span>Scanned: <strong>${totalScanned} stocks</strong></span>
-    `;
-  }
+  const d = runDate ? new Date(runDate) : new Date();
+  const weekdays = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const dateStr = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  setField('#header-meta [data-field="vol"]', 'III');
+  setField('#header-meta [data-field="issue"]', sc.issue ? `№ ${sc.issue}` : '№ —');
+  setField('#header-meta [data-field="weekday"]', weekdays[d.getDay()]);
+  setField('#header-meta [data-field="date"]', dateStr);
+  setField('#header-meta [data-field="set-index"]', sc.set_index ?? '—');
+  setField('.mast-right [data-field="next-run"]', sc.next_run ?? '—');
+  setField('.mast-right [data-field="scanned"]', totalScanned || '—');
+  setField('.mast-right [data-field="passed"]', passedCount || '—');
 }
 
 // ===== TABS =====
