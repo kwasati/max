@@ -383,11 +383,109 @@ function bindRowClicks() {
   });
 }
 
+// ==== Discovery card formatter (P6) ====
+function discoveryCardHTML(c) {
+  const sym = c.symbol ?? c.sym ?? '';
+  const name = c.name ?? c.company ?? '';
+  const sector = c.sector ?? c.metrics?.sector ?? '';
+  const score = Math.round(c.quality_score ?? c.score ?? 0);
+  const roeRaw = c.roe ?? c.metrics?.roe;
+  const roePct = roeRaw != null && Math.abs(roeRaw) <= 2 ? roeRaw * 100 : roeRaw;
+  const y = c.dividend_yield ?? c.metrics?.dividend_yield;
+  const streak = c.dividend_streak ?? c.metrics?.dividend_streak ?? c.aggregates?.dividend_streak;
+  const signals = c.signals ?? c.tags ?? [];
+
+  const fmtPct = (v) => (v == null || !isFinite(v)) ? '—' : Number(v).toFixed(1) + '%';
+  const fmtStreak = (v) => (v == null || !isFinite(v)) ? '—' : Math.round(v) + 'y';
+
+  const tagClassLocal = (sig) => {
+    const s = String(sig).toLowerCase();
+    if (s.includes('compounder')) return 'compounder';
+    if (s.includes('king')) return 'king';
+    if (s.includes('cow')) return 'cow';
+    if (s.includes('contra')) return 'contra';
+    if (s.includes('trap')) return 'trap';
+    if (s.includes('turnaround')) return 'turnaround';
+    if (s.includes('warning')) return 'warning';
+    return '';
+  };
+  const primaryTag = signals[0]
+    ? `<span class="tag ${tagClassLocal(signals[0])}">${String(signals[0]).replace(/_/g,' ').toLowerCase().replace(/\b\w/g, ch => ch.toUpperCase())}</span>`
+    : '';
+
+  const subtitle = [name, sector].filter(Boolean).join(' · ') || '—';
+  const symShort = sym.replace('.BK', '');
+
+  return `<article class="disc-card" data-sym="${sym}">
+    <div class="disc-sym">${symShort}</div>
+    <div class="disc-name">${subtitle}</div>
+    <div class="disc-metrics">
+      <div class="disc-metric"><div class="k">Score</div><div class="v">${score || '—'}</div></div>
+      <div class="disc-metric"><div class="k">ROE</div><div class="v">${fmtPct(roePct)}</div></div>
+      <div class="disc-metric"><div class="k">Yield</div><div class="v">${fmtPct(y)}</div></div>
+      <div class="disc-metric"><div class="k">Streak</div><div class="v">${fmtStreak(streak)}</div></div>
+    </div>
+    ${primaryTag}
+  </article>`;
+}
+
+// ==== Discovery layout toggle (P6) ====
+function applyStockTabLayout(tab) {
+  const discSection = document.getElementById('discoveries-section');
+  const sectionHead = document.querySelector('#stock-section .section-head');
+  const stockLayout = document.getElementById('stock-layout');
+  if (!discSection || !stockLayout) return;
+  if (tab === 'discoveries') {
+    discSection.hidden = false;
+    if (sectionHead) sectionHead.style.display = 'none';
+    stockLayout.style.display = 'none';
+  } else {
+    discSection.hidden = true;
+    if (sectionHead) sectionHead.style.display = '';
+    stockLayout.style.display = '';
+  }
+}
+
+// ==== Discovery rendering (P6) ====
+function renderDiscoveries(items) {
+  const el = document.getElementById('discoveries-list');
+  if (!el) return;
+  if (!items || !items.length) {
+    el.innerHTML = '<div class="disc-state empty-state">ยังไม่มีตัวที่ค้นพบใหม่</div>';
+    return;
+  }
+  el.innerHTML = items.map(discoveryCardHTML).join('');
+  el.querySelectorAll('.disc-card[data-sym]').forEach(card => {
+    card.addEventListener('click', () => {
+      const sym = card.dataset.sym;
+      if (typeof selectStock === 'function') selectStock(sym);
+      else if (typeof loadDetail === 'function') loadDetail(sym);
+    });
+  });
+}
+
+function renderDiscoveriesLoading() {
+  const el = document.getElementById('discoveries-list');
+  if (!el) return;
+  el.innerHTML = '<div class="disc-state loading-state">กำลังโหลด…</div>';
+}
+
+function renderDiscoveriesError(msg = 'โหลดข้อมูลไม่ได้') {
+  const el = document.getElementById('discoveries-list');
+  if (!el) return;
+  el.innerHTML = `<div class="disc-state error-state">${msg} · <a onclick="location.reload()">ลองใหม่</a></div>`;
+}
+
 function renderStockList() {
   const el = document.getElementById('stock-list');
   const sc = state.screener;
+
+  // Apply tab-aware layout (discovery strip vs stock table) (P6)
+  applyStockTabLayout(state.activeTab);
+
   if (!sc || !sc.candidates) {
-    el.innerHTML = loadingRowHTML();
+    if (state.activeTab === 'discoveries') renderDiscoveriesLoading();
+    else el.innerHTML = loadingRowHTML();
     return;
   }
 
@@ -406,9 +504,19 @@ function renderStockList() {
   if (tabs[2]) tabs[2].textContent = `ค้นพบใหม่ (${discCount})`;
   if (tabs[3]) tabs[3].textContent = `ไม่ผ่าน (${filteredCount})`;
 
+  // Discovery tab — render strip cards instead of table (P6)
+  if (tab === 'discoveries') {
+    let discItems = sc.discoveries || sc.new_finds || candidates.filter(c => !c.in_watchlist);
+    // Sort by quality score desc by default
+    discItems = [...discItems].sort((a, b) =>
+      (b.quality_score || b.score || 0) - (a.quality_score || a.score || 0)
+    );
+    renderDiscoveries(discItems);
+    return;
+  }
+
   // Filter
   if (tab === 'watchlist') candidates = candidates.filter(c => c.in_watchlist);
-  else if (tab === 'discoveries') candidates = candidates.filter(c => !c.in_watchlist);
   else if (tab === 'filtered') {
     const filtered = sc.filtered_out_stocks || [];
     if (filtered.length === 0) {
@@ -461,6 +569,7 @@ function selectStock(symbol) {
   document.querySelectorAll('#tabs .tab').forEach(t => {
     t.classList.toggle('active', t.dataset.tab === 'passed');
   });
+  applyStockTabLayout('passed');
   loadDetail(symbol);
 }
 

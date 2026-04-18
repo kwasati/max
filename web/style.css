@@ -2451,3 +2451,151 @@ details.section-explain[open] > summary::before { content: 'ซ่อนคำ�
   text-align: right;
   margin-top: -4px;
 }
+
+/* ==== Discovery Strip (P6) ==== */
+.discoveries[hidden] { display: none !important; }
+.discoveries {
+  background: var(--paper-2);
+  padding: 3rem 0;
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+.discoveries-inner {
+  max-width: 1400px; margin: 0 auto;
+  padding: 0 2.5rem;
+}
+.disc-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 2rem; gap: 2rem; flex-wrap: wrap;
+}
+.disc-title {
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin-bottom: 0.25rem;
+}
+.disc-title em { font-style: italic; font-weight: 400; color: var(--amber); }
+.disc-dek {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  color: var(--ink-dim);
+  font-size: 1rem;
+  max-width: 520px;
+}
+
+.disc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+.disc-card {
+  background: var(--paper-3);
+  border: 1px solid var(--line);
+  padding: 1.5rem;
+  transition: border-color .2s, transform .2s;
+  cursor: pointer;
+  display: flex; flex-direction: column;
+}
+.disc-card:hover {
+  border-color: var(--forest);
+  transform: translateY(-2px);
+}
+.disc-card.selected {
+  border-color: var(--forest);
+  background: var(--forest-soft);
+}
+.disc-sym {
+  font-family: 'Fraunces', serif;
+  font-size: 1.75rem;
+  font-weight: 900;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.25rem;
+}
+.disc-name {
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+.disc-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1rem;
+}
+.disc-metric .k {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.66rem; letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.disc-metric .v {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem; font-weight: 600;
+  color: var(--ink);
+}
+.disc-card .tag { align-self: flex-start; }
+
+/* Discovery states */
+.disc-state {
+  grid-column: 1 / -1;
+  padding: 3rem 1rem;
+  text-align: center;
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  color: var(--ink-dim);
+  background: var(--paper-3);
+  border: 1px dashed var(--line);
+}
+.disc-state.error-state { color: var(--burgundy); border-color: var(--burgundy-soft); }
+.disc-state.error-state a { color: var(--forest); border-bottom: 1px solid var(--forest); cursor: pointer; }
+
+/* ==== Global Signal Legend (P6) ==== */
+.legend-block {
+  max-width: 1400px;
+  margin: 3rem auto 2rem;
+  padding: 0 2.5rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+}
+.leg {
+  padding: 1rem 0;
+  border-top: 2px solid var(--ink);
+}
+.leg-head {
+  font-size: 0.72rem; letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--ink);
+}
+.leg-head.forest { color: var(--forest); }
+.leg-head.amber { color: var(--amber); }
+.leg-head.navy { color: var(--navy); }
+.leg-head.burgundy { color: var(--burgundy); }
+.leg p {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 0.92rem;
+  color: var(--ink-dim);
+  line-height: 1.5;
+  margin: 0;
+}
+
+@media (max-width: 1024px) {
+  .disc-grid { grid-template-columns: repeat(2, 1fr); }
+  .legend-block { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 720px) {
+  .disc-grid { grid-template-columns: 1fr; }
+  .legend-block { grid-template-columns: 1fr; padding: 0 1.25rem; }
+  .discoveries { padding: 2rem 0; }
+  .discoveries-inner { padding: 0 1.25rem; }
+}
