@@ -1,38 +1,62 @@
 :root {
-  /* SET.or.th inspired palette */
-  --bg: #f5f5f5;
-  --surface: #ffffff;
-  --surface2: #fafafa;
-  --border: #e8e8e8;
-  --border2: #d9d9d9;
+  /* editorial tokens — new */
+  --paper: #f4f0e6;
+  --paper-2: #ebe5d4;
+  --paper-3: #ffffff;
+  --ink: #121420;
+  --ink-2: #2a2d3d;
+  --ink-dim: #595c6b;
+  --ink-soft: #8e8f9c;
+  --line: #d6cfbd;
+  --line-strong: #b0a98c;
+  --rule: #1a1a22;
+  --forest: #1d5b4f;
+  --forest-soft: #e4ede8;
+  --amber: #b45309;
+  --amber-soft: #f7eadb;
+  --burgundy: #a02143;
+  --burgundy-soft: #f5e3e7;
+  --gold: #c89b2c;
+  --navy: #1f3f76;
+  --navy-soft: #e5ebf5;
 
-  --text: #1a1a2e;
-  --text2: #555770;
-  --text3: #8e8ea0;
-  --number: #1a1a2e;
+  /* legacy aliases — keep until P8 cleanup */
+  --bg: var(--paper);
+  --surface: var(--paper-3);
+  --surface2: var(--paper-2);
+  --border: var(--line);
+  --border2: var(--line-strong);
 
-  --accent: #1e6f5c;
-  --accent-light: #e9f5f0;
-  --blue: #2558a6;
-  --blue-light: #eaf1fb;
-  --green: #0d8050;
-  --green-light: #e6f4ed;
-  --red: #cf1322;
-  --red-light: #fff1f0;
-  --yellow: #d48806;
-  --yellow-light: #fffbe6;
-  --orange: #d46b08;
-  --orange-light: #fff7e6;
-  --purple: #531dab;
-  --purple-light: #f9f0ff;
+  --text: var(--ink);
+  --text2: var(--ink-2);
+  --text3: var(--ink-soft);
+  --number: var(--ink);
 
-  --bg-main: #f5f5f5;
-  --bg-card: #ffffff;
+  --accent: var(--forest);
+  --accent-light: var(--forest-soft);
+  --blue: var(--navy);
+  --blue-light: var(--navy-soft);
+  --green: var(--forest);
+  --green-light: var(--forest-soft);
+  --red: var(--burgundy);
+  --red-light: var(--burgundy-soft);
+  --yellow: var(--amber);
+  --yellow-light: var(--amber-soft);
+  --orange: var(--amber);
+  --orange-light: var(--amber-soft);
+  --purple: var(--gold);
+  --purple-light: var(--forest-soft);
+
+  --bg-main: var(--paper);
+  --bg-card: var(--paper-3);
 
   --radius: 8px;
   --shadow: 0 1px 2px rgba(0,0,0,0.04);
   --shadow-lg: 0 2px 8px rgba(0,0,0,0.06);
 }
+
+.mono { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+.serif { font-family: 'Fraunces', Georgia, serif; }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -41,10 +65,10 @@
 * { scrollbar-width: none; }
 
 body {
-  font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  line-height: 1.6;
+  font-family: 'IBM Plex Sans Thai', Georgia, serif;
+  background: var(--paper);
+  color: var(--ink);
+  line-height: 1.55;
   padding: 28px 32px;
   max-width: 1360px;
   margin: 0 auto;
