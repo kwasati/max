@@ -1291,7 +1291,7 @@ function clearSearch() {
 async function runSearch(sort_by) {
   const el = document.getElementById('search-results');
   if (!el || searchCriteria.length === 0) return;
-  el.innerHTML = '<div class="loading">กำลังค้นหา...</div>';
+  el.innerHTML = '<div class="search-state loading">กำลังค้นหา…</div>';
 
   try {
     const resp = await fetch(API + '/api/search', {
@@ -1302,7 +1302,7 @@ async function runSearch(sort_by) {
     const data = await resp.json();
     renderSearchResults(data);
   } catch (e) {
-    el.innerHTML = '<div class="loading" style="color:var(--red)">เกิดข้อผิดพลาด</div>';
+    el.innerHTML = '<div class="search-state error">ค้นหาไม่ได้ · <a onclick="location.reload()">ลองใหม่</a></div>';
   }
 }
 
@@ -1310,7 +1310,7 @@ function renderSearchResults(data) {
   const el = document.getElementById('search-results');
   const results = data.results || [];
   if (results.length === 0) {
-    el.innerHTML = '<div class="loading">ไม่พบหุ้นที่ตรงเงื่อนไข</div>';
+    el.innerHTML = '<div class="search-state empty">ไม่พบหุ้นที่ตรงเงื่อนไข</div>';
     return;
   }
   el.innerHTML = `<div class="search-count">พบ ${data.total} หุ้น</div>` +
