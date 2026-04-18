@@ -141,23 +141,46 @@ function renderSummary() {
   const discoveries = candidates.filter(c => !c.in_watchlist).length;
   const warnings = candidates.filter(c => (c.signals || []).includes('DATA_WARNING')).length;
 
-  const cards = document.querySelectorAll('#summary-row .summary-card');
-  if (cards[0]) {
-    cards[0].querySelector('.value').textContent = passedCount;
-    cards[0].querySelector('.value').style.color = 'var(--green)';
-    cards[0].querySelector('.sub').textContent = `จาก ${totalScanned} ตัวที่ scan`;
+  // ==== Stats Panel (P3) ====
+  const slot = (k) => document.querySelector(`.stats-panel [data-stat="${k}"]`);
+
+  // passed count (already available as passedCount variable)
+  const passedEl = slot('passed');
+  if (passedEl) {
+    passedEl.textContent = passedCount;
+    passedEl.classList.toggle('pos', passedCount > 0);
   }
-  if (cards[1]) {
-    cards[1].querySelector('.value').textContent = avgScore;
-    cards[1].querySelector('.value').style.color = 'var(--accent)';
+
+  // avg quality score
+  const avgEl = slot('avg-score');
+  if (avgEl) avgEl.textContent = avgScore;  // existing variable
+
+  // discoveries
+  const discEl = slot('discoveries');
+  if (discEl) discEl.textContent = discoveries;  // existing variable
+
+  // warnings
+  const warnEl = slot('warnings');
+  if (warnEl) {
+    warnEl.textContent = warnings;
+    warnEl.classList.toggle('warn', warnings > 0);
   }
-  if (cards[2]) {
-    cards[2].querySelector('.value').textContent = discoveries;
-    cards[2].querySelector('.value').style.color = 'var(--blue)';
-  }
-  if (cards[3]) {
-    cards[3].querySelector('.value').textContent = warnings;
-    cards[3].querySelector('.value').style.color = 'var(--red)';
+
+  // avg dividend yield across candidates (new in P3)
+  const yieldEl = slot('avg-yield');
+  if (yieldEl) {
+    const candidates = sc.candidates || [];
+    // Try common field names — pick whichever exists on the candidate objects
+    const pickYield = (c) => c.dividend_yield ?? c.yield ?? c.div_yield ?? null;
+    const yields = candidates.map(pickYield).filter(v => typeof v === 'number' && isFinite(v));
+    if (yields.length > 0) {
+      const avg = yields.reduce((a,b)=>a+b, 0) / yields.length;
+      yieldEl.textContent = avg.toFixed(2) + '%';
+      yieldEl.classList.toggle('pos', avg > 3);
+    } else {
+      yieldEl.textContent = '—';
+      yieldEl.classList.remove('pos');
+    }
   }
 
   // Update header meta (editorial masthead — P2)
