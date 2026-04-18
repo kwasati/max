@@ -60,18 +60,24 @@ function closeDetail() {
 
 // ===== INIT =====
 async function init() {
-  await loadUserData();
-  const [wl, sc] = await Promise.all([
-    fetch(API + '/api/watchlist').then(r => r.json()).catch(() => null),
-    fetch(API + '/api/screener').then(r => r.json()).catch(() => null)
-  ]);
-  state.watchlist = wl;
-  state.screener = sc;
-  renderSummary();
-  bindTabs();
-  bindSort();  // sync sortBy with dropdown before first render
-  renderStockList();
-  bindRequests();
+  try {
+    await loadUserData();
+    const [wl, sc] = await Promise.all([
+      fetch(API + '/api/watchlist').then(r => r.json()).catch(() => null),
+      fetch(API + '/api/screener').then(r => r.json()).catch(() => null)
+    ]);
+    state.watchlist = wl;
+    state.screener = sc;
+    renderSummary();
+    bindTabs();
+    bindSort();  // sync sortBy with dropdown before first render
+    renderStockList();
+    bindRequests();
+  } catch (err) {
+    const el = document.getElementById('stock-list');
+    if (el) el.innerHTML = errorRowHTML(err && err.message ? err.message : 'โหลดข้อมูลไม่ได้');
+    console.error('init() failed:', err);
+  }
 }
 
 // ===== HELPERS =====
@@ -253,11 +259,121 @@ function bindSort() {
 }
 
 // ===== STOCK LIST =====
+
+// ==== State row helpers (P4) ====
+const loadingRowHTML = () => `<tr class="state-row"><td colspan="10"><div class="loading-state">กำลังโหลด…</div></td></tr>`;
+const emptyRowHTML = (msg) => `<tr class="state-row"><td colspan="10"><div class="empty-state">${msg || 'ไม่มีหุ้นในรายการนี้'}</div></td></tr>`;
+const errorRowHTML = (msg) => `<tr class="state-row"><td colspan="10"><div class="error-state">${msg || 'โหลดข้อมูลไม่ได้'} · <a onclick="location.reload()">ลองใหม่</a></div></td></tr>`;
+
+// ==== Tag helpers (P4) ====
+function rowTagClass(sig) {
+  const s = String(sig).toLowerCase();
+  if (s.includes('compounder')) return 'compounder';
+  if (s.includes('dividend_king') || s === 'king') return 'king';
+  if (s.includes('cash_cow') || s === 'cow') return 'cow';
+  if (s.includes('contra')) return 'contra';
+  if (s.includes('trap') || s.includes('yield_trap')) return 'trap';
+  if (s.includes('turnaround')) return 'turnaround';
+  if (s.includes('warning') || s.includes('data_warning')) return 'warning';
+  return '';
+}
+
+// ==== Row formatters (P4) ====
+function stockRowHTML(c) {
+  const sym = c.symbol || '';
+  const symShort = sym.replace('.BK', '');
+  const name = c.name || c.company || c.sector || '';
+  const score = c.quality_score ?? c.score ?? 0;
+  const y = c.dividend_yield ?? c.metrics?.dividend_yield ?? null;
+  const y5 = c.five_year_avg_yield ?? c.metrics?.five_year_avg_yield ?? null;
+  const pe = c.pe_ratio ?? c.metrics?.pe ?? null;
+  const de = c.de_ratio ?? c.metrics?.de ?? null;
+  const roe = c.roe ?? c.metrics?.roe ?? null;
+  const streak = c.dividend_streak ?? c.streak ?? c.metrics?.dividend_streak ?? null;
+  const price = c.price ?? c.metrics?.current_price ?? c.close ?? null;
+  const signals = c.signals || [];
+
+  const tagsHTML = signals.slice(0, 3).map(s =>
+    `<span class="tag ${rowTagClass(s)}">${tagLabel(s)}</span>`
+  ).join('');
+
+  const scoreVal = Math.max(0, Math.min(100, Number(score) || 0));
+  const isLow = scoreVal < 50;
+  const scoreHTML = `<span class="score-cell">
+    <span class="score-bar${isLow ? ' low' : ''}"><i style="width:${scoreVal}%"></i></span>
+    <span class="score-num${isLow ? ' low' : ''}">${Math.round(scoreVal)}</span>
+  </span>`;
+
+  const fmtPct = (v) => (v == null || !isFinite(v)) ? '—' : (Number(v).toFixed(1) + '%');
+  const fmtPctFrac = (v) => (v == null || !isFinite(v)) ? '—' : (Number(v) * 100).toFixed(1) + '%';
+  const fmtNum = (v, d) => (v == null || !isFinite(v)) ? '—' : Number(v).toFixed(d);
+  const fmtStreak = (v) => (v == null || !isFinite(v)) ? '—' : `${Math.round(v)}y`;
+  const fmtPrice = (v) => (v == null || !isFinite(v)) ? '—' : Number(v).toFixed(2);
+
+  // roe in this codebase is stored as fraction (0.18 = 18%) — convert
+  const roeStr = (roe == null || !isFinite(roe)) ? '—'
+    : (Math.abs(roe) <= 2 ? fmtPctFrac(roe) : fmtPct(roe));
+
+  const yClass = (y != null && y >= 4) ? ' pos' : '';
+  const selected = state.currentStock === sym ? ' selected' : '';
+
+  return `<tr class="watch-row${selected}" data-sym="${sym}">
+    <td><div class="sym">${symShort}</div><div class="sym-name">${name}</div></td>
+    <td>${tagsHTML || '<span class="tag">—</span>'}</td>
+    <td>${scoreHTML}</td>
+    <td class="num${yClass}">${fmtPct(y)}</td>
+    <td class="num">${fmtPct(y5)}</td>
+    <td class="num">${fmtNum(pe, 1)}</td>
+    <td class="num">${fmtNum(de, 2)}</td>
+    <td class="num">${roeStr}</td>
+    <td class="num">${fmtStreak(streak)}</td>
+    <td class="num">${fmtPrice(price)}</td>
+  </tr>`;
+}
+
+function filteredRowHTML(s) {
+  const sym = s.symbol || '';
+  const symShort = sym.replace('.BK', '');
+  const sector = s.sector || '';
+  const metrics = s.basic_metrics || {};
+  const reasons = (s.reasons || []).join(', ');
+  const y = metrics.dividend_yield ?? null;
+  const roe = metrics.roe ?? null;
+  const selected = state.currentStock === sym ? ' selected' : '';
+
+  const fmtPct = (v) => (v == null || !isFinite(v)) ? '—' : (Number(v).toFixed(1) + '%');
+  const fmtPctFrac = (v) => (v == null || !isFinite(v)) ? '—' : (Number(v) * 100).toFixed(0) + '%';
+  const roeStr = (roe == null || !isFinite(roe)) ? '—'
+    : (Math.abs(roe) <= 2 ? fmtPctFrac(roe) : fmtPct(roe));
+
+  const nameLine = s.name ? `<div class="sym-name">${s.name}</div>` : (sector ? `<div class="sym-name">${sector}</div>` : '');
+  const reasonLine = reasons ? `<div class="sym-name">${reasons}</div>` : '';
+
+  return `<tr class="watch-row${selected}" data-sym="${sym}">
+    <td><div class="sym">${symShort}</div>${nameLine}${reasonLine}</td>
+    <td><span class="tag warning">FILTERED</span></td>
+    <td>—</td>
+    <td class="num">${fmtPct(y)}</td>
+    <td class="num">—</td>
+    <td class="num">—</td>
+    <td class="num">—</td>
+    <td class="num">${roeStr}</td>
+    <td class="num">—</td>
+    <td class="num">—</td>
+  </tr>`;
+}
+
+function bindRowClicks() {
+  document.querySelectorAll('#stock-list tr[data-sym]').forEach(row => {
+    row.addEventListener('click', () => loadDetail(row.dataset.sym));
+  });
+}
+
 function renderStockList() {
   const el = document.getElementById('stock-list');
   const sc = state.screener;
   if (!sc || !sc.candidates) {
-    el.innerHTML = '<div class="loading">No data available</div>';
+    el.innerHTML = loadingRowHTML();
     return;
   }
 
@@ -282,45 +398,13 @@ function renderStockList() {
   else if (tab === 'filtered') {
     const filtered = sc.filtered_out_stocks || [];
     if (filtered.length === 0) {
-      el.innerHTML = '<div class="loading">ไม่มีข้อมูลหุ้นที่ไม่ผ่าน — กดปุ่ม "คัดกรอง" เพื่อรันใหม่</div>';
+      el.innerHTML = emptyRowHTML('ไม่มีข้อมูลหุ้นที่ไม่ผ่าน — กดปุ่ม "คัดกรอง" เพื่อรันใหม่');
       return;
     }
-    el.innerHTML = '<div class="stock-grid">' + filtered.map(s => {
-      const sym = (s.symbol || '').replace('.BK','');
-      const fullSym = s.symbol || '';
-      const sector = s.sector || '';
-      const metrics = s.basic_metrics || {};
-      const dy = metrics.dividend_yield != null ? metrics.dividend_yield.toFixed(1) + '%' : '-';
-      const roe = metrics.roe != null ? (metrics.roe * 100).toFixed(0) + '%' : '-';
-      const reasons = (s.reasons || []).join(', ');
-      const selected = state.currentStock === fullSym ? ' selected' : '';
-      return `<div class="stock-card filtered-card${selected}" data-symbol="${fullSym}">
-        <div class="card-row">
-          <div class="card-info">
-            <h3>${sym}</h3>
-            <div class="sector">${sector}</div>
-          </div>
-        </div>
-        ${s.name ? '<div style="font-size:0.78rem;color:var(--text3);margin:4px 0;">' + s.name + '</div>' : ''}
-        <div class="filtered-reasons">${reasons}</div>
-        <div class="card-metrics-row">
-          <div class="card-metric"><span class="label">Yield</span><span class="value">${dy}</span></div>
-          <div class="card-metric"><span class="label">ROE</span><span class="value">${roe}</span></div>
-        </div>
-      </div>`;
-    }).join('') + '</div>';
-
-    el.querySelectorAll('.stock-card').forEach(row => {
-      row.addEventListener('click', () => loadDetail(row.dataset.symbol));
-    });
+    el.innerHTML = filtered.map(filteredRowHTML).join('');
+    bindRowClicks();
     return;
-  } else if (tab === 'requests') {
-    el.innerHTML = '';
-    return;
-  } else if (tab === 'dca') {
-    el.innerHTML = '';
-    return;
-  } else if (tab === 'settings') {
+  } else if (tab === 'requests' || tab === 'dca' || tab === 'settings') {
     el.innerHTML = '';
     return;
   }
@@ -343,60 +427,12 @@ function renderStockList() {
   candidates.sort(sortFns[state.sortBy] || sortFns.score);
 
   if (candidates.length === 0) {
-    el.innerHTML = '<div class="loading">No stocks in this category</div>';
+    el.innerHTML = emptyRowHTML();
     return;
   }
 
-  el.innerHTML = '<div class="stock-grid">' + candidates.map(c => {
-    const sym = c.symbol || '';
-    const sector = c.sector || '';
-    const score = c.quality_score || c.score || 0;
-    const signals = c.signals || [];
-    const price = c.price ?? c.metrics?.current_price;
-    const priceStr = price != null ? safe(price, '2d') : '-';
-    const yld = c.dividend_yield ?? c.metrics?.dividend_yield;
-    const yldStr = yld != null ? Number(yld).toFixed(1) : '-';
-    const yldColor = (yld != null && yld > 15) ? 'style="color: var(--red);"' : '';
-    const selected = state.currentStock === sym ? ' selected' : '';
-    const val = c.valuation || {};
-    const valGrade = val.grade || '-';
-    const valLabel = val.label || '';
-    const valClass = valGrade === 'A' ? 'val-a' : valGrade === 'B' ? 'val-b' : valGrade === 'C' ? 'val-c' : valGrade === 'D' ? 'val-d' : 'val-f';
-    const fiveYrYld = c.five_year_avg_yield ?? c.metrics?.five_year_avg_yield;
-    const fiveYrStr = fiveYrYld != null ? Number(fiveYrYld).toFixed(1) : '-';
-
-    const isWatched = (userData.watchlist || []).includes(sym);
-    const isBlacklisted = (userData.blacklist || []).includes(sym);
-
-    return `<div class="stock-card${selected}" data-symbol="${sym}">
-      <div class="card-actions">
-        <button class="action-btn ${isWatched ? 'active' : ''}" onclick="event.stopPropagation(); toggleWatchlist('${sym}', ${!isWatched})" title="${isWatched ? 'เอาออกจากติดตาม' : 'เพิ่มติดตาม'}">
-          ${isWatched ? '\u2605' : '\u2606'}
-        </button>
-        <button class="action-btn hide-btn ${isBlacklisted ? 'active' : ''}" onclick="event.stopPropagation(); toggleBlacklist('${sym}', ${!isBlacklisted})" title="${isBlacklisted ? 'เลิกซ่อน' : 'ซ่อน'}">
-          ${isBlacklisted ? '\uD83D\uDC41' : '\uD83D\uDEAB'}
-        </button>
-      </div>
-      <div class="card-row">
-        <div class="card-score-circle ${scoreClass(score)}">${score}</div>
-        <div class="card-info">
-          <h3>${sym.replace('.BK', '')}</h3>
-          <div class="sector">${sector}</div>
-        </div>
-      </div>
-      <div class="card-metrics-row">
-        <div class="card-metric"><span class="label">Yield</span><span class="value" ${yldColor}>${yldStr}%</span></div>
-        <div class="card-metric"><span class="label">Avg 5y</span><span class="value">${fiveYrStr}%</span></div>
-        <div class="card-metric"><span class="label">ระดับราคา</span><span class="val-badge ${valClass}">${valGrade}</span></div>
-      </div>
-      <div class="card-tags">${signals.map(s => `<span class="tag ${tagClass(s)}">${tagLabel(s)}</span>`).join('')}</div>
-    </div>`;
-  }).join('') + '</div>';
-
-  // Bind clicks
-  el.querySelectorAll('.stock-card').forEach(row => {
-    row.addEventListener('click', () => loadDetail(row.dataset.symbol));
-  });
+  el.innerHTML = candidates.map(stockRowHTML).join('');
+  bindRowClicks();
 }
 
 // ===== SELECT STOCK (from requests/search — switch to stock tab first) =====

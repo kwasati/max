@@ -79,29 +79,48 @@
   <div class="pipeline-status" id="pipeline-status"></div>
 </div>
 
-<!-- ===== STOCK SECTION ===== -->
+<!-- ===== WATCHLIST SECTION ===== -->
 <div id="stock-section">
-<div class="stock-toolbar">
-  <select class="sort-select" id="sort-select">
-    <option value="score">คะแนน</option>
-    <option value="yield">Yield สูงสุด</option>
-    <option value="avg5y">Avg 5y Yield</option>
-    <option value="pe_asc">P/E ต่ำสุด</option>
-    <option value="de_asc">D/E ต่ำสุด</option>
-  </select>
+  <div class="section-head">
+    <span class="section-num mono">№ 01 / WATCHLIST</span>
+    <h3 class="serif">หุ้นที่<em>ผ่านเกณฑ์</em></h3>
+    <label class="section-sort mono">
+      SORTED BY ·
+      <select class="sort-select" id="sort-select">
+        <option value="score">QUALITY ↓</option>
+        <option value="yield">YIELD ↓</option>
+        <option value="avg5y">AVG 5Y YIELD ↓</option>
+        <option value="pe_asc">P/E ↑</option>
+        <option value="de_asc">D/E ↑</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="stock-layout" id="stock-layout">
+    <div class="watch-wrap">
+      <table class="watch">
+        <thead>
+          <tr>
+            <th>Stock</th>
+            <th>Signal</th>
+            <th>Score</th>
+            <th>Yield</th>
+            <th>5y Yield</th>
+            <th>P/E</th>
+            <th>D/E</th>
+            <th>ROE</th>
+            <th>Streak</th>
+            <th>Price</th>
+          </tr>
+        </thead>
+        <tbody id="stock-list">
+          <tr class="state-row"><td colspan="10"><div class="loading-state">กำลังโหลด…</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="detail-panel" id="detail"></div>
+  </div>
 </div>
-<div class="stock-layout grid-mode" id="stock-layout">
-
-<!-- ===== STOCK LIST ===== -->
-<div class="stock-list" id="stock-list">
-  <div class="loading">Loading...</div>
-</div>
-
-<!-- ===== DETAIL PANEL ===== -->
-<div class="detail-panel" id="detail"></div>
-
-</div><!-- /stock-layout -->
-</div><!-- /stock-section -->
 
 <!-- ===== REQUEST PAGE ===== -->
 <div class="page-panel" id="page-requests">
