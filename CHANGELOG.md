@@ -1,5 +1,45 @@
 # Max Mahon Changelog
 
+## v3.3.0 — 2026-04-18 · Editorial UI Port
+
+Complete visual overhaul of the web dashboard from generic card-grid style to editorial magazine aesthetic.
+
+### Design
+- Typography stack: **Fraunces** (serif display) + **IBM Plex Sans Thai** (body) + **JetBrains Mono** (tabular numbers)
+- Palette: paper (`#f4f0e6`) / ink (`#121420`) / forest (`#1d5b4f`) / amber (`#b45309`) / burgundy (`#a02143`) / navy (`#1f3f76`) / gold (`#c89b2c`)
+- Newspaper masthead with unified sticky wrapper (vol/issue/date · title · scanned/passed)
+- Editorial section heads: `№ 01 / WATCHLIST`, `№ 02 / DISCOVERY`
+- Drop cap on lede body prose (3.5em Fraunces forest)
+
+### Components
+- Lede section (kicker + headline with forest→amber gradient em + Fraunces body + mono byline) replaces 4-card summary row
+- Stats panel sidebar (5 rows: passed / avg score / avg yield / discoveries / warnings) with .pos/.warn class toggles (no inline `style.color`)
+- Watchlist as editorial table: `table.watch` with score bar + 6 tag variants (Compounder / Dividend King / Cash Cow / Contrarian / Yield Trap / Turnaround) + loading/empty/error state rows
+- Deep dive detail panel: 2-col layout (prose + pull-quote + `#analysis-section` left, fact-sheet 12 rows + 3 mini-charts right). Chart.js re-themed with forest/amber/navy palette
+- Discovery strip: separate section shown only on `discoveries` tab, 3-col card grid, paper-2 background
+- Global signal legend block: visible on every tab, 4 color-coded definitions
+
+### Secondary pages
+- Requests / DCA / Settings rethemed with unified editorial card (paper-3 + rule border + shadow offset)
+- Preset buttons color-mapped: dividend=amber, growth=forest, value=burgundy, quality=navy
+- DCA toggle slider with forest-on / line-strong-off state
+- Inputs: paper bg, line-strong border, JetBrains mono, forest focus ring
+- Save button as dark ink pill (mono uppercase)
+
+### Responsive
+- 1024px: lede + dive stack 1-col, disc-grid 2-col, legend-block 2-col
+- 720px: masthead 1-col center, sec-nav horizontal scroll, watch table hides cols 6-10, disc-grid 1-col, legend 1-col, footer stacks
+
+### Preservation
+- All functionality preserved: API bindings, Chart.js, scheduler, SSE events, `#analysis-section` async AI analysis flow, DCA compute, filter logic, settings save, search presets/custom filters
+- Semantic IDs kept (#header-meta, #tabs, #stock-list, #summary-row, #detail, #discoveries-list, #analysis-section, all page-panel IDs and form field IDs)
+- Legacy color token aliases retained (`--green`/`--blue`/`--red`/`--yellow`/`--orange`/`--purple` → new palette) for any remaining inline style references
+
+### Footer
+- Newspaper-style footer with branding, schedule info, copyright, disclaimer
+
+---
+
 ## 2026-04-14 — Pipeline Crash Fix + Console ไม่กระตุก
 
 **แก้ไข:**

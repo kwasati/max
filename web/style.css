@@ -586,76 +586,8 @@ body {
   font-size: 15px;
 }
 
-/* ===== HEADER ===== */
-.header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: 28px;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-.header h1 {
-  font-size: 1.4rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-.header h1 em { font-style: normal; color: var(--accent); }
-.header-meta {
-  display: flex;
-  gap: 20px;
-  color: var(--text3);
-  font-size: 0.82rem;
-}
-.header-meta strong { color: var(--text); font-weight: 600; }
+/* ===== HEADER / SUMMARY / TABS — removed in P8 (replaced by .masthead, .lede+.stats-panel, .sec-nav) ===== */
 
-/* ===== SUMMARY ===== */
-.summary-row {
-  display: flex;
-  gap: 8px;
-  padding: 8px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  margin-bottom: 28px;
-}
-.summary-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 18px 20px;
-  box-shadow: var(--shadow);
-  min-width: 140px;
-  flex-shrink: 0;
-  flex: 1;
-}
-.summary-card .label {
-  font-size: 0.78rem;
-  color: var(--text3);
-  font-weight: 500;
-  margin-bottom: 4px;
-}
-.summary-card .value {
-  font-size: 1.7rem;
-  font-weight: 700;
-  font-family: 'JetBrains Mono', monospace;
-  line-height: 1.2;
-}
-.summary-card .sub { font-size: 0.78rem; color: var(--text3); margin-top: 2px; }
-
-/* ===== TABS ===== */
-.tabs {
-  display: flex;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  gap: 0;
-  padding: 0 8px;
-  margin-bottom: 20px;
-  border-bottom: 2px solid var(--border);
-  scrollbar-width: none;
-  overscroll-behavior-x: contain;
-  touch-action: pan-x;
-}
-.tabs::-webkit-scrollbar { display: none; }
 .tab {
   white-space: nowrap;
   min-height: 44px;
@@ -2974,4 +2906,24 @@ details.section-explain[open] > summary::before { content: 'ซ่อนคำ�
   .page-panel .settings-panel { padding: 1.25rem; margin: 1.25rem auto; }
   .search-row { flex-direction: column; align-items: stretch; }
   .search-row > * { width: 100%; }
+}
+
+/* ==== Editorial Footer (P8) ==== */
+.site-footer {
+  max-width: 1400px;
+  margin: 3rem auto 0;
+  padding: 2rem 2.5rem 3rem;
+  border-top: 3px double var(--rule);
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 2rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  line-height: 1.8;
+}
+.site-footer .footer-right { text-align: right; }
+@media (max-width: 720px) {
+  .site-footer { flex-direction: column; padding: 2rem 1.25rem; gap: 1rem; }
+  .site-footer .footer-right { text-align: left; }
 }
