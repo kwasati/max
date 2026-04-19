@@ -452,6 +452,33 @@ table.watch tbody tr.selected { background: var(--forest-soft); }
   min-width: 28px; text-align: right;
 }
 .score-num.low { color: var(--burgundy); }
+.score-num.failed {
+  color: var(--ink-dim);
+  background: var(--paper-2);
+  border: 1px solid var(--ink-soft);
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-weight: 500;
+}
+.fail-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.55rem;
+  color: var(--burgundy);
+  background: var(--burgundy-soft);
+  border: 1px solid var(--burgundy);
+  padding: 1px 6px;
+  letter-spacing: 0.1em;
+  font-weight: 500;
+  border-radius: 2px;
+  vertical-align: middle;
+  text-transform: uppercase;
+}
+.sym-name.fail-reason {
+  color: var(--burgundy);
+  font-style: italic;
+}
 .num { font-family: 'JetBrains Mono', monospace; font-weight: 500; }
 .num.pos { color: var(--forest); }
 .num.warn { color: var(--burgundy); }

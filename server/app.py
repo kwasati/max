@@ -188,9 +188,19 @@ async def get_screener():
     data = read_json(path)
     # P3.1 — tag each candidate with is_new_in_batch (never passed in any prior screener)
     historical = _get_historical_passed_symbols(exclude_current=path)
+    # P3.2 — inject in_watchlist on BOTH candidates + filtered_out_stocks from live user_data
+    try:
+        user_data = load_user_data()
+    except Exception:
+        user_data = {"watchlist": []}
+    watched = {_norm_sym(s) for s in (user_data.get("watchlist") or [])}
     for c in data.get("candidates", []):
         sym = _norm_sym(c.get("symbol", ""))
         c["is_new_in_batch"] = bool(sym) and sym not in historical
+        c["in_watchlist"] = bool(sym) and sym in watched
+    for c in data.get("filtered_out_stocks", []):
+        sym = _norm_sym(c.get("symbol", ""))
+        c["in_watchlist"] = bool(sym) and sym in watched
     return data
 
 

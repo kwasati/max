@@ -379,6 +379,34 @@ function stockRowHTML(c) {
   const sym = c.symbol || '';
   const symShort = sym.replace('.BK', '');
   const name = c.name || c.company || c.sector || '';
+  const selected = state.currentStock === sym ? ' selected' : '';
+  const fmtPct = (v) => (v == null || !isFinite(v)) ? '—' : (Number(v).toFixed(1) + '%');
+  const fmtPctFrac = (v) => (v == null || !isFinite(v)) ? '—' : (Number(v) * 100).toFixed(1) + '%';
+  const fmtNum = (v, d) => (v == null || !isFinite(v)) ? '—' : Number(v).toFixed(d);
+  const fmtStreak = (v) => (v == null || !isFinite(v)) ? '—' : `${Math.round(v)}y`;
+  const fmtPrice = (v) => (v == null || !isFinite(v)) ? '—' : Number(v).toFixed(2);
+
+  // Failed state (watchlist tab shows failed stocks too — overlay fail-badge, grey score, reason line)
+  if (c._failed) {
+    const bm = c.basic_metrics || {};
+    const reasons = (c._fail_reasons || c.reasons || []).slice(0, 2).join(', ') || '—';
+    const fRoe = bm.roe ?? null;
+    const fRoeStr = (fRoe == null || !isFinite(fRoe)) ? '—'
+      : (Math.abs(fRoe) <= 2 ? fmtPctFrac(fRoe) : fmtPct(fRoe));
+    return `<tr class="watch-row failed-row${selected}" data-sym="${sym}">
+      <td><div class="sym">${symShort}<span class="fail-badge">หลุดรอบนี้</span></div><div class="sym-name">${name}</div><div class="sym-name fail-reason">${reasons}</div></td>
+      <td><span class="tag warning">หลุดรอบ</span></td>
+      <td><span class="score-cell"><span class="score-num failed">—</span></span></td>
+      <td class="num">${fmtPct(bm.dividend_yield)}</td>
+      <td class="num">—</td>
+      <td class="num">${fmtNum(bm.pe, 1)}</td>
+      <td class="num">—</td>
+      <td class="num">${fRoeStr}</td>
+      <td class="num">—</td>
+      <td class="num">${fmtPrice(bm.price)}</td>
+    </tr>`;
+  }
+
   const score = c.quality_score ?? c.score ?? 0;
   const y = c.dividend_yield ?? c.metrics?.dividend_yield ?? null;
   const y5 = c.five_year_avg_yield ?? c.metrics?.five_year_avg_yield ?? null;
@@ -400,18 +428,11 @@ function stockRowHTML(c) {
     <span class="score-num${isLow ? ' low' : ''}">${Math.round(scoreVal)}</span>
   </span>`;
 
-  const fmtPct = (v) => (v == null || !isFinite(v)) ? '—' : (Number(v).toFixed(1) + '%');
-  const fmtPctFrac = (v) => (v == null || !isFinite(v)) ? '—' : (Number(v) * 100).toFixed(1) + '%';
-  const fmtNum = (v, d) => (v == null || !isFinite(v)) ? '—' : Number(v).toFixed(d);
-  const fmtStreak = (v) => (v == null || !isFinite(v)) ? '—' : `${Math.round(v)}y`;
-  const fmtPrice = (v) => (v == null || !isFinite(v)) ? '—' : Number(v).toFixed(2);
-
   // roe in this codebase is stored as fraction (0.18 = 18%) — convert
   const roeStr = (roe == null || !isFinite(roe)) ? '—'
     : (Math.abs(roe) <= 2 ? fmtPctFrac(roe) : fmtPct(roe));
 
   const yClass = (y != null && y >= 4) ? ' pos' : '';
-  const selected = state.currentStock === sym ? ' selected' : '';
   const newBadge = c.is_new_in_batch ? '<span class="new-badge">NEW</span>' : '';
 
   return `<tr class="watch-row${selected}" data-sym="${sym}">
@@ -478,9 +499,11 @@ function renderStockList() {
   let candidates = sc.candidates || [];
   const tab = state.activeTab;
 
-  // Update tab labels — 3 stock tabs only (ผ่านเกณฑ์ / ติดตาม / ไม่ผ่าน) via data-tab lookup
+  // Update tab labels — 3 stock tabs only (ผ่านเกณฑ์ / ติดตาม / หลุดรอบ) via data-tab lookup
   const passedCount = candidates.length;
-  const wlCount = candidates.filter(c => c.in_watchlist).length;
+  const passedWL = candidates.filter(c => c.in_watchlist).length;
+  const failedWL = (sc.filtered_out_stocks || []).filter(c => c.in_watchlist).length;
+  const wlCount = passedWL + failedWL;
   const filteredCount = (sc.total_scanned || sc.total || 0) - passedCount;
 
   const setTabText = (tabName, text) => {
@@ -489,14 +512,20 @@ function renderStockList() {
   };
   setTabText('passed', `ผ่านเกณฑ์ (${passedCount})`);
   setTabText('watchlist', `ติดตาม (${wlCount})`);
-  setTabText('filtered', `ไม่ผ่าน (${filteredCount})`);
+  setTabText('filtered', `หลุดรอบ (${filteredCount})`);
 
   // Filter
-  if (tab === 'watchlist') candidates = candidates.filter(c => c.in_watchlist);
+  if (tab === 'watchlist') {
+    const passedInWatch = (sc.candidates || []).filter(c => c.in_watchlist);
+    const failedInWatch = (sc.filtered_out_stocks || [])
+      .filter(c => c.in_watchlist)
+      .map(c => ({ ...c, _failed: true, _fail_reasons: c.reasons || c.filter_reasons || [] }));
+    candidates = [...passedInWatch, ...failedInWatch];
+  }
   else if (tab === 'filtered') {
     const filtered = sc.filtered_out_stocks || [];
     if (filtered.length === 0) {
-      el.innerHTML = emptyRowHTML('ไม่มีข้อมูลหุ้นที่ไม่ผ่าน — กดปุ่ม "คัดกรอง" เพื่อรันใหม่');
+      el.innerHTML = emptyRowHTML('ไม่มีข้อมูลหุ้นที่หลุดรอบ — กดปุ่ม "คัดกรอง" เพื่อรันใหม่');
       return;
     }
     el.innerHTML = filtered.map(filteredRowHTML).join('');

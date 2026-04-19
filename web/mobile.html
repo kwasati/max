@@ -314,6 +314,51 @@ body {
   margin-top: 2px;
 }
 
+/* Watchlist — fail-badge + failed score chip (P3.2) */
+.card-sym .fail-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.52rem;
+  color: var(--burgundy);
+  background: var(--burgundy-soft);
+  border: 1px solid var(--burgundy);
+  padding: 1px 5px;
+  letter-spacing: 0.1em;
+  font-weight: 500;
+  border-radius: 2px;
+  vertical-align: middle;
+  text-transform: uppercase;
+}
+.card-score.failed {
+  background: var(--paper-2);
+  color: var(--ink-dim);
+  border-color: var(--ink-soft);
+}
+.card-star {
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--ink-soft);
+  flex-shrink: 0;
+  padding: 0 4px;
+}
+.card-star.on { color: var(--amber); }
+.card-meta {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+.card-meta em {
+  font-style: normal;
+  color: var(--ink-dim);
+  font-size: 0.55rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+
 /* ===== DETAIL PAGE (full screen) ===== */
 .detail-page {
   position: fixed;
@@ -1088,17 +1133,18 @@ body {
   <div class="sub-tabs" id="sub-tabs">
     <button class="sub-tab active" data-filter="passed">ผ่าน (17)</button>
     <button class="sub-tab" data-filter="watchlist">ติดตาม (3)</button>
-    <button class="sub-tab" data-filter="filtered">ไม่ผ่าน (82)</button>
+    <button class="sub-tab" data-filter="filtered">หลุดรอบ (82)</button>
   </div>
 
   <!-- Card list -->
   <div class="card-list" id="card-list"></div>
 </section>
 
-<!-- ===== WATCHLIST PAGE (placeholder, filled in P3) ===== -->
+<!-- ===== WATCHLIST PAGE (P3.2 — ติดตามทุกตัว รวมหลุดรอบ) ===== -->
 <section class="page" id="page-watchlist">
   <div class="content">
-    <div class="empty-state">
+    <div id="wl-list" class="card-list"></div>
+    <div class="empty-state" id="wl-empty" style="display:none">
       <div class="ico">☆</div>
       <h3>ยังไม่มีหุ้นที่ติดตาม</h3>
       <p>กด ★ บน card หรือ detail page เพื่อเพิ่มที่นี่ · <br>Max จะติดตาม score + signal ของหุ้นพวกนี้ทุกรอบ scan</p>
@@ -1419,6 +1465,101 @@ function renderCards() {
   `).join('');
 }
 
+// ===== WATCHLIST PAGE (P3.2) =====
+async function loadWatchlist() {
+  const listEl = document.getElementById('wl-list');
+  const emptyEl = document.getElementById('wl-empty');
+  if (!listEl || !emptyEl) return;
+
+  let userData, screener;
+  try {
+    [userData, screener] = await Promise.all([
+      fetch(API + '/api/user').then(r => r.ok ? r.json() : { watchlist: [] }).catch(() => ({ watchlist: [] })),
+      fetch(API + '/api/screener').then(r => r.ok ? r.json() : null).catch(() => null)
+    ]);
+  } catch (e) {
+    listEl.innerHTML = '';
+    listEl.style.display = 'none';
+    emptyEl.style.display = 'block';
+    return;
+  }
+
+  const watch = (userData && userData.watchlist) || [];
+  if (!watch.length) {
+    listEl.innerHTML = '';
+    listEl.style.display = 'none';
+    emptyEl.style.display = 'block';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+  listEl.style.display = '';
+
+  const passed = (screener && screener.candidates || []).filter(c => c.in_watchlist);
+  const failed = (screener && screener.filtered_out_stocks || []).filter(c => c.in_watchlist);
+
+  // passed first (sorted by score desc), then failed (sorted alphabetically)
+  const passedCards = passed.map(normalizeStock).sort((a, b) => b.score - a.score);
+  const failedCards = failed.slice().sort((a, b) => (a.symbol || '').localeCompare(b.symbol || ''));
+
+  const passedHTML = passedCards.map(s => {
+    const y = (s.yield || 0).toFixed(2);
+    const pe = s.raw && (s.raw.pe_ratio ?? s.raw.metrics?.pe);
+    const roe = s.raw && (s.raw.roe ?? s.raw.metrics?.roe);
+    const roePct = (roe == null || !isFinite(roe)) ? null : (Math.abs(roe) <= 2 ? roe * 100 : roe);
+    const metaParts = [`<span><em>Y</em>${y}%</span>`];
+    if (pe != null && isFinite(pe)) metaParts.push(`<span><em>P/E</em>${Number(pe).toFixed(1)}</span>`);
+    if (roePct != null) metaParts.push(`<span><em>ROE</em>${roePct.toFixed(0)}%</span>`);
+    return `
+      <div class="stock-card" onclick="openDetail('${s.sym}')">
+        <div class="card-score ${scoreClass(s.score)}">${Math.round(s.score)}</div>
+        <div class="card-body">
+          <div class="card-sym">${s.sym}${s.is_new_in_batch ? '<span class="new-badge">NEW</span>' : ''}</div>
+          <div class="card-sector">${s.sector || ''}</div>
+          <div class="card-meta">${metaParts.join('')}</div>
+        </div>
+        <div class="card-star on">★</div>
+      </div>`;
+  }).join('');
+
+  const failedHTML = failedCards.map(c => {
+    const sym = (c.symbol || '').replace('.BK', '');
+    const sector = c.sector || '';
+    const reasons = (c.reasons || c.filter_reasons || []).slice(0, 2).join(', ') || '—';
+    return `
+      <div class="stock-card" onclick="openDetail('${sym}')">
+        <div class="card-score failed">—</div>
+        <div class="card-body">
+          <div class="card-sym">${sym}<span class="fail-badge">หลุดรอบนี้</span></div>
+          <div class="card-sector">${sector}</div>
+          <div class="card-meta"><span style="color:var(--burgundy)"><em>เหตุผล</em>${reasons}</span></div>
+        </div>
+        <div class="card-star on">★</div>
+      </div>`;
+  }).join('');
+
+  // fallback for watchlist symbols absent from screener entirely
+  const seen = new Set([
+    ...passed.map(c => (c.symbol || '').toUpperCase()),
+    ...failed.map(c => (c.symbol || '').toUpperCase())
+  ]);
+  const missing = watch.filter(s => !seen.has((s || '').toUpperCase()));
+  const missingHTML = missing.map(s => {
+    const sym = (s || '').replace('.BK', '');
+    return `
+      <div class="stock-card" onclick="openDetail('${sym}')">
+        <div class="card-score failed">—</div>
+        <div class="card-body">
+          <div class="card-sym">${sym}</div>
+          <div class="card-sector">ไม่อยู่ในรอบ scan ปัจจุบัน</div>
+        </div>
+        <div class="card-star on">★</div>
+      </div>`;
+  }).join('');
+
+  listEl.innerHTML = passedHTML + failedHTML + missingHTML;
+}
+
 // Sub tabs
 document.querySelectorAll('.sub-tab').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -1453,6 +1594,8 @@ document.querySelectorAll('.nav-item').forEach(btn => {
       const labels = { stocks: 'หุ้น', watchlist: 'ติดตาม', history: 'ประวัติ', settings: 'ตั้งค่า' };
       title.textContent = labels[page] || page;
     }
+
+    if (page === 'watchlist') loadWatchlist();
 
     // Show FAB only on stocks
     document.getElementById('fab-analyze').style.display = (page === 'stocks') ? '' : 'none';
