@@ -55,6 +55,12 @@
   </nav>
 </div>
 
+<!-- ===== REAL-TIME SCAN BANNER (P6) ===== -->
+<div class="running-banner" id="running-banner" hidden>
+  <div class="dot-pulse"></div>
+  <span id="running-banner-text">กำลังวิเคราะห์</span>
+</div>
+
 <!-- ===== HOME PAGE (LEDE + STATS + LATEST REPORT) ===== -->
 <section class="page-panel active" id="page-home">
   <section class="lede" id="lede">
@@ -431,6 +437,12 @@
     <div>Not investment advice · สำหรับการศึกษา</div>
   </div>
 </footer>
+
+<!-- ===== COMPLETION TOAST (P6) ===== -->
+<div class="toast" id="scan-toast" hidden>
+  <span class="icon">§</span>
+  <div id="scan-toast-text">รายงานพร้อมแล้ว</div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="app.js?v=__CB__" defer></script>

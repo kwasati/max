@@ -1755,41 +1755,105 @@ async function runPipeline(action) {
   }
 }
 
+// ===== P6 — REAL-TIME SCAN STATUS (SSE) =====
+let _lastRunningState = false;
+let _lastToastScanNum = null;
+
+function updateScanBanner(data) {
+  const banner = document.getElementById('running-banner');
+  const bannerText = document.getElementById('running-banner-text');
+  if (!banner) return;
+  if (data.pipeline_running) {
+    banner.hidden = false;
+    const task = data.current_task || '...';
+    if (bannerText) bannerText.textContent = `กำลังวิเคราะห์ · ${task}`;
+  } else {
+    banner.hidden = true;
+  }
+}
+
+function showToast(text, onClick) {
+  const t = document.getElementById('scan-toast');
+  const textEl = document.getElementById('scan-toast-text');
+  if (!t || !textEl) return;
+  textEl.textContent = text;
+  t.hidden = false;
+  t.onclick = () => {
+    t.hidden = true;
+    if (onClick) onClick();
+  };
+  // auto-dismiss after 10s
+  setTimeout(() => { if (!t.hidden) t.hidden = true; }, 10000);
+}
+
+function handleScanCompletion(data) {
+  if (!_lastRunningState || data.pipeline_running) return;
+  if (!data.last_result || !String(data.last_result).startsWith('OK')) return;
+  // fetch latest history → find scan #
+  fetch(API + '/api/history')
+    .then(r => r.json())
+    .then(hd => {
+      const latest = hd.scans && hd.scans[0];
+      if (!latest || latest.num === _lastToastScanNum) return;
+      _lastToastScanNum = latest.num;
+      showToast(`รายงาน SCAN #${latest.num} พร้อม — กดเพื่ออ่าน`, () => {
+        sessionStorage.setItem('report-from', 'home');
+        if (typeof openReport === 'function') openReport(latest.num);
+      });
+      // auto-refresh home + history + stock list
+      if (typeof loadHomeData === 'function') loadHomeData();
+      const historyPanel = document.getElementById('page-history');
+      if (historyPanel && historyPanel.classList.contains('active') && typeof loadHistory === 'function') loadHistory();
+      if (typeof init === 'function') {
+        // re-fetch screener/watchlist to refresh lists
+        setTimeout(() => { init(); }, 500);
+      }
+    })
+    .catch(err => console.warn('history fetch post-scan', err));
+}
+
+let _sseSource = null;
 function connectSSE() {
+  if (_sseSource) return;  // guard against duplicate connection
   const statusEl = document.getElementById('pipeline-status');
-  if (!statusEl) return;
 
   const es = new EventSource(API + '/api/events');
+  _sseSource = es;
   es.addEventListener('status', (e) => {
-    const data = JSON.parse(e.data);
-    const btns = document.querySelectorAll('.pipe-btn');
+    let data;
+    try { data = JSON.parse(e.data); } catch (err) { console.error('SSE parse', err); return; }
 
-    if (data.pipeline_running) {
-      btns.forEach(b => b.disabled = true);
-      const task = data.current_task || 'processing';
-      statusEl.innerHTML = `<div class="pipe-spinner"></div><span class="running">${task}</span>`;
-    } else {
-      btns.forEach(b => b.disabled = false);
-      if (data.last_result) {
-        const isOK = data.last_result.startsWith('OK');
-        const cls = isOK ? 'done' : 'error';
-        const time = data.last_run ? new Date(data.last_run).toLocaleTimeString('en-GB') : '';
-        statusEl.innerHTML = `<span class="${cls}">${data.last_result}</span> <span>${time}</span>`;
-        // Auto-refresh data after pipeline completes
-        if (isOK && statusEl.dataset.wasRunning === 'true') {
-          statusEl.dataset.wasRunning = 'false';
-          setTimeout(() => { init(); }, 1000);
-        }
+    // P6 — banner + toast tracking
+    updateScanBanner(data);
+    handleScanCompletion(data);
+    _lastRunningState = !!data.pipeline_running;
+
+    // Existing pipeline-bar status widget (only if present)
+    if (statusEl) {
+      const btns = document.querySelectorAll('.pipe-btn');
+      if (data.pipeline_running) {
+        btns.forEach(b => b.disabled = true);
+        const task = data.current_task || 'processing';
+        statusEl.innerHTML = `<div class="pipe-spinner"></div><span class="running">${task}</span>`;
       } else {
-        statusEl.innerHTML = '';
+        btns.forEach(b => b.disabled = false);
+        if (data.last_result) {
+          const isOK = String(data.last_result).startsWith('OK');
+          const cls = isOK ? 'done' : 'error';
+          const time = data.last_run ? new Date(data.last_run).toLocaleTimeString('en-GB') : '';
+          statusEl.innerHTML = `<span class="${cls}">${data.last_result}</span> <span>${time}</span>`;
+        } else {
+          statusEl.innerHTML = '';
+        }
       }
+      statusEl.dataset.wasRunning = String(data.pipeline_running);
     }
-    statusEl.dataset.wasRunning = String(data.pipeline_running);
   });
 
   es.onerror = () => {
-    statusEl.innerHTML = '<span class="error">SSE disconnected</span>';
+    if (statusEl) statusEl.innerHTML = '<span class="error">SSE disconnected</span>';
     es.close();
+    _sseSource = null;
     // Reconnect after 5s
     setTimeout(connectSSE, 5000);
   };

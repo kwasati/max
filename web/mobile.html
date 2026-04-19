@@ -1374,6 +1374,67 @@ body {
 #detail-history .event-body .action.out {
   color: var(--burgundy);
 }
+
+/* ===== P6 — Real-time Scan Banner + Toast ===== */
+.running-banner {
+  background: var(--amber-soft);
+  border-bottom: 1px solid var(--amber);
+  padding: 0.55rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.72rem;
+  color: var(--amber);
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  flex-shrink: 0;
+}
+.dot-pulse {
+  width: 7px;
+  height: 7px;
+  background: var(--amber);
+  border-radius: 50%;
+  animation: pulse 1.2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 16px;
+  right: 16px;
+  max-width: 600px;
+  margin: 0 auto;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.75rem 0.9rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  border-radius: 2px;
+  box-shadow: 3px 3px 0 var(--amber);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  z-index: 100;
+  cursor: pointer;
+  animation: toast-in 0.3s ease-out;
+}
+.toast[hidden] { display: none; }
+.toast .icon {
+  color: var(--gold);
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 900;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+@keyframes toast-in {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
 </style>
 </head>
 <body>
@@ -1384,6 +1445,18 @@ body {
   <div class="mast-meta">VOL III<br>ISS <span id="issue-num">—</span></div>
   <div class="mast-title">Max Mahon</div>
   <div class="scan-chip" id="scan-chip">IDLE</div>
+</div>
+
+<!-- ===== REAL-TIME SCAN BANNER (P6) ===== -->
+<div class="running-banner" id="running-banner" hidden>
+  <div class="dot-pulse"></div>
+  <span id="running-banner-text">กำลังวิเคราะห์</span>
+</div>
+
+<!-- ===== COMPLETION TOAST (P6) ===== -->
+<div class="toast" id="scan-toast" hidden>
+  <span class="icon">§</span>
+  <div id="scan-toast-text">รายงานพร้อมแล้ว</div>
 </div>
 
 <!-- ===== HOME PAGE (NEW) ===== -->
@@ -2704,9 +2777,83 @@ async function saveSettings() {
   }
 }
 
+// ===== P6 — REAL-TIME SCAN STATUS (SSE) =====
+let _lastRunningState = false;
+let _lastToastScanNum = null;
+let _sseSource = null;
+
+function initSSE() {
+  if (_sseSource) return;
+  const es = new EventSource(API + '/api/events');
+  _sseSource = es;
+  es.addEventListener('status', (evt) => {
+    let s;
+    try { s = JSON.parse(evt.data); } catch (e) { return; }
+    updateScanStatusUI(s);
+    _lastRunningState = !!s.pipeline_running;
+  });
+  es.onerror = () => {
+    console.warn('SSE error, will reconnect');
+    try { es.close(); } catch (e) {}
+    _sseSource = null;
+    setTimeout(initSSE, 5000);
+  };
+}
+
+function updateScanStatusUI(s) {
+  const banner = document.getElementById('running-banner');
+  const chip = document.getElementById('scan-chip');
+  const bannerText = document.getElementById('running-banner-text');
+
+  if (s.pipeline_running) {
+    if (banner) banner.hidden = false;
+    if (bannerText) bannerText.textContent = `กำลังวิเคราะห์ · ${s.current_task || '...'}`;
+    if (chip) {
+      chip.textContent = 'SCANNING';
+      chip.classList.add('running');
+    }
+  } else {
+    if (banner) banner.hidden = true;
+    if (chip) chip.classList.remove('running');
+    // chip text for idle handled by loadHome / loadHistoryPage
+  }
+
+  // Detect completion: was running, now not, + last_result OK
+  if (_lastRunningState && !s.pipeline_running && s.last_result && String(s.last_result).startsWith('OK')) {
+    fetch(API + '/api/history').then(r => r.json()).then(data => {
+      const latest = data.scans && data.scans[0];
+      if (!latest || latest.num === _lastToastScanNum) return;
+      _lastToastScanNum = latest.num;
+      showToast(`รายงาน SCAN #${latest.num} พร้อม — กดเพื่ออ่าน`, () => {
+        sessionStorage.setItem('report-from', 'home');
+        if (typeof openReportScan === 'function') openReportScan(latest.num);
+      });
+      // refresh current page
+      const active = document.querySelector('.nav-item.active')?.dataset.page;
+      if (active === 'home' && typeof loadHome === 'function') loadHome();
+      else if (active === 'history' && typeof loadHistoryPage === 'function') loadHistoryPage();
+      else if (active === 'stocks' && typeof init === 'function') init();
+    }).catch(err => console.warn('history fetch post-scan', err));
+  }
+}
+
+function showToast(text, onClick) {
+  const t = document.getElementById('scan-toast');
+  const textEl = document.getElementById('scan-toast-text');
+  if (!t || !textEl) return;
+  textEl.textContent = text;
+  t.hidden = false;
+  t.onclick = () => {
+    t.hidden = true;
+    if (onClick) onClick();
+  };
+  setTimeout(() => { if (!t.hidden) t.hidden = true; }, 10000);
+}
+
 // Init
 init();
 initDetailTabs();
+initSSE();
 </script>
 </body>
 </html>
