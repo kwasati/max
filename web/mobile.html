@@ -718,6 +718,68 @@ body {
   line-height: 1.6;
 }
 
+/* ===== HISTORY PAGE (P4.1) ===== */
+.section-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  color: var(--forest);
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--forest);
+  display: inline-block;
+  margin-bottom: 0.85rem;
+  text-transform: uppercase;
+}
+.history-item {
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.history-item:active { background: var(--paper-2); }
+.history-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.25rem;
+}
+.history-num {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 900;
+  font-size: 1rem;
+  color: var(--ink);
+  font-style: italic;
+}
+.history-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+}
+.history-summary {
+  font-size: 0.82rem;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+.history-stats {
+  display: flex;
+  gap: 0.8rem;
+  margin-top: 0.35rem;
+}
+.history-stats span {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+.history-stats span em {
+  font-style: normal;
+  color: var(--forest);
+  font-weight: 600;
+  margin-right: 3px;
+}
+
 /* ===== LEGACY FORMS ===== */
 .form-card {
   background: var(--paper-3);
@@ -1152,10 +1214,11 @@ body {
   </div>
 </section>
 
-<!-- ===== HISTORY PAGE (placeholder, filled in P4) ===== -->
+<!-- ===== HISTORY PAGE ===== -->
 <section class="page" id="page-history">
   <div class="content">
-    <div class="empty-state"><h3>กำลังโหลด...</h3></div>
+    <span class="section-num">ล่าสุด → เก่า</span>
+    <div id="history-list"></div>
   </div>
 </section>
 
@@ -1686,6 +1749,7 @@ document.querySelectorAll('.nav-item').forEach(btn => {
     }
 
     if (page === 'watchlist') loadWatchlist();
+    if (page === 'history') loadHistoryPage();
 
     // Show FAB only on stocks
     document.getElementById('fab-analyze').style.display = (page === 'stocks') ? '' : 'none';
@@ -1738,6 +1802,64 @@ async function loadHome() {
   } catch (e) {
     console.error('loadHome', e);
   }
+}
+
+// ===== HISTORY =====
+async function loadHistoryPage() {
+  const list = document.getElementById('history-list');
+  if (!list) return;
+  list.innerHTML = '<div class="empty-state"><h3>กำลังโหลด…</h3></div>';
+  try {
+    const data = await fetch(API + '/api/history').then(r => r.json());
+    const scans = (data && data.scans) || [];
+    if (!scans.length) {
+      list.innerHTML = '<div class="empty-state"><div class="ico">≡</div><h3>ยังไม่มีประวัติ scan</h3><p>กดปุ่ม scan เพื่อเริ่ม</p></div>';
+      const chipEmpty = document.getElementById('scan-chip');
+      if (chipEmpty && btnActive('history')) chipEmpty.textContent = '0 SCANS';
+      return;
+    }
+    list.innerHTML = scans.map(s => `
+      <div class="history-item" onclick="openReportScan(${s.num})">
+        <div class="history-head">
+          <div class="history-num">Scan #${s.num}</div>
+          <div class="history-date">${formatScanDateMobile(s.date)}</div>
+        </div>
+        <div class="history-summary">${escapeHtml(s.summary || '')}</div>
+        <div class="history-stats">
+          <span><em>${s.counts?.passed ?? '—'}</em>ผ่าน</span>
+          <span><em>+${s.counts?.new ?? 0}</em>ใหม่</span>
+          <span><em>${s.counts?.filtered ?? '—'}</em>คัดออก</span>
+        </div>
+      </div>
+    `).join('');
+    const chip = document.getElementById('scan-chip');
+    if (chip && btnActive('history')) chip.textContent = `${scans.length} SCANS`;
+  } catch (e) {
+    console.error('loadHistoryPage', e);
+    list.innerHTML = '<div class="empty-state"><p>โหลดประวัติไม่ได้</p></div>';
+  }
+}
+
+function formatScanDateMobile(iso) {
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mm = String(d.getMinutes()).padStart(2,'0');
+    return `${d.getDate()} ${months[d.getMonth()]} · ${hh}:${mm}`;
+  } catch (e) {
+    return '—';
+  }
+}
+
+function openReportScan(num) {
+  // stub — wired in P4.2
+  alert('Report viewer coming in P4.2 — scan #' + num);
+}
+
+function btnActive(name) {
+  return document.querySelector(`.nav-item[data-page="${name}"]`)?.classList.contains('active');
 }
 
 function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }

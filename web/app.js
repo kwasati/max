@@ -250,6 +250,7 @@ function activateTab(tabName) {
     if (panel) panel.classList.add('active');
     // Load data for specific tabs
     if (tabName === 'home') loadHomeData();
+    else if (tabName === 'history') loadHistory();
     else if (tabName === 'requests') loadRequests();
     else if (tabName === 'dca') populateDCASymbols();
     else if (tabName === 'settings') loadSettings();
@@ -336,6 +337,63 @@ function formatScanByline(iso, num) {
 function openReport(num) {
   console.log('openReport', num);
   alert('Report viewer coming in P4.2 — scan #' + num);
+}
+
+// ===== HISTORY PAGE =====
+async function loadHistory() {
+  const list = document.getElementById('history-list');
+  if (!list) return;
+  list.innerHTML = '<div class="loading-state">กำลังโหลด…</div>';
+  try {
+    const data = await fetch(API + '/api/history').then(r => r.json());
+    const scans = (data && data.scans) || [];
+    if (!scans.length) {
+      list.innerHTML = '<div class="empty-state"><h3>ยังไม่มีประวัติ scan</h3><p>กดปุ่ม scan เพื่อเริ่ม</p></div>';
+      const chipEmpty = document.querySelector('#page-history .scan-count-chip');
+      if (chipEmpty) chipEmpty.textContent = '0 SCANS';
+      return;
+    }
+    list.innerHTML = scans.map(s => `
+      <div class="history-item" data-scan-num="${s.num}">
+        <div class="history-head">
+          <div class="history-num">Scan #${s.num}</div>
+          <div class="history-date">${formatScanDate(s.date)}</div>
+        </div>
+        <div class="history-summary">${escapeHtml(s.summary || '')}</div>
+        <div class="history-stats">
+          <span><em>${s.counts?.passed ?? '—'}</em>ผ่าน</span>
+          <span><em>+${s.counts?.new ?? 0}</em>ใหม่</span>
+          <span><em>${s.counts?.filtered ?? '—'}</em>คัดออก</span>
+        </div>
+      </div>
+    `).join('');
+
+    list.querySelectorAll('.history-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const num = item.dataset.scanNum;
+        if (typeof openReport === 'function') openReport(num);
+        else alert('Report viewer coming in P4.2 — scan #' + num);
+      });
+    });
+    const chip = document.querySelector('#page-history .scan-count-chip');
+    if (chip) chip.textContent = `${scans.length} SCANS`;
+  } catch (e) {
+    console.error('loadHistory', e);
+    list.innerHTML = '<div class="empty-state"><p>โหลดประวัติไม่ได้</p></div>';
+  }
+}
+
+function formatScanDate(iso) {
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mm = String(d.getMinutes()).padStart(2,'0');
+    return `${d.getDate()} ${months[d.getMonth()]} · ${hh}:${mm}`;
+  } catch (e) {
+    return '—';
+  }
 }
 
 // ===== SORT =====

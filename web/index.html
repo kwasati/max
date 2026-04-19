@@ -47,6 +47,7 @@
       <button class="tab" data-tab="passed" data-type="stock">ผ่านเกณฑ์</button>
       <button class="tab" data-tab="watchlist" data-type="stock">ติดตาม</button>
       <button class="tab" data-tab="filtered" data-type="stock">หลุดรอบ</button>
+      <button class="tab" data-tab="history" data-type="page">ประวัติ</button>
       <button class="tab" data-tab="requests" data-type="page">คำขอ</button>
       <button class="tab" data-tab="dca" data-type="page">จำลอง DCA</button>
       <button class="tab" data-tab="settings" data-type="page">ตั้งค่า</button>
@@ -147,6 +148,21 @@
   </div>
 
 </div>
+
+<!-- ===== HISTORY PAGE ===== -->
+<section class="page-panel" id="page-history">
+  <div class="history-container">
+    <div class="history-head-bar">
+      <span class="history-meta mono">ALL</span>
+      <h3 class="serif history-title">ประวัติ</h3>
+      <span class="scan-count-chip mono">— SCANS</span>
+    </div>
+    <span class="section-num mono history-section-num">ล่าสุด → เก่า</span>
+    <div id="history-list">
+      <div class="loading-state">กำลังโหลด…</div>
+    </div>
+  </div>
+</section>
 
 <!-- ===== REQUEST PAGE ===== -->
 <div class="page-panel" id="page-requests">
