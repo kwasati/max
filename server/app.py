@@ -142,6 +142,15 @@ def list_files(directory: Path, pattern: str) -> list[str]:
     )
 
 
+def _norm_sym(s: str) -> str:
+    """Normalize symbol for comparison — strip .BK suffix + upper.
+
+    Mobile UI strips .BK when displaying, screener stores with .BK.
+    Match both forms by normalizing both sides.
+    """
+    return (s or "").upper().replace(".BK", "")
+
+
 # ---------------------------------------------------------------------------
 # Data API
 # ---------------------------------------------------------------------------
@@ -172,7 +181,7 @@ async def get_stock(symbol: str):
     if snap_path:
         snap = read_json(snap_path)
         for s in snap.get("stocks", []):
-            if s.get("symbol", "").upper() == symbol.upper():
+            if _norm_sym(s.get("symbol", "")) == _norm_sym(symbol):
                 stock_data = dict(s)
                 break
 
@@ -181,7 +190,7 @@ async def get_stock(symbol: str):
     if scr_path:
         scr = read_json(scr_path)
         for c in scr.get("candidates", []):
-            if c.get("symbol", "").upper() == symbol.upper():
+            if _norm_sym(c.get("symbol", "")) == _norm_sym(symbol):
                 if stock_data is None:
                     # Not in watchlist — use screener as primary source
                     stock_data = dict(c)
@@ -203,7 +212,7 @@ async def get_stock(symbol: str):
         for req_file in sorted(DATA_DIR.glob("request_*.json"), reverse=True):
             req = read_json(req_file)
             for s in req.get("stocks", []):
-                if s.get("symbol", "").upper() == symbol.upper():
+                if _norm_sym(s.get("symbol", "")) == _norm_sym(symbol):
                     stock_data = dict(s)
                     break
             if stock_data:
@@ -1387,10 +1396,10 @@ def _find_stock_for_analysis(symbol: str) -> tuple[Optional[dict], Optional[str]
         scr = read_json(scr_path)
         scr_date = scr.get("date", scr_path.stem.replace("screener_", ""))
         for c in scr.get("candidates", []):
-            if c.get("symbol", "").upper() == symbol.upper():
+            if _norm_sym(c.get("symbol", "")) == _norm_sym(symbol):
                 return c, scr_date
         for c in scr.get("filtered_out_stocks", []):
-            if c.get("symbol", "").upper() == symbol.upper():
+            if _norm_sym(c.get("symbol", "")) == _norm_sym(symbol):
                 return c, scr_date
 
     snap_path = find_latest("snapshot_*.json", DATA_DIR)
@@ -1398,7 +1407,7 @@ def _find_stock_for_analysis(symbol: str) -> tuple[Optional[dict], Optional[str]
         snap = read_json(snap_path)
         snap_date = snap_path.stem.replace("snapshot_", "")
         for s in snap.get("stocks", []):
-            if s.get("symbol", "").upper() == symbol.upper():
+            if _norm_sym(s.get("symbol", "")) == _norm_sym(symbol):
                 return s, snap_date
 
     return None, None
@@ -1490,7 +1499,7 @@ async def get_stock_analysis(symbol: str):
     if stock is None:
         raise HTTPException(404, f"Stock {symbol} not found")
 
-    cache_key = f"{symbol.upper()}_{scr_date}"
+    cache_key = f"{_norm_sym(symbol)}_{scr_date}"
     cache = _load_analysis_cache()
     if cache_key in cache:
         entry = cache[cache_key]
