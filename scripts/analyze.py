@@ -1,16 +1,25 @@
 """Max Mahon v3 — feed multi-year stock data to Claude for deep weekly analysis."""
 
 import json
-import shutil
-import subprocess
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
+
+import anthropic
+from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 REPORTS_DIR = ROOT / "reports"
 USER_DATA = ROOT / "user_data.json"
+
+load_dotenv(Path("C:/WORKSPACE/.env"))
+_API_KEY = os.getenv("MAX_ANTHROPIC_API_KEY")
+if not _API_KEY:
+    print("MAX_ANTHROPIC_API_KEY not set in C:/WORKSPACE/.env")
+    sys.exit(1)
+_client = anthropic.Anthropic(api_key=_API_KEY)
 
 
 def get_latest_snapshot() -> Path:
@@ -105,36 +114,10 @@ def build_stock_section(stock: dict, reason: str) -> str:
     return "\n".join([header] + yearly_lines + div_lines + agg_lines + warn_lines)
 
 
-def build_prompt(snapshot_path: Path) -> str:
-    snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
-
-    if USER_DATA.exists():
-        user_data = json.loads(USER_DATA.read_text(encoding="utf-8"))
-    else:
-        user_data = {"watchlist": [], "notes": {}, "blacklist": []}
-
-    notes = user_data.get("notes", {})
-
-    stock_sections = []
-    for stock in snapshot["stocks"]:
-        sym = stock.get("symbol", "")
-        reason = notes.get(sym, "")
-        stock_sections.append(build_stock_section(stock, reason))
-
-    stocks_text = "\n\n".join(stock_sections)
-    date = snapshot["date"]
-
-    return f"""คุณคือ Max Mahon — นักวิเคราะห์หุ้นไทยเน้นปัจจัยพื้นฐาน
+def build_system_prompt() -> str:
+    return """คุณคือ Max Mahon — นักวิเคราะห์หุ้นไทยเน้นปัจจัยพื้นฐาน
 สไตล์: Warren Buffett (คุณภาพธุรกิจ + moat + ถือยาว) + เซียนฮง สถาพร (ปันผลดี + growth)
 เป้าหมาย: คัดหุ้นสำหรับ DCA ระยะยาว 10-20 ปี ที่ปันผลดีและเติบโตสม่ำเสมอ
-
-วันที่วิเคราะห์: {date}
-
-## ข้อมูลหุ้นใน Watchlist
-
-{stocks_text}
-
----
 
 ## สิ่งที่ต้องวิเคราะห์
 
@@ -167,31 +150,53 @@ def build_prompt(snapshot_path: Path) -> str:
 """
 
 
-def find_claude_cli():
-    """Find claude CLI executable on PATH."""
-    for name in ["claude.cmd", "claude"]:
-        p = shutil.which(name)
-        if p:
-            return p
-    raise FileNotFoundError("ไม่เจอ Claude CLI — กรุณาติดตั้ง")
+def build_user_prompt(snapshot_path: Path) -> str:
+    snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+
+    if USER_DATA.exists():
+        user_data = json.loads(USER_DATA.read_text(encoding="utf-8"))
+    else:
+        user_data = {"watchlist": [], "notes": {}, "blacklist": []}
+
+    notes = user_data.get("notes", {})
+
+    stock_sections = []
+    for stock in snapshot["stocks"]:
+        sym = stock.get("symbol", "")
+        reason = notes.get(sym, "")
+        stock_sections.append(build_stock_section(stock, reason))
+
+    stocks_text = "\n\n".join(stock_sections)
+    date = snapshot["date"]
+
+    return f"""วันที่วิเคราะห์: {date}
+
+## ข้อมูลหุ้นใน Watchlist
+
+{stocks_text}
+"""
 
 
-def run_claude(prompt: str, output_path: Path):
-    print("Max Mahon v3 analyzing with Claude...")
+def run_claude(system_prompt: str, user_prompt: str, output_path: Path):
+    print("Max Mahon v3 analyzing with Claude (Opus 4.7 + prompt caching)...")
 
-    claude_cmd = find_claude_cli()
-    result = subprocess.run(
-        [claude_cmd, "--print", "--model", "claude-sonnet-4-6", "-p", "-"],
-        input=prompt,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        timeout=300,
-    )
-
-    if result.returncode != 0:
-        print(f"Claude CLI error: {result.stderr}")
+    try:
+        response = _client.messages.create(
+            model="claude-opus-4-7",
+            max_tokens=16000,
+            system=[{
+                "type": "text",
+                "text": system_prompt,
+                "cache_control": {"type": "ephemeral"},
+            }],
+            messages=[{"role": "user", "content": user_prompt}],
+            timeout=900.0,
+        )
+    except Exception as e:
+        print(f"Anthropic SDK error: {e}")
         sys.exit(1)
+
+    raw_text = response.content[0].text.strip()
 
     today = datetime.now().strftime("%Y-%m-%d")
     header = f"""---
@@ -201,7 +206,7 @@ type: weekly-analysis
 ---
 
 """
-    output_path.write_text(header + result.stdout.strip(), encoding="utf-8")
+    output_path.write_text(header + raw_text, encoding="utf-8")
     print(f"Report saved → {output_path}")
 
 
@@ -209,12 +214,13 @@ def main():
     snapshot = get_latest_snapshot()
     print(f"Using snapshot: {snapshot.name}")
 
-    prompt = build_prompt(snapshot)
+    system_prompt = build_system_prompt()
+    user_prompt = build_user_prompt(snapshot)
 
     today = datetime.now().strftime("%Y-%m-%d")
     report_path = REPORTS_DIR / f"weekly_{today}.md"
 
-    run_claude(prompt, report_path)
+    run_claude(system_prompt, user_prompt, report_path)
 
 
 if __name__ == "__main__":
