@@ -1304,7 +1304,7 @@ body {
     <button class="detail-back" onclick="closeDetail()">&larr;</button>
     <span class="detail-nav-title" id="detail-nav-title">BDMS</span>
     <div class="detail-nav-actions">
-      <button class="detail-action-btn active">&#9733;</button>
+      <button class="detail-action-btn" id="detail-star-btn" aria-label="ติดตาม">&#9733;</button>
       <button class="detail-action-btn">&#128683;</button>
     </div>
   </div>
@@ -1341,8 +1341,89 @@ body {
 <script>
 // ===== DATA =====
 const API = window.location.origin;
-let state = { watchlist: null, screener: null };
+let state = { watchlist: null, screener: null, userData: { watchlist: [] } };
 let currentFilter = 'passed';
+
+// ===== WATCHLIST HELPERS (P3.3) =====
+function isWatched(sym) {
+  const norm = (sym || '').toUpperCase().replace('.BK', '');
+  return (state.userData?.watchlist || []).some(s => (s || '').toUpperCase().replace('.BK', '') === norm);
+}
+
+async function toggleStarMobile(sym, el) {
+  if (!sym || !el) return;
+  const norm = (sym || '').toUpperCase().replace('.BK', '');
+  if (!state.userData) state.userData = { watchlist: [] };
+  const current = (state.userData.watchlist || []).slice();
+  const has = current.some(s => (s || '').toUpperCase().replace('.BK', '') === norm);
+
+  // Optimistic UI
+  const isDetailBtn = el.classList.contains('detail-action-btn');
+  const wasOn = isDetailBtn ? el.classList.contains('active') : el.classList.contains('on');
+  if (isDetailBtn) {
+    el.classList.toggle('active');
+    el.classList.toggle('on');
+  } else {
+    el.classList.toggle('on');
+    el.textContent = wasOn ? '☆' : '★';
+  }
+
+  try {
+    const body = has ? { remove: [sym] } : { add: [sym] };
+    const res = await fetch(API + '/api/user/watchlist', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error('http ' + res.status);
+    const data = await res.json();
+    state.userData.watchlist = data.watchlist || (has
+      ? current.filter(s => (s || '').toUpperCase().replace('.BK', '') !== norm)
+      : [...current, sym.endsWith('.BK') ? sym : sym + '.BK']);
+
+    // Sync in_watchlist flags on screener cache
+    if (state.screener) {
+      for (const c of state.screener.candidates || []) {
+        if ((c.symbol || '').toUpperCase().replace('.BK', '') === norm) c.in_watchlist = !has;
+      }
+      for (const c of state.screener.filtered_out_stocks || []) {
+        if ((c.symbol || '').toUpperCase().replace('.BK', '') === norm) c.in_watchlist = !has;
+      }
+    }
+
+    // Mirror any other stars for same symbol
+    document.querySelectorAll(`[data-star-sym="${sym}"]`).forEach(node => {
+      if (node === el) return;
+      if (node.classList.contains('detail-action-btn')) {
+        node.classList.toggle('active', !has);
+        node.classList.toggle('on', !has);
+      } else {
+        node.classList.toggle('on', !has);
+        node.textContent = has ? '☆' : '★';
+      }
+    });
+
+    // Home stat "ติดตาม"
+    const stat = document.getElementById('stat-watched');
+    if (stat) stat.textContent = state.userData.watchlist.length || '— empty';
+
+    // If on watchlist page, re-render
+    if (document.getElementById('page-watchlist')?.classList.contains('active')) {
+      loadWatchlist();
+    }
+  } catch (err) {
+    console.error('toggleStarMobile failed:', err);
+    // revert
+    if (isDetailBtn) {
+      el.classList.toggle('active');
+      el.classList.toggle('on');
+    } else {
+      el.classList.toggle('on');
+      el.textContent = wasOn ? '★' : '☆';
+    }
+    alert('บันทึก watchlist ไม่สำเร็จ');
+  }
+}
 
 const TAG_TH = {
   COMPOUNDER: 'หุ้นเติบโต',
@@ -1408,12 +1489,14 @@ function getListForFilter() {
 
 async function init() {
   try {
-    const [wl, sc] = await Promise.all([
+    const [wl, sc, ud] = await Promise.all([
       fetch(API + '/api/watchlist').then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch(API + '/api/screener').then(r => r.ok ? r.json() : null).catch(() => null)
+      fetch(API + '/api/screener').then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(API + '/api/user').then(r => r.ok ? r.json() : { watchlist: [] }).catch(() => ({ watchlist: [] }))
     ]);
     state.watchlist = wl;
     state.screener = sc;
+    state.userData = ud || { watchlist: [] };
     renderCards();
   } catch (e) {
     document.getElementById('card-list').innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--ink-dim);font-size:0.85rem;">โหลดข้อมูลไม่ได้ · ลองรีเฟรช</div>';
@@ -1434,20 +1517,24 @@ function renderCards() {
   }
 
   if (currentFilter === 'filtered') {
-    el.innerHTML = stocks.map(s => `
+    el.innerHTML = stocks.map(s => {
+      const on = isWatched(s.sym);
+      return `
       <div class="stock-card filtered" onclick="openDetail('${s.sym}')">
         <div class="card-body">
           <div class="card-sym">${s.sym}${s.is_new_in_batch ? '<span class="new-badge">NEW</span>' : ''}</div>
           <div class="card-sector">${s.sector || ''}</div>
           <div class="filtered-reason">${(s.reasons || []).join(', ') || '-'}</div>
         </div>
-        <div class="card-arrow">&rsaquo;</div>
-      </div>
-    `).join('');
+        <div class="card-star${on ? ' on' : ''}" data-star-sym="${s.sym}" onclick="event.stopPropagation();toggleStarMobile('${s.sym}', this)">${on ? '★' : '☆'}</div>
+      </div>`;
+    }).join('');
     return;
   }
 
-  el.innerHTML = stocks.map(s => `
+  el.innerHTML = stocks.map(s => {
+    const on = isWatched(s.sym);
+    return `
     <div class="stock-card" onclick="openDetail('${s.sym}')">
       <div class="card-score ${scoreClass(s.score)}">${Math.round(s.score)}</div>
       <div class="card-body">
@@ -1460,9 +1547,9 @@ function renderCards() {
         </div>
         ${s.tags.length ? '<div class="card-tags">' + s.tags.map((t, i) => `<span class="tag ${s.tagColors[i]}">${t}</span>`).join('') + '</div>' : ''}
       </div>
-      <div class="card-arrow">&rsaquo;</div>
-    </div>
-  `).join('');
+      <div class="card-star${on ? ' on' : ''}" data-star-sym="${s.sym}" onclick="event.stopPropagation();toggleStarMobile('${s.sym}', this)">${on ? '★' : '☆'}</div>
+    </div>`;
+  }).join('');
 }
 
 // ===== WATCHLIST PAGE (P3.2) =====
@@ -1477,6 +1564,9 @@ async function loadWatchlist() {
       fetch(API + '/api/user').then(r => r.ok ? r.json() : { watchlist: [] }).catch(() => ({ watchlist: [] })),
       fetch(API + '/api/screener').then(r => r.ok ? r.json() : null).catch(() => null)
     ]);
+    // Keep global state in sync so stars elsewhere stay consistent
+    state.userData = userData || { watchlist: [] };
+    if (screener) state.screener = screener;
   } catch (e) {
     listEl.innerHTML = '';
     listEl.style.display = 'none';
@@ -1518,7 +1608,7 @@ async function loadWatchlist() {
           <div class="card-sector">${s.sector || ''}</div>
           <div class="card-meta">${metaParts.join('')}</div>
         </div>
-        <div class="card-star on">★</div>
+        <div class="card-star on" data-star-sym="${s.sym}" onclick="event.stopPropagation();toggleStarMobile('${s.sym}', this)">★</div>
       </div>`;
   }).join('');
 
@@ -1534,7 +1624,7 @@ async function loadWatchlist() {
           <div class="card-sector">${sector}</div>
           <div class="card-meta"><span style="color:var(--burgundy)"><em>เหตุผล</em>${reasons}</span></div>
         </div>
-        <div class="card-star on">★</div>
+        <div class="card-star on" data-star-sym="${sym}" onclick="event.stopPropagation();toggleStarMobile('${sym}', this)">★</div>
       </div>`;
   }).join('');
 
@@ -1553,7 +1643,7 @@ async function loadWatchlist() {
           <div class="card-sym">${sym}</div>
           <div class="card-sector">ไม่อยู่ในรอบ scan ปัจจุบัน</div>
         </div>
-        <div class="card-star on">★</div>
+        <div class="card-star on" data-star-sym="${sym}" onclick="event.stopPropagation();toggleStarMobile('${sym}', this)">★</div>
       </div>`;
   }).join('');
 
@@ -1675,6 +1765,17 @@ async function openDetail(sym) {
   const dp = document.getElementById('detail-page');
   document.getElementById('detail-nav-title').textContent = sym;
   document.getElementById('detail-content').innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--ink-dim);font-size:0.85rem;">กำลังโหลด...</div>';
+
+  // Configure detail star button (P3.3)
+  const starBtn = document.getElementById('detail-star-btn');
+  if (starBtn) {
+    const on = isWatched(sym);
+    starBtn.classList.toggle('active', on);
+    starBtn.classList.toggle('on', on);
+    starBtn.dataset.starSym = sym;
+    starBtn.onclick = (e) => { e.stopPropagation(); toggleStarMobile(sym, starBtn); };
+  }
+
   dp.classList.add('open');
   try {
     const data = await fetch(API + '/api/stock/' + encodeURIComponent(sym)).then(r => {

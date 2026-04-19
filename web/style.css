@@ -3022,3 +3022,34 @@ details.section-explain[open] > summary::before { content: 'ซ่อนคำ�
   vertical-align: middle;
   text-transform: uppercase;
 }
+
+/* ===== P3.3 — Star toggle (card + detail) ===== */
+.th-star { width: 28px; padding: 8px 4px; }
+.star-cell { width: 28px; text-align: center; padding: 0 4px; }
+.card-star {
+  display: inline-block;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--ink-soft);
+  padding: 4px 6px;
+  user-select: none;
+  transition: color 120ms ease, transform 120ms ease;
+}
+.card-star:hover { color: var(--amber); transform: scale(1.1); }
+.card-star.on { color: var(--amber); }
+
+.detail-star {
+  display: inline-block;
+  cursor: pointer;
+  color: var(--ink-soft);
+  padding: 2px 8px;
+  font-size: 1.2rem;
+  line-height: 1;
+  vertical-align: middle;
+  margin-left: 8px;
+  user-select: none;
+  transition: color 120ms ease, transform 120ms ease;
+}
+.detail-star:hover { color: var(--amber); transform: scale(1.08); }
+.detail-star.on { color: var(--amber); }

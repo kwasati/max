@@ -357,9 +357,17 @@ function bindSort() {
 // ===== STOCK LIST =====
 
 // ==== State row helpers (P4) ====
-const loadingRowHTML = () => `<tr class="state-row"><td colspan="10"><div class="loading-state">กำลังโหลด…</div></td></tr>`;
-const emptyRowHTML = (msg) => `<tr class="state-row"><td colspan="10"><div class="empty-state">${msg || 'ไม่มีหุ้นในรายการนี้'}</div></td></tr>`;
-const errorRowHTML = (msg) => `<tr class="state-row"><td colspan="10"><div class="error-state">${msg || 'โหลดข้อมูลไม่ได้'} · <a onclick="location.reload()">ลองใหม่</a></div></td></tr>`;
+const loadingRowHTML = () => `<tr class="state-row"><td colspan="11"><div class="loading-state">กำลังโหลด…</div></td></tr>`;
+const emptyRowHTML = (msg) => `<tr class="state-row"><td colspan="11"><div class="empty-state">${msg || 'ไม่มีหุ้นในรายการนี้'}</div></td></tr>`;
+const errorRowHTML = (msg) => `<tr class="state-row"><td colspan="11"><div class="error-state">${msg || 'โหลดข้อมูลไม่ได้'} · <a onclick="location.reload()">ลองใหม่</a></div></td></tr>`;
+
+// ==== Star cell helper (P3.3) ====
+function starCellHTML(sym, on) {
+  const onCls = on ? ' on' : '';
+  const ch = on ? '★' : '☆';
+  const title = on ? 'unfollow' : 'follow';
+  return `<td class="star-cell"><span class="card-star${onCls}" data-sym="${sym}" title="${title}">${ch}</span></td>`;
+}
 
 // ==== Tag helpers (P4) ====
 function rowTagClass(sig) {
@@ -394,6 +402,7 @@ function stockRowHTML(c) {
     const fRoeStr = (fRoe == null || !isFinite(fRoe)) ? '—'
       : (Math.abs(fRoe) <= 2 ? fmtPctFrac(fRoe) : fmtPct(fRoe));
     return `<tr class="watch-row failed-row${selected}" data-sym="${sym}">
+      ${starCellHTML(sym, !!c.in_watchlist)}
       <td><div class="sym">${symShort}<span class="fail-badge">หลุดรอบนี้</span></div><div class="sym-name">${name}</div><div class="sym-name fail-reason">${reasons}</div></td>
       <td><span class="tag warning">หลุดรอบ</span></td>
       <td><span class="score-cell"><span class="score-num failed">—</span></span></td>
@@ -436,6 +445,7 @@ function stockRowHTML(c) {
   const newBadge = c.is_new_in_batch ? '<span class="new-badge">NEW</span>' : '';
 
   return `<tr class="watch-row${selected}" data-sym="${sym}">
+    ${starCellHTML(sym, !!c.in_watchlist)}
     <td><div class="sym">${symShort}${newBadge}</div><div class="sym-name">${name}</div></td>
     <td>${tagsHTML || '<span class="tag">—</span>'}</td>
     <td>${scoreHTML}</td>
@@ -468,6 +478,7 @@ function filteredRowHTML(s) {
   const reasonLine = reasons ? `<div class="sym-name">${reasons}</div>` : '';
 
   return `<tr class="watch-row${selected}" data-sym="${sym}">
+    ${starCellHTML(sym, !!s.in_watchlist)}
     <td><div class="sym">${symShort}</div>${nameLine}${reasonLine}</td>
     <td><span class="tag warning">FILTERED</span></td>
     <td>—</td>
@@ -483,9 +494,93 @@ function filteredRowHTML(s) {
 
 function bindRowClicks() {
   document.querySelectorAll('#stock-list tr[data-sym]').forEach(row => {
-    row.addEventListener('click', () => loadDetail(row.dataset.sym));
+    row.addEventListener('click', (e) => {
+      // Don't open detail when clicking the star
+      if (e.target.closest('.card-star')) return;
+      loadDetail(row.dataset.sym);
+    });
   });
 }
+
+// ===== STAR TOGGLE (P3.3) =====
+async function toggleStar(sym, el) {
+  if (!sym || !el) return;
+  const normSym = (sym || '').toUpperCase().replace('.BK', '');
+  const current = (userData.watchlist || []).slice();
+  const has = current.some(s => (s || '').toUpperCase().replace('.BK', '') === normSym);
+
+  // Optimistic UI flip
+  const wasOn = el.classList.contains('on');
+  el.classList.toggle('on');
+  el.textContent = wasOn ? '☆' : '★';
+  el.title = wasOn ? 'follow' : 'unfollow';
+
+  try {
+    const body = has ? { remove: [sym] } : { add: [sym] };
+    const res = await fetch(API + '/api/user/watchlist', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error('http ' + res.status);
+    const data = await res.json();
+    userData.watchlist = data.watchlist || (has
+      ? current.filter(s => (s || '').toUpperCase().replace('.BK', '') !== normSym)
+      : [...current, sym.endsWith('.BK') ? sym : sym + '.BK']);
+
+    // Update in-memory in_watchlist flags on screener data so tabs/counts stay in sync
+    if (state.screener) {
+      for (const c of state.screener.candidates || []) {
+        if ((c.symbol || '').toUpperCase().replace('.BK', '') === normSym) c.in_watchlist = !has;
+      }
+      for (const c of state.screener.filtered_out_stocks || []) {
+        if ((c.symbol || '').toUpperCase().replace('.BK', '') === normSym) c.in_watchlist = !has;
+      }
+    }
+    // Update any other visible star for same symbol (e.g. detail header mirror)
+    document.querySelectorAll(`.card-star[data-sym="${sym}"], .detail-star[data-sym="${sym}"]`).forEach(node => {
+      if (node === el) return;
+      node.classList.toggle('on', !has);
+      node.textContent = has ? '☆' : '★';
+    });
+    // Refresh tab counts without re-rendering current view
+    updateStockTabCounts();
+  } catch (err) {
+    console.error('toggleStar failed:', err);
+    // Revert UI
+    el.classList.toggle('on');
+    el.textContent = wasOn ? '★' : '☆';
+    el.title = wasOn ? 'unfollow' : 'follow';
+    alert('บันทึก watchlist ไม่สำเร็จ');
+  }
+}
+
+function updateStockTabCounts() {
+  const sc = state.screener;
+  if (!sc) return;
+  const passedCount = (sc.candidates || []).length;
+  const passedWL = (sc.candidates || []).filter(c => c.in_watchlist).length;
+  const failedWL = (sc.filtered_out_stocks || []).filter(c => c.in_watchlist).length;
+  const wlCount = passedWL + failedWL;
+  const filteredCount = (sc.total_scanned || sc.total || 0) - passedCount;
+  const setTabText = (tabName, text) => {
+    const btn = document.querySelector(`#tabs .tab[data-tab="${tabName}"]`);
+    if (btn) btn.textContent = text;
+  };
+  setTabText('passed', `ผ่านเกณฑ์ (${passedCount})`);
+  setTabText('watchlist', `ติดตาม (${wlCount})`);
+  setTabText('filtered', `หลุดรอบ (${filteredCount})`);
+}
+
+// Global delegated click for any star element
+document.addEventListener('click', (e) => {
+  const star = e.target.closest('.card-star, .detail-star');
+  if (!star) return;
+  e.stopPropagation();
+  const sym = star.dataset.sym;
+  if (!sym) return;
+  toggleStar(sym, star);
+});
 
 function renderStockList() {
   const el = document.getElementById('stock-list');
@@ -1046,9 +1141,16 @@ function renderDetail(d) {
   const fullSymbol = d.symbol || '';
   const { headline, deck, prose, insight } = detailCopy(d);
 
+  // Determine watchlist state from userData (source of truth)
+  const starNorm = fullSymbol.toUpperCase().replace('.BK', '');
+  const inWL = (userData.watchlist || []).some(s => (s || '').toUpperCase().replace('.BK', '') === starNorm);
+  const starChar = inWL ? '★' : '☆';
+  const starOnCls = inWL ? ' on' : '';
+  const detailStarHTML = `<span class="detail-star${starOnCls}" data-sym="${fullSymbol}" title="${inWL ? 'unfollow' : 'follow'}">${starChar}</span>`;
+
   detail.innerHTML = `
     <div class="dive-body">
-      <div class="dive-kicker">DEEP DIVE &middot; ${sym}</div>
+      <div class="dive-kicker">DEEP DIVE &middot; ${sym} ${detailStarHTML}</div>
       <h2 class="dive-headline serif">${sym}: <em>${headline}</em></h2>
       <div class="dive-deck">${deck}</div>
       ${prose}
