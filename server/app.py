@@ -267,16 +267,16 @@ def _normalize_stock(d: dict):
 
 
 @app.get("/api/history")
-async def get_history():
-    """List available data dates."""
-    snapshots = list_files(DATA_DIR, "snapshot_*.json")
-    screeners = list_files(DATA_DIR, "screener_*.json")
-    requests = list_files(DATA_DIR, "request_*.json")
-    return {
-        "snapshots": snapshots,
-        "screeners": screeners,
-        "requests": requests,
-    }
+async def get_scan_history():
+    """Return list of all scans (newest first)."""
+    history_file = DATA_DIR / "history.json"
+    if not history_file.exists():
+        return {"scans": [], "total": 0}
+    data = read_json(history_file)
+    scans = data.get("scans", [])
+    # sort newest first by num desc
+    scans_sorted = sorted(scans, key=lambda s: s.get("num", 0), reverse=True)
+    return {"scans": scans_sorted, "total": len(scans_sorted)}
 
 
 @app.get("/api/status")
