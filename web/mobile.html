@@ -1270,6 +1270,34 @@ body {
   margin-bottom: 0.3rem;
 }
 .report-body .pick p { margin-bottom: 0; }
+
+/* ===== DETAIL TAB ROW (P5.1) ===== */
+.tab-row {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 1rem;
+  gap: 1.4rem;
+  padding: 0 1rem;
+}
+.tab-item {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  padding: 0.5rem 0;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+.tab-item.active {
+  color: var(--forest);
+  border-bottom-color: var(--forest);
+  font-weight: 600;
+}
+.detail-tab-content[hidden] { display: none; }
+#detail-page .detail-tab-content .empty-state {
+  padding: 3rem 1rem;
+}
 </style>
 </head>
 <body>
@@ -1533,7 +1561,20 @@ body {
       <button class="detail-action-btn">&#128683;</button>
     </div>
   </div>
-  <div class="detail-content" id="detail-content"></div>
+  <div class="tab-row" id="detail-tab-row">
+    <div class="tab-item active" data-detail-tab="overview">ภาพรวม</div>
+    <div class="tab-item" data-detail-tab="history">ประวัติ</div>
+    <div class="tab-item" data-detail-tab="compare">เปรียบเทียบ</div>
+  </div>
+  <div class="detail-tab-content" data-tab-content="overview" id="detail-overview">
+    <div class="detail-content" id="detail-content"></div>
+  </div>
+  <div class="detail-tab-content" data-tab-content="history" id="detail-history" hidden>
+    <div class="empty-state"><div class="ico">&#8801;</div><h3>Score Timeline</h3><p>เร็วๆ นี้ (P5.2)</p></div>
+  </div>
+  <div class="detail-tab-content" data-tab-content="compare" id="detail-compare" hidden>
+    <div class="empty-state"><div class="ico">&#8644;</div><h3>เปรียบเทียบ</h3><p>เร็วๆ นี้</p></div>
+  </div>
 </div>
 
 <!-- FAB -->
@@ -2091,10 +2132,37 @@ document.getElementById('home-report-card')?.addEventListener('click', () => {
 });
 
 // Detail
+// ===== DETAIL TABS (P5.1) =====
+function initDetailTabs() {
+  document.querySelectorAll('#detail-tab-row .tab-item').forEach(t => {
+    t.addEventListener('click', () => {
+      const tab = t.dataset.detailTab;
+      document.querySelectorAll('#detail-tab-row .tab-item').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      document.querySelectorAll('#detail-page .detail-tab-content').forEach(c => {
+        c.hidden = c.dataset.tabContent !== tab;
+      });
+      // P5.2 will wire: if (tab === 'history') loadStockHistoryMobile(currentDetailSym);
+    });
+  });
+}
+
+function resetDetailTabs() {
+  document.querySelectorAll('#detail-tab-row .tab-item').forEach(x => {
+    x.classList.toggle('active', x.dataset.detailTab === 'overview');
+  });
+  document.querySelectorAll('#detail-page .detail-tab-content').forEach(c => {
+    c.hidden = c.dataset.tabContent !== 'overview';
+  });
+}
+
 async function openDetail(sym) {
   const dp = document.getElementById('detail-page');
   document.getElementById('detail-nav-title').textContent = sym;
   document.getElementById('detail-content').innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--ink-dim);font-size:0.85rem;">กำลังโหลด...</div>';
+
+  // Reset to Overview tab on new detail open (P5.1)
+  resetDetailTabs();
 
   // Configure detail star button (P3.3)
   const starBtn = document.getElementById('detail-star-btn');
@@ -2450,6 +2518,7 @@ async function saveSettings() {
 
 // Init
 init();
+initDetailTabs();
 </script>
 </body>
 </html>

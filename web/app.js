@@ -1276,33 +1276,67 @@ function renderDetail(d) {
   const detailStarHTML = `<span class="detail-star${starOnCls}" data-sym="${fullSymbol}" title="${inWL ? 'unfollow' : 'follow'}">${starChar}</span>`;
 
   detail.innerHTML = `
-    <div class="dive-body">
-      <div class="dive-kicker">DEEP DIVE &middot; ${sym} ${detailStarHTML}</div>
-      <h2 class="dive-headline serif">${sym}: <em>${headline}</em></h2>
-      <div class="dive-deck">${deck}</div>
-      ${prose}
-      <blockquote class="pull-quote">
-        ${insight}
-        <cite>— Max Analysis &middot; Claude Opus 4.7</cite>
-      </blockquote>
-      <div id="analysis-section" class="analysis-section">
-        <div class="analysis-loading serif">กำลังวิเคราะห์…</div>
+    <div class="dive-kicker">DEEP DIVE &middot; ${sym} ${detailStarHTML}</div>
+    <div class="tab-row">
+      <div class="tab-item active" data-detail-tab="overview">ภาพรวม</div>
+      <div class="tab-item" data-detail-tab="history">ประวัติ</div>
+      <div class="tab-item" data-detail-tab="compare">เปรียบเทียบ</div>
+    </div>
+    <div class="detail-tab-content" data-tab-content="overview">
+      <div class="dive-body">
+        <h2 class="dive-headline serif">${sym}: <em>${headline}</em></h2>
+        <div class="dive-deck">${deck}</div>
+        ${prose}
+        <blockquote class="pull-quote">
+          ${insight}
+          <cite>— Max Analysis &middot; Claude Opus 4.7</cite>
+        </blockquote>
+        <div id="analysis-section" class="analysis-section">
+          <div class="analysis-loading serif">กำลังวิเคราะห์…</div>
+        </div>
+      </div>
+      <aside class="dive-aside">
+        <div class="fact-sheet">
+          <div class="fact-head">
+            <span>Fact sheet</span>
+            <span class="fact-symbol">${sym}</span>
+          </div>
+          ${factRowsHTML(d)}
+        </div>
+        <div class="mini-chart"><div class="mini-head"><span>Dividend per share</span><span>฿/share</span></div><canvas id="divChart"></canvas></div>
+        <div class="mini-chart"><div class="mini-head"><span>ROE history</span><span>%</span></div><canvas id="roeChart"></canvas></div>
+        <div class="mini-chart"><div class="mini-head"><span>Revenue trend</span><span>M฿</span></div><canvas id="revenueChart"></canvas></div>
+      </aside>
+    </div>
+    <div class="detail-tab-content" data-tab-content="history" hidden>
+      <div class="empty-state">
+        <div class="ico">&#8801;</div>
+        <h3>Score Timeline</h3>
+        <p>กราฟ + event log จะขึ้นเมื่อ P5.2 เสร็จ</p>
       </div>
     </div>
-    <aside class="dive-aside">
-      <div class="fact-sheet">
-        <div class="fact-head">
-          <span>Fact sheet</span>
-          <span class="fact-symbol">${sym}</span>
-        </div>
-        ${factRowsHTML(d)}
+    <div class="detail-tab-content" data-tab-content="compare" hidden>
+      <div class="empty-state">
+        <div class="ico">&#8644;</div>
+        <h3>เปรียบเทียบ</h3>
+        <p>เร็วๆ นี้</p>
       </div>
-      <div class="mini-chart"><div class="mini-head"><span>Dividend per share</span><span>฿/share</span></div><canvas id="divChart"></canvas></div>
-      <div class="mini-chart"><div class="mini-head"><span>ROE history</span><span>%</span></div><canvas id="roeChart"></canvas></div>
-      <div class="mini-chart"><div class="mini-head"><span>Revenue trend</span><span>M฿</span></div><canvas id="revenueChart"></canvas></div>
-    </aside>
+    </div>
   `;
   detail.classList.add('open');
+
+  // Bind tab switching (P5.1)
+  detail.querySelectorAll('.tab-row .tab-item').forEach(t => {
+    t.addEventListener('click', () => {
+      const tab = t.dataset.detailTab;
+      detail.querySelectorAll('.tab-row .tab-item').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      detail.querySelectorAll('.detail-tab-content').forEach(c => {
+        c.hidden = c.dataset.tabContent !== tab;
+      });
+      // P5.2 will add: if (tab === 'history') loadStockHistory(currentSym);
+    });
+  });
 
   // Render charts after DOM is ready
   setTimeout(() => {

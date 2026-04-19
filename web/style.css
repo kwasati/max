@@ -3306,3 +3306,64 @@ details.section-explain[open] > summary::before { content: 'ซ่อนคำ�
   margin-bottom: 0.3rem;
 }
 .report-body .pick p { margin-bottom: 0; }
+
+/* ===== DETAIL TAB ROW (P5.1) ===== */
+.tab-row {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 1rem;
+  gap: 1.4rem;
+  padding: 0 1rem;
+}
+.tab-item {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  padding: 0.5rem 0;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+.tab-item.active {
+  color: var(--forest);
+  border-bottom-color: var(--forest);
+  font-weight: 600;
+}
+.detail-tab-content[hidden] { display: none; }
+.detail-panel#detail.open .detail-tab-content[data-tab-content="overview"] {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 3rem;
+}
+.stock-layout.split-mode .detail-panel#detail.open .detail-tab-content[data-tab-content="overview"] {
+  display: block;
+}
+.detail-tab-content .empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--ink-dim);
+}
+.detail-tab-content .empty-state .ico {
+  font-size: 2rem;
+  line-height: 1;
+  margin-bottom: 0.75rem;
+  color: var(--forest);
+}
+.detail-tab-content .empty-state h3 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 900;
+  font-size: 1.1rem;
+  color: var(--ink);
+  margin-bottom: 0.4rem;
+}
+.detail-tab-content .empty-state p {
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+}
+@media (max-width: 1024px) {
+  .detail-panel#detail.open .detail-tab-content[data-tab-content="overview"] {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}
