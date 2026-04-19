@@ -3155,3 +3155,154 @@ details.section-explain[open] > summary::before { content: 'ซ่อนคำ�
   font-weight: 600;
   margin-right: 3px;
 }
+
+/* ===== REPORT VIEWER (P4.2) ===== */
+#page-report { padding: 0; }
+#page-report .report-container {
+  padding: 1.5rem 1.75rem 3rem;
+  max-width: 820px;
+  margin: 0 auto;
+}
+.back-nav {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--paper);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.back-arrow {
+  font-size: 1.3rem;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  line-height: 1;
+  user-select: none;
+}
+.back-arrow:hover { color: var(--forest); }
+.back-title {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 900;
+  font-size: 1rem;
+  font-style: italic;
+  color: var(--ink);
+}
+.back-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-top: 1px;
+}
+.report-header {
+  padding-bottom: 0.85rem;
+  border-bottom: 3px double var(--rule);
+  margin-bottom: 1rem;
+}
+.report-header .lede {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 900;
+  font-size: 1.6rem;
+  line-height: 1.15;
+  color: var(--ink);
+  margin: 0.25rem 0 0.5rem;
+  padding: 0;
+  border: 0;
+  display: block;
+}
+.report-header .lede em {
+  font-style: italic;
+  color: var(--forest);
+  font-weight: 900;
+}
+.report-header .byline {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-top: 0.25rem;
+}
+.report-body {
+  font-size: 0.88rem;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+.report-body h2 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--ink);
+  margin: 1.2rem 0 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.report-body h2::before {
+  content: '§';
+  color: var(--forest);
+  font-weight: 400;
+}
+.report-body h1 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: var(--ink);
+  margin: 1rem 0 0.6rem;
+}
+.report-body h3 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0.9rem 0 0.4rem;
+}
+.report-body p { margin-bottom: 0.7rem; }
+.report-body strong { color: var(--ink); }
+.report-body em { font-style: italic; color: var(--ink-2); }
+.report-body ul, .report-body ol {
+  margin: 0.5rem 0 0.8rem 1.25rem;
+}
+.report-body li { margin-bottom: 0.3rem; }
+.report-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.8rem 0;
+  font-size: 0.82rem;
+}
+.report-body th, .report-body td {
+  border: 1px solid var(--line);
+  padding: 0.4rem 0.55rem;
+  text-align: left;
+  vertical-align: top;
+}
+.report-body th {
+  background: var(--paper-2);
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 700;
+  color: var(--ink);
+}
+.report-body hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 1rem 0;
+}
+.report-body .pick {
+  background: var(--paper-3);
+  border: 1px solid var(--line);
+  box-shadow: 3px 3px 0 var(--paper-2);
+  padding: 0.75rem;
+  margin: 0.5rem 0;
+}
+.report-body .pick .sym {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 900;
+  font-size: 1.1rem;
+  color: var(--ink);
+  margin-bottom: 0.3rem;
+}
+.report-body .pick p { margin-bottom: 0; }

@@ -1129,6 +1129,147 @@ body {
   border: 1px solid var(--line);
 }
 .desktop-link:active { color: var(--forest); }
+
+/* ===== REPORT VIEWER (P4.2) ===== */
+#page-report { padding-bottom: calc(var(--bottom-nav-h) + var(--safe-bottom) + 8px); }
+#page-report .back-nav {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--paper);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+#page-report .back-arrow {
+  font-size: 1.3rem;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  line-height: 1;
+  user-select: none;
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#page-report .back-title {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 900;
+  font-size: 0.95rem;
+  font-style: italic;
+  color: var(--ink);
+}
+#page-report .back-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-top: 1px;
+}
+#page-report .report-header {
+  padding-bottom: 0.85rem;
+  border-bottom: 3px double var(--rule);
+  margin-bottom: 1rem;
+}
+#page-report .report-header .lede {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 900;
+  font-size: 1.35rem;
+  line-height: 1.2;
+  color: var(--ink);
+  margin: 0.3rem 0 0.5rem;
+  padding: 0;
+}
+#page-report .report-header .lede em {
+  font-style: italic;
+  color: var(--forest);
+}
+#page-report .report-header .byline {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-top: 0.25rem;
+}
+.report-body {
+  font-size: 0.88rem;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+.report-body h1 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: var(--ink);
+  margin: 1rem 0 0.5rem;
+}
+.report-body h2 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: var(--ink);
+  margin: 1.1rem 0 0.45rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.report-body h2::before {
+  content: '§';
+  color: var(--forest);
+  font-weight: 400;
+}
+.report-body h3 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0.8rem 0 0.35rem;
+}
+.report-body p { margin-bottom: 0.65rem; }
+.report-body strong { color: var(--ink); }
+.report-body em { font-style: italic; color: var(--ink-2); }
+.report-body ul, .report-body ol { margin: 0.5rem 0 0.7rem 1.15rem; }
+.report-body li { margin-bottom: 0.25rem; }
+.report-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.7rem 0;
+  font-size: 0.78rem;
+}
+.report-body th, .report-body td {
+  border: 1px solid var(--line);
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  vertical-align: top;
+}
+.report-body th {
+  background: var(--paper-2);
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 700;
+  color: var(--ink);
+}
+.report-body hr { border: 0; border-top: 1px solid var(--line); margin: 0.9rem 0; }
+.report-body .pick {
+  background: var(--paper-3);
+  border: 1px solid var(--line);
+  box-shadow: 3px 3px 0 var(--paper-2);
+  padding: 0.7rem;
+  margin: 0.4rem 0;
+}
+.report-body .pick .sym {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 900;
+  font-size: 1rem;
+  color: var(--ink);
+  margin-bottom: 0.3rem;
+}
+.report-body .pick p { margin-bottom: 0; }
 </style>
 </head>
 <body>
@@ -1219,6 +1360,27 @@ body {
   <div class="content">
     <span class="section-num">ล่าสุด → เก่า</span>
     <div id="history-list"></div>
+  </div>
+</section>
+
+<!-- ===== REPORT VIEWER PAGE (P4.2) ===== -->
+<section class="page" id="page-report">
+  <div class="back-nav">
+    <div class="back-arrow" id="mob-report-back" role="button" tabindex="0" aria-label="Back">‹</div>
+    <div>
+      <div class="back-title" id="mob-report-title">Scan Report #—</div>
+      <div class="back-sub" id="mob-report-sub">—</div>
+    </div>
+  </div>
+  <div class="content" style="padding-top:0.5rem">
+    <div class="report-header">
+      <span class="section-num" id="mob-report-num">№ — / SCAN</span>
+      <h2 class="lede" id="mob-report-headline">—</h2>
+      <div class="byline" id="mob-report-byline">—</div>
+    </div>
+    <div class="report-body" id="mob-report-body">
+      <div class="empty-state"><h3>กำลังโหลด…</h3></div>
+    </div>
   </div>
 </section>
 
@@ -1819,7 +1981,7 @@ async function loadHistoryPage() {
       return;
     }
     list.innerHTML = scans.map(s => `
-      <div class="history-item" onclick="openReportScan(${s.num})">
+      <div class="history-item" onclick="sessionStorage.setItem('report-from','history'); openReportScan(${s.num})">
         <div class="history-head">
           <div class="history-num">Scan #${s.num}</div>
           <div class="history-date">${formatScanDateMobile(s.date)}</div>
@@ -1853,10 +2015,53 @@ function formatScanDateMobile(iso) {
   }
 }
 
-function openReportScan(num) {
-  // stub — wired in P4.2
-  alert('Report viewer coming in P4.2 — scan #' + num);
+async function openReportScan(num) {
+  // switch view: hide current page, show page-report
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('page-report');
+  if (!panel) return;
+  panel.classList.add('active');
+
+  // apply slim masthead + title
+  const topBar = document.querySelector('.top-bar');
+  const title = document.querySelector('.mast-title');
+  if (topBar) topBar.classList.add('slim');
+  if (title) { title.classList.add('slim'); title.textContent = 'รายงาน'; }
+
+  // clear bottom nav active state (report view isn't a nav tab)
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  // hide FAB
+  const fab = document.getElementById('fab-analyze');
+  if (fab) fab.style.display = 'none';
+
+  const bodyEl = document.getElementById('mob-report-body');
+  if (bodyEl) bodyEl.innerHTML = '<div class="empty-state"><h3>กำลังโหลด…</h3></div>';
+
+  try {
+    const q = num != null && num !== '' ? `?num=${encodeURIComponent(num)}` : '';
+    const res = await fetch(API + '/api/reports/scan' + q);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const n = data.num ?? '—';
+    document.getElementById('mob-report-title').textContent = `Scan Report #${n}`;
+    document.getElementById('mob-report-sub').textContent = formatScanDateMobile(data.date);
+    document.getElementById('mob-report-num').textContent = `№ ${String(n).padStart(2, '0')} / SCAN`;
+    document.getElementById('mob-report-headline').innerHTML = data.summary || 'รายงาน';
+    document.getElementById('mob-report-byline').textContent = `MAX MAHON · ${data.counts?.scanned ?? '—'} SCANNED · ${data.counts?.passed ?? 0} PASSED · +${data.counts?.new ?? 0} NEW`;
+    if (bodyEl) bodyEl.innerHTML = data.html || '';
+  } catch (e) {
+    console.error('openReportScan', e);
+    if (bodyEl) bodyEl.innerHTML = '<div class="empty-state"><p>โหลดรายงานไม่ได้</p></div>';
+  }
 }
+
+// back button on mobile
+document.getElementById('mob-report-back')?.addEventListener('click', () => {
+  const prev = sessionStorage.getItem('report-from') || 'home';
+  const btn = document.querySelector(`.nav-item[data-page="${prev}"]`);
+  if (btn) btn.click();
+  else document.querySelector('.nav-item[data-page="home"]')?.click();
+});
 
 function btnActive(name) {
   return document.querySelector(`.nav-item[data-page="${name}"]`)?.classList.contains('active');
@@ -1876,10 +2081,13 @@ function relativeTime(iso) {
   return Math.round(diff / 86400) + 'D AGO';
 }
 
-// report card click — stub (wired in P4.2)
+// report card click → open report viewer
 document.getElementById('home-report-card')?.addEventListener('click', () => {
   const num = document.getElementById('home-report-card').dataset.scanNum;
-  if (num) alert('Report viewer coming in P4.2 — scan #' + num);
+  if (num) {
+    sessionStorage.setItem('report-from', 'home');
+    openReportScan(num);
+  }
 });
 
 // Detail

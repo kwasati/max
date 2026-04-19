@@ -263,13 +263,25 @@ function bindTabs() {
       activateTab(btn.dataset.tab);
     });
   });
-  // Wire latest-report-card click (stub — full viewer in P4.2)
+  // Wire latest-report-card click → open report viewer
   const card = document.getElementById('latest-report-card');
   if (card && !card._bound) {
     card._bound = true;
     card.addEventListener('click', () => {
       const num = card.dataset.scanNum;
-      if (num) openReport(num);
+      if (num) {
+        sessionStorage.setItem('report-from', 'home');
+        openReport(num);
+      }
+    });
+  }
+  // Wire report back button once
+  const backBtn = document.getElementById('report-back-btn');
+  if (backBtn && !backBtn._bound) {
+    backBtn._bound = true;
+    backBtn.addEventListener('click', () => {
+      const prev = sessionStorage.getItem('report-from') || 'home';
+      activateTab(prev);
     });
   }
 }
@@ -333,10 +345,67 @@ function formatScanByline(iso, num) {
   }
 }
 
-// Stub — full report viewer in P4.2
-function openReport(num) {
-  console.log('openReport', num);
-  alert('Report viewer coming in P4.2 — scan #' + num);
+// ===== REPORT VIEWER (P4.2) =====
+async function openReport(num) {
+  // Show report page, hide everything else (stock-section + pipeline-bar + other panels)
+  const stockSection = document.getElementById('stock-section');
+  const pipelineBar = document.getElementById('pipeline-bar');
+  if (stockSection) stockSection.style.display = 'none';
+  if (pipelineBar) pipelineBar.style.display = 'none';
+  document.querySelectorAll('.page-panel').forEach(p => {
+    p.classList.remove('active');
+    if (p.id !== 'page-report') p.hidden = false; // reset (they're controlled by .active normally)
+  });
+  const panel = document.getElementById('page-report');
+  if (!panel) return;
+  panel.hidden = false;
+  panel.classList.add('active');
+
+  const bodyEl = document.getElementById('report-body-content');
+  if (bodyEl) bodyEl.innerHTML = '<div class="loading-state">กำลังโหลด…</div>';
+
+  try {
+    const q = num != null && num !== '' ? `?num=${encodeURIComponent(num)}` : '';
+    const res = await fetch(API + '/api/reports/scan' + q);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const n = data.num ?? '—';
+    const byline = `MAX MAHON · ${data.counts?.scanned ?? '—'} SCANNED · ${data.counts?.passed ?? 0} PASSED · +${data.counts?.new ?? 0} NEW`;
+    document.getElementById('report-back-title').textContent = `Scan Report #${n}`;
+    document.getElementById('report-back-sub').textContent = formatScanDate(data.date);
+    document.getElementById('report-section-num').textContent = `№ ${String(n).padStart(2, '0')} / SCAN`;
+    document.getElementById('report-headline').innerHTML = data.summary || 'รายงาน';
+    document.getElementById('report-byline').textContent = byline;
+    if (bodyEl) bodyEl.innerHTML = data.html || '';
+    transformPicks(bodyEl);
+  } catch (e) {
+    console.error('openReport', e);
+    if (bodyEl) bodyEl.innerHTML = '<div class="empty-state"><p>โหลดรายงานไม่ได้</p></div>';
+  }
+}
+
+function transformPicks(container) {
+  // Heuristic: wrap H3 blocks whose text starts with a rank marker ("#N", "1.", emoji medal)
+  // plus the following sibling paragraph into a .pick card.
+  if (!container) return;
+  const h3s = Array.from(container.querySelectorAll('h3'));
+  h3s.forEach(h3 => {
+    const text = (h3.textContent || '').trim();
+    const isPick = /^(#\d+|\d+\.|[🥇🥈🥉]|[1-9][0-9]?️⃣)/.test(text);
+    if (!isPick) return;
+    const box = document.createElement('div');
+    box.className = 'pick';
+    const sym = document.createElement('div');
+    sym.className = 'sym';
+    sym.textContent = text;
+    box.appendChild(sym);
+    // move next sibling paragraph (if any) into the box
+    const next = h3.nextElementSibling;
+    if (next && next.tagName === 'P') {
+      box.appendChild(next);
+    }
+    h3.replaceWith(box);
+  });
 }
 
 // ===== HISTORY PAGE =====
@@ -371,8 +440,8 @@ async function loadHistory() {
     list.querySelectorAll('.history-item').forEach(item => {
       item.addEventListener('click', () => {
         const num = item.dataset.scanNum;
+        sessionStorage.setItem('report-from', 'history');
         if (typeof openReport === 'function') openReport(num);
-        else alert('Report viewer coming in P4.2 — scan #' + num);
       });
     });
     const chip = document.querySelector('#page-history .scan-count-chip');

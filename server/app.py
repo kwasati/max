@@ -575,6 +575,52 @@ async def list_reports():
     }
 
 
+@app.get("/api/reports/scan")
+async def get_scan_report(num: Optional[int] = None):
+    """Return rendered HTML of a scan report. num=latest if not provided."""
+    history_file = DATA_DIR / "history.json"
+    if not history_file.exists():
+        raise HTTPException(404, "No scan history")
+    history = read_json(history_file)
+    scans = history.get("scans", [])
+    if not scans:
+        raise HTTPException(404, "No scans found")
+    if num is None:
+        entry = max(scans, key=lambda s: s.get("num", 0))
+    else:
+        entry = next((s for s in scans if s.get("num") == num), None)
+    if not entry:
+        raise HTTPException(404, f"Scan #{num} not found")
+    report_name = entry.get("report", "")
+    if not report_name:
+        raise HTTPException(404, "Scan entry missing report filename")
+    report_path = REPORTS_DIR / report_name
+    # path safety — must stay under REPORTS_DIR
+    try:
+        if not report_path.resolve().is_relative_to(REPORTS_DIR.resolve()):
+            raise HTTPException(400, "Invalid report path")
+    except AttributeError:
+        # Python <3.9 fallback
+        if REPORTS_DIR.resolve() not in report_path.resolve().parents:
+            raise HTTPException(400, "Invalid report path")
+    if not report_path.exists():
+        raise HTTPException(404, f"Report file {report_name} missing")
+    md_text = report_path.read_text(encoding="utf-8")
+    # strip YAML frontmatter if present
+    if md_text.startswith("---"):
+        end = md_text.find("---", 3)
+        if end != -1:
+            md_text = md_text[end + 3:].lstrip()
+    html = markdown.markdown(md_text, extensions=["tables", "fenced_code"])
+    return {
+        "num": entry.get("num"),
+        "date": entry.get("date"),
+        "counts": entry.get("counts", {}),
+        "summary": entry.get("summary", ""),
+        "html": html,
+    }
+
+
 @app.get("/api/reports/{report_type}")
 async def get_report(report_type: str, date: Optional[str] = None):
     """Render a markdown report to HTML."""
