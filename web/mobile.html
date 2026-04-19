@@ -713,53 +713,55 @@ body {
   <div class="form-card">
     <div class="form-field">
       <label>หุ้น</label>
-      <input type="text" placeholder="เช่น BDMS.BK" value="BDMS.BK">
+      <input type="text" id="dca-symbol" placeholder="เช่น BDMS.BK" value="BDMS.BK">
     </div>
     <div class="form-row">
       <div class="form-field">
         <label>เงินต่อครั้ง (บาท)</label>
-        <input type="number" value="5000" inputmode="numeric">
+        <input type="number" id="dca-amount" value="5000" inputmode="numeric">
       </div>
       <div class="form-field">
         <label>คาดการณ์ (ปี)</label>
-        <input type="number" value="10" inputmode="numeric">
+        <input type="number" id="dca-forward-years" value="10" inputmode="numeric">
       </div>
     </div>
     <div class="form-field">
       <label>วันที่ซื้อ</label>
-      <div class="dca-chips">
-        <label class="dca-chip"><input type="checkbox" checked><span>1</span></label>
-        <label class="dca-chip"><input type="checkbox"><span>5</span></label>
-        <label class="dca-chip"><input type="checkbox"><span>10</span></label>
-        <label class="dca-chip"><input type="checkbox" checked><span>15</span></label>
-        <label class="dca-chip"><input type="checkbox"><span>20</span></label>
-        <label class="dca-chip"><input type="checkbox"><span>25</span></label>
+      <div class="dca-chips" id="dca-days">
+        <label class="dca-chip"><input type="checkbox" value="1" checked><span>1</span></label>
+        <label class="dca-chip"><input type="checkbox" value="5"><span>5</span></label>
+        <label class="dca-chip"><input type="checkbox" value="10"><span>10</span></label>
+        <label class="dca-chip"><input type="checkbox" value="15" checked><span>15</span></label>
+        <label class="dca-chip"><input type="checkbox" value="20"><span>20</span></label>
+        <label class="dca-chip"><input type="checkbox" value="25"><span>25</span></label>
       </div>
     </div>
     <div class="toggle-row">
       <span style="font-size:0.82rem;color:var(--text2)">นำปันผลกลับไปลงทุน</span>
-      <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+      <div class="toggle-switch on" id="dca-reinvest" onclick="this.classList.toggle('on')"></div>
     </div>
-    <button class="btn-primary" style="margin-top:12px">คำนวณ</button>
+    <button class="btn-primary" id="dca-submit" onclick="runDCA()" style="margin-top:12px">คำนวณ</button>
   </div>
 
   <!-- Results -->
-  <div class="dca-result-cards">
-    <div class="dca-r-card">
-      <div class="dca-r-label">ลงทุนรวม</div>
-      <div class="dca-r-value">1.20 ล.</div>
-      <div class="dca-r-sub">10 ปี</div>
+  <div id="dca-results" style="display:none">
+    <div class="dca-result-cards">
+      <div class="dca-r-card">
+        <div class="dca-r-label">ลงทุนรวม</div>
+        <div class="dca-r-value">-</div>
+        <div class="dca-r-sub">-</div>
+      </div>
+      <div class="dca-r-card">
+        <div class="dca-r-label">มูลค่าปัจจุบัน</div>
+        <div class="dca-r-value">-</div>
+        <div class="dca-r-sub">-</div>
+      </div>
     </div>
-    <div class="dca-r-card">
-      <div class="dca-r-label">มูลค่าปัจจุบัน</div>
-      <div class="dca-r-value" style="color:var(--green)">1.85 ล.</div>
-      <div class="dca-r-sub" style="color:var(--green)">+54.2%</div>
+    <div class="dca-forecast">
+      <div class="dca-r-label">คาดการณ์</div>
+      <div class="dca-r-value">-</div>
+      <div class="dca-r-sub">-</div>
     </div>
-  </div>
-  <div class="dca-forecast">
-    <div class="dca-r-label">คาดการณ์ 10 ปี</div>
-    <div class="dca-r-value">4.32 ล.</div>
-    <div class="dca-r-sub">8.2%/ปี | YoC 6.8%</div>
   </div>
 </div>
 
@@ -769,21 +771,12 @@ body {
   <p class="desc">พิมพ์ชื่อหุ้น ระบบจะวิเคราะห์ให้อัตโนมัติ</p>
 
   <div class="request-form">
-    <input type="text" placeholder="LH, CHG, NYT">
-    <button>ส่ง</button>
+    <input type="text" id="req-input" placeholder="LH, CHG, NYT">
+    <button onclick="submitRequest()">ส่ง</button>
   </div>
 
-  <div class="req-group">
-    <div class="req-date">12 Apr 2026 (3 stocks)</div>
-    <div class="req-item"><span class="sym">LH</span><span>฿8.95</span><span class="yield">5.2%</span></div>
-    <div class="req-item"><span class="sym">CHG</span><span>฿3.42</span><span class="yield">3.1%</span></div>
-    <div class="req-item"><span class="sym">NYT</span><span>฿15.80</span><span class="yield">2.8%</span></div>
-  </div>
-  <div class="req-group">
-    <div class="req-date">5 Apr 2026 (2 stocks)</div>
-    <div class="req-item"><span class="sym">HMPRO</span><span>฿12.30</span><span class="yield">4.1%</span></div>
-    <div class="req-item"><span class="sym">SAWAD</span><span>฿45.50</span><span class="yield">2.3%</span></div>
-  </div>
+  <div id="req-status-list"></div>
+  <div id="req-history"></div>
 </div>
 
 <!-- ===== SETTINGS PAGE ===== -->
@@ -795,16 +788,16 @@ body {
     <h3>รอบการวิเคราะห์</h3>
     <div class="toggle-row">
       <span style="font-size:0.82rem">เปิด Schedule</span>
-      <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+      <div class="toggle-switch on" id="set-sched-enabled" onclick="this.classList.toggle('on')"></div>
     </div>
     <div class="form-row" style="margin-top:10px">
       <div class="settings-field">
         <label>วัน</label>
-        <select><option>จันทร์</option><option>อังคาร</option><option>พุธ</option><option>พฤหัสบดี</option><option>ศุกร์</option><option>เสาร์</option><option selected>อาทิตย์</option></select>
+        <select id="set-day"><option value="mon">จันทร์</option><option value="tue">อังคาร</option><option value="wed">พุธ</option><option value="thu">พฤหัสบดี</option><option value="fri">ศุกร์</option><option value="sat">เสาร์</option><option value="sun" selected>อาทิตย์</option></select>
       </div>
       <div class="settings-field">
         <label>เวลา</label>
-        <input type="time" value="09:00">
+        <input type="time" id="set-time" value="09:00">
       </div>
     </div>
   </div>
@@ -813,11 +806,11 @@ body {
     <h3>Pipeline อัตโนมัติ</h3>
     <div class="settings-field">
       <label>สัปดาห์คี่</label>
-      <select><option selected>Weekly</option><option>Discovery</option><option>Fetch</option><option>Screen</option></select>
+      <select id="set-odd"><option value="weekly" selected>Weekly</option><option value="discovery">Discovery</option><option value="fetch">Fetch</option><option value="screen">Screen</option></select>
     </div>
     <div class="settings-field">
       <label>สัปดาห์คู่</label>
-      <select><option>Weekly</option><option selected>Discovery</option><option>Fetch</option><option>Screen</option></select>
+      <select id="set-even"><option value="weekly">Weekly</option><option value="discovery" selected>Discovery</option><option value="fetch">Fetch</option><option value="screen">Screen</option></select>
     </div>
   </div>
 
@@ -826,28 +819,28 @@ body {
     <div class="form-row">
       <div class="settings-field">
         <label>ROE เฉลี่ย (%)</label>
-        <input type="number" value="15" inputmode="numeric">
+        <input type="number" id="set-roe" value="15" inputmode="numeric">
         <div class="settings-hint">ค่าเริ่มต้น: 15%</div>
       </div>
       <div class="settings-field">
         <label>Net Margin (%)</label>
-        <input type="number" value="10" inputmode="numeric">
+        <input type="number" id="set-nm" value="10" inputmode="numeric">
         <div class="settings-hint">ค่าเริ่มต้น: 10%</div>
       </div>
     </div>
     <div class="form-row" style="margin-top:10px">
       <div class="settings-field">
         <label>D/E สูงสุด</label>
-        <input type="number" value="1.5" step="0.1" inputmode="decimal">
+        <input type="number" id="set-de" value="1.5" step="0.1" inputmode="decimal">
       </div>
       <div class="settings-field">
         <label>Market Cap (ล้าน)</label>
-        <input type="number" value="5000" inputmode="numeric">
+        <input type="number" id="set-mcap" value="5000" inputmode="numeric">
       </div>
     </div>
   </div>
 
-  <button class="btn-primary">บันทึก</button>
+  <button class="btn-primary" id="set-save" onclick="saveSettings()">บันทึก</button>
 </div>
 
 <!-- ===== DETAIL PAGE (overlay) ===== -->
@@ -972,6 +965,10 @@ async function init() {
   } catch (e) {
     document.getElementById('card-list').innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--text3);font-size:0.85rem;">โหลดข้อมูลไม่ได้ · ลองรีเฟรช</div>';
   }
+  // Fire-and-forget initializations for other pages
+  loadSettings();
+  loadRequestHistory();
+  pollRequestStatus();
 }
 
 function renderCards() {
@@ -1171,6 +1168,218 @@ function renderDetail(sym, d) {
 
 function closeDetail() {
   document.getElementById('detail-page').classList.remove('open');
+}
+
+// ===== DCA =====
+async function runDCA() {
+  const sym = document.getElementById('dca-symbol').value.trim().toUpperCase();
+  if (!sym) return;
+  const amount = document.getElementById('dca-amount').value || 5000;
+  const forward = document.getElementById('dca-forward-years').value || 10;
+  const days = Array.from(document.querySelectorAll('#dca-days input:checked'))
+    .map(x => x.value).filter(Boolean).join(',') || '1,15';
+  const reinvest = document.getElementById('dca-reinvest').classList.contains('on');
+
+  const btn = document.getElementById('dca-submit');
+  const resultsDiv = document.getElementById('dca-results');
+  btn.disabled = true;
+  btn.textContent = 'กำลังคำนวณ...';
+  resultsDiv.style.display = 'none';
+
+  try {
+    const q = new URLSearchParams({
+      days: days,
+      amount: amount,
+      forward_years: forward,
+      reinvest: reinvest
+    });
+    const data = await fetch(API + '/api/dca/' + encodeURIComponent(sym) + '?' + q.toString())
+      .then(r => { if (!r.ok) throw new Error('dca failed'); return r.json(); });
+    renderDCA(data);
+    resultsDiv.style.display = '';
+  } catch (e) {
+    resultsDiv.innerHTML = '<div style="padding:20px;text-align:center;color:var(--red);font-size:0.85rem;">คำนวณไม่ได้ · ลองเช็คสัญลักษณ์หุ้น</div>';
+    resultsDiv.style.display = '';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'คำนวณ';
+  }
+}
+
+function formatTHB(n) {
+  if (n == null) return '-';
+  if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(2) + ' ล.';
+  if (Math.abs(n) >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return Math.round(n).toString();
+}
+
+function renderDCA(data) {
+  const bt = data.backtest || {};
+  const pj = data.projection || {};
+  const returnPct = bt.total_return_pct || 0;
+  const returnColor = returnPct >= 0 ? 'var(--green)' : 'var(--red)';
+  const forwardYears = data.forward_years || 10;
+
+  document.getElementById('dca-results').innerHTML = `
+    <div class="dca-result-cards">
+      <div class="dca-r-card">
+        <div class="dca-r-label">ลงทุนรวม</div>
+        <div class="dca-r-value">${formatTHB(bt.total_invested)}</div>
+        <div class="dca-r-sub">${bt.years || 0} ปี</div>
+      </div>
+      <div class="dca-r-card">
+        <div class="dca-r-label">มูลค่าปัจจุบัน</div>
+        <div class="dca-r-value" style="color:${returnColor}">${formatTHB(bt.current_value)}</div>
+        <div class="dca-r-sub" style="color:${returnColor}">${returnPct >= 0 ? '+' : ''}${returnPct.toFixed(1)}%</div>
+      </div>
+      <div class="dca-r-card">
+        <div class="dca-r-label">CAGR</div>
+        <div class="dca-r-value">${(bt.cagr || 0).toFixed(1)}%</div>
+        <div class="dca-r-sub">ผลตอบแทน/ปี</div>
+      </div>
+      <div class="dca-r-card">
+        <div class="dca-r-label">ปันผลสะสม</div>
+        <div class="dca-r-value">${formatTHB(bt.total_dividends)}</div>
+        <div class="dca-r-sub">YoC ${(bt.yield_on_cost || 0).toFixed(1)}%</div>
+      </div>
+    </div>
+    <div class="dca-forecast">
+      <div class="dca-r-label">คาดการณ์ ${forwardYears} ปี</div>
+      <div class="dca-r-value">${formatTHB(pj.projected_value)}</div>
+      <div class="dca-r-sub">${(pj.cagr || 0).toFixed(1)}%/ปี | YoC ${(pj.yield_on_cost || 0).toFixed(1)}%</div>
+    </div>
+  `;
+}
+
+// ===== Request =====
+async function submitRequest() {
+  const input = document.getElementById('req-input');
+  const symbols = input.value.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+  if (!symbols.length) return;
+  try {
+    await fetch(API + '/api/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symbols })
+    });
+    input.value = '';
+    pollRequestStatus();
+  } catch (e) {
+    alert('ส่งคำขอไม่ได้');
+  }
+}
+
+async function pollRequestStatus() {
+  try {
+    const s = await fetch(API + '/api/request/status').then(r => r.json());
+    const entries = Object.entries(s);
+    const list = entries.map(([sym, st]) => {
+      const label = st === 'processing' ? 'กำลังวิเคราะห์...' : st === 'done' ? 'เสร็จ' : 'ผิดพลาด';
+      const color = st === 'processing' ? 'var(--yellow)' : st === 'done' ? 'var(--green)' : 'var(--red)';
+      return `<div class="req-item"><span class="sym">${sym.replace('.BK','')}</span><span style="color:${color};font-size:0.75rem">${label}</span></div>`;
+    }).join('');
+    const el = document.getElementById('req-status-list');
+    el.innerHTML = list ? `<div class="req-group"><div class="req-date">สถานะคำขอ</div>${list}</div>` : '';
+    if (entries.some(([, st]) => st === 'processing')) {
+      setTimeout(pollRequestStatus, 3000);
+    } else {
+      loadRequestHistory();
+    }
+  } catch (e) {
+    // silent — status endpoint can fail quietly
+  }
+}
+
+async function loadRequestHistory() {
+  try {
+    const data = await fetch(API + '/api/requests').then(r => r.json());
+    const groups = (data.requests || []).slice(0, 5).map(req => {
+      const items = (req.stocks || []).map(s => {
+        const sym = (s.symbol || '').replace('.BK', '');
+        const price = s.price != null ? '฿' + Number(s.price).toFixed(2) : '-';
+        const yld = s.dividend_yield != null ? (s.dividend_yield > 1 ? s.dividend_yield : s.dividend_yield * 100).toFixed(1) + '%' : '-';
+        return `<div class="req-item" onclick="openDetail('${sym}')"><span class="sym">${sym}</span><span>${price}</span><span class="yield">${yld}</span></div>`;
+      }).join('');
+      return `<div class="req-group"><div class="req-date">${req.date} (${req.count} stocks)</div>${items}</div>`;
+    }).join('');
+    document.getElementById('req-history').innerHTML = groups || '<div style="padding:20px;text-align:center;color:var(--text3);font-size:0.82rem">ยังไม่มีประวัติคำขอ</div>';
+  } catch (e) {
+    // silent
+  }
+}
+
+// ===== Settings =====
+async function loadSettings() {
+  try {
+    const cfg = await fetch(API + '/api/settings').then(r => r.json());
+    const sched = cfg.schedule || {};
+    const pipe = cfg.pipeline || {};
+    const filt = cfg.filters || {};
+
+    const schedToggle = document.getElementById('set-sched-enabled');
+    if (sched.enabled === false) schedToggle.classList.remove('on');
+    else schedToggle.classList.add('on');
+
+    document.getElementById('set-day').value = sched.day_of_week || 'sun';
+    const h = String(sched.hour ?? 9).padStart(2, '0');
+    const m = String(sched.minute ?? 0).padStart(2, '0');
+    document.getElementById('set-time').value = `${h}:${m}`;
+
+    document.getElementById('set-odd').value = pipe.odd_weeks || 'weekly';
+    document.getElementById('set-even').value = pipe.even_weeks || 'discovery';
+
+    document.getElementById('set-roe').value = Math.round((filt.min_roe_avg ?? 0.15) * 100);
+    document.getElementById('set-nm').value = Math.round((filt.min_net_margin ?? 0.10) * 100);
+    document.getElementById('set-de').value = filt.max_de_non_fin ?? 1.5;
+    document.getElementById('set-mcap').value = Math.round((filt.min_market_cap ?? 5_000_000_000) / 1_000_000);
+  } catch (e) {
+    // silent
+  }
+}
+
+async function saveSettings() {
+  const btn = document.getElementById('set-save');
+  btn.disabled = true;
+  btn.textContent = 'กำลังบันทึก...';
+
+  const time = document.getElementById('set-time').value || '09:00';
+  const [hour, minute] = time.split(':').map(n => parseInt(n, 10));
+
+  const body = {
+    schedule: {
+      enabled: document.getElementById('set-sched-enabled').classList.contains('on'),
+      day_of_week: document.getElementById('set-day').value,
+      hour: hour,
+      minute: minute || 0
+    },
+    pipeline: {
+      odd_weeks: document.getElementById('set-odd').value,
+      even_weeks: document.getElementById('set-even').value
+    },
+    filters: {
+      min_roe_avg: parseFloat(document.getElementById('set-roe').value) / 100,
+      min_net_margin: parseFloat(document.getElementById('set-nm').value) / 100,
+      max_de_non_fin: parseFloat(document.getElementById('set-de').value),
+      min_market_cap: parseFloat(document.getElementById('set-mcap').value) * 1_000_000
+    }
+  };
+
+  try {
+    await fetch(API + '/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    btn.textContent = 'บันทึกแล้ว ✓';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.textContent = 'บันทึก';
+    }, 1500);
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'บันทึก';
+    alert('บันทึกไม่ได้');
+  }
 }
 
 // Init
