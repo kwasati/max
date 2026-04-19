@@ -1552,6 +1552,12 @@ async def get_stock_analysis(symbol: str):
 # ---------------------------------------------------------------------------
 # Static files (SPA) — mount last so API routes take priority
 # ---------------------------------------------------------------------------
+@app.get("/mobile", response_class=HTMLResponse)
+async def serve_mobile():
+    mobile_path = WEB_DIR / "mobile.html"
+    html = mobile_path.read_text(encoding="utf-8")
+    return HTMLResponse(html)
+
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
     index_path = WEB_DIR / "index.html"

@@ -9,6 +9,17 @@
 <link rel="stylesheet" href="style.css?v=__CB__">
 </head>
 <body>
+<script>
+(function(){
+  var url = new URL(window.location.href);
+  if (url.searchParams.has('desktop')) return;
+  var isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  var isNarrow = window.innerWidth < 768;
+  if (isTouch && isNarrow) {
+    window.location.replace('/mobile');
+  }
+})();
+</script>
 
 <!-- ===== MASTHEAD + SECTION NAV (P2) ===== -->
 <div class="mast-sticky">

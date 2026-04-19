@@ -642,9 +642,25 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 .page.active { animation: slideUp 0.25s ease; }
+.desktop-link {
+  position: fixed;
+  top: 10px;
+  right: 12px;
+  font-size: 0.68rem;
+  color: var(--text3);
+  text-decoration: none;
+  padding: 4px 8px;
+  background: rgba(255,255,255,0.85);
+  border-radius: 4px;
+  z-index: 100;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.05em;
+}
+.desktop-link:active { color: var(--accent); }
 </style>
 </head>
 <body>
+<a href="/?desktop=1" class="desktop-link">ดูบน Desktop</a>
 
 <!-- TOP BAR -->
 <div class="top-bar" id="top-bar">
