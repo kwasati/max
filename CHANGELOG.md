@@ -1,5 +1,65 @@
 # Max Mahon Changelog
 
+## v4.0.0 — 2026-04-19 · UX + Flow Rework
+
+**Breaking change** — ยุบ weekly + discovery เป็น scan เดียว, wipe watchlist seed, restructure UI
+
+### Flow changes
+- ยกเลิก `weekly` + `discovery` mode → **เหลือ `scan` mode เดียว** (screen 933 → quality score → Claude วิเคราะห์ 6 ด้าน top candidates + watchlist)
+- 1 รายงานต่อ scan — 4 sections: Top Picks / Watchlist Update / New In Batch / Watch Out
+- Scheduler: ไม่สลับ odd/even weeks แล้ว — cron เดียว เรียก scan ทุกอาทิตย์
+- `POST /api/scan/trigger` สำหรับ manual scan
+
+### New scripts
+- `scripts/scan.py` — unified scan with Anthropic SDK + Opus 4.7 + prompt caching
+- `scripts/run_scan.py` — pipeline runner (fetch + universe-refresh-if-stale + screen + scan)
+
+### Data model
+- `data/history.json` — scan history index (num, date, counts, summary, report)
+- `data/watchlist_events.jsonl` — watchlist add/remove event log
+- Wipe `user_data.json` watchlist ([] empty) — backup ที่ `user_data.backup.json`
+
+### New UI — Home Feed
+- หน้าแรกเป็น feed แยก (lede + at-a-glance + latest report card)
+- Header บางลงใน tab อื่น — ไม่โผล่ thesis ทุกหน้า
+- Report card clickable → full report viewer
+
+### New UI — Watchlist (real)
+- ปุ่ม ★ บน card + detail panel ทำงานจริง persist ไป `user_data.json`
+- Watchlist tab แสดงทุกตัวที่ follow — ผ่าน+หลุดรอบ พร้อมเหตุผลที่หลุด
+- Empty state เมื่อยังไม่มีหุ้นติดตาม
+
+### New UI — Stock List
+- ลบ "ค้นพบใหม่" tab — merge เข้า "ผ่านเกณฑ์" ด้วย NEW IN BATCH badge (gold)
+- Badge ปรากฏบน card ที่ไม่เคยผ่านเกณฑ์ใน scan ก่อนหน้า
+- Renamed "ไม่ผ่าน" → "หลุดรอบ"
+
+### New UI — History + Report Viewer
+- เมนู ประวัติ แยก — list scan ย้อนหลัง (date, summary, stats)
+- Report viewer: markdown → editorial HTML (§ H2 prefix, pick boxes, hard shadow)
+- Back button กลับหน้าก่อน (home หรือ history)
+
+### New UI — Stock Detail
+- Tab row: ภาพรวม / ประวัติ / เปรียบเทียบ
+- ประวัติ tab: SVG score timeline + event log (first_pass / failed / passed / signal / watchlist_add / watchlist_remove)
+
+### Real-time
+- SSE listener → running banner amber + dot pulse ขณะ scan
+- Completion toast → tap = go to report
+- Auto-refresh home + history + list หลัง scan เสร็จ
+
+### Mobile
+- Rewrite mobile.html editorial style (Fraunces serif + IBM Plex Sans Thai + JetBrains Mono)
+- Cream palette (#f4f0e6) + forest/amber/burgundy accents + hard shadows
+- 5-tab bottom nav: หน้าแรก / หุ้น / ติดตาม / ประวัติ / ตั้งค่า
+
+### Removed
+- `scripts/analyze.py`, `scripts/discover.py`, `scripts/run_weekly.py`, `run_weekly.bat`
+- `/api/run/{action}`, `/api/reports/{report_type}` endpoints
+- `pipeline.odd_weeks` + `pipeline.even_weeks` config fields
+
+---
+
 ## v3.3.1 — 2026-04-19 · Pipeline SDK Migration
 
 Weekly + discovery pipeline ย้ายจาก Claude CLI subprocess → Anthropic Python SDK เพื่อแก้ปัญหา pipeline ล่มทุกรอบจาก CLI timeout 300s

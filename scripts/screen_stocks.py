@@ -1,4 +1,4 @@
-"""Max Mahon v3 — Stock Screener: multi-year quality scoring (Dividend-First + Buffett Quality)."""
+"""Max Mahon v4 — Stock Screener: multi-year quality scoring (Dividend-First + Buffett Quality)."""
 
 import json
 import sys
@@ -562,7 +562,7 @@ def main():
         blacklisted = set()
 
     symbols = universe["symbols"]
-    print(f"Max Mahon v3 screening {len(symbols)} stocks (quality scoring)...")
+    print(f"Max Mahon v4 screening {len(symbols)} stocks (quality scoring)...")
 
     candidates = []
     filtered_stocks = []
@@ -705,7 +705,7 @@ def main():
     today = datetime.now().strftime("%Y-%m-%d")
     out = {
         "date": today,
-        "agent": "Max Mahon v3",
+        "agent": "Max Mahon v4",
         "scoring_version": "dividend-first-v3",
         "total_scanned": len(symbols),
         "passed_filter": len(candidates),

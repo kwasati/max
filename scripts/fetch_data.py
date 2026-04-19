@@ -1,4 +1,4 @@
-"""Max Mahon v3 — fetch multi-year Thai stock fundamentals.
+"""Max Mahon v4 — fetch multi-year Thai stock fundamentals.
 
 Primary: thaifin (10+ years Thai financials)
 Fallback: yfinance (4-5 years statements + realtime price)
@@ -432,7 +432,7 @@ def main():
         watchlist = json.loads(WATCHLIST.read_text(encoding="utf-8"))
         symbols = [s["symbol"] for s in watchlist["stocks"]]
 
-    print(f"Max Mahon v3 fetching {len(symbols)} stocks (multi-year)...")
+    print(f"Max Mahon v4 fetching {len(symbols)} stocks (multi-year)...")
     results = []
     for i, sym in enumerate(symbols):
         try:
@@ -463,7 +463,7 @@ def main():
     out_path = DATA_DIR / f"snapshot_{today}.json"
     out_path.write_text(
         json.dumps(
-            {"date": today, "agent": "Max Mahon v3", "stocks": results},
+            {"date": today, "agent": "Max Mahon v4", "stocks": results},
             ensure_ascii=False,
             indent=2,
             default=str,

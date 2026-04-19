@@ -63,7 +63,7 @@ if _anthropic_mod and _anthropic_client is None:
 # ---------------------------------------------------------------------------
 # App
 # ---------------------------------------------------------------------------
-app = FastAPI(title="Max Mahon Server", version="3.0.0")
+app = FastAPI(title="Max Mahon Server", version="4.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
