@@ -1,16 +1,25 @@
 """Max Mahon v3 — Discovery: Claude analyzes quality-screened stocks for DCA candidates."""
 
 import json
-import shutil
-import subprocess
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
+
+import anthropic
+from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 REPORTS_DIR = ROOT / "reports"
 USER_DATA = ROOT / "user_data.json"
+
+load_dotenv(Path("C:/WORKSPACE/.env"))
+_API_KEY = os.getenv("MAX_ANTHROPIC_API_KEY")
+if not _API_KEY:
+    print("MAX_ANTHROPIC_API_KEY not set in C:/WORKSPACE/.env")
+    sys.exit(1)
+_client = anthropic.Anthropic(api_key=_API_KEY)
 
 
 def get_latest_screener() -> Path:
@@ -65,27 +74,10 @@ def fmt_candidate(c):
   Reasons: {', '.join(c.get('reasons', []))}{yearly_str}{div_str}{warn_str}"""
 
 
-def build_prompt(screener_path: Path) -> str:
-    data = json.loads(screener_path.read_text(encoding="utf-8"))
-
-    if USER_DATA.exists():
-        user_data = json.loads(USER_DATA.read_text(encoding="utf-8"))
-    else:
-        user_data = {"watchlist": [], "notes": {}, "blacklist": []}
-
-    watched_syms = user_data.get("watchlist", [])
-    new_finds = [c for c in data["candidates"] if not c["in_watchlist"]]
-    existing = [c for c in data["candidates"] if c["in_watchlist"]]
-
-    new_section = "\n".join(fmt_candidate(c) for c in new_finds[:30]) or "ไม่พบตัวใหม่ที่ผ่านเกณฑ์"
-    existing_section = "\n".join(fmt_candidate(c) for c in existing) or "ไม่มีตัวใน watchlist ที่ผ่าน"
-
-    return f"""คุณคือ Max Mahon — นักวิเคราะห์หุ้นไทย เชี่ยวชาญการคัดหุ้นคุณภาพสูงสำหรับ DCA ระยะยาว
+def build_system_prompt() -> str:
+    return """คุณคือ Max Mahon — นักวิเคราะห์หุ้นไทย เชี่ยวชาญการคัดหุ้นคุณภาพสูงสำหรับ DCA ระยะยาว
 สไตล์: Warren Buffett (คุณภาพธุรกิจ + moat) + เซียนฮง สถาพร (ปันผลดี + growth)
 เป้าหมาย: หาหุ้นที่เหมาะ DCA 10-20 ปี ปันผลดีและเติบโตสม่ำเสมอ
-
-วันที่: {data['date']}
-Scanned: {data['total_scanned']} ตัว | ผ่าน Hard Filters: {data['passed_filter']} ตัว | ถูก filter ออก: {data.get('filtered_out', 0)} ตัว | ตัวใหม่: {data['new_discoveries']} ตัว
 
 ## Hard Filters (ต้องผ่านทุกข้อ — สไตล์ Buffett)
 - ROE เฉลี่ย 4 ปี ≥ 15% (ไม่มีปีต่ำกว่า 12%)
@@ -109,17 +101,6 @@ Scanned: {data['total_scanned']} ตัว | ผ่าน Hard Filters: {data['p
 - **TURNAROUND** — forward PE ต่ำกว่า trailing มาก + revenue CAGR บวก
 - **YIELD_TRAP** — yield >8% + ROE ลดลงทุกปี + payout >100% → ⚠ กับดัก
 - **DATA_WARNING** — ข้อมูลผิดปกติ ห้ามใช้ตัดสินใจ
-
-## Watchlist ปัจจุบัน ({len(watched_syms)} ตัว)
-{', '.join(watched_syms)}
-
-## ตัวใน Watchlist ที่ผ่านเกณฑ์
-{existing_section}
-
-## ตัวใหม่ที่ผ่านเกณฑ์ (ยังไม่อยู่ใน Watchlist)
-{new_section}
-
----
 
 ## สิ่งที่ต้องทำ
 
@@ -154,38 +135,57 @@ Scanned: {data['total_scanned']} ตัว | ผ่าน Hard Filters: {data['p
 """
 
 
-def main():
-    screener = get_latest_screener()
-    print(f"Using screener: {screener.name}")
+def build_user_prompt(screener_path: Path) -> str:
+    data = json.loads(screener_path.read_text(encoding="utf-8"))
 
-    prompt = build_prompt(screener)
+    if USER_DATA.exists():
+        user_data = json.loads(USER_DATA.read_text(encoding="utf-8"))
+    else:
+        user_data = {"watchlist": [], "notes": {}, "blacklist": []}
 
-    today = datetime.now().strftime("%Y-%m-%d")
-    report_path = REPORTS_DIR / f"discovery_{today}.md"
+    watched_syms = user_data.get("watchlist", [])
+    new_finds = [c for c in data["candidates"] if not c["in_watchlist"]]
+    existing = [c for c in data["candidates"] if c["in_watchlist"]]
 
-    print("Max Mahon v3 analyzing discoveries with Claude...")
+    new_section = "\n".join(fmt_candidate(c) for c in new_finds[:30]) or "ไม่พบตัวใหม่ที่ผ่านเกณฑ์"
+    existing_section = "\n".join(fmt_candidate(c) for c in existing) or "ไม่มีตัวใน watchlist ที่ผ่าน"
 
-    def find_claude_cli():
-        for name in ["claude.cmd", "claude"]:
-            p = shutil.which(name)
-            if p:
-                return p
-        raise FileNotFoundError("ไม่เจอ Claude CLI — กรุณาติดตั้ง")
+    return f"""วันที่: {data['date']}
+Scanned: {data['total_scanned']} ตัว | ผ่าน Hard Filters: {data['passed_filter']} ตัว | ถูก filter ออก: {data.get('filtered_out', 0)} ตัว | ตัวใหม่: {data['new_discoveries']} ตัว
 
-    claude_cmd = find_claude_cli()
-    result = subprocess.run(
-        [claude_cmd, "--print", "--model", "claude-sonnet-4-6", "-p", "-"],
-        input=prompt,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        timeout=300,
-    )
+## Watchlist ปัจจุบัน ({len(watched_syms)} ตัว)
+{', '.join(watched_syms)}
 
-    if result.returncode != 0:
-        print(f"Claude error: {result.stderr}")
+## ตัวใน Watchlist ที่ผ่านเกณฑ์
+{existing_section}
+
+## ตัวใหม่ที่ผ่านเกณฑ์ (ยังไม่อยู่ใน Watchlist)
+{new_section}
+"""
+
+
+def run_claude(system_prompt: str, user_prompt: str, output_path: Path):
+    print("Max Mahon v3 analyzing discoveries with Claude (Opus 4.7 + prompt caching)...")
+
+    try:
+        response = _client.messages.create(
+            model="claude-opus-4-7",
+            max_tokens=16000,
+            system=[{
+                "type": "text",
+                "text": system_prompt,
+                "cache_control": {"type": "ephemeral"},
+            }],
+            messages=[{"role": "user", "content": user_prompt}],
+            timeout=900.0,
+        )
+    except Exception as e:
+        print(f"Anthropic SDK error: {e}")
         sys.exit(1)
 
+    raw_text = response.content[0].text.strip()
+
+    today = datetime.now().strftime("%Y-%m-%d")
     header = f"""---
 agent: Max Mahon v3
 date: {today}
@@ -193,8 +193,21 @@ type: discovery
 ---
 
 """
-    report_path.write_text(header + result.stdout.strip(), encoding="utf-8")
-    print(f"Discovery report → {report_path}")
+    output_path.write_text(header + raw_text, encoding="utf-8")
+    print(f"Discovery report → {output_path}")
+
+
+def main():
+    screener = get_latest_screener()
+    print(f"Using screener: {screener.name}")
+
+    system_prompt = build_system_prompt()
+    user_prompt = build_user_prompt(screener)
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    report_path = REPORTS_DIR / f"discovery_{today}.md"
+
+    run_claude(system_prompt, user_prompt, report_path)
 
 
 if __name__ == "__main__":
