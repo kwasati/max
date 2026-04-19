@@ -427,6 +427,7 @@ PIPELINE_MAP = {
     "analyze": ["analyze.py"],
     "screen": ["screen_stocks.py"],
     "discover": ["discover.py"],
+    "scan": ["fetch_data.py", "update_universe.py", "screen_stocks.py", "scan.py"],
     "weekly": ["fetch_data.py", "analyze.py"],
     "discovery": ["fetch_data.py", "screen_stocks.py", "discover.py"],
 }
@@ -491,6 +492,17 @@ async def run_pipeline(action: str):
     scripts = PIPELINE_MAP[action]
     threading.Thread(target=_execute_sync, args=(scripts, action), daemon=True).start()
     return {"status": "started", "action": action, "scripts": scripts}
+
+
+@app.post("/api/scan/trigger")
+async def trigger_scan():
+    """Manual trigger unified scan pipeline."""
+    with _pipeline_lock:
+        if pipeline_state["running"]:
+            raise HTTPException(409, f"Pipeline already running: {pipeline_state['current_task']}")
+    scripts = _get_scripts_for_mode("scan")
+    threading.Thread(target=_execute_sync, args=(scripts, "manual scan"), daemon=True).start()
+    return {"status": "started", "mode": "scan", "scripts": scripts}
 
 
 @app.get("/api/events")
@@ -628,26 +640,15 @@ async def post_settings(request: Request):
 # Scheduler
 # ---------------------------------------------------------------------------
 
-def get_week_of_month() -> int:
-    """Return week number 1-4+ for current date."""
-    today = datetime.now()
-    return (today.day - 1) // 7 + 1
-
-
 def scheduled_run():
-    """Run pipeline based on config — week logic from config['pipeline']."""
+    """Run unified scan pipeline weekly."""
     config = load_config()
     sched = config.get("schedule", {})
     if not sched.get("enabled", True):
         return
-
-    pipeline_cfg = config.get("pipeline", DEFAULT_CONFIG["pipeline"])
-    week = get_week_of_month()
-    mode = pipeline_cfg["odd_weeks"] if week in (1, 3) else pipeline_cfg["even_weeks"]
-    print(f"[scheduler] week {week} — running {mode}")
-
-    scripts = _get_scripts_for_mode(mode)
-    _execute_sync(scripts, f"scheduled {mode}")
+    print("[scheduler] running scan pipeline")
+    scripts = _get_scripts_for_mode("scan")
+    _execute_sync(scripts, "scheduled scan")
 
 
 scheduler = BackgroundScheduler()
