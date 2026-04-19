@@ -151,6 +151,23 @@ def _norm_sym(s: str) -> str:
     return (s or "").upper().replace(".BK", "")
 
 
+def _get_historical_passed_symbols(exclude_current: Optional[Path] = None) -> set:
+    """Return set of all symbols that ever passed (appeared in `candidates` array) in any prior screener file."""
+    all_syms = set()
+    for scr_file in DATA_DIR.glob("screener_*.json"):
+        if exclude_current and scr_file == exclude_current:
+            continue
+        try:
+            data = read_json(scr_file)
+            for c in data.get("candidates", []):
+                sym = _norm_sym(c.get("symbol", ""))
+                if sym:
+                    all_syms.add(sym)
+        except Exception:
+            continue
+    return all_syms
+
+
 # ---------------------------------------------------------------------------
 # Data API
 # ---------------------------------------------------------------------------
@@ -168,7 +185,13 @@ async def get_screener():
     path = find_latest("screener_*.json", DATA_DIR)
     if not path:
         raise HTTPException(404, "No screener data found")
-    return read_json(path)
+    data = read_json(path)
+    # P3.1 — tag each candidate with is_new_in_batch (never passed in any prior screener)
+    historical = _get_historical_passed_symbols(exclude_current=path)
+    for c in data.get("candidates", []):
+        sym = _norm_sym(c.get("symbol", ""))
+        c["is_new_in_batch"] = bool(sym) and sym not in historical
+    return data
 
 
 @app.get("/api/stock/{symbol}")

@@ -239,6 +239,21 @@ body {
   font-weight: 900;
   color: var(--ink);
 }
+.card-sym .new-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.52rem;
+  color: var(--gold);
+  background: #fcf6e3;
+  border: 1px solid var(--gold);
+  padding: 1px 5px;
+  letter-spacing: 0.1em;
+  font-weight: 500;
+  border-radius: 2px;
+  vertical-align: middle;
+  text-transform: uppercase;
+}
 .card-sector {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.58rem;
@@ -1073,7 +1088,6 @@ body {
   <div class="sub-tabs" id="sub-tabs">
     <button class="sub-tab active" data-filter="passed">ผ่าน (17)</button>
     <button class="sub-tab" data-filter="watchlist">ติดตาม (3)</button>
-    <button class="sub-tab" data-filter="new">ใหม่ (14)</button>
     <button class="sub-tab" data-filter="filtered">ไม่ผ่าน (82)</button>
   </div>
 
@@ -1322,6 +1336,7 @@ function normalizeStock(s) {
     tags: (s.signals || []).map(t => TAG_TH[t] || t),
     tagColors: (s.signals || []).map(t => TAG_COLOR[t] || 'blue'),
     reasons: s.reasons || null,
+    is_new_in_batch: !!s.is_new_in_batch,
     raw: s
   };
 }
@@ -1338,13 +1353,6 @@ function getListForFilter() {
   }
   if (currentFilter === 'watchlist') {
     return watchStocks.map(normalizeStock).sort((a, b) => b.score - a.score);
-  }
-  if (currentFilter === 'new') {
-    return candidates
-      .filter(c => !watchSyms.has((c.symbol || '').toUpperCase()))
-      .filter(c => c.score >= 50)
-      .map(normalizeStock)
-      .sort((a, b) => b.score - a.score);
   }
   return candidates
     .filter(c => c.score >= 50)
@@ -1383,7 +1391,7 @@ function renderCards() {
     el.innerHTML = stocks.map(s => `
       <div class="stock-card filtered" onclick="openDetail('${s.sym}')">
         <div class="card-body">
-          <div class="card-sym">${s.sym}</div>
+          <div class="card-sym">${s.sym}${s.is_new_in_batch ? '<span class="new-badge">NEW</span>' : ''}</div>
           <div class="card-sector">${s.sector || ''}</div>
           <div class="filtered-reason">${(s.reasons || []).join(', ') || '-'}</div>
         </div>
@@ -1397,7 +1405,7 @@ function renderCards() {
     <div class="stock-card" onclick="openDetail('${s.sym}')">
       <div class="card-score ${scoreClass(s.score)}">${Math.round(s.score)}</div>
       <div class="card-body">
-        <div class="card-sym">${s.sym}</div>
+        <div class="card-sym">${s.sym}${s.is_new_in_batch ? '<span class="new-badge">NEW</span>' : ''}</div>
         <div class="card-sector">${s.sector || ''}</div>
         <div class="card-nums">
           <span><span class="n-label">Yield</span> <span class="n-val">${s.yield.toFixed(1)}%</span></span>
