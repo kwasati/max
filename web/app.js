@@ -1325,16 +1325,30 @@ function renderDetail(d) {
   `;
   detail.classList.add('open');
 
-  // Bind tab switching (P5.1)
+  // Bind tab switching (P5.1 + P5.2 history loader)
   detail.querySelectorAll('.tab-row .tab-item').forEach(t => {
-    t.addEventListener('click', () => {
+    t.addEventListener('click', async () => {
       const tab = t.dataset.detailTab;
       detail.querySelectorAll('.tab-row .tab-item').forEach(x => x.classList.remove('active'));
       t.classList.add('active');
       detail.querySelectorAll('.detail-tab-content').forEach(c => {
         c.hidden = c.dataset.tabContent !== tab;
       });
-      // P5.2 will add: if (tab === 'history') loadStockHistory(currentSym);
+      // P5.2 — load history on demand
+      if (tab === 'history') {
+        const container = detail.querySelector('[data-tab-content="history"]');
+        if (!container || container.dataset.loaded === '1') return;
+        container.innerHTML = '<div class="loading-state">กำลังโหลด…</div>';
+        try {
+          const res = await fetch(API + '/api/stock/' + encodeURIComponent(fullSymbol) + '/history');
+          if (!res.ok) throw new Error('http ' + res.status);
+          const data = await res.json();
+          renderStockHistory(data, container);
+          container.dataset.loaded = '1';
+        } catch (e) {
+          container.innerHTML = '<div class="empty-state"><p>โหลดประวัติหุ้นไม่ได้</p></div>';
+        }
+      }
     });
   });
 
@@ -1395,6 +1409,102 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+// ===== STOCK HISTORY (P5.2) =====
+function formatEventDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return String(iso);
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  return `${d.getDate()} ${months[d.getMonth()]}`;
+}
+
+function renderStockHistory(data, container) {
+  const timeline = (data && data.timeline) || [];
+  const events = (data && data.events) || [];
+  if (!timeline.length) {
+    container.innerHTML = '<div class="empty-state"><p>ยังไม่มีประวัติ scan สำหรับหุ้นนี้</p></div>';
+    return;
+  }
+
+  // Compute SVG points from scored entries only
+  const scored = timeline.filter(t => t.score != null);
+  const W = 300, H = 125, PAD = 10;
+  let chartInner = '';
+  if (scored.length > 0) {
+    const xs = scored.map((_, i) =>
+      scored.length === 1
+        ? W / 2
+        : PAD + i * (W - 2 * PAD) / (scored.length - 1)
+    );
+    const maxScore = Math.max(...scored.map(t => t.score), 100);
+    const minScore = Math.min(...scored.map(t => t.score), 0);
+    const range = Math.max(maxScore - minScore, 1);
+    const ys = scored.map(t => PAD + (1 - (t.score - minScore) / range) * (H - 2 * PAD));
+    const pts = xs.map((x, i) => `${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
+    const dots = xs.map((x, i) => {
+      const scoreVal = scored[i].score;
+      const cls = scoreVal < 50 ? 'chart-dot low' : 'chart-dot';
+      return `<circle class="${cls}" cx="${x.toFixed(1)}" cy="${ys[i].toFixed(1)}" r="3.5"/>`;
+    }).join('');
+    const step = Math.max(1, Math.floor(scored.length / 4));
+    const axisLabels = xs.map((x, i) => {
+      if (i === 0 || i === scored.length - 1 || i % step === 0) {
+        const num = scored[i].scan_num;
+        const label = num != null ? `#${num}` : '—';
+        return `<text class="chart-axis" x="${x.toFixed(1)}" y="${H - 5}" text-anchor="middle">${label}</text>`;
+      }
+      return '';
+    }).join('');
+    chartInner = `
+        <line x1="0" y1="30" x2="${W}" y2="30" stroke="#d6cfbd" stroke-width="0.5" stroke-dasharray="3,3"/>
+        <line x1="0" y1="65" x2="${W}" y2="65" stroke="#d6cfbd" stroke-width="0.5" stroke-dasharray="3,3"/>
+        <line x1="0" y1="100" x2="${W}" y2="100" stroke="#d6cfbd" stroke-width="0.5" stroke-dasharray="3,3"/>
+        ${scored.length >= 2 ? `<polyline class="chart-line" points="${pts}"/>` : ''}
+        ${dots}
+        ${axisLabels}
+    `;
+  } else {
+    chartInner = `
+        <line x1="0" y1="30" x2="${W}" y2="30" stroke="#d6cfbd" stroke-width="0.5" stroke-dasharray="3,3"/>
+        <line x1="0" y1="65" x2="${W}" y2="65" stroke="#d6cfbd" stroke-width="0.5" stroke-dasharray="3,3"/>
+        <line x1="0" y1="100" x2="${W}" y2="100" stroke="#d6cfbd" stroke-width="0.5" stroke-dasharray="3,3"/>
+        <text class="chart-axis" x="${W/2}" y="${H/2}" text-anchor="middle">ยังไม่ผ่านเกณฑ์ในรอบ scan ที่ผ่านมา</text>
+    `;
+  }
+
+  const eventsHtml = events.length === 0
+    ? '<div class="empty-state"><p>ยังไม่มี event</p></div>'
+    : events.map(e => {
+        const actionClass = (e.type === 'passed' || e.type === 'first_pass' || e.type === 'watchlist_add')
+          ? 'in'
+          : (e.type === 'failed' || e.type === 'watchlist_remove')
+            ? 'out'
+            : '';
+        const scanTag = e.scan_num != null ? `<br>#${e.scan_num}` : '';
+        const detailHtml = e.detail ? ' — ' + escapeHtml(e.detail) : '';
+        return `
+          <div class="event-item">
+            <div class="event-date">${formatEventDate(e.date)}${scanTag}</div>
+            <div class="event-body"><span class="action ${actionClass}">${escapeHtml(e.action || '')}</span>${detailHtml}</div>
+          </div>
+        `;
+      }).join('');
+
+  container.innerHTML = `
+    <div class="chart-title">SCORE TIMELINE · ${scored.length} SCAN${scored.length !== 1 ? 'S' : ''}</div>
+    <div class="timeline-chart">
+      <svg class="chart-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+        ${chartInner}
+      </svg>
+    </div>
+
+    <span class="section-num mono">Events</span>
+    <div class="event-list">
+      ${eventsHtml}
+    </div>
+  `;
 }
 
 // ===== REQUEST PANEL =====

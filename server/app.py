@@ -312,6 +312,148 @@ async def get_scan_history():
     return {"scans": scans_sorted, "total": len(scans_sorted)}
 
 
+@app.get("/api/stock/{symbol}/history")
+async def get_stock_history(symbol: str):
+    """Aggregate score + signal changes across all screener files for a symbol.
+
+    Returns:
+        {symbol, timeline: [{date, scan_num, score, signals, passed, reasons}],
+         events: [{date, scan_num, type, action, detail}]}
+    Timeline points come from every screener_*.json sorted by date ASC.
+    Events are derived (first_pass / failed / passed / signal) + watchlist adds.
+    """
+    sym_norm = _norm_sym(symbol)
+    timeline: list[dict] = []
+
+    # Load history.json to map screener dates → scan numbers
+    history_file = DATA_DIR / "history.json"
+    scan_nums: dict[str, int] = {}
+    if history_file.exists():
+        try:
+            hist = read_json(history_file)
+            for s in hist.get("scans", []):
+                rep = s.get("report", "") or ""
+                # scan_YYYY-MM-DD.md → date key
+                date_key = rep.replace("scan_", "").replace(".md", "") if rep else None
+                if date_key:
+                    scan_nums[date_key] = s.get("num")
+        except Exception as e:
+            logging.warning(f"stock history: history.json parse error: {e}")
+
+    # Iterate screener files chronologically (old → new)
+    for scr_file in sorted(DATA_DIR.glob("screener_*.json")):
+        try:
+            data = read_json(scr_file)
+            date = data.get("date") or scr_file.stem.replace("screener_", "")
+            scan_num = scan_nums.get(date)
+            found = False
+            for c in data.get("candidates", []):
+                if _norm_sym(c.get("symbol", "")) == sym_norm:
+                    timeline.append({
+                        "date": date,
+                        "scan_num": scan_num,
+                        "score": c.get("score"),
+                        "signals": c.get("signals", []) or [],
+                        "passed": True,
+                        "reasons": [],
+                    })
+                    found = True
+                    break
+            if not found:
+                for c in data.get("filtered_out_stocks", []) or []:
+                    if _norm_sym(c.get("symbol", "")) == sym_norm:
+                        reasons = c.get("filter_reasons") or c.get("reasons") or []
+                        timeline.append({
+                            "date": date,
+                            "scan_num": scan_num,
+                            "score": None,
+                            "signals": [],
+                            "passed": False,
+                            "reasons": reasons,
+                        })
+                        break
+        except Exception as e:
+            logging.warning(f"stock history parse error {scr_file}: {e}")
+
+    # Load watchlist events (if exists)
+    events_file = DATA_DIR / "watchlist_events.jsonl"
+    watchlist_events: list[dict] = []
+    if events_file.exists():
+        try:
+            for line in events_file.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    ev = json.loads(line)
+                    if _norm_sym(ev.get("symbol", "")) == sym_norm:
+                        watchlist_events.append(ev)
+                except Exception:
+                    continue
+        except Exception as e:
+            logging.warning(f"stock history: watchlist_events read error: {e}")
+
+    # Derive events from timeline transitions
+    events: list[dict] = []
+    prev_passed: Optional[bool] = None
+    prev_signals: set = set()
+    for pt in timeline:
+        if prev_passed is None and pt["passed"] is True:
+            events.append({
+                "date": pt["date"],
+                "scan_num": pt["scan_num"],
+                "type": "first_pass",
+                "action": "ผ่านเกณฑ์ (ครั้งแรก)",
+                "detail": f"score {pt['score']}" if pt["score"] is not None else "",
+            })
+        elif prev_passed is True and pt["passed"] is False:
+            detail = pt["reasons"][0] if pt["reasons"] else ""
+            events.append({
+                "date": pt["date"],
+                "scan_num": pt["scan_num"],
+                "type": "failed",
+                "action": "หลุดรอบ",
+                "detail": detail,
+            })
+        elif prev_passed is False and pt["passed"] is True:
+            events.append({
+                "date": pt["date"],
+                "scan_num": pt["scan_num"],
+                "type": "passed",
+                "action": "กลับมาผ่านเกณฑ์",
+                "detail": f"score {pt['score']}" if pt["score"] is not None else "",
+            })
+        # new signal (appeared this scan, not in previous)
+        new_signals = set(pt["signals"]) - prev_signals
+        for sig in sorted(new_signals):
+            events.append({
+                "date": pt["date"],
+                "scan_num": pt["scan_num"],
+                "type": "signal",
+                "action": f"Signal: {sig}",
+                "detail": "",
+            })
+        prev_passed = pt["passed"]
+        prev_signals = set(pt["signals"])
+
+    # Merge watchlist events
+    for ev in watchlist_events:
+        raw_date = ev.get("date", "") or ""
+        action = ev.get("action", "")
+        events.append({
+            "date": raw_date[:10],
+            "scan_num": None,
+            "type": f"watchlist_{action}",
+            "action": "เพิ่มใน watchlist" if action == "add" else "ถอดจาก watchlist",
+            "detail": "",
+        })
+
+    # Sort events newest first
+    events.sort(key=lambda e: e["date"] or "", reverse=True)
+
+    return {"symbol": symbol, "timeline": timeline, "events": events}
+
+
 @app.get("/api/status")
 async def get_status():
     uptime = time.time() - START_TIME
@@ -1147,13 +1289,36 @@ class WatchlistUpdate(BaseModel):
 @app.put("/api/user/watchlist")
 async def update_watchlist(body: WatchlistUpdate):
     data = load_user_data()
-    wl = set(data["watchlist"])
+    old_wl = set(data.get("watchlist") or [])
+    wl = set(old_wl)
     for s in body.add:
         wl.add(_normalize_symbol(s))
     for s in body.remove:
         wl.discard(_normalize_symbol(s))
     data["watchlist"] = sorted(wl)
     save_user_data(data)
+
+    # P5.2 — append watchlist events (add/remove) to jsonl log
+    added = wl - old_wl
+    removed = old_wl - wl
+    if added or removed:
+        events_file = DATA_DIR / "watchlist_events.jsonl"
+        now_iso = datetime.now().isoformat()
+        try:
+            with events_file.open("a", encoding="utf-8") as f:
+                for sym in sorted(added):
+                    f.write(json.dumps(
+                        {"date": now_iso, "symbol": sym, "action": "add"},
+                        ensure_ascii=False,
+                    ) + "\n")
+                for sym in sorted(removed):
+                    f.write(json.dumps(
+                        {"date": now_iso, "symbol": sym, "action": "remove"},
+                        ensure_ascii=False,
+                    ) + "\n")
+        except Exception as e:
+            logging.warning(f"watchlist_events log error: {e}")
+
     return {"watchlist": data["watchlist"]}
 
 
