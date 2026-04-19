@@ -1,7 +1,7 @@
 // Max Mahon Dashboard — app.js
 
 const API = '';  // same origin
-let state = { watchlist: null, screener: null, currentStock: null, activeTab: 'passed', filteredReasons: null, sortBy: 'score' };
+let state = { watchlist: null, screener: null, currentStock: null, activeTab: 'home', filteredReasons: null, sortBy: 'score' };
 
 // ==== Chart.js Editorial Theme (P5) ====
 if (typeof Chart !== 'undefined' && !Chart.__editorialThemed) {
@@ -85,8 +85,9 @@ async function init() {
     renderSummary();
     bindTabs();
     bindSort();  // sync sortBy with dropdown before first render
-    renderStockList();
     bindRequests();
+    // Default landing = Home. Activate tab (hides stock-section + loads home data).
+    activateTab('home');
   } catch (err) {
     const el = document.getElementById('stock-list');
     if (el) el.innerHTML = errorRowHTML(err && err.message ? err.message : 'โหลดข้อมูลไม่ได้');
@@ -224,36 +225,117 @@ function renderSummary() {
 }
 
 // ===== TABS =====
+function activateTab(tabName) {
+  const btn = document.querySelector(`#tabs .tab[data-tab="${tabName}"]`);
+  if (!btn) return;
+  document.querySelectorAll('#tabs .tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state.activeTab = tabName;
+  const type = btn.dataset.type; // 'stock' or 'page'
+
+  const stockSection = document.getElementById('stock-section');
+  const pipelineBar = document.getElementById('pipeline-bar');
+
+  // Hide all page panels
+  document.querySelectorAll('.page-panel').forEach(p => p.classList.remove('active'));
+
+  if (type === 'stock') {
+    stockSection.style.display = '';
+    pipelineBar.style.display = '';
+    renderStockList();
+  } else {
+    stockSection.style.display = 'none';
+    pipelineBar.style.display = 'none';
+    const panel = document.getElementById('page-' + tabName);
+    if (panel) panel.classList.add('active');
+    // Load data for specific tabs
+    if (tabName === 'home') loadHomeData();
+    else if (tabName === 'requests') loadRequests();
+    else if (tabName === 'dca') populateDCASymbols();
+    else if (tabName === 'settings') loadSettings();
+  }
+}
+
 function bindTabs() {
   document.querySelectorAll('#tabs .tab').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('#tabs .tab').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      state.activeTab = btn.dataset.tab;
-      const type = btn.dataset.type; // 'stock' or 'page'
-
-      const stockSection = document.getElementById('stock-section');
-      const pipelineBar = document.getElementById('pipeline-bar');
-
-      // Hide all page panels
-      document.querySelectorAll('.page-panel').forEach(p => p.classList.remove('active'));
-
-      if (type === 'stock') {
-        stockSection.style.display = '';
-        pipelineBar.style.display = '';
-        renderStockList();
-      } else {
-        stockSection.style.display = 'none';
-        pipelineBar.style.display = 'none';
-        const panel = document.getElementById('page-' + btn.dataset.tab);
-        if (panel) panel.classList.add('active');
-        // Load data for specific tabs
-        if (btn.dataset.tab === 'requests') loadRequests();
-        else if (btn.dataset.tab === 'dca') populateDCASymbols();
-        else if (btn.dataset.tab === 'settings') loadSettings();
-      }
+      activateTab(btn.dataset.tab);
     });
   });
+  // Wire latest-report-card click (stub — full viewer in P4.2)
+  const card = document.getElementById('latest-report-card');
+  if (card && !card._bound) {
+    card._bound = true;
+    card.addEventListener('click', () => {
+      const num = card.dataset.scanNum;
+      if (num) openReport(num);
+    });
+  }
+}
+
+// ===== HOME FEED =====
+async function loadHomeData() {
+  try {
+    const history = await fetch(API + '/api/history').then(r => r.json());
+    const card = document.getElementById('latest-report-card');
+    const kickerText = card?.querySelector('.kicker-text');
+    const picksEl = document.getElementById('latest-report-picks');
+    const bylineEl = document.getElementById('latest-report-byline');
+    const summaryEl = document.getElementById('latest-report-summary');
+
+    if (history && history.scans && history.scans.length) {
+      const latest = history.scans[0];
+      if (card) card.dataset.scanNum = latest.num;
+      if (kickerText) kickerText.textContent = `รายงานล่าสุด · SCAN #${latest.num}`;
+
+      // Extract "top picks" as the leading phrase of summary (before " · " if any)
+      const summary = latest.summary || '';
+      const picksMatch = summary.match(/^([^·]+?)(?:\s*·|$)/);
+      const picksPhrase = picksMatch ? picksMatch[1].trim() : '';
+      if (picksEl) {
+        picksEl.innerHTML = picksPhrase
+          ? `Top Picks: <em>${picksPhrase}</em>`
+          : 'รายงานล่าสุด';
+      }
+      if (bylineEl) bylineEl.textContent = formatScanByline(latest.date, latest.num);
+      if (summaryEl) summaryEl.textContent = summary;
+
+      // Update stats panel with counts from latest scan
+      const counts = latest.counts || {};
+      setStatText('passed', counts.passed ?? '—');
+      setStatText('discoveries', counts.new ?? '—');
+    } else {
+      if (card) card.dataset.scanNum = '';
+      if (kickerText) kickerText.textContent = 'รายงานล่าสุด · ยังไม่มี';
+      if (picksEl) picksEl.textContent = 'ยังไม่มีรายงาน — กดปุ่ม Scan ด้านบน';
+      if (bylineEl) bylineEl.textContent = '';
+      if (summaryEl) summaryEl.textContent = '';
+    }
+  } catch (e) {
+    console.error('loadHomeData failed:', e);
+  }
+}
+
+function setStatText(key, val) {
+  const el = document.querySelector(`[data-stat="${key}"]`);
+  if (el) el.textContent = (val === null || val === undefined) ? '—' : String(val);
+}
+
+function formatScanByline(iso, num) {
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return `MAX · SCAN #${num}`;
+    const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    return `MAX · ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} · SCAN #${num}`;
+  } catch (e) {
+    return `MAX · SCAN #${num}`;
+  }
+}
+
+// Stub — full report viewer in P4.2
+function openReport(num) {
+  console.log('openReport', num);
+  alert('Report viewer coming in P4.2 — scan #' + num);
 }
 
 // ===== SORT =====

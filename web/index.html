@@ -43,7 +43,8 @@
   </header>
   <nav class="sec-nav">
     <div class="sec-nav-inner" id="tabs">
-      <button class="tab active" data-tab="passed" data-type="stock">ผ่านเกณฑ์</button>
+      <button class="tab active" data-tab="home" data-type="page">หน้าแรก</button>
+      <button class="tab" data-tab="passed" data-type="stock">ผ่านเกณฑ์</button>
       <button class="tab" data-tab="watchlist" data-type="stock">ติดตาม</button>
       <button class="tab" data-tab="discoveries" data-type="stock">ค้นพบใหม่</button>
       <button class="tab" data-tab="filtered" data-type="stock">ไม่ผ่าน</button>
@@ -54,24 +55,37 @@
   </nav>
 </div>
 
-<!-- ===== LEDE + STATS ===== -->
-<section class="lede" id="lede">
-  <div class="lede-body-col">
-    <div class="kicker">THIS WEEK'S THESIS</div>
-    <h2 class="serif lede-headline">คุณภาพสม่ำเสมอ<br/><em>ชนะ</em>ความหวือหวา.</h2>
-    <div class="lede-body serif">Max Mahon คัดหุ้นไทยด้วย Buffett + เซียนฮง quality framework —
-    ROE ยืน, หนี้ต่ำ, กระแสเงินสดสม่ำเสมอ, ปันผลจาก cash จริงไม่ใช่หนี้
-    แล้วให้ Claude Opus 4.7 วิเคราะห์เชิงลึกอีกชั้น ก่อนลงในรายการสะสม</div>
-    <div class="byline mono">ANALYSIS BY MAX · CLAUDE OPUS 4.7</div>
+<!-- ===== HOME PAGE (LEDE + STATS + LATEST REPORT) ===== -->
+<section class="page-panel active" id="page-home">
+  <section class="lede" id="lede">
+    <div class="lede-body-col">
+      <div class="kicker">THIS WEEK'S THESIS</div>
+      <h2 class="serif lede-headline">คุณภาพสม่ำเสมอ<br/><em>ชนะ</em>ความหวือหวา.</h2>
+      <div class="lede-body serif">Max Mahon คัดหุ้นไทยด้วย Buffett + เซียนฮง quality framework —
+      ROE ยืน, หนี้ต่ำ, กระแสเงินสดสม่ำเสมอ, ปันผลจาก cash จริงไม่ใช่หนี้
+      แล้วให้ Claude Opus 4.7 วิเคราะห์เชิงลึกอีกชั้น ก่อนลงในรายการสะสม</div>
+      <div class="byline mono">ANALYSIS BY MAX · CLAUDE OPUS 4.7</div>
+    </div>
+    <aside class="stats-panel" id="summary-row">
+      <div class="stats-head serif">At a glance</div>
+      <div class="stat-item"><span class="stat-label">หุ้นที่ผ่านเกณฑ์</span><span class="stat-value mono" data-stat="passed">—</span></div>
+      <div class="stat-item"><span class="stat-label">คะแนนคุณภาพเฉลี่ย</span><span class="stat-value mono" data-stat="avg-score">—</span></div>
+      <div class="stat-item"><span class="stat-label">Yield เฉลี่ย (watchlist)</span><span class="stat-value mono" data-stat="avg-yield">—</span></div>
+      <div class="stat-item"><span class="stat-label">ค้นพบใหม่</span><span class="stat-value mono" data-stat="discoveries">—</span></div>
+      <div class="stat-item"><span class="stat-label">ข้อมูลต้องตรวจสอบ</span><span class="stat-value mono" data-stat="warnings">—</span></div>
+    </aside>
+  </section>
+
+  <!-- Latest Report Card -->
+  <div class="report-card-wrap">
+    <article class="report-card" id="latest-report-card" data-scan-num="">
+      <span class="kicker forest"><span class="kicker-text">รายงานล่าสุด · SCAN #—</span></span>
+      <h3 class="lede-small serif" id="latest-report-picks">—</h3>
+      <div class="byline mono" id="latest-report-byline">—</div>
+      <p class="report-summary" id="latest-report-summary">—</p>
+      <div class="report-cta mono">อ่านเต็ม →</div>
+    </article>
   </div>
-  <aside class="stats-panel" id="summary-row">
-    <div class="stats-head serif">At a glance</div>
-    <div class="stat-item"><span class="stat-label">หุ้นที่ผ่านเกณฑ์</span><span class="stat-value mono" data-stat="passed">—</span></div>
-    <div class="stat-item"><span class="stat-label">คะแนนคุณภาพเฉลี่ย</span><span class="stat-value mono" data-stat="avg-score">—</span></div>
-    <div class="stat-item"><span class="stat-label">Yield เฉลี่ย (watchlist)</span><span class="stat-value mono" data-stat="avg-yield">—</span></div>
-    <div class="stat-item"><span class="stat-label">ค้นพบใหม่</span><span class="stat-value mono" data-stat="discoveries">—</span></div>
-    <div class="stat-item"><span class="stat-label">ข้อมูลต้องตรวจสอบ</span><span class="stat-value mono" data-stat="warnings">—</span></div>
-  </aside>
 </section>
 
 <!-- ===== PIPELINE CONTROL ===== -->

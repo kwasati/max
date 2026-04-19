@@ -249,6 +249,74 @@
   .lede-body { max-width: 100%; }
 }
 
+/* ==== Home Feed — Latest Report Card (v4 P2.1) ==== */
+/* page-home wraps lede + stats + report-card; children manage their own max-width */
+#page-home { padding: 0; }
+
+.kicker.forest { color: var(--forest); }
+.kicker.forest::before { background: var(--forest); }
+
+.report-card-wrap {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 2.5rem 3rem;
+}
+.report-card {
+  background: var(--paper-3);
+  border: 1px solid var(--rule);
+  padding: 1.5rem 1.75rem 1.25rem;
+  box-shadow: 4px 4px 0 var(--paper-2);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.report-card:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 var(--paper-2);
+}
+.report-card .kicker { margin-bottom: 0.5rem; }
+.report-card .lede-small {
+  font-family: 'Fraunces', serif;
+  font-size: 1.45rem;
+  font-weight: 900;
+  line-height: 1.25;
+  letter-spacing: normal;
+  color: var(--ink);
+  margin: 0.3rem 0 0.4rem;
+  padding: 0;
+  border: none;
+}
+.report-card .lede-small em {
+  font-style: italic;
+  color: var(--forest);
+}
+.report-card .byline {
+  margin: 0 0 0.75rem;
+}
+.report-summary {
+  font-family: 'Fraunces', serif;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--ink-2);
+  margin: 0.5rem 0 1rem;
+}
+.report-cta {
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--forest);
+  border-top: 1px dotted var(--line);
+  padding-top: 0.75rem;
+}
+
+@media (max-width: 1024px) {
+  .report-card-wrap { padding: 1.5rem 1.5rem 2.5rem; }
+}
+@media (max-width: 720px) {
+  .report-card-wrap { padding: 1.25rem 1.25rem 2rem; }
+  .report-card { padding: 1.25rem 1.25rem 1rem; }
+  .report-card .lede-small { font-size: 1.2rem; }
+}
+
 /* ==== Section Head (P4) ==== */
 .section-head {
   max-width: 1400px; margin: 0 auto;
