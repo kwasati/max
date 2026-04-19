@@ -1,19 +1,18 @@
 # Max Mahon
 
-Thai stock analyst agent — automated weekly analysis of SET-listed stocks using Warren Buffett and Hong Sathaporn investment philosophy.
+Thai stock analyst agent — automated weekly scan of SET-listed stocks using Warren Buffett and Hong Sathaporn investment philosophy.
 
 Dashboard at [max.intensivetrader.com](https://max.intensivetrader.com)
 
 ## What It Does
 
-- **Weekly analysis:** Fetches multi-year financials via yfinance, then Claude analyzes 6 dimensions (business quality, financial health, growth, dividend sustainability, valuation, DCA suitability)
-- **Discovery:** Screens ~99 SET stocks through hard filters, scores quality out of 100, tags signals (COMPOUNDER, CASH_COW, DIVIDEND_KING, etc.), and Claude picks new candidates
-- **Dashboard:** Web UI for browsing watchlist, viewing stock details, and triggering pipelines
+- **Unified scan (weekly):** Fetches multi-year financials via thaifin + yfinance, screens SET+mai universe through hard filters, scores quality out of 100, tags signals (COMPOUNDER, CASH_COW, DIVIDEND_KING, etc.), and Claude picks top candidates + summarizes 6 dimensions (business quality, financial health, growth, dividend sustainability, valuation, DCA suitability)
+- **Dashboard:** Web UI for browsing watchlist, viewing stock details, reading scan reports, and triggering the pipeline
 
 ## Tech Stack
 
-- Python + yfinance (data)
-- Claude CLI (AI analysis)
+- Python + thaifin + yfinance (data)
+- Anthropic SDK (AI analysis)
 - FastAPI + APScheduler (server + scheduling)
 - HTML/CSS/JS dashboard (served by FastAPI)
 
@@ -25,11 +24,11 @@ max-server.bat
 # or
 py -m uvicorn server.app:app --port 50089
 
-# Run pipelines manually
-py scripts/run_weekly.py              # weekly analysis
-py scripts/run_weekly.py --discover   # discovery run
+# Run the pipeline manually
+py scripts/run_scan.py                # full scan (fetch + screen + analyze)
 py scripts/fetch_data.py              # fetch data only
 py scripts/screen_stocks.py           # screen stocks only
+py scripts/scan.py                    # scan step only
 ```
 
 Requires `MAX_TOKEN` in root `.env` for API auth (Bearer token).
@@ -39,14 +38,14 @@ Requires `MAX_TOKEN` in root `.env` for API auth (Bearer token).
 ```
 scripts/
   fetch_data.py      # multi-year financials + dividends
-  analyze.py         # Claude analysis prompt + run
+  update_universe.py # refresh SET/mai universe
   screen_stocks.py   # hard filters + quality score
-  discover.py        # Claude picks new stocks from screener
-  run_weekly.py      # pipeline runner
+  scan.py            # Claude scan (top picks + summary)
+  run_scan.py        # pipeline runner
 server/
   app.py             # FastAPI server, scheduler, SSE
 web/                 # dashboard frontend
-reports/             # generated analysis reports
-data/                # snapshots + screener results (gitignored)
-watchlist.json       # tracked stocks
+reports/             # scan_*.md reports
+data/                # snapshots + screener + history.json (gitignored)
+user_data.json       # watchlist + blacklist + notes
 ```

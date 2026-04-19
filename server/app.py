@@ -598,21 +598,15 @@ async def list_requests():
 # ---------------------------------------------------------------------------
 
 PIPELINE_MAP = {
-    "fetch": ["fetch_data.py"],
-    "analyze": ["analyze.py"],
-    "screen": ["screen_stocks.py"],
-    "discover": ["discover.py"],
     "scan": ["fetch_data.py", "update_universe.py", "screen_stocks.py", "scan.py"],
-    "weekly": ["fetch_data.py", "analyze.py"],
-    "discovery": ["fetch_data.py", "screen_stocks.py", "discover.py"],
 }
 
 
 def _get_scripts_for_mode(mode: str) -> list[str]:
     """Return script list for a pipeline mode."""
     if mode not in PIPELINE_MAP:
-        logging.error(f"[pipeline] unknown mode '{mode}', falling back to weekly")
-        mode = "weekly"
+        logging.error(f"[pipeline] unknown mode '{mode}', falling back to scan")
+        mode = "scan"
     return PIPELINE_MAP[mode]
 
 
@@ -655,20 +649,6 @@ def _execute_sync(scripts: list[str], label: str = "pipeline"):
         pipeline_state["last_run"] = datetime.now().isoformat()
 
 
-@app.post("/api/run/{action}")
-async def run_pipeline(action: str):
-    if action not in PIPELINE_MAP:
-        raise HTTPException(400, f"Unknown action: {action}. Valid: {list(PIPELINE_MAP.keys())}")
-
-    with _pipeline_lock:
-        if pipeline_state["running"]:
-            raise HTTPException(409, f"Pipeline already running: {pipeline_state['current_task']}")
-
-    scripts = PIPELINE_MAP[action]
-    threading.Thread(target=_execute_sync, args=(scripts, action), daemon=True).start()
-    return {"status": "started", "action": action, "scripts": scripts}
-
-
 @app.post("/api/scan/trigger")
 async def trigger_scan():
     """Manual trigger unified scan pipeline."""
@@ -705,15 +685,12 @@ async def sse_events(request: Request):
 
 @app.get("/api/reports")
 async def list_reports():
-    """List report files grouped by type."""
-    weekly = list_files(REPORTS_DIR, "weekly_*.md")
-    discovery = list_files(REPORTS_DIR, "discovery_*.md")
-    # Also check for request-based reports in data/
+    """List report files (scan + ad-hoc requests)."""
+    scans = list_files(REPORTS_DIR, "scan_*.md")
     requests = list_files(DATA_DIR, "request_*.json")
     return {
-        "weekly": weekly,
-        "discovery": discovery,
-        "request": requests,
+        "scans": scans,
+        "requests": requests,
     }
 
 
@@ -763,31 +740,6 @@ async def get_scan_report(num: Optional[int] = None):
     }
 
 
-@app.get("/api/reports/{report_type}")
-async def get_report(report_type: str, date: Optional[str] = None):
-    """Render a markdown report to HTML."""
-    if report_type not in ("weekly", "discovery"):
-        raise HTTPException(400, f"Unknown report type: {report_type}")
-
-    if date:
-        safe_date = "".join(c for c in date if c.isalnum() or c == '-')
-        path = REPORTS_DIR / f"{report_type}_{safe_date}.md"
-        if not path.resolve().is_relative_to(REPORTS_DIR.resolve()):
-            raise HTTPException(400, "Invalid date")
-    else:
-        path = find_latest(f"{report_type}_*.md", REPORTS_DIR)
-
-    if not path or not path.exists():
-        raise HTTPException(404, f"Report not found: {report_type} {date or 'latest'}")
-
-    md_text = path.read_text(encoding="utf-8")
-    html = markdown.markdown(
-        md_text,
-        extensions=["tables", "fenced_code"],
-    )
-    return HTMLResponse(content=html)
-
-
 # ---------------------------------------------------------------------------
 # Config System
 # ---------------------------------------------------------------------------
@@ -795,7 +747,6 @@ async def get_report(report_type: str, date: Optional[str] = None):
 CONFIG_PATH = PROJECT_DIR / "config.json"
 DEFAULT_CONFIG = {
     "schedule": {"enabled": True, "day_of_week": "sun", "hour": 9, "minute": 0},
-    "pipeline": {"odd_weeks": "weekly", "even_weeks": "discovery"},
     "filters": {
         "min_roe_avg": 0.15,
         "min_roe_floor": 0.12,

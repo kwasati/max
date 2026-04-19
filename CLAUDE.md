@@ -20,8 +20,8 @@
 - `user_data.json` — watchlist, blacklist, notes, custom lists (จัดการจาก UI ได้)
 
 ### Pipeline
-- **Weekly (ทุกสัปดาห์):** fetch multi-year data → Claude วิเคราะห์ 6 ด้าน → weekly report
-- **Discovery (สัปดาห์ที่ 2,4):** screen SET+mai 933 ตัว → hard filters → quality score → Claude คัดตัวใหม่
+- **Unified Scan (ทุกสัปดาห์):** fetch → update_universe → screen → scan (Claude รวม screener + top picks) → scan_*.md
+- เก็บประวัติใน `data/history.json` — หน้า History เปิดดูย้อนหลังได้
 
 ### Server
 - **Port:** 50089
@@ -29,7 +29,7 @@
 - **Startup:** `max-server.bat` หรือ `py -m uvicorn server.app:app --port 50089`
 - **Auth:** `MAX_TOKEN` ใน `.env` (Bearer token สำหรับ API)
 - **Dashboard:** web/ → serve static ที่ `/`
-- **API:** `/api/watchlist`, `/api/screener`, `/api/stock/{symbol}`, `/api/run/{action}`, `/api/request`, `/api/search` (POST), `/api/events` (SSE)
+- **API:** `/api/watchlist`, `/api/screener`, `/api/stock/{symbol}`, `/api/stock/{symbol}/history`, `/api/scan/trigger`, `/api/history`, `/api/reports`, `/api/reports/scan`, `/api/request`, `/api/search` (POST), `/api/events` (SSE)
 - **Mobile:** `web/mobile.html` — แยก UI สำหรับมือถือ (mockup, ยังไม่ serve)
 
 ## Key Files
@@ -38,17 +38,16 @@
 - `scripts/update_universe.py` — ดึง list หุ้นทั้ง SET/mai
 - `scripts/migrate_watchlist.py` — migration จาก watchlist.json เดิม
 - `scripts/fetch_data.py` — ดึง multi-year financials + dividends + compute yearly metrics + sanity check
-- `scripts/analyze.py` — สร้าง prompt + Claude วิเคราะห์ watchlist (6 ด้าน)
 - `scripts/screen_stocks.py` — hard filters + quality score 100 + signal tags
-- `scripts/discover.py` — Claude วิเคราะห์ผล screener แนะนำตัวใหม่
-- `scripts/run_weekly.py` — pipeline runner (--discover flag)
+- `scripts/scan.py` — unified scan (screener + top picks) สร้าง scan_*.md report
+- `scripts/run_scan.py` — pipeline runner (fetch + universe + screen + scan)
 - `server/app.py` — FastAPI server (data API, pipeline control, scheduler, SSE, request analyze)
 - `web/index.html` — dashboard HTML
 - `web/style.css` — SET.or.th inspired theme
 - `web/app.js` — dashboard frontend (stock list, detail panel, pipeline controls)
 - `max-server.bat` — startup script
-- `reports/` — weekly + discovery reports
-- `data/` — snapshots + screener results (gitignored)
+- `reports/` — scan reports (scan_*.md)
+- `data/` — snapshots + screener results + history.json (gitignored)
 
 ## Hard Filters (ต้องผ่านทุกข้อ)
 - ROE เฉลี่ย ≥ 15% non-financial / ≥ 10% financial (ไม่มีปีต่ำกว่า 12% / 8%) — Buffett

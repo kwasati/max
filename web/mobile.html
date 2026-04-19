@@ -1660,18 +1660,6 @@ body {
   </div>
 
   <div class="settings-section">
-    <h3>Pipeline อัตโนมัติ</h3>
-    <div class="settings-field">
-      <label>สัปดาห์คี่</label>
-      <select id="set-odd"><option value="weekly" selected>Weekly</option><option value="discovery">Discovery</option><option value="fetch">Fetch</option><option value="screen">Screen</option></select>
-    </div>
-    <div class="settings-field">
-      <label>สัปดาห์คู่</label>
-      <select id="set-even"><option value="weekly">Weekly</option><option value="discovery" selected>Discovery</option><option value="fetch">Fetch</option><option value="screen">Screen</option></select>
-    </div>
-  </div>
-
-  <div class="settings-section">
     <h3>เกณฑ์คัดกรอง</h3>
     <div class="form-row">
       <div class="settings-field">
@@ -2107,6 +2095,16 @@ document.querySelectorAll('.nav-item').forEach(btn => {
     // Show FAB only on stocks
     document.getElementById('fab-analyze').style.display = (page === 'stocks') ? '' : 'none';
   });
+});
+
+// ===== FAB — trigger scan =====
+document.getElementById('fab-analyze')?.addEventListener('click', async () => {
+  if (!confirm('รัน Scan ทั้งหมด?')) return;
+  try {
+    const r = await fetch(API + '/api/scan/trigger', { method: 'POST' });
+    if (r.status === 409) alert('Pipeline กำลังรันอยู่');
+    else if (!r.ok) alert('Trigger ล้มเหลว');
+  } catch (e) { alert('Error: ' + e.message); }
 });
 
 // ===== HOME =====
@@ -2708,7 +2706,6 @@ async function loadSettings() {
   try {
     const cfg = await fetch(API + '/api/settings').then(r => r.json());
     const sched = cfg.schedule || {};
-    const pipe = cfg.pipeline || {};
     const filt = cfg.filters || {};
 
     const schedToggle = document.getElementById('set-sched-enabled');
@@ -2719,9 +2716,6 @@ async function loadSettings() {
     const h = String(sched.hour ?? 9).padStart(2, '0');
     const m = String(sched.minute ?? 0).padStart(2, '0');
     document.getElementById('set-time').value = `${h}:${m}`;
-
-    document.getElementById('set-odd').value = pipe.odd_weeks || 'weekly';
-    document.getElementById('set-even').value = pipe.even_weeks || 'discovery';
 
     document.getElementById('set-roe').value = Math.round((filt.min_roe_avg ?? 0.15) * 100);
     document.getElementById('set-nm').value = Math.round((filt.min_net_margin ?? 0.10) * 100);
@@ -2746,10 +2740,6 @@ async function saveSettings() {
       day_of_week: document.getElementById('set-day').value,
       hour: hour,
       minute: minute || 0
-    },
-    pipeline: {
-      odd_weeks: document.getElementById('set-odd').value,
-      even_weeks: document.getElementById('set-even').value
     },
     filters: {
       min_roe_avg: parseFloat(document.getElementById('set-roe').value) / 100,

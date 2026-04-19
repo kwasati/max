@@ -1715,42 +1715,35 @@ function renderSearchResults(data) {
 
 // ===== PIPELINE CONTROL =====
 function bindPipeline() {
-  document.querySelectorAll('.pipe-btn[data-action]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const action = btn.dataset.action;
-      if (!confirm(`รัน ${action}?`)) return;
-      runPipeline(action);
-    });
-  });
-  // Toggle advanced buttons
-  const toggleBtn = document.getElementById('toggle-advanced');
-  const advPanel = document.getElementById('pipeline-advanced');
-  if (toggleBtn && advPanel) {
-    toggleBtn.addEventListener('click', () => {
-      const visible = advPanel.style.display !== 'none';
-      advPanel.style.display = visible ? 'none' : 'flex';
-      toggleBtn.textContent = visible ? 'ขั้นสูง ▾' : 'ขั้นสูง ▴';
+  const scanBtn = document.getElementById('scan-trigger-btn');
+  if (scanBtn) {
+    scanBtn.addEventListener('click', () => {
+      if (!confirm('รัน Scan ทั้งหมด?')) return;
+      triggerScan();
     });
   }
   // Start SSE listener
   connectSSE();
 }
 
-async function runPipeline(action) {
+async function triggerScan() {
   const btns = document.querySelectorAll('.pipe-btn');
   btns.forEach(b => b.disabled = true);
   const statusEl = document.getElementById('pipeline-status');
-  statusEl.innerHTML = '<div class="pipe-spinner"></div><span class="running">Starting...</span>';
+  if (statusEl) statusEl.innerHTML = '<div class="pipe-spinner"></div><span class="running">Starting...</span>';
 
   try {
-    const res = await fetch(API + '/api/run/' + action, { method: 'POST' });
-    if (!res.ok) {
+    const res = await fetch(API + '/api/scan/trigger', { method: 'POST' });
+    if (res.status === 409) {
+      if (statusEl) statusEl.innerHTML = '<span class="error">Pipeline กำลังรันอยู่</span>';
+      btns.forEach(b => b.disabled = false);
+    } else if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      statusEl.innerHTML = `<span class="error">${err.detail || 'Error'}</span>`;
+      if (statusEl) statusEl.innerHTML = `<span class="error">${err.detail || 'Trigger ล้มเหลว'}</span>`;
       btns.forEach(b => b.disabled = false);
     }
   } catch (e) {
-    statusEl.innerHTML = `<span class="error">Connection failed</span>`;
+    if (statusEl) statusEl.innerHTML = `<span class="error">Connection failed</span>`;
     btns.forEach(b => b.disabled = false);
   }
 }
@@ -2104,11 +2097,6 @@ async function loadSettings() {
     if (el('sched-hour')) el('sched-hour').value = sched.hour ?? 9;
     if (el('sched-minute')) el('sched-minute').value = sched.minute ?? 0;
 
-    // Pipeline
-    const pipe = config.pipeline || {};
-    if (el('pipe-odd-weeks')) el('pipe-odd-weeks').value = pipe.odd_weeks || 'weekly';
-    if (el('pipe-even-weeks')) el('pipe-even-weeks').value = pipe.even_weeks || 'discovery';
-
     // Filters
     const f = config.filters || {};
     if (el('filter-roe')) el('filter-roe').value = Math.round((f.min_roe_avg || 0.15) * 100);
@@ -2147,13 +2135,7 @@ async function saveSettings() {
     },
   };
 
-  // Include pipeline + filter fields if they exist (Phase 2)
-  if (el('pipe-odd-weeks')) {
-    config.pipeline = {
-      odd_weeks: el('pipe-odd-weeks').value,
-      even_weeks: el('pipe-even-weeks').value,
-    };
-  }
+  // Include filter fields if they exist (Phase 2)
   if (el('filter-roe')) {
     config.filters = {
       min_roe_avg: parseFloat(el('filter-roe').value) / 100,
