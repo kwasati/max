@@ -298,8 +298,26 @@
 .stock-layout {
   max-width: 1400px; margin: 0 auto;
   padding: 0 2.5rem 3rem;
-  display: block; /* detail-panel restyle happens in P5 */
+  display: block;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
+.stock-layout.split-mode {
+  display: flex;
+  gap: 2.5rem;
+  align-items: flex-start;
+}
+.stock-layout.split-mode .watch-wrap {
+  flex: 0 0 420px;
+  position: sticky;
+  top: 12px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  border-right: 1px solid var(--rule);
+  padding-right: 1.5rem;
+}
+/* narrow sidebar: show Stock | Signal | Score | Yield only */
+.stock-layout.split-mode table.watch thead th:nth-child(n+5),
+.stock-layout.split-mode table.watch tbody td:nth-child(n+5) { display: none; }
 .watch-wrap {
   overflow-x: auto;
 }
@@ -431,6 +449,15 @@ table.watch tbody tr.selected { background: var(--forest-soft); }
   display: grid;
   grid-template-columns: 1.1fr 1fr;
   gap: 3rem;
+}
+/* In split-mode the detail pane is narrower — stack sections vertically */
+.stock-layout.split-mode .detail-panel#detail.open {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
 }
 .dive-body { padding-right: 0.5rem; }
 .dive-kicker {
@@ -567,6 +594,14 @@ table.watch tbody tr.selected { background: var(--forest-soft); }
 @media (max-width: 1024px) {
   .detail-panel#detail.open { grid-template-columns: 1fr; gap: 2rem; }
   .dive-body { padding-right: 0; }
+  .stock-layout.split-mode { display: block; }
+  .stock-layout.split-mode .watch-wrap {
+    flex: none; position: static; max-height: none;
+    border-right: none; padding-right: 0;
+  }
+  .stock-layout.split-mode table.watch thead th:nth-child(n+5),
+  .stock-layout.split-mode table.watch tbody td:nth-child(n+5) { display: table-cell; }
+  .stock-layout.split-mode .detail-panel#detail.open { margin-top: 2.5rem; padding-top: 2.5rem; border-top: 1px solid var(--rule); }
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -607,46 +642,6 @@ body {
 .tab:hover { color: var(--text); }
 .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
 
-/* ===== STOCK LAYOUT — Slide Transition ===== */
-.stock-layout {
-  display: flex;
-  gap: 0;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  min-height: calc(100vh - 280px);
-}
-
-/* Grid mode (no detail open) */
-.stock-layout.grid-mode .stock-list {
-  width: 100%;
-  flex-shrink: 0;
-}
-.stock-layout.grid-mode .detail-panel {
-  width: 0;
-  opacity: 0;
-  overflow: hidden;
-  padding: 0;
-  border: none;
-}
-
-/* Split mode (detail open) */
-.stock-layout.split-mode .stock-list {
-  width: 380px;
-  min-width: 380px;
-  flex-shrink: 0;
-  overflow-y: auto;
-  height: calc(100vh - 200px);
-  position: sticky;
-  top: 12px;
-  border-right: 1px solid var(--border);
-  padding-right: 12px;
-}
-.stock-layout.split-mode .detail-panel {
-  flex: 1;
-  opacity: 1;
-  padding: 20px 24px 24px 24px;
-  min-width: 0;
-}
-
 /* ===== PAGE PANELS (non-stock tabs) ===== */
 .page-panel { display: none; }
 .page-panel.active { display: block; animation: fadeIn 0.3s ease; }
@@ -675,18 +670,6 @@ body {
 /* ===== STOCK LIST ===== */
 .stock-list {
   margin-bottom: 0;
-}
-/* ===== STOCK GRID ===== */
-.stock-grid {
-  display: grid;
-  gap: 10px;
-  transition: grid-template-columns 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.grid-mode .stock-grid {
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-}
-.split-mode .stock-grid {
-  grid-template-columns: 1fr;
 }
 .stock-card {
   background: var(--surface);
