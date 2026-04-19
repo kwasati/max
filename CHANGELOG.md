@@ -1,5 +1,28 @@
 # Max Mahon Changelog
 
+## v3.3.1 — 2026-04-19 · Pipeline SDK Migration
+
+Weekly + discovery pipeline ย้ายจาก Claude CLI subprocess → Anthropic Python SDK เพื่อแก้ปัญหา pipeline ล่มทุกรอบจาก CLI timeout 300s
+
+### Migration
+- `scripts/analyze.py` + `scripts/discover.py` เลิกใช้ `claude.cmd` subprocess ทั้งคู่
+- เปลี่ยนมาเรียก `anthropic.Anthropic().messages.create()` ตรง (pattern เดียวกับ `server/app.py`)
+- Model: `claude-sonnet-4-6` → **`claude-opus-4-7`** ทั้ง 2 script ให้ consistent กับ on-demand analysis endpoint
+- Auth: ใช้ `MAX_ANTHROPIC_API_KEY` จาก `C:/WORKSPACE/.env`
+
+### Prompt caching
+- แยก prompt เป็น 2 layer: **system** (framework + rules + analysis instructions — static) + **user** (watchlist/screener data — dynamic)
+- ใส่ `cache_control: {type: ephemeral}` บน system block → cache hit ทุกครั้งที่รัน pipeline ภายใน 5 นาที ลด input cost + latency
+
+### Config
+- `max_tokens=16000` เพียงพอสำหรับ markdown report ยาว (เดิม CLI ไม่มี cap)
+- `timeout=900.0` (15 นาที) — CLI เดิม hard 300s ไม่พอสำหรับ watchlist 18 ตัว × multi-year data
+
+### Dependencies
+- `anthropic` + `python-dotenv` เพิ่มเป็น import ตรงใน 2 script (ก่อนหน้ามีแค่ใน server)
+
+---
+
 ## v3.3.0 — 2026-04-18 · Editorial UI Port
 
 Complete visual overhaul of the web dashboard from generic card-grid style to editorial magazine aesthetic.

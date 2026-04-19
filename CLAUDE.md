@@ -2,7 +2,8 @@
 
 ## Architecture
 - **Agent:** Max Mahon — Thai stock analyst, Dividend-First + Buffett Quality style
-- **Stack:** Python + thaifin + yfinance (supplement) + Claude CLI
+- **Stack:** Python + thaifin + yfinance (supplement) + Anthropic SDK (claude-opus-4-7)
+- **AI:** Weekly pipeline + discovery ใช้ SDK + prompt caching (ไม่ใช่ CLI subprocess อีกต่อไป) — เรียก `anthropic.Anthropic().messages.create()` ตรง, auth ผ่าน `MAX_ANTHROPIC_API_KEY`
 - **Server:** FastAPI on port 50089, Cloudflare Tunnel → max.intensivetrader.com
 - **Schedule:** APScheduler ใน server (อาทิตย์ 09:00, สลับ weekly/discovery)
 - **Philosophy:** Dividend-First (passive income DCA) + Warren Buffett (quality) + เซียนฮง สถาพร (value growth)
