@@ -888,40 +888,107 @@ body {
 
 <script>
 // ===== DATA =====
-const STOCKS = [
-  { sym: 'DELTA', sector: 'Industrials', score: 89, yield: 19.0, avg5y: 0.5, grade: 'D', tags: ['หุ้นเติบโต', 'ปันผลเด่น'], tagColors: ['green','yellow'], watched: false },
-  { sym: 'CPN', sector: 'Real Estate', score: 81, yield: 3.8, avg5y: 2.3, grade: 'B', tags: [], tagColors: [], watched: false },
-  { sym: 'BDMS', sector: 'Healthcare', score: 81, yield: 4.3, avg5y: 2.6, grade: 'B', tags: ['สวนกระแส'], tagColors: ['blue'], watched: true },
-  { sym: 'CBG', sector: 'Consumer', score: 79, yield: 3.2, avg5y: 1.9, grade: 'B', tags: ['สวนกระแส'], tagColors: ['blue'], watched: false },
-  { sym: 'CPALL', sector: 'Consumer', score: 76, yield: 2.1, avg5y: 1.8, grade: 'C', tags: ['หุ้นเติบโต'], tagColors: ['green'], watched: true },
-  { sym: 'HMPRO', sector: 'Cyclical', score: 74, yield: 3.5, avg5y: 3.0, grade: 'B', tags: ['ปันผลเด่น'], tagColors: ['yellow'], watched: true },
-  { sym: 'SCC', sector: 'Industrials', score: 72, yield: 4.8, avg5y: 3.8, grade: 'B', tags: ['เงินสดดี'], tagColors: ['purple'], watched: false },
-  { sym: 'PTT', sector: 'Energy', score: 68, yield: 5.5, avg5y: 4.2, grade: 'A', tags: ['ปันผลเด่น'], tagColors: ['yellow'], watched: false },
-  { sym: 'ADVANC', sector: 'Comm', score: 61, yield: 4.2, avg5y: 3.8, grade: 'B', tags: ['ปันผลเด่น'], tagColors: ['yellow'], watched: false },
-  { sym: 'KBANK', sector: 'Financial', score: 58, yield: 3.8, avg5y: 3.2, grade: 'B', tags: [], tagColors: [], watched: false },
-];
-
-const FILTERED = [
-  { sym: 'BEAUTY', sector: 'Consumer', reasons: 'ROE < 15%, Net Margin < 10%' },
-  { sym: 'JAS', sector: 'Comm', reasons: 'D/E > 1.5, FCF negative' },
-  { sym: 'THANI', sector: 'Financial', reasons: 'Market Cap < 5B' },
-  { sym: 'WORK', sector: 'Services', reasons: 'ROE < 15%' },
-  { sym: 'COLOR', sector: 'Property', reasons: 'NM < 10%, D/E > 1.5' },
-];
-
+const API = window.location.origin;
+let state = { watchlist: null, screener: null };
 let currentFilter = 'passed';
+
+const TAG_TH = {
+  COMPOUNDER: 'หุ้นเติบโต',
+  DIVIDEND_KING: 'ปันผลเด่น',
+  CASH_COW: 'เงินสดดี',
+  CONTRARIAN: 'สวนกระแส',
+  TURNAROUND: 'กำลังฟื้น',
+  YIELD_TRAP: 'ปันผลหลอก',
+  DATA_WARNING: 'ตรวจสอบข้อมูล'
+};
+const TAG_COLOR = {
+  COMPOUNDER: 'green',
+  DIVIDEND_KING: 'yellow',
+  CASH_COW: 'purple',
+  CONTRARIAN: 'blue',
+  TURNAROUND: 'blue',
+  YIELD_TRAP: 'red',
+  DATA_WARNING: 'red'
+};
 
 function scoreClass(s) { return s >= 75 ? 'high' : s >= 50 ? 'mid' : 'low'; }
 
+function normalizeStock(s) {
+  const m = s.metrics || {};
+  const val = s.valuation || {};
+  const dividend_yield = (s.dividend_yield != null) ? s.dividend_yield : (m.dividend_yield || 0);
+  const yieldPct = dividend_yield > 1 ? dividend_yield : dividend_yield * 100;
+  const avg5 = (s.five_year_avg_yield != null) ? s.five_year_avg_yield : (m.five_year_avg_yield || 0);
+  const avg5Pct = avg5 > 1 ? avg5 : avg5 * 100;
+  return {
+    sym: (s.symbol || '').replace('.BK', ''),
+    sector: s.sector || '',
+    score: s.quality_score || s.score || 0,
+    yield: yieldPct,
+    avg5y: avg5Pct,
+    grade: val.grade || '-',
+    tags: (s.signals || []).map(t => TAG_TH[t] || t),
+    tagColors: (s.signals || []).map(t => TAG_COLOR[t] || 'blue'),
+    reasons: s.reasons || null,
+    raw: s
+  };
+}
+
+function getListForFilter() {
+  const screener = state.screener || {};
+  const watchlist = state.watchlist || {};
+  const candidates = screener.candidates || [];
+  const watchStocks = watchlist.stocks || [];
+  const watchSyms = new Set(watchStocks.map(s => (s.symbol || '').toUpperCase()));
+
+  if (currentFilter === 'filtered') {
+    return (screener.filtered_out_stocks || []).map(normalizeStock);
+  }
+  if (currentFilter === 'watchlist') {
+    return watchStocks.map(normalizeStock).sort((a, b) => b.score - a.score);
+  }
+  if (currentFilter === 'new') {
+    return candidates
+      .filter(c => !watchSyms.has((c.symbol || '').toUpperCase()))
+      .filter(c => c.score >= 50)
+      .map(normalizeStock)
+      .sort((a, b) => b.score - a.score);
+  }
+  return candidates
+    .filter(c => c.score >= 50)
+    .map(normalizeStock)
+    .sort((a, b) => b.score - a.score);
+}
+
+async function init() {
+  try {
+    const [wl, sc] = await Promise.all([
+      fetch(API + '/api/watchlist').then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(API + '/api/screener').then(r => r.ok ? r.json() : null).catch(() => null)
+    ]);
+    state.watchlist = wl;
+    state.screener = sc;
+    renderCards();
+  } catch (e) {
+    document.getElementById('card-list').innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--text3);font-size:0.85rem;">โหลดข้อมูลไม่ได้ · ลองรีเฟรช</div>';
+  }
+}
+
 function renderCards() {
   const el = document.getElementById('card-list');
+  const stocks = getListForFilter();
+  if (!stocks.length) {
+    el.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--text3);font-size:0.85rem;">ยังไม่มีข้อมูล · กด "วิเคราะห์" เพื่อเริ่ม</div>';
+    return;
+  }
+
   if (currentFilter === 'filtered') {
-    el.innerHTML = FILTERED.map(s => `
+    el.innerHTML = stocks.map(s => `
       <div class="stock-card filtered" onclick="openDetail('${s.sym}')">
         <div class="card-body">
           <div class="card-sym">${s.sym}</div>
-          <div class="card-sector">${s.sector}</div>
-          <div class="filtered-reason">${s.reasons}</div>
+          <div class="card-sector">${s.sector || ''}</div>
+          <div class="filtered-reason">${(s.reasons || []).join(', ') || '-'}</div>
         </div>
         <div class="card-arrow">&rsaquo;</div>
       </div>
@@ -929,22 +996,18 @@ function renderCards() {
     return;
   }
 
-  let stocks = STOCKS;
-  if (currentFilter === 'watchlist') stocks = STOCKS.filter(s => s.watched);
-  else if (currentFilter === 'new') stocks = STOCKS.filter(s => !s.watched);
-
   el.innerHTML = stocks.map(s => `
     <div class="stock-card" onclick="openDetail('${s.sym}')">
-      <div class="card-score ${scoreClass(s.score)}">${s.score}</div>
+      <div class="card-score ${scoreClass(s.score)}">${Math.round(s.score)}</div>
       <div class="card-body">
         <div class="card-sym">${s.sym}</div>
-        <div class="card-sector">${s.sector}</div>
+        <div class="card-sector">${s.sector || ''}</div>
         <div class="card-nums">
           <span><span class="n-label">Yield</span> <span class="n-val">${s.yield.toFixed(1)}%</span></span>
           <span><span class="n-label">5y</span> <span class="n-val">${s.avg5y.toFixed(1)}%</span></span>
-          <span><span class="n-label">ราคา</span> <span class="n-val" style="font-size:0.72rem">${s.grade}</span></span>
+          <span><span class="n-label">Grade</span> <span class="n-val" style="font-size:0.72rem">${s.grade}</span></span>
         </div>
-        ${s.tags.length ? '<div class="card-tags">' + s.tags.map((t,i) => `<span class="tag ${s.tagColors[i]}">${t}</span>`).join('') + '</div>' : ''}
+        ${s.tags.length ? '<div class="card-tags">' + s.tags.map((t, i) => `<span class="tag ${s.tagColors[i]}">${t}</span>`).join('') + '</div>' : ''}
       </div>
       <div class="card-arrow">&rsaquo;</div>
     </div>
@@ -977,81 +1040,133 @@ document.querySelectorAll('.nav-item').forEach(btn => {
 });
 
 // Detail
-function openDetail(sym) {
+async function openDetail(sym) {
   const dp = document.getElementById('detail-page');
   document.getElementById('detail-nav-title').textContent = sym;
+  document.getElementById('detail-content').innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--text3);font-size:0.85rem;">กำลังโหลด...</div>';
+  dp.classList.add('open');
+  try {
+    const data = await fetch(API + '/api/stock/' + encodeURIComponent(sym)).then(r => {
+      if (!r.ok) throw new Error('not found');
+      return r.json();
+    });
+    renderDetail(sym, data);
+  } catch (e) {
+    document.getElementById('detail-content').innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--text3);font-size:0.85rem;">ไม่มีข้อมูลหุ้นนี้ · ลองกด "วิเคราะห์ทั้งหมด" เพื่อดึงข้อมูลใหม่</div>';
+  }
+}
 
-  const s = STOCKS.find(x => x.sym === sym) || FILTERED.find(x => x.sym === sym);
-  const isFiltered = FILTERED.some(x => x.sym === sym);
-  const score = s.score || 0;
+function fmtPct(v, decimals = 1) {
+  if (v == null || isNaN(v)) return '-';
+  const pct = v > 1 ? v : v * 100;
+  return pct.toFixed(decimals) + '%';
+}
+
+function fmtNum(v, decimals = 2) {
+  if (v == null || isNaN(v)) return '-';
+  return Number(v).toFixed(decimals);
+}
+
+function renderDetail(sym, d) {
+  const m = d.metrics || {};
+  const agg = d.aggregates || {};
+  const val = d.valuation || {};
+  const yearly = d.yearly_metrics || [];
+  const signals = d.signals || [];
+  const reasons = d.reasons || [];
+  const isFiltered = reasons.length > 0 && (d.score || 0) < 50;
+
+  const score = Math.round(d.quality_score || d.score || 0);
   const scoreColor = score >= 75 ? 'var(--green)' : score >= 50 ? 'var(--yellow)' : 'var(--red)';
+
+  const price = fmtNum(d.price != null ? d.price : m.current_price);
+  const pe = fmtNum(d.pe_ratio != null ? d.pe_ratio : m.pe);
+  const yieldV = d.dividend_yield != null ? d.dividend_yield : m.dividend_yield;
+  const payout = d.payout_ratio != null ? d.payout_ratio : m.payout;
+  const de = fmtNum(d.debt_to_equity != null ? d.debt_to_equity : m.de);
+  const roe = d.roe != null ? d.roe : (m.roe != null ? m.roe : agg.avg_roe);
+  const mcap = d.market_cap != null ? d.market_cap : m.mcap;
+  const mcapStr = mcap ? (mcap / 1e9).toFixed(1) + 'B' : '-';
+
+  const avgRoe = agg.avg_roe || 0;
+  const avgGm = agg.avg_gross_margin || 0;
+  const deVal = (m.de != null) ? m.de : (d.debt_to_equity != null ? d.debt_to_equity : 99);
+  const fcfPos = agg.fcf_positive_years || 0;
+  const fcfTotal = agg.fcf_total_years || 4;
+  const streak = agg.dividend_streak || 0;
+  const epsCagr = agg.eps_cagr;
+
+  const checks = [
+    { label: 'ROE ≥15% สม่ำเสมอ', pass: avgRoe >= 0.15 },
+    { label: 'Gross Margin ≥30%', pass: avgGm >= 0.30 },
+    { label: 'หนี้ต่ำ (D/E < 1.0)', pass: deVal < 1.0 },
+    { label: `FCF บวก ${fcfPos}/${fcfTotal} ปี`, pass: fcfPos >= 3 },
+    { label: `ปันผลต่อเนื่อง ${streak} ปี`, pass: streak >= 5 },
+    { label: 'EPS โตต่อเนื่อง', pass: (epsCagr != null && epsCagr > 0) }
+  ];
+
+  const yearlySorted = [...yearly].sort((a, b) => (a.year || 0) - (b.year || 0)).slice(-6);
+
+  let yearlyHtml = '';
+  if (yearlySorted.length > 0) {
+    const headers = yearlySorted.map(y => `<th>${y.year}</th>`).join('');
+    const row = (label, key, formatter) => `<tr><td>${label}</td>${yearlySorted.map(y => `<td>${formatter(y[key])}</td>`).join('')}</tr>`;
+    yearlyHtml = `
+    <div class="section-title">Year-over-Year</div>
+    <div class="yearly-table-wrap">
+      <table class="yearly-table">
+        <thead><tr><th></th>${headers}</tr></thead>
+        <tbody>
+          ${row('Revenue (B)', 'revenue', v => v != null ? (v / 1e9).toFixed(1) : '-')}
+          ${row('Net Inc (B)', 'net_income', v => v != null ? (v / 1e9).toFixed(2) : '-')}
+          ${row('ROE', 'roe', v => v != null ? (v * 100).toFixed(1) + '%' : '-')}
+          ${row('D/E', 'de', v => fmtNum(v))}
+          ${row('DPS', 'dps', v => v != null ? Number(v).toFixed(2) : '-')}
+        </tbody>
+      </table>
+    </div>`;
+  }
 
   document.getElementById('detail-content').innerHTML = `
     <div class="detail-header">
       <div class="detail-info">
-        <h2>${sym}</h2>
-        <div class="sub">${s.sector || ''} | Market Cap 120B</div>
+        <h2>${sym.replace('.BK','')}</h2>
+        <div class="sub">${d.sector || ''} ${mcap ? '| Market Cap ' + mcapStr : ''}</div>
       </div>
       ${score ? `<svg width="70" height="70" viewBox="0 0 100 100" class="detail-score-svg">
         <circle cx="50" cy="50" r="40" fill="none" stroke="var(--border)" stroke-width="8"/>
         <circle cx="50" cy="50" r="40" fill="none" stroke="${scoreColor}" stroke-width="8"
-          stroke-dasharray="${2*Math.PI*40}" stroke-dashoffset="${2*Math.PI*40*(1-score/100)}"
+          stroke-dasharray="${2 * Math.PI * 40}" stroke-dashoffset="${2 * Math.PI * 40 * (1 - score / 100)}"
           stroke-linecap="round" transform="rotate(-90 50 50)"/>
         <text x="50" y="50" text-anchor="middle" dominant-baseline="central"
           fill="${scoreColor}" font-size="22" font-weight="bold" font-family="JetBrains Mono">${score}</text>
       </svg>` : ''}
     </div>
 
-    ${isFiltered ? `<div class="filtered-banner">ไม่ผ่านเกณฑ์: ${s.reasons}</div>` : ''}
+    ${isFiltered ? `<div class="filtered-banner">ไม่ผ่านเกณฑ์: ${reasons.join(', ')}</div>` : ''}
 
-    ${s.tags ? '<div class="signal-badges">' + (s.tags||[]).map((t,i) => {
-      const colors = { green: 'var(--green)', yellow: 'var(--yellow)', blue: 'var(--blue)', purple: 'var(--purple)' };
-      const c = colors[s.tagColors?.[i]] || 'var(--text3)';
-      return `<span class="signal-badge" style="background:color-mix(in srgb,${c} 15%,transparent);color:${c};border:1px solid color-mix(in srgb,${c} 30%,transparent)">${t}</span>`;
+    ${signals.length ? '<div class="signal-badges">' + signals.map(t => {
+      const th = TAG_TH[t] || t;
+      const c = TAG_COLOR[t] || 'blue';
+      const colors = { green: 'var(--green)', yellow: 'var(--yellow)', blue: 'var(--blue)', purple: 'var(--purple)', red: 'var(--red)' };
+      const cv = colors[c] || 'var(--text3)';
+      return `<span class="signal-badge" style="background:color-mix(in srgb,${cv} 15%,transparent);color:${cv};border:1px solid color-mix(in srgb,${cv} 30%,transparent)">${th}</span>`;
     }).join('') + '</div>' : ''}
 
     <div class="quick-metrics">
-      <div class="qm"><div class="label">Price</div><div class="value">25.50</div></div>
-      <div class="qm"><div class="label">P/E</div><div class="value">18.2</div></div>
-      <div class="qm"><div class="label">Yield</div><div class="value">${s.yield ? s.yield.toFixed(1)+'%' : '-'}</div></div>
-      <div class="qm"><div class="label">Payout</div><div class="value">62%</div></div>
-      <div class="qm"><div class="label">D/E</div><div class="value">0.45</div></div>
-      <div class="qm"><div class="label">ROE</div><div class="value">19.2%</div></div>
+      <div class="qm"><div class="label">Price</div><div class="value">${price}</div></div>
+      <div class="qm"><div class="label">P/E</div><div class="value">${pe}</div></div>
+      <div class="qm"><div class="label">Yield</div><div class="value">${fmtPct(yieldV)}</div></div>
+      <div class="qm"><div class="label">Payout</div><div class="value">${fmtPct(payout, 0)}</div></div>
+      <div class="qm"><div class="label">D/E</div><div class="value">${de}</div></div>
+      <div class="qm"><div class="label">ROE</div><div class="value">${fmtPct(roe)}</div></div>
     </div>
 
     <div class="section-title">Buffett Checklist</div>
-    <div class="checklist-item pass">&#10003; ROE &ge;15% สม่ำเสมอ</div>
-    <div class="checklist-item pass">&#10003; Gross Margin &ge;30%</div>
-    <div class="checklist-item pass">&#10003; หนี้ต่ำ (D/E < 1.0)</div>
-    <div class="checklist-item pass">&#10003; FCF บวกทุกปี</div>
-    <div class="checklist-item pass">&#10003; ปันผล &ge;5 ปีติด</div>
-    <div class="checklist-item fail">&#10007; EPS โตสม่ำเสมอ</div>
+    ${checks.map(c => `<div class="checklist-item ${c.pass ? 'pass' : 'fail'}">${c.pass ? '&#10003;' : '&#10007;'} ${c.label}</div>`).join('')}
 
-    <div class="section-title">ปันผลต่อหุ้น</div>
-    <div class="chart-placeholder">Chart.js bar</div>
-
-    <div class="section-title">ROE %</div>
-    <div class="chart-placeholder">Chart.js line</div>
-
-    <div class="section-title">รายได้ vs กำไร</div>
-    <div class="chart-placeholder">Chart.js grouped bar</div>
-
-    <div class="section-title">Year-over-Year</div>
-    <div class="yearly-table-wrap">
-      <table class="yearly-table">
-        <thead><tr><th></th><th>2020</th><th>2021</th><th>2022</th><th>2023</th><th>2024</th><th>2025</th></tr></thead>
-        <tbody>
-          <tr><td>Revenue</td><td>28.5</td><td>30.2</td><td>35.8</td><td>38.4</td><td>41.2</td><td>44.0</td></tr>
-          <tr><td>Net Inc</td><td>3.8</td><td>4.5</td><td>5.9</td><td>6.8</td><td>7.2</td><td>7.8</td></tr>
-          <tr><td>ROE</td><td>12.5%</td><td>14.8%</td><td>17.3%</td><td>18.9%</td><td>19.2%</td><td>20.1%</td></tr>
-          <tr><td>D/E</td><td>0.58</td><td>0.51</td><td>0.48</td><td>0.45</td><td>0.42</td><td>0.38</td></tr>
-          <tr><td>DPS</td><td>0.40</td><td>0.45</td><td>0.55</td><td>0.65</td><td>0.70</td><td>0.75</td></tr>
-        </tbody>
-      </table>
-    </div>
+    ${yearlyHtml}
   `;
-
-  dp.classList.add('open');
 }
 
 function closeDetail() {
@@ -1059,7 +1174,7 @@ function closeDetail() {
 }
 
 // Init
-renderCards();
+init();
 </script>
 </body>
 </html>
