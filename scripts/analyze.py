@@ -196,6 +196,10 @@ def run_claude(system_prompt: str, user_prompt: str, output_path: Path):
         print(f"Anthropic SDK error: {e}")
         sys.exit(1)
 
+    if not response.content or response.content[0].type != "text":
+        print(f"Unexpected response shape: stop_reason={response.stop_reason}")
+        sys.exit(1)
+
     raw_text = response.content[0].text.strip()
 
     today = datetime.now().strftime("%Y-%m-%d")
