@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Max Mahon — Flow Mockup v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,900;1,400;1,600;1,900&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f4f0e6;--paper-2:#ebe5d4;--paper-3:#ffffff;
+  --ink:#121420;--ink-2:#2a2d3d;--ink-dim:#595c6b;--ink-soft:#8e8f9c;
+  --line:#d6cfbd;--line-strong:#b0a98c;--rule:#1a1a22;
+  --forest:#1d5b4f;--forest-soft:#e4ede8;
+  --amber:#b45309;--amber-soft:#f7eadb;
+  --burgundy:#a02143;--burgundy-soft:#f5e3e7;
+  --navy:#1f3f76;--navy-soft:#e5ebf5;
+  --gold:#c89b2c;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'IBM Plex Sans Thai',sans-serif;background:#2a2d3d;color:var(--ink);padding:2rem 1rem;min-height:100vh}
+.page-title{font-family:'Fraunces',serif;color:#f4f0e6;text-align:center;margin-bottom:0.3rem;font-size:2rem;font-weight:900;font-style:italic}
+.page-sub{font-family:'JetBrains Mono',monospace;color:#8e8f9c;text-align:center;font-size:0.75rem;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:3rem}
+.flow-desc{max-width:900px;margin:0 auto 2.5rem;background:#1a1a22;border:1px solid #595c6b;padding:1.25rem 1.5rem;color:#d6cfbd;font-size:0.88rem;line-height:1.7}
+.flow-desc strong{color:#c89b2c;font-family:'JetBrains Mono',monospace;font-size:0.75rem;letter-spacing:0.15em;text-transform:uppercase;display:block;margin-bottom:0.5rem}
+.flow-desc em{font-style:normal;color:#1d5b4f;background:#e4ede8;padding:1px 6px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-size:0.78rem}
+.artboard-grid{display:flex;flex-wrap:wrap;gap:2rem;justify-content:center;max-width:1500px;margin:0 auto}
+.artboard{display:flex;flex-direction:column;align-items:center;gap:0.75rem}
+.label{font-family:'JetBrains Mono',monospace;color:#c89b2c;font-size:0.75rem;letter-spacing:0.2em;text-transform:uppercase;text-align:center}
+.label .num{color:#8e8f9c;margin-right:0.5rem}
+.frame{width:360px;height:780px;background:var(--paper);border-radius:28px;box-shadow:0 20px 60px rgba(0,0,0,0.4);overflow:hidden;position:relative;border:8px solid #1a1a22}
+.frame-inner{width:100%;height:100%;overflow:hidden;display:flex;flex-direction:column}
+.note{max-width:340px;background:#121420;border:1px solid #595c6b;padding:0.85rem 1rem;color:#d6cfbd;font-size:0.78rem;line-height:1.55;border-radius:4px;font-family:'IBM Plex Sans Thai',sans-serif}
+.note strong{color:#c89b2c;font-family:'JetBrains Mono',monospace;font-size:0.68rem;letter-spacing:0.15em;text-transform:uppercase;display:block;margin-bottom:0.35rem}
+.note em{font-style:normal;color:#1d5b4f;background:#e4ede8;padding:1px 5px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-size:0.72rem}
+.section-divider{width:100%;text-align:center;color:#8e8f9c;font-family:'JetBrains Mono',monospace;font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;margin:3rem auto 2rem;padding:1rem;border-top:1px solid #595c6b;border-bottom:1px solid #595c6b;max-width:1200px}
+
+/* screen chrome */
+.top-bar{background:var(--paper);border-bottom:3px double var(--rule);padding:0.85rem 1rem;display:grid;grid-template-columns:auto 1fr auto;gap:0.5rem;align-items:center;flex-shrink:0}
+.top-bar.slim{padding:0.65rem 1rem;border-bottom-style:solid;border-bottom-width:1px}
+.mast-meta{font-family:'JetBrains Mono',monospace;font-size:0.55rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-dim);line-height:1.3}
+.mast-title{font-family:'Fraunces',serif;font-style:italic;font-weight:900;font-size:1.25rem;color:var(--ink);text-align:center}
+.mast-title.slim{font-size:1rem}
+.scan-chip{font-family:'JetBrains Mono',monospace;font-size:0.55rem;letter-spacing:0.12em;text-transform:uppercase;padding:3px 7px;border:1px solid var(--forest);color:var(--forest);background:var(--forest-soft);border-radius:2px;white-space:nowrap}
+.scan-chip.running{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.content{flex:1;overflow-y:auto;padding:1rem 1rem 5rem}
+
+/* bottom nav */
+.bottom-nav{position:absolute;bottom:0;left:0;right:0;background:var(--paper);border-top:1px solid var(--rule);display:flex;justify-content:space-around;padding:0.6rem 0 0.9rem;z-index:10}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--ink-dim);position:relative;padding:0.25rem 0.75rem;min-width:60px;cursor:pointer}
+.nav-item.active{color:var(--forest)}
+.nav-item.active::after{content:'';position:absolute;top:-9px;left:50%;transform:translateX(-50%);width:22px;height:2px;background:var(--forest)}
+.nav-icon{font-size:1.1rem}
+.nav-label{font-family:'JetBrains Mono',monospace;font-size:0.55rem;letter-spacing:0.08em;text-transform:uppercase;font-weight:500}
+
+/* editorial */
+.kicker{display:inline-flex;align-items:center;gap:0.5rem;font-family:'JetBrains Mono',monospace;font-size:0.65rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--amber);margin-bottom:0.4rem}
+.kicker::before{content:'';width:18px;height:2px;background:var(--amber)}
+.kicker.forest{color:var(--forest)}
+.kicker.forest::before{background:var(--forest)}
+.section-num{font-family:'JetBrains Mono',monospace;font-size:0.64rem;letter-spacing:0.2em;color:var(--forest);padding-bottom:0.25rem;border-bottom:1px solid var(--forest);display:inline-block;margin-bottom:0.75rem;text-transform:uppercase}
+.lede{font-family:'Fraunces',serif;font-weight:900;font-size:1.35rem;line-height:1.25;color:var(--ink);margin-bottom:0.35rem}
+.lede.small{font-size:1.15rem}
+.lede em{font-style:italic;color:var(--forest)}
+.byline{font-family:'JetBrains Mono',monospace;font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft)}
+
+/* at-a-glance */
+.stats-panel{border:1px solid var(--rule);padding:0.85rem 0.9rem;background:var(--paper-3);box-shadow:4px 4px 0 var(--paper-2);margin-bottom:1rem}
+.stats-panel .title{font-family:'Fraunces',serif;font-weight:900;font-style:italic;font-size:0.95rem;margin-bottom:0.5rem}
+.stat-item{display:flex;justify-content:space-between;padding:0.35rem 0;border-bottom:1px dotted var(--line);font-size:0.8rem}
+.stat-item:last-child{border-bottom:none}
+.stat-item .lbl{font-family:'JetBrains Mono',monospace;font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim)}
+.stat-item .val{font-family:'Fraunces',serif;font-weight:700;color:var(--ink)}
+
+/* report card */
+.report-card{background:var(--paper-3);border:1px solid var(--rule);padding:1rem 1rem 0.9rem;box-shadow:4px 4px 0 var(--paper-2);margin-bottom:1.25rem;cursor:pointer}
+.report-summary{font-size:0.82rem;line-height:1.55;color:var(--ink-2);margin-top:0.6rem;margin-bottom:0.75rem}
+.report-cta{font-family:'JetBrains Mono',monospace;font-size:0.62rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--forest);border-top:1px dotted var(--line);padding-top:0.6rem}
+
+/* stock card */
+.stock-card{background:var(--paper-3);border:1px solid var(--line);padding:0.75rem 0.85rem;margin-bottom:0.55rem;display:flex;gap:0.7rem;align-items:center;position:relative}
+.stock-card:active{background:var(--paper-2)}
+.score-chip{width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:600;font-size:0.85rem;border:1px solid var(--forest);background:var(--forest-soft);color:var(--forest);box-shadow:2px 2px 0 var(--paper-2);flex-shrink:0}
+.score-chip.mid{border-color:var(--amber);background:var(--amber-soft);color:var(--amber)}
+.score-chip.low{border-color:var(--burgundy);background:var(--burgundy-soft);color:var(--burgundy)}
+.score-chip.failed{border-color:var(--ink-soft);background:var(--paper-2);color:var(--ink-dim)}
+.card-body{flex:1;min-width:0}
+.card-sym{font-family:'Fraunces',serif;font-weight:900;font-size:1.05rem;line-height:1.1;color:var(--ink);display:flex;align-items:center;gap:6px}
+.card-sym .new-badge{font-family:'JetBrains Mono',monospace;font-size:0.52rem;color:var(--gold);background:#fcf6e3;border:1px solid var(--gold);padding:1px 5px;letter-spacing:0.1em;font-weight:500;border-radius:2px}
+.card-sym .fail-badge{font-family:'JetBrains Mono',monospace;font-size:0.52rem;color:var(--burgundy);background:var(--burgundy-soft);border:1px solid var(--burgundy);padding:1px 5px;letter-spacing:0.1em;font-weight:500;border-radius:2px}
+.card-sector{font-family:'JetBrains Mono',monospace;font-size:0.55rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-dim);margin-top:2px}
+.card-meta{display:flex;gap:0.65rem;margin-top:0.3rem;font-size:0.7rem}
+.card-meta span{font-family:'JetBrains Mono',monospace;color:var(--ink-2)}
+.card-meta span em{font-style:normal;color:var(--ink-dim);font-size:0.55rem;letter-spacing:0.08em;text-transform:uppercase;margin-right:0.2rem}
+.card-star{align-self:center;cursor:pointer;padding:0.5rem 0.25rem;font-size:1.2rem;line-height:1;color:var(--ink-soft)}
+.card-star.on{color:var(--amber)}
+.tag-row{display:flex;gap:4px;margin-top:0.3rem;flex-wrap:wrap}
+.tag{font-family:'JetBrains Mono',monospace;font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;padding:2px 6px;border:1px solid var(--ink);border-radius:2px;font-weight:500;white-space:nowrap}
+.tag.compounder{border-color:var(--forest);color:var(--forest);background:var(--forest-soft)}
+.tag.king{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.tag.watching{border-color:var(--navy);color:var(--navy);background:var(--navy-soft)}
+
+/* filter tabs */
+.filter-bar{display:flex;gap:1rem;padding:0.5rem 0.25rem;border-bottom:1px solid var(--line);margin-bottom:0.7rem;overflow-x:auto}
+.filter-tab{font-family:'JetBrains Mono',monospace;font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-dim);padding:0.25rem 0;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent}
+.filter-tab.active{color:var(--forest);border-bottom-color:var(--forest);font-weight:600}
+.filter-count{color:var(--ink-soft);margin-left:0.3rem;font-size:0.58rem}
+
+/* history item */
+.history-item{padding:0.85rem 0;border-bottom:1px solid var(--line);cursor:pointer}
+.history-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:0.25rem}
+.history-num{font-family:'Fraunces',serif;font-weight:900;font-size:0.95rem;color:var(--ink);font-style:italic}
+.history-date{font-family:'JetBrains Mono',monospace;font-size:0.6rem;letter-spacing:0.1em;color:var(--ink-soft);text-transform:uppercase}
+.history-summary{font-size:0.78rem;color:var(--ink-2);line-height:1.5}
+.history-stats{display:flex;gap:0.8rem;margin-top:0.35rem}
+.history-stats span{font-family:'JetBrains Mono',monospace;font-size:0.58rem;letter-spacing:0.08em;color:var(--ink-dim);text-transform:uppercase}
+.history-stats span em{font-style:normal;color:var(--forest);font-weight:600;margin-right:3px}
+
+/* report body */
+.report-header{padding-bottom:0.85rem;border-bottom:3px double var(--rule);margin-bottom:1rem}
+.report-body{font-size:0.85rem;line-height:1.65;color:var(--ink-2)}
+.report-body h2{font-family:'Fraunces',serif;font-size:1.05rem;font-weight:900;color:var(--ink);margin:1.1rem 0 0.45rem;display:flex;align-items:center;gap:0.5rem}
+.report-body h2::before{content:'§';color:var(--forest);font-weight:400}
+.report-body p{margin-bottom:0.65rem}
+.report-body strong{color:var(--ink)}
+.report-body .pick{background:var(--paper-3);border:1px solid var(--line);box-shadow:3px 3px 0 var(--paper-2);padding:0.7rem;margin:0.4rem 0}
+.report-body .pick .sym{font-family:'Fraunces',serif;font-weight:900;font-size:1rem}
+
+/* back nav */
+.back-nav{padding:0.75rem 1rem;border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:0.75rem;background:var(--paper);flex-shrink:0}
+.back-arrow{font-size:1.1rem;color:var(--ink);cursor:pointer}
+.back-title{font-family:'Fraunces',serif;font-weight:900;font-size:0.95rem;font-style:italic}
+.back-sub{font-family:'JetBrains Mono',monospace;font-size:0.55rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-dim);margin-top:1px}
+.back-star{margin-left:auto;font-size:1.2rem;cursor:pointer;color:var(--amber);padding:0.25rem 0.5rem}
+
+/* detail tabs */
+.tab-row{display:flex;border-bottom:1px solid var(--line);margin-bottom:1rem;gap:1.4rem;padding:0 1rem}
+.tab-item{font-family:'JetBrains Mono',monospace;font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-dim);padding:0.5rem 0;cursor:pointer;border-bottom:2px solid transparent}
+.tab-item.active{color:var(--forest);border-bottom-color:var(--forest);font-weight:600}
+
+/* timeline chart */
+.chart-title{font-family:'JetBrains Mono',monospace;font-size:0.58rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-dim);margin:0.5rem 0}
+.timeline-chart{background:var(--paper-3);border:1px solid var(--line);padding:0.85rem;box-shadow:3px 3px 0 var(--paper-2);margin-bottom:1rem;height:160px}
+.chart-svg{width:100%;height:125px}
+.chart-line{fill:none;stroke:var(--forest);stroke-width:2}
+.chart-dot{fill:var(--forest);r:3.5}
+.chart-axis{font-family:'JetBrains Mono',monospace;font-size:8px;fill:var(--ink-soft)}
+
+/* event */
+.event-item{display:flex;gap:0.85rem;padding:0.6rem 0;border-bottom:1px dotted var(--line)}
+.event-date{font-family:'JetBrains Mono',monospace;font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim);flex-shrink:0;width:72px;padding-top:2px}
+.event-body{flex:1;font-size:0.8rem;line-height:1.5;color:var(--ink-2)}
+.event-body .action{font-family:'Fraunces',serif;font-weight:700;color:var(--ink)}
+.event-body .action.in{color:var(--forest)}
+.event-body .action.out{color:var(--burgundy)}
+
+/* empty state */
+.empty-state{text-align:center;padding:3rem 1.5rem;color:var(--ink-dim)}
+.empty-state .ico{font-size:2.5rem;margin-bottom:0.65rem;color:var(--line-strong);font-family:'Fraunces',serif;font-style:italic}
+.empty-state h3{font-family:'Fraunces',serif;font-weight:900;font-style:italic;font-size:1.15rem;color:var(--ink);margin-bottom:0.5rem}
+.empty-state p{font-size:0.8rem;line-height:1.6;margin-bottom:1rem}
+.empty-cta{font-family:'JetBrains Mono',monospace;font-size:0.62rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--forest);border:1px solid var(--forest);background:var(--forest-soft);padding:0.55rem 1rem;display:inline-block}
+
+/* watchlist */
+.wl-row{display:flex;align-items:center;gap:0.75rem;padding:0.75rem 0;border-bottom:1px solid var(--line);cursor:pointer}
+.wl-sym{font-family:'Fraunces',serif;font-weight:900;font-size:1rem;flex:0 0 70px}
+.wl-status{font-family:'JetBrains Mono',monospace;font-size:0.6rem;letter-spacing:0.08em;text-transform:uppercase;flex:1}
+.wl-status.pass{color:var(--forest)}
+.wl-status.fail{color:var(--burgundy)}
+.wl-star{color:var(--amber);font-size:1.1rem;cursor:pointer;padding:0.25rem}
+
+/* toast + banner */
+.toast{position:absolute;bottom:80px;left:16px;right:16px;background:var(--ink);color:var(--paper);padding:0.75rem 0.9rem;font-size:0.8rem;line-height:1.4;border-radius:2px;box-shadow:3px 3px 0 var(--amber);display:flex;align-items:center;gap:0.6rem}
+.toast .icon{color:var(--gold);font-family:'Fraunces',serif;font-style:italic;font-weight:900;flex-shrink:0}
+.running-banner{background:var(--amber-soft);border-bottom:1px solid var(--amber);padding:0.55rem 1rem;display:flex;align-items:center;gap:0.6rem;font-size:0.72rem;color:var(--amber);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;flex-shrink:0}
+.dot-pulse{width:7px;height:7px;background:var(--amber);border-radius:50%;animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* flow arrows */
+.arrow-row{display:flex;justify-content:center;align-items:center;gap:1.5rem;color:#c89b2c;font-family:'JetBrains Mono',monospace;font-size:0.72rem;letter-spacing:0.15em;text-transform:uppercase;margin:1rem 0 2rem;flex-wrap:wrap}
+.arrow-row .step{padding:0.4rem 0.8rem;border:1px solid #595c6b;background:#1a1a22;color:#d6cfbd}
+.arrow-row .arr{color:#595c6b;font-size:1rem}
+
+@media(max-width:800px){.frame{width:320px;height:700px}}
+</style>
+</head>
+<body>
+
+<h1 class="page-title">Max Mahon — <em>New Flow</em> v2</h1>
+<div class="page-sub">Unified Scan · Real Watchlist · Feed Home · Mockup for review</div>
+
+<div class="flow-desc">
+  <strong>What changed vs. v1</strong>
+  ยุบ <em>weekly</em> + <em>discovery</em> → <em>scan</em> เดียว ·
+  <em>Home</em> แยก (feed) header ไม่โผล่ทุกหน้า ·
+  Wipe 18 หุ้น (ที่ Claude เก่า seed ไม่ใช่ user) ·
+  ปุ่ม <em>★</em> บน card/detail = กด +/− ได้จริง persist ·
+  "ติดตาม" tab แสดงทุกตัวที่ follow (แม้หลุดรอบ) ·
+  "ค้นพบใหม่" tab หาย → merge เข้าผ่านเกณฑ์ด้วย <em>NEW</em> badge ·
+  History + per-stock timeline · SSE auto-refresh หลัง scan
+</div>
+
+<div class="arrow-row">
+  <span class="step">Scan (weekly + manual)</span><span class="arr">→</span>
+  <span class="step">Report</span><span class="arr">→</span>
+  <span class="step">Home Feed Updates</span><span class="arr">→</span>
+  <span class="step">User adds to Watchlist</span><span class="arr">→</span>
+  <span class="step">Next Scan tracks them</span>
+</div>
+
+<div class="artboard-grid">
+
+<!-- 01. HOME — FEED -->
+<div class="artboard">
+  <div class="label"><span class="num">№01</span>Home — Feed</div>
+  <div class="frame"><div class="frame-inner">
+    <div class="top-bar">
+      <div class="mast-meta">VOL III<br>ISS 17</div>
+      <div class="mast-title">Max Mahon</div>
+      <div class="scan-chip">IDLE · 2H</div>
+    </div>
+    <div class="content">
+      <span class="kicker">THIS WEEK'S THESIS</span>
+      <div class="lede"><em>CPALL</em> + BDMS กลับมาเข้าโซนน่าสะสม</div>
+      <div class="byline">MAX · 19 APR 2026 · SCAN #17</div>
+
+      <div style="height:0.85rem"></div>
+
+      <div class="stats-panel">
+        <div class="title">At a glance</div>
+        <div class="stat-item"><span class="lbl">SCANNED</span><span class="val">933</span></div>
+        <div class="stat-item"><span class="lbl">ผ่านเกณฑ์</span><span class="val">21</span></div>
+        <div class="stat-item"><span class="lbl">ใหม่รอบนี้</span><span class="val">3</span></div>
+        <div class="stat-item"><span class="lbl">คะแนนเฉลี่ย</span><span class="val">67</span></div>
+        <div class="stat-item"><span class="lbl">ติดตาม</span><span class="val">— empty</span></div>
+      </div>
+
+      <div class="report-card">
+        <span class="kicker forest">รายงานล่าสุด · SCAN #17</span>
+        <div class="lede small">Top Picks: <em>CPALL, BDMS, SCB</em></div>
+        <div class="report-summary">
+          21 ตัวผ่านเกณฑ์ · <strong>MOSHI, DITTO, SAUCE</strong> เป็นของใหม่รอบนี้ · ยังไม่มีหุ้นใน watchlist ให้อัพเดต
+        </div>
+        <div class="report-cta">อ่านเต็ม →</div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><div class="nav-icon">◉</div><div class="nav-label">หน้าแรก</div></div>
+      <div class="nav-item"><div class="nav-icon">▤</div><div class="nav-label">หุ้น</div></div>
+      <div class="nav-item"><div class="nav-icon">★</div><div class="nav-label">ติดตาม</div></div>
+      <div class="nav-item"><div class="nav-icon">≡</div><div class="nav-label">ประวัติ</div></div>
+      <div class="nav-item"><div class="nav-icon">⚙</div><div class="nav-label">ตั้งค่า</div></div>
+    </div>
+  </div></div>
+  <div class="note"><strong>Home = feed</strong> หน้านี้เท่านั้นแสดง thesis + at-a-glance + latest report card · tap report → full view · หน้าอื่น header บางลง ไม่โผล่ thesis ซ้ำ</div>
+</div>
+
+<!-- 02. STOCK LIST (PASSED + NEW BADGES) -->
+<div class="artboard">
+  <div class="label"><span class="num">№02</span>Stock List</div>
+  <div class="frame"><div class="frame-inner">
+    <div class="top-bar slim">
+      <div class="mast-meta">SCAN<br>#17</div>
+      <div class="mast-title slim">หุ้น</div>
+      <div class="scan-chip">21/933</div>
+    </div>
+    <div class="content">
+      <div class="filter-bar">
+        <div class="filter-tab active">ผ่านเกณฑ์<span class="filter-count">21</span></div>
+        <div class="filter-tab">ติดตาม<span class="filter-count">0</span></div>
+        <div class="filter-tab">หลุดรอบ<span class="filter-count">912</span></div>
+      </div>
+
+      <div class="stock-card">
+        <div class="score-chip">91</div>
+        <div class="card-body">
+          <div class="card-sym">MOSHI<span class="new-badge">NEW</span></div>
+          <div class="card-sector">Retail · Lifestyle</div>
+          <div class="card-meta"><span><em>Y</em>3.2%</span><span><em>P/E</em>12.8</span><span><em>ROE</em>22%</span></div>
+          <div class="tag-row"><span class="tag compounder">COMPOUNDER</span></div>
+        </div>
+        <div class="card-star">☆</div>
+      </div>
+
+      <div class="stock-card">
+        <div class="score-chip">84</div>
+        <div class="card-body">
+          <div class="card-sym">CPALL</div>
+          <div class="card-sector">Commerce · Retail</div>
+          <div class="card-meta"><span><em>Y</em>3.47%</span><span><em>P/E</em>15.3</span><span><em>ROE</em>16%</span></div>
+          <div class="tag-row"><span class="tag compounder">COMPOUNDER</span></div>
+        </div>
+        <div class="card-star">☆</div>
+      </div>
+
+      <div class="stock-card">
+        <div class="score-chip">82</div>
+        <div class="card-body">
+          <div class="card-sym">DITTO<span class="new-badge">NEW</span></div>
+          <div class="card-sector">ICT · Outsourcing</div>
+          <div class="card-meta"><span><em>Y</em>4.1%</span><span><em>P/E</em>13.2</span><span><em>ROE</em>19%</span></div>
+          <div class="tag-row"><span class="tag compounder">COMPOUNDER</span></div>
+        </div>
+        <div class="card-star">☆</div>
+      </div>
+
+      <div class="stock-card">
+        <div class="score-chip mid">76</div>
+        <div class="card-body">
+          <div class="card-sym">SCB</div>
+          <div class="card-sector">Banking · Financial</div>
+          <div class="card-meta"><span><em>Y</em>7.78%</span><span><em>P/E</em>8.5</span><span><em>ROE</em>11%</span></div>
+          <div class="tag-row"><span class="tag king">DIVIDEND KING</span></div>
+        </div>
+        <div class="card-star">☆</div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item"><div class="nav-icon">◉</div><div class="nav-label">หน้าแรก</div></div>
+      <div class="nav-item active"><div class="nav-icon">▤</div><div class="nav-label">หุ้น</div></div>
+      <div class="nav-item"><div class="nav-icon">★</div><div class="nav-label">ติดตาม</div></div>
+      <div class="nav-item"><div class="nav-icon">≡</div><div class="nav-label">ประวัติ</div></div>
+      <div class="nav-item"><div class="nav-icon">⚙</div><div class="nav-label">ตั้งค่า</div></div>
+    </div>
+  </div></div>
+  <div class="note"><strong>List + ★ toggle</strong> กด ☆ → ★ = add watchlist (PUT /api/user/watchlist) · card ตัวใหม่มี <em>NEW</em> badge (เพิ่งผ่านเกณฑ์รอบนี้ ไม่เคยผ่านรอบไหน) · ไม่มี "ค้นพบใหม่" tab อีกแล้ว</div>
+</div>
+
+<!-- 03. WATCHLIST TAB (with failing stocks) -->
+<div class="artboard">
+  <div class="label"><span class="num">№03</span>Watchlist Tab</div>
+  <div class="frame"><div class="frame-inner">
+    <div class="top-bar slim">
+      <div class="mast-meta">SCAN<br>#17</div>
+      <div class="mast-title slim">หุ้น</div>
+      <div class="scan-chip">3 ★</div>
+    </div>
+    <div class="content">
+      <div class="filter-bar">
+        <div class="filter-tab">ผ่านเกณฑ์<span class="filter-count">21</span></div>
+        <div class="filter-tab active">ติดตาม<span class="filter-count">3</span></div>
+        <div class="filter-tab">หลุดรอบ<span class="filter-count">912</span></div>
+      </div>
+
+      <div class="stock-card">
+        <div class="score-chip">84</div>
+        <div class="card-body">
+          <div class="card-sym">CPALL</div>
+          <div class="card-sector">Commerce · Retail</div>
+          <div class="card-meta"><span><em>Y</em>3.47%</span><span><em>P/E</em>15.3</span><span><em>ROE</em>16%</span></div>
+          <div class="tag-row"><span class="tag compounder">COMPOUNDER</span></div>
+        </div>
+        <div class="card-star on">★</div>
+      </div>
+
+      <div class="stock-card">
+        <div class="score-chip">79</div>
+        <div class="card-body">
+          <div class="card-sym">BDMS</div>
+          <div class="card-sector">Healthcare</div>
+          <div class="card-meta"><span><em>Y</em>4.28%</span><span><em>P/E</em>22.1</span><span><em>ROE</em>15%</span></div>
+          <div class="tag-row"><span class="tag compounder">COMPOUNDER</span></div>
+        </div>
+        <div class="card-star on">★</div>
+      </div>
+
+      <div class="stock-card">
+        <div class="score-chip failed">—</div>
+        <div class="card-body">
+          <div class="card-sym">LH<span class="fail-badge">หลุดรอบนี้</span></div>
+          <div class="card-sector">Property Development</div>
+          <div class="card-meta"><span style="color:var(--burgundy)"><em>เหตุผล</em>IC 0.84x, ROE ลด</span></div>
+        </div>
+        <div class="card-star on">★</div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item"><div class="nav-icon">◉</div><div class="nav-label">หน้าแรก</div></div>
+      <div class="nav-item"><div class="nav-icon">▤</div><div class="nav-label">หุ้น</div></div>
+      <div class="nav-item active"><div class="nav-icon">★</div><div class="nav-label">ติดตาม</div></div>
+      <div class="nav-item"><div class="nav-icon">≡</div><div class="nav-label">ประวัติ</div></div>
+      <div class="nav-item"><div class="nav-icon">⚙</div><div class="nav-label">ตั้งค่า</div></div>
+    </div>
+  </div></div>
+  <div class="note"><strong>Watchlist = ครบทุกตัวที่ follow</strong> แสดงทั้ง pass + หลุดรอบ · ตัวหลุดมี <em>fail-badge</em> + เหตุผลสั้นๆ · กด ★ อีกที = unfollow · <strong>bug เดิม</strong> filter เอาเฉพาะ in_watchlist AND passed → แก้ให้ query user_data ตรง overlay status รอบปัจจุบัน</div>
+</div>
+
+<!-- 04. SCAN RUNNING + TOAST -->
+<div class="artboard">
+  <div class="label"><span class="num">№04</span>Scan Running</div>
+  <div class="frame"><div class="frame-inner">
+    <div class="top-bar">
+      <div class="mast-meta">VOL III<br>ISS 18</div>
+      <div class="mast-title">Max Mahon</div>
+      <div class="scan-chip running">SCANNING</div>
+    </div>
+    <div class="running-banner">
+      <div class="dot-pulse"></div>
+      กำลังวิเคราะห์ · 12/21 หุ้น
+    </div>
+    <div class="content">
+      <span class="kicker">THIS WEEK'S THESIS</span>
+      <div class="lede" style="opacity:0.5"><em>CPALL</em> + BDMS กลับมาเข้าโซนน่าสะสม</div>
+      <div class="byline" style="opacity:0.5">SCAN #17 · (เก่า — รอรอบใหม่)</div>
+      <div style="text-align:center;padding:1.5rem 0;color:var(--ink-dim);font-size:0.78rem;font-family:'JetBrains Mono',monospace;line-height:1.7">
+        รายงาน #18 กำลังสร้าง<br>
+        หน้านี้จะ refresh เองหลังเสร็จ
+      </div>
+    </div>
+    <div class="toast">
+      <span class="icon">§</span>
+      <div>รายงาน <strong>SCAN #18</strong> พร้อม — tap เพื่ออ่าน</div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><div class="nav-icon">◉</div><div class="nav-label">หน้าแรก</div></div>
+      <div class="nav-item"><div class="nav-icon">▤</div><div class="nav-label">หุ้น</div></div>
+      <div class="nav-item"><div class="nav-icon">★</div><div class="nav-label">ติดตาม</div></div>
+      <div class="nav-item"><div class="nav-icon">≡</div><div class="nav-label">ประวัติ</div></div>
+      <div class="nav-item"><div class="nav-icon">⚙</div><div class="nav-label">ตั้งค่า</div></div>
+    </div>
+  </div></div>
+  <div class="note"><strong>Live refresh</strong> SSE /api/events → amber banner pulse + progress · feed เก่า dim · พอเสร็จ toast ขึ้น + feed refresh เอง (ไม่ต้อง F5) · กด toast = navigate ไป full report ทันที</div>
+</div>
+
+<!-- 05. FULL REPORT -->
+<div class="artboard">
+  <div class="label"><span class="num">№05</span>Full Report</div>
+  <div class="frame"><div class="frame-inner">
+    <div class="back-nav">
+      <div class="back-arrow">‹</div>
+      <div>
+        <div class="back-title">Scan Report #17</div>
+        <div class="back-sub">19 APR 2026 · 09:32</div>
+      </div>
+    </div>
+    <div class="content">
+      <div class="report-header">
+        <span class="section-num">№ 17 / SCAN</span>
+        <div class="lede"><em>CPALL</em> + BDMS เข้าโซน · MOSHI เป็นของใหม่</div>
+        <div class="byline">MAX MAHON · 933 SCANNED · 21 PASSED · +3 NEW</div>
+      </div>
+      <div class="report-body">
+        <h2>ภาพรวม</h2>
+        <p>ตลาด SET ยังเคลื่อนในโซน sideways · รอบนี้ผ่านเกณฑ์ 21 ตัว <strong>+3 ใหม่</strong> · กลุ่ม consumer staples + healthcare เด่น</p>
+
+        <h2>Top Picks</h2>
+        <div class="pick">
+          <div class="sym">#1 CPALL</div>
+          <p>7-Eleven moat แข็ง · P/E 15.3 · yield 3.47%</p>
+        </div>
+
+        <h2>Watchlist Update</h2>
+        <p>ยังไม่มีหุ้นใน watchlist — เพิ่มจากหน้าหุ้นก่อน</p>
+
+        <h2>New In Batch</h2>
+        <p><strong>MOSHI, DITTO, SAUCE</strong> — 3 ตัวแรกที่ผ่านเกณฑ์จากรอบนี้</p>
+
+        <h2>Watch Out</h2>
+        <p>—</p>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item active"><div class="nav-icon">◉</div><div class="nav-label">หน้าแรก</div></div>
+      <div class="nav-item"><div class="nav-icon">▤</div><div class="nav-label">หุ้น</div></div>
+      <div class="nav-item"><div class="nav-icon">★</div><div class="nav-label">ติดตาม</div></div>
+      <div class="nav-item"><div class="nav-icon">≡</div><div class="nav-label">ประวัติ</div></div>
+      <div class="nav-item"><div class="nav-icon">⚙</div><div class="nav-label">ตั้งค่า</div></div>
+    </div>
+  </div></div>
+  <div class="note"><strong>Report = 4 sections</strong> Top Picks / Watchlist Update / New In Batch / Watch Out · back arrow กลับหน้าที่มา (Home หรือ History) จริง · 1 prompt 6-dim framework เดียว ไม่มี weekly/discovery แยก</div>
+</div>
+
+<!-- 06. HISTORY -->
+<div class="artboard">
+  <div class="label"><span class="num">№06</span>History</div>
+  <div class="frame"><div class="frame-inner">
+    <div class="top-bar slim">
+      <div class="mast-meta">ALL</div>
+      <div class="mast-title slim">ประวัติ</div>
+      <div class="scan-chip">17 SCANS</div>
+    </div>
+    <div class="content">
+      <span class="section-num">ล่าสุด → เก่า</span>
+
+      <div class="history-item">
+        <div class="history-head">
+          <div class="history-num">Scan #17</div>
+          <div class="history-date">19 APR · 09:32</div>
+        </div>
+        <div class="history-summary">CPALL, BDMS, SCB เด่น · +3 ใหม่ (MOSHI, DITTO, SAUCE)</div>
+        <div class="history-stats"><span><em>21</em>ผ่าน</span><span><em>+3</em>ใหม่</span><span><em>912</em>คัดออก</span></div>
+      </div>
+
+      <div class="history-item">
+        <div class="history-head">
+          <div class="history-num">Scan #16</div>
+          <div class="history-date">12 APR · 09:15</div>
+        </div>
+        <div class="history-summary">ADVANC กลับมาสว่าง · BDMS หลุดเป้า · CBG warning</div>
+        <div class="history-stats"><span><em>18</em>ผ่าน</span><span><em>+0</em>ใหม่</span><span><em>915</em>คัดออก</span></div>
+      </div>
+
+      <div class="history-item">
+        <div class="history-head">
+          <div class="history-num">Scan #15</div>
+          <div class="history-date">05 APR · 09:05</div>
+        </div>
+        <div class="history-summary">MIXED · BDMS ยังเด่น · TQM ขึ้น review</div>
+        <div class="history-stats"><span><em>17</em>ผ่าน</span><span><em>+1</em>ใหม่</span><span><em>916</em>คัดออก</span></div>
+      </div>
+
+      <div class="history-item">
+        <div class="history-head">
+          <div class="history-num">Scan #14</div>
+          <div class="history-date">29 MAR · 09:00</div>
+        </div>
+        <div class="history-summary">TISCO, TTW เด่นกลุ่ม strength · GULF หลุด (no dividend)</div>
+        <div class="history-stats"><span><em>19</em>ผ่าน</span><span><em>+2</em>ใหม่</span><span><em>914</em>คัดออก</span></div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item"><div class="nav-icon">◉</div><div class="nav-label">หน้าแรก</div></div>
+      <div class="nav-item"><div class="nav-icon">▤</div><div class="nav-label">หุ้น</div></div>
+      <div class="nav-item"><div class="nav-icon">★</div><div class="nav-label">ติดตาม</div></div>
+      <div class="nav-item active"><div class="nav-icon">≡</div><div class="nav-label">ประวัติ</div></div>
+      <div class="nav-item"><div class="nav-icon">⚙</div><div class="nav-label">ตั้งค่า</div></div>
+    </div>
+  </div></div>
+  <div class="note"><strong>Single type — Scan</strong> ไม่มี Weekly/Discovery แยก · tap → full report ของรอบนั้น · เก็บ metadata (count passed/new/filtered) ใน <em>data/history.json</em> (index)</div>
+</div>
+
+<!-- 07. STOCK DETAIL — OVERVIEW -->
+<div class="artboard">
+  <div class="label"><span class="num">№07</span>Stock Detail — Overview</div>
+  <div class="frame"><div class="frame-inner">
+    <div class="back-nav">
+      <div class="back-arrow">‹</div>
+      <div>
+        <div class="back-title">CPALL</div>
+        <div class="back-sub">CP ALL · COMMERCE</div>
+      </div>
+      <div class="back-star">★</div>
+    </div>
+    <div class="tab-row">
+      <div class="tab-item active">ภาพรวม</div>
+      <div class="tab-item">ประวัติ</div>
+      <div class="tab-item">เปรียบเทียบ</div>
+    </div>
+    <div class="content" style="padding-top:0.25rem">
+      <span class="kicker forest">Score 84 · Signal</span>
+      <div class="lede" style="font-size:1.2rem">COMPOUNDER · เข้าโซน DCA</div>
+
+      <div class="stats-panel" style="margin-top:0.85rem">
+        <div class="title">Quick metrics</div>
+        <div class="stat-item"><span class="lbl">PRICE</span><span class="val">฿62.50</span></div>
+        <div class="stat-item"><span class="lbl">YIELD</span><span class="val">3.47%</span></div>
+        <div class="stat-item"><span class="lbl">5Y AVG</span><span class="val">1.94%</span></div>
+        <div class="stat-item"><span class="lbl">P/E</span><span class="val">15.3</span></div>
+        <div class="stat-item"><span class="lbl">ROE</span><span class="val">16.2%</span></div>
+        <div class="stat-item"><span class="lbl">D/E</span><span class="val">0.85</span></div>
+      </div>
+
+      <span class="section-num">Max Analysis</span>
+      <div style="font-size:0.8rem;line-height:1.6;color:var(--ink-2)">
+        <strong>Business:</strong> 7-Eleven moat แข็ง recurring income<br>
+        <strong>Growth:</strong> Revenue CAGR 13.9% · EPS 2.77→3.10<br>
+        <strong>Dividend:</strong> Streak 25yr · payout 43% มีที่โต
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item"><div class="nav-icon">◉</div><div class="nav-label">หน้าแรก</div></div>
+      <div class="nav-item active"><div class="nav-icon">▤</div><div class="nav-label">หุ้น</div></div>
+      <div class="nav-item"><div class="nav-icon">★</div><div class="nav-label">ติดตาม</div></div>
+      <div class="nav-item"><div class="nav-icon">≡</div><div class="nav-label">ประวัติ</div></div>
+      <div class="nav-item"><div class="nav-icon">⚙</div><div class="nav-label">ตั้งค่า</div></div>
+    </div>
+  </div></div>
+  <div class="note"><strong>Overview tab</strong> score + signal + quick metrics + Max analysis (6-dim แบบ collapsed) · ★ ขวาบน = toggle watchlist จากที่นี่ได้เลยเหมือนกัน</div>
+</div>
+
+<!-- 08. STOCK DETAIL — HISTORY -->
+<div class="artboard">
+  <div class="label"><span class="num">№08</span>Stock Detail — History</div>
+  <div class="frame"><div class="frame-inner">
+    <div class="back-nav">
+      <div class="back-arrow">‹</div>
+      <div>
+        <div class="back-title">CPALL</div>
+        <div class="back-sub">TIMELINE · 7 SCANS</div>
+      </div>
+      <div class="back-star">★</div>
+    </div>
+    <div class="tab-row">
+      <div class="tab-item">ภาพรวม</div>
+      <div class="tab-item active">ประวัติ</div>
+      <div class="tab-item">เปรียบเทียบ</div>
+    </div>
+    <div class="content" style="padding-top:0.25rem">
+      <div class="chart-title">SCORE TIMELINE</div>
+      <div class="timeline-chart">
+        <svg class="chart-svg" viewBox="0 0 300 125" preserveAspectRatio="none">
+          <line x1="0" y1="30" x2="300" y2="30" stroke="#d6cfbd" stroke-width="0.5" stroke-dasharray="3,3"/>
+          <line x1="0" y1="65" x2="300" y2="65" stroke="#d6cfbd" stroke-width="0.5" stroke-dasharray="3,3"/>
+          <line x1="0" y1="100" x2="300" y2="100" stroke="#d6cfbd" stroke-width="0.5" stroke-dasharray="3,3"/>
+          <polyline class="chart-line" points="10,80 55,65 100,52 145,58 190,42 235,32 280,22"/>
+          <circle class="chart-dot" cx="10" cy="80"/>
+          <circle class="chart-dot" cx="55" cy="65"/>
+          <circle class="chart-dot" cx="100" cy="52"/>
+          <circle class="chart-dot" cx="145" cy="58"/>
+          <circle class="chart-dot" cx="190" cy="42"/>
+          <circle class="chart-dot" cx="235" cy="32"/>
+          <circle class="chart-dot" cx="280" cy="22"/>
+          <text class="chart-axis" x="10" y="120" text-anchor="middle">#11</text>
+          <text class="chart-axis" x="100" y="120" text-anchor="middle">#13</text>
+          <text class="chart-axis" x="190" y="120" text-anchor="middle">#15</text>
+          <text class="chart-axis" x="280" y="120" text-anchor="middle">#17</text>
+        </svg>
+      </div>
+
+      <span class="section-num">Events</span>
+
+      <div class="event-item">
+        <div class="event-date">19 APR<br>#17</div>
+        <div class="event-body"><span class="action in">Top Pick #1</span> — score 84 (↑ จาก 78) · เข้าโซน P/E ต่ำสุดหลายปี</div>
+      </div>
+      <div class="event-item">
+        <div class="event-date">12 APR<br>#16</div>
+        <div class="event-body"><span class="action">ผ่านเกณฑ์</span> — score 78 · P/E ลง 18→15</div>
+      </div>
+      <div class="event-item">
+        <div class="event-date">29 MAR<br>#14</div>
+        <div class="event-body"><span class="action">Signal: COMPOUNDER</span> — ROE สม่ำเสมอ 4 ปีติด</div>
+      </div>
+      <div class="event-item">
+        <div class="event-date">15 MAR<br>#11</div>
+        <div class="event-body"><span class="action out">หลุดรอบ</span> — payout สูงเกินเกณฑ์</div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item"><div class="nav-icon">◉</div><div class="nav-label">หน้าแรก</div></div>
+      <div class="nav-item active"><div class="nav-icon">▤</div><div class="nav-label">หุ้น</div></div>
+      <div class="nav-item"><div class="nav-icon">★</div><div class="nav-label">ติดตาม</div></div>
+      <div class="nav-item"><div class="nav-icon">≡</div><div class="nav-label">ประวัติ</div></div>
+      <div class="nav-item"><div class="nav-icon">⚙</div><div class="nav-label">ตั้งค่า</div></div>
+    </div>
+  </div></div>
+  <div class="note"><strong>Per-stock timeline</strong> score chart ข้าม scan + event log (เข้า/หลุด, signal change, top pick) · <em>/api/stock/{sym}/history</em> aggregates ทุก screener_*.json ย้อนหลัง</div>
+</div>
+
+<!-- 09. WATCHLIST EMPTY (fresh start) -->
+<div class="artboard">
+  <div class="label"><span class="num">№09</span>Watchlist — Empty</div>
+  <div class="frame"><div class="frame-inner">
+    <div class="top-bar slim">
+      <div class="mast-meta">MY<br>STARS</div>
+      <div class="mast-title slim">ติดตาม</div>
+      <div class="scan-chip" style="border-color:var(--ink-soft);color:var(--ink-soft);background:var(--paper-2)">0</div>
+    </div>
+    <div class="content">
+      <div class="empty-state">
+        <div class="ico">☆</div>
+        <h3>ยังไม่มีหุ้นที่ติดตาม</h3>
+        <p>
+          กด <strong>★</strong> บน card หุ้นที่สนใจ หรือในหน้า detail เพื่อเพิ่มที่นี่ · <br>Max จะติดตาม score + signal ของหุ้นพวกนี้ทุกรอบ scan
+        </p>
+        <div class="empty-cta">ไปดูหุ้นผ่านเกณฑ์ →</div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <div class="nav-item"><div class="nav-icon">◉</div><div class="nav-label">หน้าแรก</div></div>
+      <div class="nav-item"><div class="nav-icon">▤</div><div class="nav-label">หุ้น</div></div>
+      <div class="nav-item active"><div class="nav-icon">★</div><div class="nav-label">ติดตาม</div></div>
+      <div class="nav-item"><div class="nav-icon">≡</div><div class="nav-label">ประวัติ</div></div>
+      <div class="nav-item"><div class="nav-icon">⚙</div><div class="nav-label">ตั้งค่า</div></div>
+    </div>
+  </div></div>
+  <div class="note"><strong>Empty state</strong> หลัง wipe 18 ตัว user เริ่มใหม่ · CTA ชี้ไปหน้าหุ้นให้กด ★ เอง · ไม่มีการ auto-add เด็ดขาด</div>
+</div>
+
+</div>
+
+<div class="section-divider">Flow: Home · List · Watchlist · History · Report · Stock Detail (Overview/History)</div>
+
+</body>
+</html>

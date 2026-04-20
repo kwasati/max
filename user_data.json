@@ -1,5 +1,9 @@
 {
-  "watchlist": [],
+  "watchlist": [
+    "CBG.BK",
+    "DITTO.BK",
+    "MOSHI.BK"
+  ],
   "blacklist": [],
   "notes": {
     "PTT.BK": "ปันผลสม่ำเสมอ ราคาถูก",
@@ -16,5 +20,5 @@
     "TISCO.BK": "ธนาคารเล็ก ปันผลสูงสุดในกลุ่ม ROE ดี"
   },
   "custom_lists": {},
-  "updated_at": "2026-04-19T15:03:15.215381"
+  "updated_at": "2026-04-19T16:54:28.096876"
 }
