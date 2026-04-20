@@ -1,13 +1,13 @@
-# Max Mahon v4 — Claude Instructions
+# Max Mahon v5 — Claude Instructions
 
 ## Architecture
-- **Agent:** Max Mahon — Thai stock analyst, Dividend-First + Buffett Quality style
+- **Agent:** Max Mahon — Thai stock analyst, Niwes Dividend-First style
 - **Stack:** Python + thaifin + yfinance (supplement) + Anthropic SDK (claude-opus-4-7)
 - **AI:** Weekly pipeline + discovery ใช้ SDK + prompt caching (ไม่ใช่ CLI subprocess อีกต่อไป) — เรียก `anthropic.Anthropic().messages.create()` ตรง, auth ผ่าน `MAX_ANTHROPIC_API_KEY`
 - **Server:** FastAPI on port 50089, Cloudflare Tunnel → max.intensivetrader.com
 - **Schedule:** APScheduler ใน server (cron เดียว, อาทิตย์ 09:00 เรียก scan)
-- **Philosophy:** Dividend-First (passive income DCA) + Warren Buffett (quality) + เซียนฮง สถาพร (value growth)
-- **Goal:** คัดหุ้นสำหรับ DCA 10-20 ปี ปันผลดีเป็นหลัก เติบโตสม่ำเสมอ
+- **Philosophy:** Dr.Niwes Way: VI ฉบับ ดร.นิเวศน์ — Dividend-First + Hidden Value + 5-5-5-5
+- **Goal:** คัดหุ้นสำหรับ DCA 10-20 ปี ปันผลคือผลตอบแทนหลัก + safety จาก PE/PBV ต่ำ + hidden value
 
 ### Data Sources
 - **Primary:** thaifin — 10-16 ปี financial statements + ratios
@@ -49,52 +49,53 @@
 - `reports/` — scan reports (scan_*.md)
 - `data/` — snapshots + screener results + history.json (gitignored)
 
-## Hard Filters (ต้องผ่านทุกข้อ)
-- ROE เฉลี่ย ≥ 15% non-financial / ≥ 10% financial (ไม่มีปีต่ำกว่า 12% / 8%) — Buffett
-- Net Margin เฉลี่ย ≥ 10% (ยกเว้น financial sector)
-- D/E ≤ 1.5 (non-financial) / ≤ 10 (financial) — เซียนฮง
-- EPS บวกอย่างน้อย 3 จาก 4 ปี
-- FCF บวกอย่างน้อย 3 จาก 4 ปี (ยกเว้น financial)
+## Hard Filters — Niwes 5-5-5-5 (ต้องผ่านทุกข้อ)
+- Dividend Yield ≥ 5% (ใช้ normalized earnings)
+- Dividend Streak ≥ 5 ปีติดต่อกัน
+- EPS positive 5/5 ปีล่าสุด (ไม่มีปีขาดทุน)
+- P/E ≤ 15 (bonus: ≤ 8)
+- P/BV ≤ 1.5 (bonus: ≤ 1.0)
 - Market Cap ≥ 5B THB
 
-## Quality Score (100 คะแนน, Dividend-First)
+## Quality Score (100 คะแนน — Niwes Dividend-First)
 
 | ด้าน | คะแนน | เกณฑ์ |
 |---|---|---|
-| Dividend | 35 | Yield (10) + Streak (10) + Payout (7) + Dividend Growth (8) |
-| Profitability | 25 | ROE consistency (12) + Margins (8) + Trend (5) |
-| Growth | 20 | Revenue CAGR (8) + EPS CAGR (8) + Consistency (4) |
-| Strength | 20 | D/E (5) + Interest Coverage (5) + FCF (5) + OCF/NI (5) |
+| Dividend | 50 | Yield (15) + Streak (15) + Payout Sustainability (10) + Dividend Growth (10) |
+| Valuation | 25 | P/E (10) + P/BV (10) + EV/EBITDA (5) |
+| Cash Flow Strength | 15 | FCF positive (5) + OCF/NI ratio (5) + Interest coverage (5) |
+| Hidden Value | 10 | check_hidden_value flag (5) + holding > parent mcap (5) |
 
 ### Modifiers
-- Valuation: A:+5, B:0, C:-5, D:-10, F:-20
-- Signals: COMPOUNDER +5, CONTRARIAN +5, YIELD_TRAP -20, DATA_WARNING -15
-- Soft zone: near-miss ROE/NM -5 pts
+- Valuation grade: A:+5, B:0, C:-5, D:-10, F:-20
+- Signals: DIVIDEND_TRAP -20, DATA_WARNING -15
 - **Cap: 0-100 เสมอ**
 
 ## Signal Tags
 
 | Tag | ความหมาย |
 |---|---|
-| COMPOUNDER | ROE ≥20% ทุกปี + rev CAGR ≥10% + payout <60% — Buffett dream stock |
-| CASH_COW | FCF yield >8% + payout <70% + D/E <0.5 |
-| DIVIDEND_KING | yield ≥5% + payout 30-70% + streak ≥5 ปี |
-| CONTRARIAN | ราคาใกล้ 52w low + quality score ≥50 |
-| TURNAROUND | forward PE < trailing PE * 0.7 + revenue CAGR บวก |
-| YIELD_TRAP | yield >8% + ROE ลดทุกปี + payout >100% |
+| NIWES_5555 | ผ่านเกณฑ์ 5-5-5-5 ครบทุกข้อ |
+| HIDDEN_VALUE | มี holding ที่ตลาดไม่ได้ pricing in (ดู `data/hidden_value_holdings.json`) |
+| QUALITY_DIVIDEND | yield ≥5% + payout <70% + streak ≥10 ปี |
+| DEEP_VALUE | P/E ≤8 + P/BV ≤1.0 |
+| DIVIDEND_TRAP | yield >8% + ROE declining + payout >100% (renamed from YIELD_TRAP) |
 | DATA_WARNING | ข้อมูลผิดปกติ (yield >20%, growth >300%) |
+| OVERPRICED | จาก valuation_grade F |
 
-## Analysis Framework (6 ด้าน)
-- **Business Quality** — moat, competitive position
-- **Financial Health** — debt, cash flow, interest coverage
-- **Growth Consistency** — trend หลายปี ไม่ใช่แค่ปีเดียว
-- **Dividend Sustainability** — จ่ายจาก cash จริงหรือหนี้, track record
-- **Valuation** — P/E vs quality, เทียบ historical
-- **DCA Suitability** — เหมาะสะสมระยะยาว 10-20 ปีไหม
+## Analysis Framework (6 ด้าน — Niwes-style)
+- **Dividend Sustainability** — ปันผล ≥5%? streak กี่ปี? payout ratio ยั่งยืนไหม? จ่ายจาก cash จริงไม่ใช่หนี้?
+- **Hidden Value** — มี asset/stake ที่ตลาดไม่ได้คิดเข้าราคาไหม? (เช่น QH ถือ HMPRO, INTUCH ถือ ADVANC)
+- **Business Quality** — ขาดไม่ได้ของผู้บริโภค? อยู่ในชีวิตประจำวัน? ผ่านวิกฤติมาหลายรอบ?
+- **Valuation Discipline** — P/E ≤15 (bonus ≤8)? P/BV ≤1.5 (bonus ≤1.0)? เทียบ historical ของตัวเองถูก/แพง?
+- **DCA Suitability** — เหมาะสะสม 10-20 ปีไหม? (⭐⭐⭐ / ⭐⭐ / ⭐)
+- **Macro Risk** — sector concentration + structural Thai (เศรษฐกิจซบ ดอกเบี้ย ค่าเงิน)
 
 ## References
-- Buffett criteria: ROE ≥15% sustained, Gross Margin >40%, D/E <0.5, FCF positive (Validea, TradingCenter)
-- เซียนฮง สถาพร: เน้น cash flow quality, ความสม่ำเสมอ, หนี้น้อย (เกณฑ์ตัวเลขเช่น P/E ≤ 15 มาจากการวิเคราะห์พอร์ตโดย secondary sources ไม่ใช่เกณฑ์ที่แกประกาศ)
+- **Niwes research:** `docs/niwes/00-index.md` — master index ของบทความ + quotes verbatim
+- **Niwes philosophy:** `docs/niwes/03-philosophy.md` — 8 ปรัชญาหลัก พร้อม source
+- **Niwes criteria:** `docs/niwes/04-criteria.md` — เกณฑ์ 5-5-5-5 ละเอียด
+- **Archive:** `docs/archive/README.md` — Buffett+เซียนฮง snapshot (pre-Niwes, commit 8c308d6) เก็บไว้สำหรับ A/B
 
 ## Rules
 - ห้ามแนะนำซื้อขายโดยตรง — วิเคราะห์ให้ข้อมูลเท่านั้น
