@@ -139,10 +139,21 @@ py -c "from scripts.data_adapter import fetch_fundamentals; from scripts.fetch_d
 
 > NOTE: Plan reference uses `fetch_stock_data` — actual function is `fetch_fundamentals` (data_adapter) or `fetch_multi_year` (fetch_data). Verification command above uses the correct name.
 
-### Result
+### Result (live run, 2026-04-20)
 
-(captured by Task 1.2 — see next commit)
+```json
+{
+  "CPALL.BK": 22,
+  "TCAP.BK": 23,
+  "PTT.BK": 24,
+  "SCB.BK": 4,
+  "KBANK.BK": 21
+}
+```
 
 ### Analysis
 
-(captured by Task 1.2)
+- 4 of 5 symbols pass Niwes streak threshold (≥ 5 yrs): CPALL, TCAP, PTT, KBANK — strong long-term dividend payers, all 20+ year streaks.
+- **FLAG: SCB.BK = 4 yrs** — fails Niwes 5-year minimum. Likely cause: dividend cut/suspension during a recent year (COVID era 2020 or banking sector restructuring) broke the streak. Need to inspect `dividend_history` for SCB to confirm which year(s) had zero DPS before applying screener at production scale.
+- Function works correctly on real data; coverage is sufficient (10+ years of history available via thaifin + yfinance).
+- No data fetch failures — verification complete.
