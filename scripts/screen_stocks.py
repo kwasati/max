@@ -301,65 +301,52 @@ def hidden_value_score(data: dict) -> tuple:
 
 
 def assign_signals(data: dict, total_score: int) -> list:
+    """Niwes signal tags."""
     signals = []
-    yearly = data.get("yearly_metrics", [])
     agg = data.get("aggregates", {})
-    sector = data.get("sector", "")
-    is_financial = sector in FINANCIAL_SECTORS
+    yearly = data.get("yearly_metrics", [])
 
-    # DATA_WARNING
+    # DATA_WARNING (keep)
     if data.get("warnings"):
         signals.append("DATA_WARNING")
 
     dy = data.get("dividend_yield") or 0
-    payout = data.get("payout_ratio")
-    eg = data.get("earnings_growth") or 0
-    price = data.get("price")
-    low_52w = data.get("52w_low")
-    fwd_pe = data.get("forward_pe")
     pe = data.get("pe_ratio")
+    pbv = data.get("pb_ratio")
+    payout = data.get("payout_ratio")
+    streak = agg.get("dividend_streak", 0)
+    sym = data.get("symbol", "")
 
-    # YIELD_TRAP — multi-year: yield high but earnings declining trend
+    # NIWES_5555 — passes 5-5-5-5
+    norm_eps = compute_normalized_earnings(data)
+    sorted_years = sorted(norm_eps.keys())[-5:] if norm_eps else []
+    eps_recent = [norm_eps[y] for y in sorted_years]
+    eps_5_pos = len(eps_recent) >= 5 and all(e is not None and e > 0 for e in eps_recent)
+
+    if (dy >= 5 and streak >= 5 and eps_5_pos
+            and pe is not None and 0 < pe <= 15
+            and pbv is not None and 0 < pbv <= 1.5):
+        signals.append("NIWES_5555")
+
+    # HIDDEN_VALUE
+    if check_hidden_value(sym):
+        signals.append("HIDDEN_VALUE")
+
+    # QUALITY_DIVIDEND — yield≥5 + payout<70 + streak≥10
+    if dy >= 5 and payout is not None and payout < 0.70 and streak >= 10:
+        signals.append("QUALITY_DIVIDEND")
+
+    # DEEP_VALUE — P/E≤8 + P/BV≤1
+    if pe is not None and 0 < pe <= 8 and pbv is not None and 0 < pbv <= 1.0:
+        signals.append("DEEP_VALUE")
+
+    # DIVIDEND_TRAP (renamed from YIELD_TRAP) — yield>8 + ROE declining + payout>100
     roe_vals = [m["roe"] for m in yearly if m.get("roe") is not None]
     if dy > 8:
-        declining = False
-        if len(roe_vals) >= 3 and all(roe_vals[i] < roe_vals[i-1] for i in range(1, len(roe_vals))):
-            declining = True
-        if declining or (payout is not None and payout > 1.0):
-            signals.append("YIELD_TRAP")
-
-    # CONTRARIAN — price near low + high quality score
-    if price and low_52w and low_52w > 0 and price <= low_52w * 1.20 and total_score >= 50:
-        signals.append("CONTRARIAN")
-
-    # TURNAROUND
-    if fwd_pe and pe and fwd_pe > 1 and pe > 1 and fwd_pe < pe * 0.7:
-        rev_cagr = agg.get("revenue_cagr")
-        if rev_cagr is not None and rev_cagr > 0:
-            signals.append("TURNAROUND")
-
-    # DIVIDEND_KING — multi-year: streak ≥5, yield ≥5%, payout sustainable
-    streak = agg.get("dividend_streak", 0)
-    if dy >= 5 and streak >= 5 and payout is not None and 0.3 <= payout <= 0.7:
-        signals.append("DIVIDEND_KING")
-
-    # COMPOUNDER — Buffett style
-    if len(roe_vals) >= 3:
-        all_above_20 = all(r >= 0.20 for r in roe_vals)
-        rev_cagr = agg.get("revenue_cagr")
-        if all_above_20 and rev_cagr is not None and rev_cagr >= 0.10:
-            if payout is None or payout < 0.60:
-                signals.append("COMPOUNDER")
-
-    # CASH_COW — use FCF from latest yearly_metrics (proper OCF - capex)
-    yearly_fcf = yearly[-1].get("fcf") if yearly else None
-    fcf = yearly_fcf or 0
-    mcap = data.get("market_cap") or 1
-    fcf_yield = fcf / mcap if mcap > 0 else 0
-    de_vals = [m["de_ratio"] for m in yearly if m.get("de_ratio") is not None]
-    latest_de = de_vals[-1] if de_vals else 999
-    if fcf_yield > 0.08 and (payout is None or payout < 0.70) and latest_de < 0.5:
-        signals.append("CASH_COW")
+        declining = (len(roe_vals) >= 3 and
+                     all(roe_vals[i] < roe_vals[i-1] for i in range(1, len(roe_vals))))
+        if declining and payout is not None and payout > 1.0:
+            signals.append("DIVIDEND_TRAP")
 
     return signals
 
