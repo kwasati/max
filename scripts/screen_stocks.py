@@ -300,6 +300,90 @@ def hidden_value_score(data: dict) -> tuple:
     return min(score, 10), reasons
 
 
+def detect_exit_signal(symbol: str, current_data: dict, historical_baseline: dict | None = None) -> list[dict]:
+    """Detect exit triggers for a watchlist stock (Niwes sell rules).
+
+    Args:
+        symbol: stock symbol (e.g., "CPALL.BK")
+        current_data: latest fetch_multi_year dict for the stock
+        historical_baseline: optional baseline dict with keys:
+            - passed_5555 (bool): whether stock previously passed 5-5-5-5
+            - pe_baseline (float): baseline PE used at entry (for bubble detection)
+            - thesis_change_flag (bool): manual flag set by news monitoring (Plan 07)
+
+    Returns:
+        list of trigger dicts, each with keys: {type, reason, severity}
+        - type: FILTER_DEGRADATION | VALUATION_BUBBLE | THESIS_CHANGE_FLAG
+        - reason: short Thai string explaining why
+        - severity: "high" | "medium" | "low"
+
+    Notes:
+        - Flag-only — NEVER auto-sells. Karl reviews via exit decision template.
+        - Runs per watchlist stock, not across whole universe.
+        - Mirrors 15-exit-rules.md Rule 2 (filter degradation) + Rule 3 (valuation bubble).
+    """
+    triggers: list[dict] = []
+    baseline = historical_baseline or {}
+
+    # --- Trigger 1: FILTER_DEGRADATION ---
+    # If stock previously passed 5-5-5-5 but now fails any Niwes hard filter
+    if baseline.get("passed_5555"):
+        passed_now, fail_reasons, _ = hard_filter(current_data)
+        if not passed_now:
+            triggers.append({
+                "type": "FILTER_DEGRADATION",
+                "reason": f"เคยผ่าน 5-5-5-5 แต่ตอนนี้ fail: {'; '.join(fail_reasons[:3])}",
+                "severity": "high" if len(fail_reasons) >= 2 else "medium",
+            })
+
+    # --- Trigger 2: VALUATION_BUBBLE ---
+    # Current P/E > 3x baseline P/E (mirrors Rule 3 logic, threshold 3x)
+    pe_now = current_data.get("pe_ratio")
+    pe_baseline = baseline.get("pe_baseline")
+    if pe_now is not None and pe_now > 0 and pe_baseline is not None and pe_baseline > 0:
+        ratio = pe_now / pe_baseline
+        if ratio >= 3.0:
+            triggers.append({
+                "type": "VALUATION_BUBBLE",
+                "reason": f"P/E ปัจจุบัน {pe_now:.1f} > 3x baseline {pe_baseline:.1f} ({ratio:.1f}x)",
+                "severity": "high",
+            })
+        elif ratio >= 2.0:
+            triggers.append({
+                "type": "VALUATION_BUBBLE",
+                "reason": f"P/E ปัจจุบัน {pe_now:.1f} = {ratio:.1f}x baseline (watch)",
+                "severity": "medium",
+            })
+
+    # --- Trigger 3: THESIS_CHANGE_FLAG ---
+    # Manual flag from news monitoring (Plan 07). Just echoes the flag + any note.
+    if baseline.get("thesis_change_flag"):
+        note = baseline.get("thesis_change_note", "manual flag from news monitoring")
+        triggers.append({
+            "type": "THESIS_CHANGE_FLAG",
+            "reason": note,
+            "severity": "high",
+        })
+
+    return triggers
+
+
+def load_exit_baseline(symbol: str) -> dict:
+    """Load exit baseline for a symbol from data/exit_baselines.json.
+
+    Returns baseline dict (may be empty if symbol not tracked yet).
+    File structure: { "CPALL.BK": {"passed_5555": true, "pe_baseline": 8.5, ...}, ... }
+    """
+    baseline_path = DATA_DIR / "exit_baselines.json"
+    if not baseline_path.exists():
+        return {}
+    try:
+        all_baselines = json.loads(baseline_path.read_text(encoding="utf-8"))
+        return all_baselines.get(symbol, {}) or {}
+    except Exception:
+        return {}
+
+
 def assign_signals(data: dict, total_score: int) -> list:
     """Niwes signal tags."""
     signals = []

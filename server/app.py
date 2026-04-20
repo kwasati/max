@@ -1755,6 +1755,106 @@ async def get_stock_analysis(symbol: str):
 
 
 # ---------------------------------------------------------------------------
+# Exit Check API (Plan 08 — Niwes exit strategy)
+# ---------------------------------------------------------------------------
+
+@app.get("/api/exit_check/{symbol}")
+async def exit_check(symbol: str):
+    """Exit check for a watchlist stock — informational only, never auto-executes.
+
+    Returns:
+        {
+            symbol: str,
+            triggers: list of {type, reason, severity},
+            niwes_rules_check: {rule_1_thesis: bool, rule_2_filter: bool, ...},
+            structural_risk_score: int 0-100,
+            structural_recommendation: str,
+            recommendation: "HOLD" | "REVIEW" | "CONSIDER_EXIT",
+            source_baseline: bool,
+            note: str,
+        }
+
+    Uses detect_exit_signal (Phase 2.1) + compute_score (Phase 3.2).
+    """
+    _project_root = str(PROJECT_DIR)
+    if _project_root not in sys.path:
+        sys.path.insert(0, _project_root)
+    try:
+        from scripts.screen_stocks import detect_exit_signal, load_exit_baseline
+        from scripts.structural_risk_score import compute_score
+    except ImportError as e:
+        raise HTTPException(503, f"Exit check modules unavailable: {e}")
+
+    # Normalize symbol
+    sym = symbol.strip().upper()
+    if not sym.endswith(".BK"):
+        sym += ".BK"
+
+    # Get current screener data for the stock
+    stock_data, _ = _find_stock_for_analysis(sym)
+    if stock_data is None:
+        raise HTTPException(404, f"Stock {sym} not found in latest screener/snapshot")
+
+    # Reconstruct current_data for detect_exit_signal
+    m = stock_data.get("metrics") or stock_data.get("basic_metrics") or {}
+    current_data = {
+        "dividend_yield": m.get("dividend_yield") or stock_data.get("dividend_yield"),
+        "pe_ratio": m.get("pe") or stock_data.get("pe_ratio"),
+        "pb_ratio": m.get("pb_ratio") or stock_data.get("pb_ratio"),
+        "market_cap": m.get("mcap") or stock_data.get("market_cap"),
+        "aggregates": stock_data.get("aggregates", {}),
+        "yearly_metrics": stock_data.get("yearly_metrics", []),
+    }
+
+    # Load baseline (may be empty if not tracked)
+    baseline = load_exit_baseline(sym)
+    has_baseline = bool(baseline)
+
+    triggers = detect_exit_signal(sym, current_data, baseline) if has_baseline else []
+
+    # Structural risk score (macro)
+    srs = compute_score()
+    structural_score = srs.get("score", 0)
+    structural_rec = srs.get("recommendation", "")
+
+    # Build niwes_rules_check summary (8 rules from 15-exit-rules.md)
+    trigger_types = {t["type"] for t in triggers}
+    niwes_rules_check = {
+        "rule_1_thesis_change": "THESIS_CHANGE_FLAG" in trigger_types,
+        "rule_2_filter_degradation": "FILTER_DEGRADATION" in trigger_types,
+        "rule_3_valuation_bubble": "VALUATION_BUBBLE" in trigger_types,
+        "rule_4_better_opportunity": False,  # manual
+        "rule_5_capital_need": False,  # manual
+        "anti_rule_1_short_drop_thesis_intact": False,  # manual
+        "anti_rule_2_sector_rotation_noise": False,  # manual
+        "anti_rule_3_macro_fear_no_business_impact": False,  # manual
+    }
+
+    # Recommendation logic (flag-only)
+    high_sev = any(t.get("severity") == "high" for t in triggers)
+    if high_sev or structural_score > 70:
+        recommendation = "CONSIDER_EXIT"
+    elif triggers or structural_score > 40:
+        recommendation = "REVIEW"
+    else:
+        recommendation = "HOLD"
+
+    return {
+        "symbol": sym,
+        "triggers": triggers,
+        "niwes_rules_check": niwes_rules_check,
+        "structural_risk_score": structural_score,
+        "structural_recommendation": structural_rec,
+        "recommendation": recommendation,
+        "source_baseline": has_baseline,
+        "note": (
+            "Informational only. Fill docs/niwes/16-exit-decision-template.md "
+            "before any sell action."
+        ),
+    }
+
+
+# ---------------------------------------------------------------------------
 # Static files (SPA) — mount last so API routes take priority
 # ---------------------------------------------------------------------------
 @app.get("/mobile", response_class=HTMLResponse)
