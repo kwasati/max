@@ -30,6 +30,10 @@ from urllib.parse import quote_plus
 import requests
 from bs4 import BeautifulSoup
 
+# Local import — sibling module (script dir added to sys.path below).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _niwes_cache import load_seen_urls, save_seen_urls  # noqa: E402
+
 # -----------------------------------------------------------------------------
 # Config
 # -----------------------------------------------------------------------------
@@ -237,38 +241,12 @@ SCRAPERS = [
 
 
 # -----------------------------------------------------------------------------
-# Dedup cache
-# -----------------------------------------------------------------------------
-
-
-def load_seen() -> set[str]:
-    if not SEEN_CACHE.exists():
-        return set()
-    try:
-        raw = json.loads(SEEN_CACHE.read_text(encoding="utf-8"))
-        return set(raw.get("urls", []))
-    except (json.JSONDecodeError, OSError):
-        return set()
-
-
-def save_seen(seen: set[str]) -> None:
-    SEEN_CACHE.write_text(
-        json.dumps(
-            {"urls": sorted(seen), "last_updated": datetime.now().isoformat()},
-            ensure_ascii=False,
-            indent=2,
-        ),
-        encoding="utf-8",
-    )
-
-
-# -----------------------------------------------------------------------------
 # Main
 # -----------------------------------------------------------------------------
 
 
 def main() -> int:
-    seen = load_seen()
+    seen = load_seen_urls(SEEN_CACHE)
     print(f"[info] seen cache: {len(seen)} URLs")
 
     all_items: list[dict[str, Any]] = []
