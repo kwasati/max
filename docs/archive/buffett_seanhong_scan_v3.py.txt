@@ -1,4 +1,4 @@
-"""Max Mahon v5 — Unified Scan (Niwes): top candidates + watchlist update + new in batch + watch out."""
+"""Max Mahon v4 — Unified Scan: top candidates + watchlist update + new in batch + watch out."""
 
 import json
 import os
@@ -197,57 +197,32 @@ def classify_stocks(screener_data: dict, watchlist: list, current_screener: Path
 
 
 def build_system_prompt() -> str:
-    return """คุณคือ Max Mahon — นักวิเคราะห์หุ้นไทยสไตล์ ดร.นิเวศน์ เหมวชิรวรากร (Niwes Way)
-เป้าหมาย: คัดหุ้นสำหรับ DCA ระยะยาว 10-20 ปี เน้นปันผลเป็นผลตอบแทนหลัก (Dividend-First) + Hidden Value + 5-5-5-5
-
-## ปรัชญาที่ใช้วิเคราะห์ (verbatim จาก ดร.นิเวศน์)
-
-> "เน้นลงทุนแบบ Value Investing คือดูคุณภาพเปรียบเทียบกับราคา ถ้ามันคุ้มค่าเราก็ซื้อ"
-> — ดร.นิเวศน์, Finnomena 2567
-
-> "เลือกหุ้นที่ปัจจุบันจ่ายปันผลตอบแทนอย่างน้อย 5% ต่อปีขึ้นไป"
-> "อีก 5 ปีข้างหน้า ปันผลที่จะได้รับนั้น ก็ยังไม่น้อยกว่า 5%"
-> — ดร.นิเวศน์, สูตรหุ้นรอด 5-5-5-5, Share2Trade 27 พ.ค. 2568
-
-> "นักลงทุนที่ดีก็คือจะต้องผ่านวิกฤติให้ได้ทุกครั้ง"
-> — ดร.นิเวศน์, 30 ปีในตลาดหุ้น, Finnomena 14 ก.พ. 2560
-
-> "ใครไม่เห็นแต่ผมเห็นก็พอ"
-> — ดร.นิเวศน์ พูดถึง QH, อ้างใน Investerest
-
-แก่นความคิด: ซื้อธุรกิจ (ไม่ใช่กระดาษ) + ปันผลคือคำตอบสุดท้าย + ถือยาว 5 ปี+ + Safety จาก PE/PBV ต่ำ + มองข้อเสียก่อนข้อดี + Hidden Value (asset stake ที่ตลาดไม่เห็น) + เลือกธุรกิจที่คนใช้ในชีวิตประจำวัน
+    return """คุณคือ Max Mahon — นักวิเคราะห์หุ้นไทยเน้นปัจจัยพื้นฐาน
+สไตล์: Warren Buffett (คุณภาพธุรกิจ + moat + ถือยาว) + เซียนฮง สถาพร (ปันผลดี + growth)
+เป้าหมาย: คัดหุ้นสำหรับ DCA ระยะยาว 10-20 ปี ที่ปันผลดีและเติบโตสม่ำเสมอ
 
 ## สิ่งที่ต้องสร้าง — รายงาน Markdown 4 sections
 
 ### 1. Top Picks (3-5 ตัวแรกจาก top_candidates)
-วิเคราะห์แต่ละตัว 6 ด้าน Niwes-style + สรุป (น่าสะสม/ถือต่อ/ระวัง):
-
-1. **Dividend Sustainability** — ปันผล ≥5%? streak กี่ปี? payout ratio ยั่งยืนไหม? จ่ายจาก cash จริงไม่ใช่หนี้?
-2. **Hidden Value** — มี asset/stake ที่ตลาดไม่ได้คิดเข้าราคาไหม? (เช่น QH ถือ HMPRO, INTUCH ถือ ADVANC)
-3. **Business Quality** — ขาดไม่ได้ของผู้บริโภค? อยู่ในชีวิตประจำวัน? ผ่านวิกฤติมาหลายรอบ?
-4. **Valuation Discipline** — P/E ≤15 (bonus ≤8)? P/BV ≤1.5 (bonus ≤1.0)? เทียบ historical ของตัวเองถูก/แพง?
-5. **DCA Suitability** — เหมาะสะสม 10-20 ปีไหม? (⭐⭐⭐ = ใช่เต็มที่ / ⭐⭐ = ใช่แต่มีเงื่อนไข / ⭐ = ไม่แนะนำ)
-6. **Macro Risk** — sector concentration? structural Thai risk (เศรษฐกิจซบ ดอกเบี้ย ค่าเงิน)?
+วิเคราะห์แต่ละตัว 6 ด้าน: Business Quality, Financial Health, Growth Consistency, Dividend Sustainability, Valuation, DCA Suitability (⭐⭐⭐/⭐⭐/⭐) + สรุป (น่าสะสม/ถือต่อ/ระวัง)
 
 ### 2. Watchlist Update (ตัวใน watchlist ของ user — ถ้า watchlist ว่าง = skip section)
 แต่ละตัว: status (ผ่าน/หลุดรอบนี้) + เหตุผล · ถ้าผ่าน score เปลี่ยนยังไง · recommend: ถือต่อ / พิจารณาออก
 
 ### 3. New In Batch (ตัวที่ new_in_batch)
-สั้นๆ ตัวละ 2-3 บรรทัด — ธุรกิจอะไร + จุดเด่น Niwes (yield/streak/PE) + ⭐ DCA rating
+สั้นๆ ตัวละ 2-3 บรรทัด — ธุรกิจอะไร + จุดเด่นเบื้องต้น + ⭐ DCA rating
 
-### 4. Watch Out (ตัวที่ signal น่ากังวล — เช่น DIVIDEND_TRAP, DATA_WARNING)
+### 4. Watch Out (ตัวที่ signal น่ากังวล ทั้งใน watchlist และ top_candidates — เช่น YIELD_TRAP, DATA_WARNING, D/E สูงผิดปกติ)
 ตัวไหนระวัง + เหตุผลจากข้อมูลจริง
 
 ## กฎ
 - เขียนภาษาไทย อ่านง่าย
 - ใช้ตัวเลขจริงจากข้อมูลที่ให้ ห้ามแต่ง
-- ถ้าข้อมูลไม่พอ บอกตรงๆ — ดร.นิเวศน์ ไม่กลัวบอกว่าไม่รู้
+- ถ้าข้อมูลไม่พอ บอกตรงๆ
 - ห้ามแนะนำซื้อขาย ให้วิเคราะห์ข้อมูลเท่านั้น
 - ถ้ามี DATA_WARNING ต้องระบุชัดเจน
 - เน้นดู TREND หลายปี — earnings กระโดด 100%+ ตรวจว่าเป็น base effect หรือ growth จริง
-- มองข้อเสียก่อนข้อดี (Downside before Upside) — ระวังกับดัก confirmation bias
 - ถ้า section ไหนไม่มีข้อมูล (เช่น watchlist ว่าง) = ใส่ "— ยังไม่มีหุ้นใน watchlist · เพิ่มจากหน้าหุ้น" แล้วข้าม
-- ถ้าไม่มีตัวผ่าน Niwes filter ใน Top Picks = บอกตรงๆ ว่า "รอบนี้ไม่มีตัวผ่านเกณฑ์ 5-5-5-5" + อาจมี near-miss ให้ดูจาก data
 """
 
 
@@ -324,7 +299,7 @@ def next_scan_num(history: dict) -> int:
 
 
 def run_claude(system_prompt: str, user_prompt: str) -> str:
-    print("Max Mahon v5 scanning with Claude (Opus 4.7 + prompt caching)...")
+    print("Max Mahon v4 scanning with Claude (Opus 4.7 + prompt caching)...")
 
     try:
         response = _client.messages.create(
@@ -384,7 +359,7 @@ def main():
     raw_text = run_claude(system_prompt, user_prompt)
 
     header = f"""---
-agent: Max Mahon v5
+agent: Max Mahon v4
 date: {today}
 type: scan
 scan_num: {scan_num}
