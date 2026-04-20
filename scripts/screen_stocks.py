@@ -1,4 +1,4 @@
-"""Max Mahon v4 — Stock Screener: multi-year quality scoring (Dividend-First + Buffett Quality)."""
+"""Max Mahon v5 — Stock Screener: Niwes Dividend-First framework (5-5-5-5)."""
 
 import json
 import sys
@@ -14,15 +14,16 @@ USER_DATA = ROOT / "user_data.json"
 
 sys.path.insert(0, str(ROOT / "scripts"))
 from fetch_data import fetch_multi_year, normalize_yield, FINANCIAL_SECTORS
+from data_adapter import compute_normalized_earnings, check_hidden_value
 
 DEFAULT_FILTERS = {
-    "min_roe_avg": 0.15,
-    "min_roe_floor": 0.12,
-    "min_net_margin": 0.10,
-    "max_de_non_fin": 1.5,
-    "max_de_financial": 10,
-    "min_eps_positive_years": 3,
-    "min_fcf_positive_years": 3,
+    "min_dividend_yield": 5.0,
+    "min_dividend_streak": 5,
+    "min_eps_positive_years": 5,
+    "max_pe": 15.0,
+    "bonus_pe": 8.0,
+    "max_pbv": 1.5,
+    "bonus_pbv": 1.0,
     "min_market_cap": 5_000_000_000,
 }
 
@@ -43,72 +44,66 @@ HARD_FILTERS = load_filters()
 
 
 def hard_filter(data: dict) -> tuple:
+    """Niwes 5-5-5-5 hard filter.
+
+    1. dividend_yield ≥ 5%
+    2. dividend_streak ≥ 5 years
+    3. EPS positive 5/5 latest years (no loss using normalized earnings)
+    4. P/E ≤ 15
+    5. P/BV ≤ 1.5
+    6. market_cap ≥ 5B THB
+    """
     reasons = []
     near_miss = []
-    sector = data.get("sector", "")
-    is_financial = sector in FINANCIAL_SECTORS
     agg = data.get("aggregates", {})
     info_mcap = data.get("market_cap") or 0
 
+    # 6. Market cap
     if info_mcap < HARD_FILTERS["min_market_cap"]:
-        reasons.append(f"market cap {info_mcap/1e9:.0f}B < 5B")
+        reasons.append(f"market cap {info_mcap/1e9:.1f}B < {HARD_FILTERS['min_market_cap']/1e9:.0f}B")
         return False, reasons, near_miss
 
-    # ROE check — need multi-year data
-    yearly = data.get("yearly_metrics", [])
-    roe_vals = [m["roe"] for m in yearly if m.get("roe") is not None]
+    # 1. Dividend yield ≥5%
+    dy = data.get("dividend_yield")
+    if dy is None:
+        reasons.append("ไม่มีข้อมูลปันผล")
+    elif dy < HARD_FILTERS["min_dividend_yield"]:
+        reasons.append(f"dividend yield {dy:.1f}% < {HARD_FILTERS['min_dividend_yield']:.0f}%")
 
-    if len(roe_vals) >= 2:
-        avg_roe = sum(roe_vals) / len(roe_vals)
-        min_roe = min(roe_vals)
-        roe_target = 0.10 if is_financial else HARD_FILTERS["min_roe_avg"]
-        roe_floor = 0.08 if is_financial else HARD_FILTERS["min_roe_floor"]
-        if avg_roe < roe_target - 0.005:
-            if avg_roe >= roe_target - 0.02:
-                near_miss.append(f"NEAR_MISS_ROE: avg {avg_roe*100:.0f}% (target {roe_target*100:.0f}%)")
-            else:
-                reasons.append(f"avg ROE {avg_roe*100:.0f}% < {roe_target*100:.0f}%")
-        if min_roe < roe_floor - 0.005:
-            reasons.append(f"min ROE {min_roe*100:.0f}% < {roe_floor*100:.0f}%")
-    elif data.get("roe") is not None:
-        roe_target = 0.10 if is_financial else HARD_FILTERS["min_roe_avg"]
-        if data["roe"] < roe_target:
-            reasons.append(f"ROE {data['roe']*100:.0f}% < {roe_target*100:.0f}%")
+    # 2. Dividend streak ≥5y
+    streak = agg.get("dividend_streak", 0)
+    if streak < HARD_FILTERS["min_dividend_streak"]:
+        reasons.append(f"dividend streak {streak}yr < {HARD_FILTERS['min_dividend_streak']}yr")
 
-    # Net Margin — skip for financials
-    if not is_financial:
-        nm_vals = [m["net_margin"] for m in yearly if m.get("net_margin") is not None]
-        if len(nm_vals) >= 2:
-            avg_nm = sum(nm_vals) / len(nm_vals)
-            if avg_nm < HARD_FILTERS["min_net_margin"]:
-                if avg_nm >= HARD_FILTERS["min_net_margin"] - 0.02:
-                    near_miss.append(f"NEAR_MISS_NM: avg {avg_nm*100:.0f}% (target {HARD_FILTERS['min_net_margin']*100:.0f}%)")
-                else:
-                    reasons.append(f"avg net margin {avg_nm*100:.0f}% < 10%")
-        elif data.get("profit_margin") is not None:
-            if data["profit_margin"] < HARD_FILTERS["min_net_margin"]:
-                reasons.append(f"net margin {data['profit_margin']*100:.0f}% < 10%")
+    # 3. No loss 5 years (using normalized earnings)
+    norm_eps = compute_normalized_earnings(data)
+    if norm_eps:
+        sorted_years = sorted(norm_eps.keys())[-5:]
+        recent_eps = [norm_eps[y] for y in sorted_years]
+        positive_years = sum(1 for e in recent_eps if e is not None and e > 0)
+        total_years = len(recent_eps)
+        if total_years >= 5:
+            if positive_years < HARD_FILTERS["min_eps_positive_years"]:
+                reasons.append(f"EPS positive {positive_years}/{total_years}yr < 5/5")
+        else:
+            # Not enough history — fail gracefully
+            reasons.append(f"EPS history only {total_years}yr (need 5)")
+    else:
+        reasons.append("ไม่มีข้อมูล EPS")
 
-    # D/E
-    de_vals = [m["de_ratio"] for m in yearly if m.get("de_ratio") is not None]
-    latest_de = de_vals[-1] if de_vals else (data.get("debt_to_equity") or 0) / 100 if data.get("debt_to_equity") else None
-    if latest_de is not None:
-        max_de = HARD_FILTERS["max_de_financial"] if is_financial else HARD_FILTERS["max_de_non_fin"]
-        if latest_de > max_de:
-            reasons.append(f"D/E {latest_de:.1f} > {max_de}")
+    # 4. P/E ≤15
+    pe = data.get("pe_ratio")
+    if pe is None or pe <= 0:
+        reasons.append("ไม่มี P/E ที่ใช้ได้")
+    elif pe > HARD_FILTERS["max_pe"]:
+        reasons.append(f"P/E {pe:.1f} > {HARD_FILTERS['max_pe']:.0f}")
 
-    # EPS positive years
-    eps_pos = agg.get("eps_positive_years", 0)
-    eps_total = agg.get("eps_total_years", 0)
-    if eps_total >= 3 and eps_pos < HARD_FILTERS["min_eps_positive_years"]:
-        reasons.append(f"EPS positive {eps_pos}/{eps_total}yr < 3")
-
-    # FCF positive years — skip for financials
-    if not is_financial:
-        fcf_pos = agg.get("fcf_positive_years", 0)
-        fcf_total = agg.get("fcf_total_years", 0)
-        if fcf_total >= 3 and fcf_pos < HARD_FILTERS["min_fcf_positive_years"]:
-            reasons.append(f"FCF positive {fcf_pos}/{fcf_total}yr < 3")
+    # 5. P/BV ≤1.5
+    pbv = data.get("pb_ratio")
+    if pbv is None or pbv <= 0:
+        reasons.append("ไม่มี P/BV ที่ใช้ได้")
+    elif pbv > HARD_FILTERS["max_pbv"]:
+        reasons.append(f"P/BV {pbv:.2f} > {HARD_FILTERS['max_pbv']:.1f}")
 
     return len(reasons) == 0, reasons, near_miss
 
