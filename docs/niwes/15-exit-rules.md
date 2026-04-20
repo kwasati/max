@@ -8,7 +8,7 @@
 
 ## ภาพรวม
 
-ดร.นิเวศน์ ไม่ได้สอนการขายอย่างเป็นระบบเหมือน "5-5-5-5" ฝั่งซื้อ แต่จาก case studies + คำพูดที่ปรากฏใน research ผู้รวบรวมสรุป **5 rules หลัก** ที่ ดร.นิเวศน์ ใช้จริง (section "When NOT to sell" จะเพิ่มใน commit ถัดไป)
+ดร.นิเวศน์ ไม่ได้สอนการขายอย่างเป็นระบบเหมือน "5-5-5-5" ฝั่งซื้อ แต่จาก case studies + คำพูดที่ปรากฏใน research ผู้รวบรวมสรุป **5 rules หลัก** ที่ ดร.นิเวศน์ ใช้จริง (บวก 3 rules "When NOT to sell" ด้านล่าง — รวม 8 rules ที่ template exit decision ใช้ check)
 
 ---
 
@@ -109,3 +109,61 @@
 **Logic:** ถ้า liquidity event (ซื้อบ้าน, จ่ายภาษีก้อนใหญ่, healthcare) ต้องขาย — ขายตัวที่ผ่านเกณฑ์ "น้อยที่สุด" ก่อน (weakest fundamentals) ไม่ใช่ตัวที่ขาดทุนมากที่สุด หรือขายโดยไม่มี framework
 
 **Case example:** Karl personal — เช่น ต้องการ cash 5M บาท → ขาย tail position (score ต่ำสุดในพอร์ต) ก่อนที่ยัง hit filter floor เฉียด ๆ แทนที่จะขายตัว top pick
+
+---
+
+## When NOT to Sell (3 Rules — หลักการ "ห้ามขายตามอารมณ์")
+
+> ดร.นิเวศน์ + ภรรยา ถือ CPALL ตั้งแต่ ~2551 จนถึงปัจจุบัน (~17 ปี, 2008–2025) — ดู [03-philosophy.md](03-philosophy.md) section 3. หลักคือ **"ถือยาว ไม่ตกใจ"**
+
+### Anti-Rule 1 — Short-term price drop (<30%) ที่ thesis ยังอยู่
+
+**Verbatim quote:**
+
+> "นักลงทุนที่ดีก็คือจะต้องผ่านวิกฤติให้ได้ทุกครั้ง"
+>
+> — ดร.นิเวศน์, *30 ปีในตลาดหุ้น*, Finnomena, 14 ก.พ. 2560 — https://www.finnomena.com/dr-niwes/30-years-in-stock-market/
+
+> "จะต้องตั้งเป้าหมายว่าพอร์ตนี้จะต้องถือต่อไปซัก 5 ปี"
+>
+> — ดร.นิเวศน์, *สูตรหุ้นรอด 5-5-5-5*, https://www.bangkokbiznews.com/blogs/finance/stock/1181793
+
+**Logic:** ราคาตก <30% โดยที่ revenue/earnings/dividend ยังอยู่ = Mr. Market ไม่ใช่ธุรกิจเสีย. ห้ามขาย — ซ้ำร้ายกว่านั้น ถ้า yield วิ่งขึ้นก็ซื้อเพิ่ม
+
+**Case example:** CPALL ผ่านวิกฤติโควิด 2020 ราคาตกหนัก — ดร.นิเวศน์ (และภรรยา) ไม่ขาย ถือต่อ เพราะ business (7-Eleven) ยังอยู่ในชีวิตประจำวัน
+
+### Anti-Rule 2 — Sector rotation noise
+
+**Verbatim quote:**
+
+> "หุ้น Property นั้นเป็นหุ้นที่เหมือนถูกสาป"
+>
+> "ปันผลตอบแทนของบริษัทนั้นสูงตั้งแต่ 6-8% ต่อปีทุกปี"
+>
+> — ดร.นิเวศน์, *Property Grand Sale*, กรุงเทพธุรกิจ — https://www.bangkokbiznews.com/blog/detail/649682
+
+**Logic:** ตลาดอาจเกลียด sector ทั้งกลุ่ม (e.g., property "ถูกสาป") ขณะที่ตัวเดียวในกลุ่มยังจ่ายปันผลสม่ำเสมอ — ดูธุรกิจตัวเอง ไม่ดู sector sentiment
+
+**Case example:** QH — property sector โดนกด แต่ QH มี hidden value (HMPRO stake) + dividend ปกติ. ดร.นิเวศน์ ถือต่อ ไม่ขายตามตลาด
+
+### Anti-Rule 3 — Macro fear ที่ไม่กระทบ business directly
+
+**Verbatim quote:**
+
+> "ตลาดหุ้นไทยในช่วงเร็ว ๆ ผมคิดว่านักลงทุนจำนวนมากรู้สึก 'ท้อแท้' และ 'สิ้นหวัง'"
+>
+> — ดร.นิเวศน์, *ท้อแท้-สิ้นหวัง ตลาดหุ้นไทย*, ฐานเศรษฐกิจ, 15 มิ.ย. 2567 — https://www.thansettakij.com/finance/stockmarket/599296
+
+**Logic:** Macro fear (เศรษฐกิจซบ, ดอกเบี้ย, ค่าเงิน) = risk factor แต่ไม่ได้กระทบทุกธุรกิจเท่ากัน. ถ้าธุรกิจยังขายของได้, ปันผลยังจ่าย — อย่าขายตาม fear ภาพรวม
+
+**Case example:** ดร.นิเวศน์ ลดสัดส่วนไทย 65→30% (rotate = Rule 4 ด้านบน) — แต่ **ไม่ได้ขายทั้งพอร์ต** ยังเก็บตัวที่ business resilient เช่น CPALL, TCAP, QH ต่อ. Macro concern → rotate, ไม่ใช่ panic sell
+
+---
+
+## Summary
+
+**Sell rules (5):** Thesis Change, Filter Degradation, Valuation Bubble, Better Opportunity, Capital Need
+
+**Don't-sell rules (3):** Short-term price drop, Sector rotation noise, Macro fear not hitting business
+
+**ทั้ง 8 ข้อนี้คือ checklist ที่ [16-exit-decision-template.md](16-exit-decision-template.md) ใช้ — Karl กรอกทีละข้อก่อนกดขาย**
