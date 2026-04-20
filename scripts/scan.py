@@ -1,4 +1,4 @@
-"""Max Mahon v4 — Unified Scan: top candidates + watchlist update + new in batch + watch out."""
+"""Max Mahon v5 — Unified Scan (Niwes): top candidates + watchlist update + new in batch + watch out."""
 
 import json
 import os
@@ -324,7 +324,7 @@ def next_scan_num(history: dict) -> int:
 
 
 def run_claude(system_prompt: str, user_prompt: str) -> str:
-    print("Max Mahon v4 scanning with Claude (Opus 4.7 + prompt caching)...")
+    print("Max Mahon v5 scanning with Claude (Opus 4.7 + prompt caching)...")
 
     try:
         response = _client.messages.create(
@@ -384,7 +384,7 @@ def main():
     raw_text = run_claude(system_prompt, user_prompt)
 
     header = f"""---
-agent: Max Mahon v4
+agent: Max Mahon v5
 date: {today}
 type: scan
 scan_num: {scan_num}

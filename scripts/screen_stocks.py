@@ -486,7 +486,7 @@ def main():
         blacklisted = set()
 
     symbols = universe["symbols"]
-    print(f"Max Mahon v4 screening {len(symbols)} stocks (quality scoring)...")
+    print(f"Max Mahon v5 screening {len(symbols)} stocks (Niwes 5-5-5-5)...")
 
     candidates = []
     filtered_stocks = []
