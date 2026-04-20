@@ -31,6 +31,24 @@
 
 ---
 
+## Integration Loop (niwes-06)
+
+Feedback loop ระหว่าง Niwes framework กับการใช้งานจริงของ Karl — ดูว่า watchlist ปัจจุบันตรงกับ framework แค่ไหน + adjust threshold ถ้าจำเป็น (ต้อง data-driven + หลัง Karl เรียน lessons).
+
+| File | Purpose |
+|---|---|
+| [13-threshold-adjustments.md](13-threshold-adjustments.md) | Decision log — 5 threshold recommendations PENDING Karl review |
+| `../../reports/integration_loop_scan_2026-04-20.md` | Baseline Niwes scan (curated 35 stocks, 11 pass) |
+| `../../reports/integration_loop_watchlist_diff_2026-04-20.md` | Watchlist comparison — 13/15 DROP + pattern analysis |
+| `../../reports/integration_loop_karl_todo_2026-04-20.md` | Karl learning TODO (L01-L05) + decision matrix |
+| `../../reports/_placeholder_integration_loop_after_adjust.md` | Placeholder for post-adjust scan (fill after Karl approves) |
+
+**Workflow:** Karl completes L01-L05 → reviews pattern analysis → approves threshold adjustments in `13-threshold-adjustments.md` → agent applies + reruns scan
+
+**Why integration loop:** framework ที่ไม่ถูกใช้จริง = เสียเปล่า. Pattern analysis ต้องมา feedback เข้า criteria ไม่ใช่ build แล้วทิ้ง
+
+---
+
 ## Quick Start (Read in This Order)
 
 If you have **30 minutes** and need to onboard fast:
