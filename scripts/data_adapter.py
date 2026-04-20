@@ -617,3 +617,23 @@ def compute_payout_sustainability(stock_data: dict) -> dict:
 
         out[year] = {"payout_ratio": payout_ratio, "sustainable": sustainable}
     return out
+
+
+def check_hidden_value(symbol: str) -> list:
+    """Return list of hidden-value holdings for symbol, or [] if none.
+
+    Reads bootstrap data from data/hidden_value_holdings.json.
+    Symbol normalized to .BK form for lookup.
+    """
+    import json
+    from pathlib import Path
+
+    _, yf_sym = normalize_symbol(symbol)
+    json_path = Path(__file__).resolve().parent.parent / "data" / "hidden_value_holdings.json"
+    if not json_path.exists():
+        return []
+    try:
+        data = json.loads(json_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return []
+    return data.get(yf_sym, [])
