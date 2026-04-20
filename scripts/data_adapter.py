@@ -553,3 +553,28 @@ def fetch_fundamentals(symbol: str) -> dict:
         "yearly_metrics": yearly_metrics,
         "dividend_history": dividend_history,
     }
+
+
+# --- Niwes extensions (append-only — do not modify fetch_fundamentals) ---
+
+EXTRAORDINARY_KEYWORDS = ("extraordinary", "one-time", "one time", "gain on sale",
+                         "loss on sale", "impairment", "restructuring", "non-recurring")
+
+
+def compute_normalized_earnings(stock_data: dict) -> dict:
+    """Return {year: normalized_eps} after stripping extraordinary items.
+
+    thaifin yearly_dataframe does not expose line-item names for extraordinary
+    items, so this falls back to using diluted_eps as-is. When richer income
+    statement data becomes available (item-name keyword match against
+    EXTRAORDINARY_KEYWORDS), this function will exclude those items from
+    net_income before recomputing EPS.
+    """
+    out = {}
+    for m in stock_data.get("yearly_metrics", []):
+        year = m.get("year")
+        eps = m.get("diluted_eps")
+        if year is None or eps is None:
+            continue
+        out[year] = eps
+    return out
