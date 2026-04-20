@@ -170,6 +170,22 @@ Decision rules:
 
 **Agent จะไม่ตัดสินใจแทน Karl** — ต้องอ่าน L01-L05 ก่อนแล้วค่อยเลือก.
 
+## Pattern Summary (Karl-facing)
+
+สรุปสั้นให้ Karl ใช้ตัดสินใจหลังเรียน L01-L05:
+
+**Top 3 ปัญหา (สาเหตุ DROP):**
+1. **P/BV > 1.5** — 92% ของ DROP = หุ้นที่ Karl เลือก ส่วนใหญ่แพงเทียบ book (CPALL 3.30, ADVANC 9.80, BDMS 2.81)
+2. **P/E > 15** — 69% ของ DROP = ตลาด re-rate หุ้น consumer/growth
+3. **Yield < 5%** — 69% ของ DROP = หุ้น growth จ่ายปันผลน้อย
+
+**ข้อสรุป:**
+- Watchlist Karl ทิศทาง = **growth story** (CPALL, DITTO, MOSHI, CBG, GULF)
+- Niwes direction = **dividend + cheap book + bank/utility**
+- Gap ใหญ่ = Karl ต้องเลือก philosophy ก่อน ไม่ใช่ adjust threshold เพื่อบิดให้ watchlist ผ่าน
+
+**ห้ามบิด threshold เพื่อให้ DROP → PASS** — นั่นจะทำให้ framework เสียหาย
+
 ## Next
 
 - Karl TODO → `integration_loop_karl_todo_2026-04-20.md`
