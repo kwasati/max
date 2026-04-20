@@ -1,0 +1,37 @@
+{
+  "QH.BK": [
+    {
+      "holding": "HMPRO.BK",
+      "stake_pct": 19.87,
+      "note": "QH owns HMPRO stake whose market value exceeds QH market cap"
+    }
+  ],
+  "MBK.BK": [
+    {
+      "holding": "MBK Group subsidiary",
+      "stake_pct": 100,
+      "note": "MBK Spaces + property holdings"
+    }
+  ],
+  "TCAP.BK": [
+    {
+      "holding": "TMB.BK",
+      "stake_pct": 6.5,
+      "note": "TCAP holds TMB stake — hidden financial sector value"
+    }
+  ],
+  "INTUCH.BK": [
+    {
+      "holding": "ADVANC.BK",
+      "stake_pct": 40,
+      "note": "INTUCH holds ADVANC stake worth more than INTUCH market cap"
+    }
+  ],
+  "DELTA.BK": [
+    {
+      "holding": "Delta Taiwan parent",
+      "stake_pct": 0,
+      "note": "Subsidiary of Delta Taiwan — earnings flow back"
+    }
+  ]
+}

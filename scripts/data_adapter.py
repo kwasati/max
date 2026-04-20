@@ -553,3 +553,87 @@ def fetch_fundamentals(symbol: str) -> dict:
         "yearly_metrics": yearly_metrics,
         "dividend_history": dividend_history,
     }
+
+
+# --- Niwes extensions (append-only — do not modify fetch_fundamentals) ---
+
+EXTRAORDINARY_KEYWORDS = ("extraordinary", "one-time", "one time", "gain on sale",
+                         "loss on sale", "impairment", "restructuring", "non-recurring")
+
+
+def compute_normalized_earnings(stock_data: dict) -> dict:
+    """Return {year: normalized_eps} after stripping extraordinary items.
+
+    thaifin yearly_dataframe does not expose line-item names for extraordinary
+    items, so this falls back to using diluted_eps as-is. When richer income
+    statement data becomes available (item-name keyword match against
+    EXTRAORDINARY_KEYWORDS), this function will exclude those items from
+    net_income before recomputing EPS.
+    """
+    out = {}
+    for m in stock_data.get("yearly_metrics", []):
+        year = m.get("year")
+        eps = m.get("diluted_eps")
+        if year is None or eps is None:
+            continue
+        out[year] = eps
+    return out
+
+
+def compute_payout_sustainability(stock_data: dict) -> dict:
+    """Return {year: {payout_ratio, sustainable}} per yearly_metrics row.
+
+    sustainable = payout_ratio < 0.80 AND fcf_yield > dividend_yield
+    (dividends paid from real cash, not debt).
+
+    payout_ratio = abs(dividends_paid) / net_income.
+    fcf_yield and dividend_yield are computed against equity (book proxy)
+    because point-in-time market_cap is not available per historical year.
+    """
+    out = {}
+    for m in stock_data.get("yearly_metrics", []):
+        year = m.get("year")
+        if year is None:
+            continue
+        net_income = m.get("net_income")
+        equity = m.get("equity")
+        fcf = m.get("fcf")
+        div_paid = m.get("dividends_paid")
+
+        if div_paid is not None and net_income and net_income > 0:
+            payout_ratio = abs(div_paid) / net_income
+        else:
+            payout_ratio = None
+
+        fcf_yield = _safe_div(fcf, equity) if equity and equity > 0 else None
+        div_yield_eq = _safe_div(abs(div_paid) if div_paid is not None else None, equity) \
+            if equity and equity > 0 else None
+
+        sustainable = (
+            payout_ratio is not None and payout_ratio < 0.80
+            and fcf_yield is not None and div_yield_eq is not None
+            and fcf_yield > div_yield_eq
+        )
+
+        out[year] = {"payout_ratio": payout_ratio, "sustainable": sustainable}
+    return out
+
+
+def check_hidden_value(symbol: str) -> list:
+    """Return list of hidden-value holdings for symbol, or [] if none.
+
+    Reads bootstrap data from data/hidden_value_holdings.json.
+    Symbol normalized to .BK form for lookup.
+    """
+    import json
+    from pathlib import Path
+
+    _, yf_sym = normalize_symbol(symbol)
+    json_path = Path(__file__).resolve().parent.parent / "data" / "hidden_value_holdings.json"
+    if not json_path.exists():
+        return []
+    try:
+        data = json.loads(json_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return []
+    return data.get(yf_sym, [])
