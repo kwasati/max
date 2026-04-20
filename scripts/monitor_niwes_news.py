@@ -285,7 +285,7 @@ def main() -> int:
         encoding="utf-8",
     )
 
-    save_seen(seen)
+    save_seen_urls(SEEN_CACHE, seen)
 
     print()
     print(f"[done] total found: {len(all_items)}")
