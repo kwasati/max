@@ -15,6 +15,14 @@ REPORTS_DIR = ROOT / "reports"
 USER_DATA = ROOT / "user_data.json"
 HISTORY_FILE = DATA_DIR / "history.json"
 
+# Plan 08 — make screen_stocks importable for exit signal detection
+sys.path.insert(0, str(ROOT / "scripts"))
+try:
+    from screen_stocks import detect_exit_signal, load_exit_baseline
+except Exception:
+    detect_exit_signal = None
+    load_exit_baseline = None
+
 load_dotenv(Path("C:/WORKSPACE/.env"))
 _API_KEY = os.getenv("MAX_ANTHROPIC_API_KEY")
 if not _API_KEY:
@@ -193,7 +201,39 @@ def classify_stocks(screener_data: dict, watchlist: list, current_screener: Path
     historical = load_historical_candidates(current_screener)
     new_in_batch = [c for c in top if c["symbol"] not in historical]
 
-    return top, watchlist_current, new_in_batch
+    # Plan 08 — watchlist_exit_alerts: stocks with exit triggers per Niwes exit rules
+    watchlist_exit_alerts = []
+    if detect_exit_signal is not None and load_exit_baseline is not None:
+        for stock in watchlist_current:
+            sym = stock.get("symbol", "")
+            if not sym:
+                continue
+            baseline = load_exit_baseline(sym)
+            if not baseline:
+                continue
+            m = stock.get("metrics") or stock.get("basic_metrics") or {}
+            current_data = {
+                "dividend_yield": m.get("dividend_yield"),
+                "pe_ratio": m.get("pe"),
+                "pb_ratio": m.get("pb_ratio"),
+                "market_cap": m.get("mcap"),
+                "aggregates": stock.get("aggregates", {}),
+                "yearly_metrics": stock.get("yearly_metrics", []),
+            }
+            triggers = detect_exit_signal(sym, current_data, baseline)
+            if triggers:
+                sigs = list(stock.get("signals") or [])
+                if "EXIT_SIGNAL" not in sigs:
+                    sigs.append("EXIT_SIGNAL")
+                stock["signals"] = sigs
+                watchlist_exit_alerts.append({
+                    "symbol": sym,
+                    "name": stock.get("name", sym),
+                    "status": stock.get("_status"),
+                    "triggers": triggers,
+                })
+
+    return top, watchlist_current, new_in_batch, watchlist_exit_alerts
 
 
 def build_system_prompt() -> str:
@@ -238,6 +278,14 @@ def build_system_prompt() -> str:
 ### 4. Watch Out (ตัวที่ signal น่ากังวล — เช่น DIVIDEND_TRAP, DATA_WARNING)
 ตัวไหนระวัง + เหตุผลจากข้อมูลจริง
 
+### 5. Watchlist Exit Alerts (ถ้ามี watchlist stocks ที่มี exit trigger — ถ้าว่าง = skip section)
+แสดง exit alerts จาก Niwes exit rules (ref: `docs/niwes/15-exit-rules.md`):
+- **FILTER_DEGRADATION** — เคยผ่าน 5-5-5-5 แต่ตอนนี้ fail
+- **VALUATION_BUBBLE** — P/E วิ่งทะลุ 3x baseline (safety net หาย)
+- **THESIS_CHANGE_FLAG** — manual flag จาก news monitoring (Plan 07)
+
+สำหรับแต่ละ alert: ระบุ trigger type + reason + severity (high/medium) + แนะนำให้ review ด้วย exit decision template (`docs/niwes/16-exit-decision-template.md`). **ห้าม**บอกให้ขายตรง ๆ — Karl ตัดสินใจเอง
+
 ## กฎ
 - เขียนภาษาไทย อ่านง่าย
 - ใช้ตัวเลขจริงจากข้อมูลที่ให้ ห้ามแต่ง
@@ -251,6 +299,22 @@ def build_system_prompt() -> str:
 """
 
 
+def build_exit_alerts_section(exit_alerts: list) -> str:
+    """Format Watchlist Exit Alerts section for scan report (Plan 08)."""
+    if not exit_alerts:
+        return "— ไม่มี exit alert ในรอบนี้"
+    parts = []
+    for a in exit_alerts:
+        sym = a.get("symbol", "?")
+        name = a.get("name", sym)
+        status = a.get("status", "")
+        lines = [f"### {name} ({sym}) — ⚠ EXIT ALERT ({status})"]
+        for t in a.get("triggers", []):
+            lines.append(f"- **{t['type']}** [{t['severity']}] — {t['reason']}")
+        parts.append("\n".join(lines))
+    return "\n\n".join(parts)
+
+
 def build_user_prompt(
     date: str,
     scan_num: int,
@@ -258,6 +322,7 @@ def build_user_prompt(
     watchlist_current: list,
     new_in_batch: list,
     notes: dict,
+    exit_alerts: list | None = None,
 ) -> str:
     top_section = "\n\n".join(
         build_stock_section(c, notes.get(c["symbol"], "")) for c in top_candidates
@@ -279,6 +344,8 @@ def build_user_prompt(
         build_stock_section(c, notes.get(c["symbol"], "")) for c in new_in_batch
     ) or "— ไม่มีตัวใหม่ในรอบนี้"
 
+    exit_section = build_exit_alerts_section(exit_alerts or [])
+
     return f"""วันที่วิเคราะห์: {date}
 Scan #{scan_num}
 
@@ -290,6 +357,9 @@ Scan #{scan_num}
 
 ## New In Batch ({len(new_in_batch)} ตัวที่เพิ่งผ่านเกณฑ์ครั้งแรก)
 {new_section}
+
+## Watchlist Exit Alerts ({len(exit_alerts or [])} ตัวมี exit trigger)
+{exit_section}
 """
 
 
@@ -363,12 +433,13 @@ def main():
     watchlist = user_data.get("watchlist", [])
     notes = user_data.get("notes", {})
 
-    top_candidates, watchlist_current, new_in_batch = classify_stocks(
+    top_candidates, watchlist_current, new_in_batch, watchlist_exit_alerts = classify_stocks(
         screener_data, watchlist, screener_path
     )
 
     print(
-        f"Classified: top={len(top_candidates)} watchlist={len(watchlist_current)} new={len(new_in_batch)}"
+        f"Classified: top={len(top_candidates)} watchlist={len(watchlist_current)} "
+        f"new={len(new_in_batch)} exit_alerts={len(watchlist_exit_alerts)}"
     )
 
     history = load_history()
@@ -378,7 +449,8 @@ def main():
 
     system_prompt = build_system_prompt()
     user_prompt = build_user_prompt(
-        scan_date, scan_num, top_candidates, watchlist_current, new_in_batch, notes
+        scan_date, scan_num, top_candidates, watchlist_current, new_in_batch, notes,
+        watchlist_exit_alerts,
     )
 
     raw_text = run_claude(system_prompt, user_prompt)
