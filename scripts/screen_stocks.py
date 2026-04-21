@@ -631,6 +631,9 @@ def main():
     symbols = universe["symbols"]
     print(f"Max Mahon v5 screening {len(symbols)} stocks (Niwes 5-5-5-5)...")
 
+    # Exit baseline tracking (Niwes sell rules) — load once, update on NIWES_5555
+    baselines = load_exit_baselines()
+
     candidates = []
     review_candidates: list[dict] = []
     filtered_stocks = []
@@ -678,7 +681,7 @@ def main():
                 continue
 
             if status == "REVIEW":
-                review_candidates.append({
+                review_entry = {
                     "symbol": sym,
                     "name": data.get("name", sym),
                     "sector": data.get("sector", "N/A"),
@@ -690,7 +693,12 @@ def main():
                         "dy": data.get("dividend_yield"),
                         "streak": (data.get("aggregates") or {}).get("dividend_streak"),
                     },
-                })
+                }
+                if sym in watched:
+                    review_entry["exit_triggers"] = detect_exit_signal(sym, data, baselines.get(sym))
+                else:
+                    review_entry["exit_triggers"] = []
+                review_candidates.append(review_entry)
                 print(f"  [{i+1}/{len(symbols)}] {sym} — review: {', '.join(filter_reasons[:2])}")
                 continue
 
@@ -703,6 +711,24 @@ def main():
                 result["signals"].extend([nm.split(":")[0] for nm in near_miss])
                 result["reasons"].extend(near_miss)
             in_watchlist = sym in watched
+
+            # Save exit baseline the first time a stock passes 5-5-5-5
+            if "NIWES_5555" in result["signals"]:
+                baselines = save_exit_baseline(
+                    sym,
+                    {
+                        "pe_ratio": data.get("pe_ratio"),
+                        "pb_ratio": data.get("pb_ratio"),
+                        "dividend_yield": data.get("dividend_yield"),
+                    },
+                    baselines,
+                )
+
+            # Detect exit triggers only for watchlist stocks (flag-only, Karl reviews)
+            if in_watchlist:
+                exit_triggers = detect_exit_signal(sym, data, baselines.get(sym))
+            else:
+                exit_triggers = []
 
             # five_year_avg_yield fallback — compute from dividend_history if null
             five_yr_yield = data.get("five_year_avg_yield")
@@ -745,6 +771,7 @@ def main():
                 "warnings": data.get("warnings", []),
                 "yearly_metrics": data.get("yearly_metrics", []),
                 "dividend_history": data.get("dividend_history", {}),
+                "exit_triggers": exit_triggers,
             }
             candidates.append(entry)
 
