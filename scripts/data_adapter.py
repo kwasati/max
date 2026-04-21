@@ -26,11 +26,28 @@ _HOLDING_MCAP_CACHE: dict[str, "int | None"] = {}
 def _holding_mcap(sym: str) -> "int | None":
     if sym in _HOLDING_MCAP_CACHE:
         return _HOLDING_MCAP_CACHE[sym]
+    v = None
+    # Try thaifin first (primary source for Thai stocks)
     try:
-        import yfinance as yf
-        v = yf.Ticker(sym).info.get("marketCap")
+        from thaifin import Stock
+        tf_sym = sym.replace(".BK", "")
+        tf_stock = Stock(tf_sym)
+        df = tf_stock.yearly_dataframe
+        if df is not None and not df.empty:
+            latest_mkt_cap = _safe(df.iloc[-1].get("mkt_cap"))
+            if latest_mkt_cap is not None and latest_mkt_cap > 0:
+                v = int(latest_mkt_cap)
     except Exception:
-        v = None
+        pass
+    # Fallback to yfinance (for non-Thai holdings or when thaifin fails)
+    if v is None:
+        try:
+            import yfinance as yf
+            yf_v = yf.Ticker(sym).info.get("marketCap")
+            if yf_v:
+                v = int(yf_v)
+        except Exception:
+            pass
     _HOLDING_MCAP_CACHE[sym] = v
     return v
 
@@ -173,6 +190,13 @@ def _fetch_thaifin(symbol: str) -> dict | None:
             capex_abs = abs(investing) if investing is not None else None
             capital_intensity = _safe_div(capex_abs, ocf) if ocf and ocf > 0 else None
 
+            # Payout ratio per year — thaifin doesn't provide directly; compute
+            payout_ratio_year = None
+            if dy is not None and close is not None and diluted_eps is not None and diluted_eps > 0:
+                # dy is percentage (e.g. 5.2), close is THB, diluted_eps is THB
+                dps_approx = (dy / 100.0) * close  # THB
+                payout_ratio_year = dps_approx / diluted_eps  # decimal (0-1+)
+
             yearly_metrics.append({
                 "year": year_str,
                 "revenue": revenue,
@@ -200,6 +224,11 @@ def _fetch_thaifin(symbol: str) -> dict | None:
                 "interest_coverage": interest_coverage,
                 "ocf_ni_ratio": ocf_ni_ratio,
                 "capital_intensity": capital_intensity,
+                "close": close,
+                "dividend_yield": dy,
+                "mkt_cap": mkt_cap,
+                "bvps": bvps,
+                "payout_ratio": payout_ratio_year,
             })
 
         yearly_metrics.sort(key=lambda x: x["year"])
