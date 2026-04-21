@@ -1880,6 +1880,183 @@ async def exit_check(symbol: str):
     }
 
 
+# ============================================================================
+# Plan 03 Phase 2: History v2 + Patterns + Exit APIs
+# ============================================================================
+
+def _latest_screener_file() -> dict:
+    """Load latest screener_*.json from data/. Raises 404 if none."""
+    files = sorted(DATA_DIR.glob("screener_*.json"), reverse=True)
+    if not files:
+        raise HTTPException(404, "no screener file found")
+    return json.loads(files[0].read_text(encoding="utf-8"))
+
+
+@app.get("/api/history/v2")
+async def get_history_v2(limit: int = 50, symbol: Optional[str] = None):
+    """Return v2 history with optional symbol filter + pagination."""
+    _project_root = str(PROJECT_DIR)
+    if _project_root not in sys.path:
+        sys.path.insert(0, _project_root)
+    from scripts.history_manager import load_history as _load_v2_history
+
+    limit = min(max(limit, 1), 200)
+    hist = _load_v2_history()
+    scans = hist.get("scans", [])
+    if symbol:
+        scans = [
+            s for s in scans
+            if any(c.get("symbol") == symbol for c in s.get("top_candidates", []))
+        ]
+    scans = scans[-limit:]
+    return {"scans": scans, "count": len(scans)}
+
+
+@app.get("/api/stock/{symbol}/patterns")
+async def get_stock_patterns(symbol: str):
+    """Return case study + moat tags + hidden holdings for symbol from latest screener."""
+    _project_root = str(PROJECT_DIR)
+    if _project_root not in sys.path:
+        sys.path.insert(0, _project_root)
+    from scripts.data_adapter import check_hidden_value as _check_hidden_value
+
+    screener = _latest_screener_file()
+    entry = next(
+        (c for c in screener.get("candidates", []) if c.get("symbol") == symbol),
+        None,
+    )
+    bucket = "candidates" if entry else None
+    if not entry:
+        entry = next(
+            (c for c in screener.get("review_candidates", []) if c.get("symbol") == symbol),
+            None,
+        )
+        bucket = "review" if entry else bucket
+    if not entry:
+        entry = next(
+            (c for c in screener.get("filtered_out_stocks", []) if c.get("symbol") == symbol),
+            None,
+        )
+        bucket = "filtered" if entry else bucket
+    if not entry:
+        raise HTTPException(404, f"symbol {symbol} not in latest screener")
+
+    signals = entry.get("signals", [])
+    patterns_file = DATA_DIR / "case_study_patterns.json"
+    patterns = (
+        json.loads(patterns_file.read_text(encoding="utf-8"))
+        if patterns_file.exists()
+        else {}
+    )
+    case_tags = [s for s in signals if s in patterns]
+    moat_tags = [
+        s for s in signals
+        if s in {"BRAND_MOAT", "STRUCTURAL_MOAT", "GOVT_LOCKIN"}
+    ]
+    return {
+        "symbol": symbol,
+        "signals": signals,
+        "case_study_tags": case_tags,
+        "moat_tags": moat_tags,
+        "hidden_holdings": _check_hidden_value(symbol),
+        "bucket": bucket,
+    }
+
+
+@app.get("/api/watchlist/{symbol}/exit-status")
+async def get_exit_status(symbol: str):
+    """Return baseline + exit triggers + severity summary for watchlist stock."""
+    baselines_file = DATA_DIR / "exit_baselines.json"
+    baselines = (
+        json.loads(baselines_file.read_text(encoding="utf-8"))
+        if baselines_file.exists()
+        else {}
+    )
+
+    # Load user watchlist
+    user_data = (
+        json.loads(USER_DATA_PATH.read_text(encoding="utf-8"))
+        if USER_DATA_PATH.exists()
+        else {}
+    )
+    in_watchlist = symbol in set(user_data.get("watchlist", []))
+
+    # Look up exit triggers from latest screener
+    screener = _latest_screener_file()
+    entry = (
+        next(
+            (c for c in screener.get("candidates", []) if c.get("symbol") == symbol),
+            None,
+        )
+        or next(
+            (c for c in screener.get("review_candidates", []) if c.get("symbol") == symbol),
+            None,
+        )
+    )
+    triggers = (entry or {}).get("exit_triggers", []) if entry else []
+    sev_high = sum(1 for t in triggers if t.get("severity") == "high")
+    sev_med = sum(1 for t in triggers if t.get("severity") == "medium")
+    return {
+        "symbol": symbol,
+        "in_watchlist": in_watchlist,
+        "baseline": baselines.get(symbol),
+        "triggers": triggers,
+        "severity_summary": {"high": sev_high, "medium": sev_med},
+    }
+
+
+# ============================================================================
+# Plan 03 Phase 3: Price History endpoint
+# ============================================================================
+_PRICE_HIST_DIR = DATA_DIR / "price_history"
+_PRICE_HIST_DIR.mkdir(parents=True, exist_ok=True)
+_PRICE_HIST_TTL_HOURS = 24
+
+
+@app.get("/api/stock/{symbol}/price-history")
+async def get_price_history(symbol: str):
+    """Return 10yr monthly closes from yfinance + 24h cache at data/price_history/{symbol}.json."""
+    cache_file = _PRICE_HIST_DIR / f"{symbol}.json"
+    now = datetime.now()
+    if cache_file.exists():
+        try:
+            cached = json.loads(cache_file.read_text(encoding="utf-8"))
+            fetched_at = datetime.fromisoformat(cached["fetched_at"])
+            if now - fetched_at < timedelta(hours=_PRICE_HIST_TTL_HOURS):
+                return cached
+        except (KeyError, ValueError, json.JSONDecodeError):
+            pass
+
+    try:
+        import yfinance as yf
+        loop = asyncio.get_event_loop()
+        hist = await loop.run_in_executor(
+            None,
+            lambda: yf.Ticker(symbol).history(
+                period="10y", interval="1mo", auto_adjust=False
+            ),
+        )
+    except Exception as e:
+        raise HTTPException(503, f"yfinance fetch failed: {e}")
+
+    if hist.empty:
+        raise HTTPException(404, f"no price history for {symbol}")
+
+    data = [
+        {"date": idx.strftime("%Y-%m-%d"), "close": float(row["Close"])}
+        for idx, row in hist.iterrows()
+    ]
+    payload = {
+        "symbol": symbol,
+        "fetched_at": now.isoformat(timespec="seconds"),
+        "data": data,
+    }
+    cache_file.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    return payload
+
+
 # ---------------------------------------------------------------------------
 # Static files (SPA) — mount last so API routes take priority
 # ---------------------------------------------------------------------------
