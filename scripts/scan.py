@@ -6,7 +6,6 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-import anthropic
 from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -24,11 +23,6 @@ except Exception:
     load_exit_baseline = None
 
 load_dotenv(Path("C:/WORKSPACE/.env"))
-_API_KEY = os.getenv("MAX_ANTHROPIC_API_KEY")
-if not _API_KEY:
-    print("MAX_ANTHROPIC_API_KEY not set in C:/WORKSPACE/.env")
-    sys.exit(1)
-_client = anthropic.Anthropic(api_key=_API_KEY)
 
 
 def get_latest_screener() -> Path:
@@ -236,69 +230,6 @@ def classify_stocks(screener_data: dict, watchlist: list, current_screener: Path
     return top, watchlist_current, new_in_batch, watchlist_exit_alerts
 
 
-def build_system_prompt() -> str:
-    return """คุณคือ Max Mahon — นักวิเคราะห์หุ้นไทยสไตล์ ดร.นิเวศน์ เหมวชิรวรากร (Niwes Way)
-เป้าหมาย: คัดหุ้นสำหรับ DCA ระยะยาว 10-20 ปี เน้นปันผลเป็นผลตอบแทนหลัก (Dividend-First) + Hidden Value + 5-5-5-5
-
-## ปรัชญาที่ใช้วิเคราะห์ (verbatim จาก ดร.นิเวศน์)
-
-> "เน้นลงทุนแบบ Value Investing คือดูคุณภาพเปรียบเทียบกับราคา ถ้ามันคุ้มค่าเราก็ซื้อ"
-> — ดร.นิเวศน์, Finnomena 2567
-
-> "เลือกหุ้นที่ปัจจุบันจ่ายปันผลตอบแทนอย่างน้อย 5% ต่อปีขึ้นไป"
-> "อีก 5 ปีข้างหน้า ปันผลที่จะได้รับนั้น ก็ยังไม่น้อยกว่า 5%"
-> — ดร.นิเวศน์, สูตรหุ้นรอด 5-5-5-5, Share2Trade 27 พ.ค. 2568
-
-> "นักลงทุนที่ดีก็คือจะต้องผ่านวิกฤติให้ได้ทุกครั้ง"
-> — ดร.นิเวศน์, 30 ปีในตลาดหุ้น, Finnomena 14 ก.พ. 2560
-
-> "ใครไม่เห็นแต่ผมเห็นก็พอ"
-> — ดร.นิเวศน์ พูดถึง QH, อ้างใน Investerest
-
-แก่นความคิด: ซื้อธุรกิจ (ไม่ใช่กระดาษ) + ปันผลคือคำตอบสุดท้าย + ถือยาว 5 ปี+ + Safety จาก PE/PBV ต่ำ + มองข้อเสียก่อนข้อดี + Hidden Value (asset stake ที่ตลาดไม่เห็น) + เลือกธุรกิจที่คนใช้ในชีวิตประจำวัน
-
-## สิ่งที่ต้องสร้าง — รายงาน Markdown 4 sections
-
-### 1. Top Picks (3-5 ตัวแรกจาก top_candidates)
-วิเคราะห์แต่ละตัว 6 ด้าน Niwes-style + สรุป (น่าสะสม/ถือต่อ/ระวัง):
-
-1. **Dividend Sustainability** — ปันผล ≥5%? streak กี่ปี? payout ratio ยั่งยืนไหม? จ่ายจาก cash จริงไม่ใช่หนี้?
-2. **Hidden Value** — มี asset/stake ที่ตลาดไม่ได้คิดเข้าราคาไหม? (เช่น QH ถือ HMPRO, INTUCH ถือ ADVANC)
-3. **Business Quality** — ขาดไม่ได้ของผู้บริโภค? อยู่ในชีวิตประจำวัน? ผ่านวิกฤติมาหลายรอบ?
-4. **Valuation Discipline** — P/E ≤15 (bonus ≤8)? P/BV ≤1.5 (bonus ≤1.0)? เทียบ historical ของตัวเองถูก/แพง?
-5. **DCA Suitability** — เหมาะสะสม 10-20 ปีไหม? (⭐⭐⭐ = ใช่เต็มที่ / ⭐⭐ = ใช่แต่มีเงื่อนไข / ⭐ = ไม่แนะนำ)
-6. **Macro Risk** — sector concentration? structural Thai risk (เศรษฐกิจซบ ดอกเบี้ย ค่าเงิน)?
-
-### 2. Watchlist Update (ตัวใน watchlist ของ user — ถ้า watchlist ว่าง = skip section)
-แต่ละตัว: status (ผ่าน/หลุดรอบนี้) + เหตุผล · ถ้าผ่าน score เปลี่ยนยังไง · recommend: ถือต่อ / พิจารณาออก
-
-### 3. New In Batch (ตัวที่ new_in_batch)
-สั้นๆ ตัวละ 2-3 บรรทัด — ธุรกิจอะไร + จุดเด่น Niwes (yield/streak/PE) + ⭐ DCA rating
-
-### 4. Watch Out (ตัวที่ signal น่ากังวล — เช่น DIVIDEND_TRAP, DATA_WARNING)
-ตัวไหนระวัง + เหตุผลจากข้อมูลจริง
-
-### 5. Watchlist Exit Alerts (ถ้ามี watchlist stocks ที่มี exit trigger — ถ้าว่าง = skip section)
-แสดง exit alerts จาก Niwes exit rules (ref: `docs/niwes/15-exit-rules.md`):
-- **FILTER_DEGRADATION** — เคยผ่าน 5-5-5-5 แต่ตอนนี้ fail
-- **VALUATION_BUBBLE** — P/E วิ่งทะลุ 3x baseline (safety net หาย)
-- **THESIS_CHANGE_FLAG** — manual flag จาก news monitoring (Plan 07)
-
-สำหรับแต่ละ alert: ระบุ trigger type + reason + severity (high/medium) + แนะนำให้ review ด้วย exit decision template (`docs/niwes/16-exit-decision-template.md`). **ห้าม**บอกให้ขายตรง ๆ — Karl ตัดสินใจเอง
-
-## กฎ
-- เขียนภาษาไทย อ่านง่าย
-- ใช้ตัวเลขจริงจากข้อมูลที่ให้ ห้ามแต่ง
-- ถ้าข้อมูลไม่พอ บอกตรงๆ — ดร.นิเวศน์ ไม่กลัวบอกว่าไม่รู้
-- ห้ามแนะนำซื้อขาย ให้วิเคราะห์ข้อมูลเท่านั้น
-- ถ้ามี DATA_WARNING ต้องระบุชัดเจน
-- เน้นดู TREND หลายปี — earnings กระโดด 100%+ ตรวจว่าเป็น base effect หรือ growth จริง
-- มองข้อเสียก่อนข้อดี (Downside before Upside) — ระวังกับดัก confirmation bias
-- ถ้า section ไหนไม่มีข้อมูล (เช่น watchlist ว่าง) = ใส่ "— ยังไม่มีหุ้นใน watchlist · เพิ่มจากหน้าหุ้น" แล้วข้าม
-- ถ้าไม่มีตัวผ่าน Niwes filter ใน Top Picks = บอกตรงๆ ว่า "รอบนี้ไม่มีตัวผ่านเกณฑ์ 5-5-5-5" + อาจมี near-miss ให้ดูจาก data
-"""
-
-
 def build_exit_alerts_section(exit_alerts: list) -> str:
     """Format Watchlist Exit Alerts section for scan report (Plan 08)."""
     if not exit_alerts:
@@ -313,54 +244,6 @@ def build_exit_alerts_section(exit_alerts: list) -> str:
             lines.append(f"- **{t['type']}** [{t['severity']}] — {t['reason']}")
         parts.append("\n".join(lines))
     return "\n\n".join(parts)
-
-
-def build_user_prompt(
-    date: str,
-    scan_num: int,
-    top_candidates: list,
-    watchlist_current: list,
-    new_in_batch: list,
-    notes: dict,
-    exit_alerts: list | None = None,
-) -> str:
-    top_section = "\n\n".join(
-        build_stock_section(c, notes.get(c["symbol"], "")) for c in top_candidates
-    ) or "— ไม่มีตัวผ่านเกณฑ์รอบนี้"
-
-    if watchlist_current:
-        wl_parts = []
-        for s in watchlist_current:
-            note = notes.get(s["symbol"], "")
-            if s.get("_status") == "PASSED":
-                wl_parts.append(f"[PASSED]\n{build_stock_section(s, note)}")
-            else:
-                wl_parts.append(f"[FAILED]\n{build_filtered_section(s, note)}")
-        watchlist_section = "\n\n".join(wl_parts)
-    else:
-        watchlist_section = "— ยังไม่มีหุ้นใน watchlist · เพิ่มจากหน้าหุ้น"
-
-    new_section = "\n\n".join(
-        build_stock_section(c, notes.get(c["symbol"], "")) for c in new_in_batch
-    ) or "— ไม่มีตัวใหม่ในรอบนี้"
-
-    exit_section = build_exit_alerts_section(exit_alerts or [])
-
-    return f"""วันที่วิเคราะห์: {date}
-Scan #{scan_num}
-
-## Top Candidates (เรียงตาม score, {len(top_candidates)} ตัว)
-{top_section}
-
-## Watchlist ของผู้ใช้ ({len(watchlist_current)} ตัว)
-{watchlist_section}
-
-## New In Batch ({len(new_in_batch)} ตัวที่เพิ่งผ่านเกณฑ์ครั้งแรก)
-{new_section}
-
-## Watchlist Exit Alerts ({len(exit_alerts or [])} ตัวมี exit trigger)
-{exit_section}
-"""
 
 
 def extract_summary(raw_text: str, top_candidates: list, new_in_batch: list) -> str:
@@ -393,32 +276,6 @@ def next_scan_num(history: dict) -> int:
     return max(nums) + 1
 
 
-def run_claude(system_prompt: str, user_prompt: str) -> str:
-    print("Max Mahon v5 scanning with Claude (Opus 4.7 + prompt caching)...")
-
-    try:
-        response = _client.messages.create(
-            model="claude-opus-4-7",
-            max_tokens=16000,
-            system=[{
-                "type": "text",
-                "text": system_prompt,
-                "cache_control": {"type": "ephemeral"},
-            }],
-            messages=[{"role": "user", "content": user_prompt}],
-            timeout=900.0,
-        )
-    except Exception as e:
-        print(f"Anthropic SDK error: {e}")
-        sys.exit(1)
-
-    if not response.content or response.content[0].type != "text":
-        print(f"Unexpected response shape: stop_reason={response.stop_reason}")
-        sys.exit(1)
-
-    return response.content[0].text.strip()
-
-
 def main():
     screener_path = get_latest_screener()
     print(f"Using screener: {screener_path.name}")
@@ -447,44 +304,42 @@ def main():
     today = datetime.now().strftime("%Y-%m-%d")
     scan_date = screener_data.get("date", today)
 
-    system_prompt = build_system_prompt()
-    user_prompt = build_user_prompt(
-        scan_date, scan_num, top_candidates, watchlist_current, new_in_batch, notes,
-        watchlist_exit_alerts,
-    )
-
-    raw_text = run_claude(system_prompt, user_prompt)
-
-    header = f"""---
-agent: Max Mahon v5
-date: {today}
-type: scan
-scan_num: {scan_num}
----
-
-"""
-    report_path = REPORTS_DIR / f"scan_{today}.md"
-    report_path.write_text(header + raw_text, encoding="utf-8")
-    print(f"Report saved -> {report_path}")
-
-    summary = extract_summary(raw_text, top_candidates, new_in_batch)
-    entry = {
-        "num": scan_num,
-        "date": datetime.now().isoformat(timespec="seconds"),
-        "counts": {
-            "scanned": screener_data.get("total_scanned", 0),
-            "passed": screener_data.get("passed_filter", 0),
-            "new": len(new_in_batch),
-            "filtered": screener_data.get("filtered_out", 0),
-        },
-        "summary": summary,
-        "report": report_path.name,
-    }
-    history["scans"].append(entry)
-    HISTORY_FILE.write_text(
-        json.dumps(history, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
-    print(f"History updated -> {HISTORY_FILE} (scan #{scan_num})")
+    # NOTE: report generation wired in task 2 via report_template.generate_report_md()
+    # TODO(niwes-algo-02 task 2): wire generate_report_md() + restore history write
+    #
+    # raw_text = <generated report text from report_template in task 2>
+    #
+    # header = f"""---
+    # agent: Max Mahon v5
+    # date: {today}
+    # type: scan
+    # scan_num: {scan_num}
+    # ---
+    #
+    # """
+    # report_path = REPORTS_DIR / f"scan_{today}.md"
+    # report_path.write_text(header + raw_text, encoding="utf-8")
+    # print(f"Report saved -> {report_path}")
+    #
+    # summary = extract_summary(raw_text, top_candidates, new_in_batch)
+    # entry = {
+    #     "num": scan_num,
+    #     "date": datetime.now().isoformat(timespec="seconds"),
+    #     "counts": {
+    #         "scanned": screener_data.get("total_scanned", 0),
+    #         "passed": screener_data.get("passed_filter", 0),
+    #         "new": len(new_in_batch),
+    #         "filtered": screener_data.get("filtered_out", 0),
+    #     },
+    #     "summary": summary,
+    #     "report": report_path.name,
+    # }
+    # history["scans"].append(entry)
+    # HISTORY_FILE.write_text(
+    #     json.dumps(history, ensure_ascii=False, indent=2), encoding="utf-8"
+    # )
+    # print(f"History updated -> {HISTORY_FILE} (scan #{scan_num})")
+    print(f"scan.py task 1 DONE — Claude SDK removed, awaiting task 2 (report_template) for report write")
 
 
 if __name__ == "__main__":
