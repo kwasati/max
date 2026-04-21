@@ -84,7 +84,8 @@
         "utilit",
         "power",
         "infrastructure",
-        "energy"
+        "ไฟฟ้า",
+        "สาธารณูปโภค"
       ],
       "market_cap_min": 30000000000,
       "dividend_streak_min": 10,
