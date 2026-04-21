@@ -9,7 +9,7 @@ import json
 import math
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import yfinance as yf
@@ -29,6 +29,44 @@ USER_DATA = ROOT / "user_data.json"
 DATA_DIR = ROOT / "data"
 
 FINANCIAL_SECTORS = {"Financial Services", "Banking", "Insurance"}
+
+_PRICE_AVG_CACHE_DIR = Path(__file__).resolve().parent.parent / "data" / "price_avg_cache"
+_PRICE_AVG_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+_PRICE_AVG_CACHE_TTL = timedelta(days=30)
+
+
+def _get_price_avg(yf_sym: str, year: int) -> float | None:
+    """Returns raw monthly close avg (NOT adjusted) — for yield calculation parity with historical DPS.
+
+    auto_adjust=False is REQUIRED: yield = dps(raw) / price(raw).
+    Using adjusted price produces artificially-low yield (~5-10% off for dividend-paying stocks).
+    """
+    cache_file = _PRICE_AVG_CACHE_DIR / f"{yf_sym}.json"
+    cache: dict = {}
+    if cache_file.exists():
+        try:
+            cache = json.loads(cache_file.read_text(encoding="utf-8"))
+        except Exception:
+            cache = {}
+    key = str(year)
+    fetched_at_str = cache.get("_fetched_at")
+    if key in cache and fetched_at_str:
+        try:
+            if datetime.fromisoformat(fetched_at_str) > datetime.now() - _PRICE_AVG_CACHE_TTL:
+                return cache[key]
+        except Exception:
+            pass
+    try:
+        hist = yf.Ticker(yf_sym).history(
+            start=f"{year}-01-01", end=f"{year}-12-31", interval="1mo", auto_adjust=False
+        )
+        val = float(hist["Close"].mean()) if not hist.empty else None
+    except Exception:
+        val = None
+    cache[key] = val
+    cache["_fetched_at"] = datetime.now().isoformat(timespec="seconds")
+    cache_file.write_text(json.dumps(cache, ensure_ascii=False, indent=2), encoding="utf-8")
+    return val
 
 
 def safe_get(df, row_name, col):
@@ -313,6 +351,9 @@ def _fetch_yfinance_legacy(symbol: str) -> dict:
 
     yearly_metrics.sort(key=lambda x: x["year"])
 
+    for m in yearly_metrics:
+        m["price_avg"] = _get_price_avg(symbol, int(m["year"]))
+
     dps_by_year = {}
     if divs is not None and len(divs) > 0:
         for idx, val in divs.items():
@@ -399,6 +440,11 @@ def fetch_multi_year(symbol: str) -> dict:
         # Adapter succeeded — compute aggregates and finalize
         yearly_metrics = adapter_result["yearly_metrics"]
         dividend_history = adapter_result["dividend_history"]
+
+        yf_sym = adapter_result.get("symbol") or normalize_symbol(symbol)[1]
+        for m in yearly_metrics:
+            m["price_avg"] = _get_price_avg(yf_sym, int(m["year"]))
+
         aggregates = _build_aggregates(yearly_metrics, dividend_history)
 
         # Validate
