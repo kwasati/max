@@ -1,0 +1,59 @@
+{
+  "RETAIL_DEFENSIVE_MOAT": {
+    "tag": "RETAIL_DEFENSIVE_MOAT",
+    "source": "docs/niwes/06-case-cpall.md",
+    "rules": {
+      "sector_keywords": ["retail", "commerce", "consumer", "food", "ค้าปลีก"],
+      "dividend_streak_min": 5,
+      "pe_max": 15,
+      "dividend_yield_min": 5,
+      "market_cap_min": 5000000000
+    },
+    "narrative": "ธุรกิจค้าปลีก/consumer defensive — ขาดไม่ได้ของผู้บริโภค ผ่านวิกฤติได้ (แบบ CPALL 17 ปี)"
+  },
+  "BANK_VALUE_PBV1": {
+    "tag": "BANK_VALUE_PBV1",
+    "source": "docs/niwes/07-case-tcap.md",
+    "rules": {
+      "sector_keywords": ["financial", "bank", "ธนาคาร"],
+      "pbv_max": 1.0,
+      "pe_max": 9,
+      "dividend_yield_min": 5,
+      "market_cap_min": 5000000000
+    },
+    "narrative": "ธนาคาร mid-tier PBV<1 + yield 5%+ (แบบ TCAP)"
+  },
+  "HOLDING_CO_HIDDEN": {
+    "tag": "HOLDING_CO_HIDDEN",
+    "source": "docs/niwes/08-case-qh.md",
+    "rules": {
+      "has_hidden_holdings": true,
+      "hidden_value_vs_mcap_min": 1.0,
+      "dividend_yield_min": 5,
+      "pbv_max": 1.5
+    },
+    "narrative": "Holding company sum-of-parts > parent mcap (แบบ QH ถือ HMPRO)"
+  },
+  "VIETNAM_GROWTH_EXPOSURE": {
+    "tag": "VIETNAM_GROWTH_EXPOSURE",
+    "source": "docs/niwes/10-case-fpt.md",
+    "rules": {
+      "country": "VN",
+      "sector_keywords": ["technology", "it", "communications"],
+      "market_cap_min": 50000000000,
+      "roe_3yr_avg_min": 0.10,
+      "dividend_yield_min": 3
+    },
+    "narrative": "Vietnam tech scale 50B+ ROE 10%+ (แบบ FPT)"
+  },
+  "ENERGY_CYCLICAL_EXIT": {
+    "tag": "ENERGY_CYCLICAL_EXIT",
+    "source": "docs/niwes/09-case-or.md",
+    "rules": {
+      "sector_keywords": ["energy", "petroleum", "oil"],
+      "structural_disruption": true
+    },
+    "anti_rules": true,
+    "narrative": "Energy/petroleum กำลังถูก disrupt (EV) — ทบทวน thesis (แบบ OR)"
+  }
+}
