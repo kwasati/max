@@ -318,6 +318,21 @@ def main():
     append_scan_v2(history_entry, history)  # pass loaded history dict to avoid re-read
     print(f"history entry appended: scan_num={scan_num}")
 
+    # Telegram alert for high-severity exit triggers (plan 05 Phase 3)
+    try:
+        from telegram_alert import send_exit_alert
+        candidates = screener_data.get("candidates", [])
+        high_triggers = [
+            {**t, "symbol": c["symbol"]}
+            for c in candidates
+            for t in c.get("exit_triggers", [])
+            if t.get("severity") == "high"
+        ]
+        if high_triggers:
+            send_exit_alert(high_triggers)
+    except Exception as e:
+        print(f"telegram alert skip: {e}")
+
 
 if __name__ == "__main__":
     main()
