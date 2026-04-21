@@ -304,24 +304,26 @@ def main():
     today = datetime.now().strftime("%Y-%m-%d")
     scan_date = screener_data.get("date", today)
 
-    # NOTE: report generation wired in task 2 via report_template.generate_report_md()
-    # TODO(niwes-algo-02 task 2): wire generate_report_md() + restore history write
+    # Wire deterministic report generation (niwes-algo-02 task 3)
+    from report_template import generate_report_md
+
+    # Determine prev_scan for diff (New In Batch section)
+    prev_scan = None
+    try:
+        scans_list = history.get("scans") if isinstance(history, dict) else history
+        if scans_list:
+            prev_scan = scans_list[-1]  # most recent prior scan (before this one)
+    except Exception:
+        prev_scan = None
+
+    report_path = REPORTS_DIR / f"scan_{today}.md"
+    report_md = generate_report_md(screener_data, scan_num, prev_scan)
+    report_path.write_text(report_md, encoding="utf-8")
+    print(f"report written: {report_path}")
+
+    # TODO(niwes-algo-02 task 6): wire build_v2_entry + append_scan_v2 (history_manager)
     #
-    # raw_text = <generated report text from report_template in task 2>
-    #
-    # header = f"""---
-    # agent: Max Mahon v5
-    # date: {today}
-    # type: scan
-    # scan_num: {scan_num}
-    # ---
-    #
-    # """
-    # report_path = REPORTS_DIR / f"scan_{today}.md"
-    # report_path.write_text(header + raw_text, encoding="utf-8")
-    # print(f"Report saved -> {report_path}")
-    #
-    # summary = extract_summary(raw_text, top_candidates, new_in_batch)
+    # summary = extract_summary(report_md, top_candidates, new_in_batch)
     # entry = {
     #     "num": scan_num,
     #     "date": datetime.now().isoformat(timespec="seconds"),
@@ -339,7 +341,6 @@ def main():
     #     json.dumps(history, ensure_ascii=False, indent=2), encoding="utf-8"
     # )
     # print(f"History updated -> {HISTORY_FILE} (scan #{scan_num})")
-    print(f"scan.py task 1 DONE — Claude SDK removed, awaiting task 2 (report_template) for report write")
 
 
 if __name__ == "__main__":
