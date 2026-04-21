@@ -19,6 +19,22 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 
+# Cache for holding mcap lookups (symbol → int | None). Per-process memoization.
+_HOLDING_MCAP_CACHE: dict[str, "int | None"] = {}
+
+
+def _holding_mcap(sym: str) -> "int | None":
+    if sym in _HOLDING_MCAP_CACHE:
+        return _HOLDING_MCAP_CACHE[sym]
+    try:
+        import yfinance as yf
+        v = yf.Ticker(sym).info.get("marketCap")
+    except Exception:
+        v = None
+    _HOLDING_MCAP_CACHE[sym] = v
+    return v
+
+
 def normalize_symbol(raw: str) -> tuple[str, str]:
     """Normalize symbol: 'LH' or 'LH.BK' → ('LH', 'LH.BK')."""
     base = raw.replace(".BK", "")
@@ -636,4 +652,9 @@ def check_hidden_value(symbol: str) -> list:
         data = json.loads(json_path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return []
-    return data.get(yf_sym, [])
+    holdings = data.get(yf_sym, [])
+    # Enrich holdings with holding_mcap (error-safe, memoized)
+    for h in holdings:
+        if "holding_mcap" not in h:  # don't overwrite if caller pre-set
+            h["holding_mcap"] = _holding_mcap(h.get("holding"))
+    return holdings
