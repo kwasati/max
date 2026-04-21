@@ -1,10 +1,13 @@
 """Max Mahon v5 — Stock Screener: Niwes Dividend-First framework (5-5-5-5)."""
 
 import json
+import logging
 import sys
 import time
 from datetime import datetime
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
@@ -13,7 +16,7 @@ WATCHLIST = ROOT / "watchlist.json"
 USER_DATA = ROOT / "user_data.json"
 
 sys.path.insert(0, str(ROOT / "scripts"))
-from fetch_data import fetch_multi_year, normalize_yield, FINANCIAL_SECTORS
+from fetch_data import fetch_multi_year, fetch_multi_year_safe, normalize_yield, FINANCIAL_SECTORS
 from data_adapter import (
     compute_normalized_earnings,
     compute_payout_sustainability,
@@ -646,10 +649,16 @@ def main():
             continue
 
         try:
-            data = fetch_multi_year(sym)
+            data = fetch_multi_year_safe(sym)
 
             if data is None:
                 print(f"  [{i+1}/{len(symbols)}] {sym} — skipped: no data")
+                continue
+
+            if data.get("delisted"):
+                logger.info(f"skip delisted {sym}: {data.get('error', 'unknown')}")
+                print(f"  [{i+1}/{len(symbols)}] {sym} — delisted/error: {data.get('error', 'unknown')}")
+                error_count += 1
                 continue
 
             if "error" in data and not data.get("price"):
