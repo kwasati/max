@@ -858,6 +858,110 @@ function renderScoreBreakdown(canvasId, breakdown) {
   });
 }
 
+// ===== PRICE HISTORY / YIELD TREND / DIVIDEND TABLE (Plan 04 Phase 2) =====
+async function loadPriceHistoryChart(symbol, canvasId) {
+  const el = document.getElementById(canvasId);
+  if (!el) return;
+  try {
+    const res = await fetch(`${API}/api/stock/${encodeURIComponent(symbol)}/price-history`);
+    if (!res.ok) throw new Error('fetch fail ' + res.status);
+    const { data } = await res.json();
+    if (!data || !data.length) throw new Error('empty');
+    new Chart(el.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: data.map(p => p.date),
+        datasets: [{
+          label: 'ราคา',
+          data: data.map(p => p.close),
+          borderColor: '#1f3f76',
+          tension: 0.2,
+          fill: false,
+          pointRadius: 0,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { x: { ticks: { maxTicksLimit: 10 } } },
+      },
+    });
+  } catch (e) {
+    el.replaceWith(Object.assign(document.createElement('div'), {
+      className: 'chart-placeholder',
+      textContent: 'ข้อมูลราคาย้อนหลังยังไม่พร้อม',
+    }));
+  }
+}
+
+function renderYieldTrend(canvasId, dividendHistory, yearlyMetrics) {
+  const el = document.getElementById(canvasId);
+  if (!el) return;
+  const years = Object.keys(dividendHistory || {}).sort();
+  const yearMap = new Map((yearlyMetrics || []).map(m => [String(m.year), m]));
+  const points = years
+    .map(y => {
+      const dps = dividendHistory[y];
+      const ym = yearMap.get(y) || {};
+      const priceAvg = ym.price_avg;
+      if (!priceAvg || priceAvg <= 0) return null;
+      return { year: y, value: (dps / priceAvg) * 100 };
+    })
+    .filter(Boolean);
+  if (points.length < 3) {
+    el.replaceWith(Object.assign(document.createElement('div'), {
+      className: 'chart-placeholder',
+      textContent: 'ข้อมูล yield trend ไม่พอ (ต้องการ ≥3 จุด)',
+    }));
+    return;
+  }
+  const yields = points.map(p => p.value);
+  const labels = points.map(p => p.year);
+  const rolling = yields.map((_, i, arr) => {
+    const slice = arr.slice(Math.max(0, i - 4), i + 1);
+    return slice.reduce((a, b) => a + b, 0) / slice.length;
+  });
+  new Chart(el.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Yield %', data: yields, borderColor: '#1d5b4f', tension: 0.1 },
+        { label: 'Rolling 5y', data: rolling, borderColor: '#b45309', borderDash: [4, 4], tension: 0.1 },
+      ],
+    },
+    options: { responsive: true, maintainAspectRatio: false },
+  });
+}
+
+function renderDividendHistoryTable(containerId, dividendHistory, yearlyMetrics) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const years = Object.keys(dividendHistory || {}).sort().slice(-10);
+  const ym = new Map((yearlyMetrics || []).map(m => [String(m.year), m]));
+  const rows = years.map((y, i) => {
+    const dps = dividendHistory[y];
+    const prev = i > 0 ? dividendHistory[years[i - 1]] : null;
+    const growth = prev && prev > 0 ? ((dps - prev) / prev) * 100 : null;
+    const payout = (ym.get(y) || {}).payout_ratio;
+    const growthCls = growth != null && growth < 0 ? 'neg' : 'pos';
+    const growthTxt = growth != null ? `${growth.toFixed(1)}%` : '-';
+    const payoutTxt = payout != null ? `${(payout * 100).toFixed(0)}%` : '-';
+    return `<tr><td>${y}</td><td>${dps.toFixed(2)}</td><td class="${growthCls}">${growthTxt}</td><td>${payoutTxt}</td></tr>`;
+  });
+  if (!rows.length) {
+    el.innerHTML = '<p class="muted">ไม่มีประวัติปันผล</p>';
+    return;
+  }
+  el.innerHTML = `
+    <table class="div-history">
+      <thead><tr><th>ปี</th><th>DPS</th><th>YoY</th><th>Payout</th></tr></thead>
+      <tbody>${rows.join('')}</tbody>
+    </table>
+  `;
+}
+
 // ===== CHART RENDERING (P5 Editorial Palette) =====
 function renderDetailCharts(stockData) {
   const yearly = stockData.yearly_metrics || [];
@@ -872,6 +976,12 @@ function renderDetailCharts(stockData) {
   // Score breakdown can render independently of yearly history
   const bd = stockData.breakdown || (stockData.candidate || {}).breakdown;
   if (bd) renderScoreBreakdown('chart-score-breakdown', bd);
+
+  // Phase 2 — price history + yield trend + dividend history table
+  const symbol = stockData.symbol || (stockData.candidate || {}).symbol;
+  if (symbol) loadPriceHistoryChart(symbol, 'chart-price-history');
+  renderYieldTrend('chart-yield-trend', stockData.dividend_history || {}, stockData.yearly_metrics || []);
+  renderDividendHistoryTable('dividend-history-table', stockData.dividend_history || {}, stockData.yearly_metrics || []);
 
   if (!hasBasic) return;
 
@@ -1342,6 +1452,9 @@ function renderDetail(d) {
         <div class="mini-chart"><div class="mini-head"><span>Dividend per share</span><span>฿/share</span></div><canvas id="divChart"></canvas></div>
         <div class="mini-chart"><div class="mini-head"><span>ROE history</span><span>%</span></div><canvas id="roeChart"></canvas></div>
         <div class="mini-chart"><div class="mini-head"><span>Revenue trend</span><span>M฿</span></div><canvas id="revenueChart"></canvas></div>
+        <div class="mini-chart"><div class="mini-head"><span>Price history (10y)</span><span>THB</span></div><canvas id="chart-price-history" height="120"></canvas></div>
+        <div class="mini-chart"><div class="mini-head"><span>Yield trend</span><span>%</span></div><canvas id="chart-yield-trend" height="100"></canvas></div>
+        <div class="mini-chart"><div class="mini-head"><span>Dividend history</span><span>10y</span></div><div id="dividend-history-table"></div></div>
       </aside>
     </div>
     <div class="detail-tab-content" data-tab-content="history" hidden>
