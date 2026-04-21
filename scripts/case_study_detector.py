@@ -68,12 +68,21 @@ def detect_case_study_tags(stock: dict, patterns: dict) -> list[str]:
     return tags
 
 
+_PETROLEUM_EXCLUDE = {
+    "PTT.BK", "PTTEP.BK", "BCP.BK", "TOP.BK", "ESSO.BK",
+    "SPRC.BK", "IRPC.BK", "OR.BK",
+}
+
+
 def detect_moat_tags(stock: dict) -> list[str]:
     """Deterministic moat tag detection based on sector + margin + streak + mcap heuristics.
 
     - BRAND_MOAT: consumer/commerce/food/beverage + net_margin > 20% + streak >= 10y
     - STRUCTURAL_MOAT: utility/transport/telecom/infrastructure + mcap >= 50B
     - GOVT_LOCKIN: sector/industry contains government/e-document/public service/ราชการ
+
+    Petroleum tickers excluded from STRUCTURAL_MOAT since SET groups them under same
+    'Energy & Utilities' sector as power gen/utility — semantic mismatch (cyclical vs defensive).
     """
     tags = []
     sector = (stock.get("sector") or "").lower()
@@ -82,12 +91,14 @@ def detect_moat_tags(stock: dict) -> list[str]:
     nm = stock.get("profit_margin") or agg.get("avg_net_margin") or 0
     streak = agg.get("dividend_streak", 0)
     mcap = stock.get("market_cap") or 0
+    symbol = stock.get("symbol", "")
     combo = sector + " " + industry
     if (any(k in sector for k in ["commerce", "food", "beverage", "consumer"])
             and nm > 0.20 and streak >= 10):
         tags.append("BRAND_MOAT")
     if (any(k in sector for k in ["utilit", "transport", "telecom", "infrastructure"])
-            and mcap >= 50_000_000_000):
+            and mcap >= 50_000_000_000
+            and symbol not in _PETROLEUM_EXCLUDE):
         tags.append("STRUCTURAL_MOAT")
     if any(k in combo for k in ["government", "e-document", "public service", "ราชการ"]):
         tags.append("GOVT_LOCKIN")
