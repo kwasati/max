@@ -13,6 +13,7 @@ import subprocess
 import sys
 import threading
 import time
+import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
@@ -1331,6 +1332,120 @@ async def delete_custom_list(list_name: str):
     data.get("custom_lists", {}).pop(list_name, None)
     save_user_data(data)
     return {"deleted": list_name}
+
+
+# ---------------------------------------------------------------------------
+# Portfolio Transactions + P&L API (Plan 05 Phase 4)
+# ---------------------------------------------------------------------------
+
+
+class TransactionIn(BaseModel):
+    symbol: str
+    date: str  # 'YYYY-MM-DD'
+    type: str  # 'BUY' | 'SELL'
+    price: float
+    qty: float
+    note: Optional[str] = None
+
+
+@app.post("/api/portfolio/transactions")
+async def add_transaction(tx: TransactionIn):
+    """Append new transaction + save to user_data.json. Server generates uuid."""
+    data = load_user_data()
+    data.setdefault("transactions", [])
+    entry = {"id": str(uuid.uuid4()), **tx.model_dump()}
+    data["transactions"].append(entry)
+    save_user_data(data)
+    return entry
+
+
+@app.delete("/api/portfolio/transactions/{tx_id}")
+async def delete_transaction(tx_id: str):
+    data = load_user_data()
+    data["transactions"] = [
+        t for t in data.get("transactions", []) if t.get("id") != tx_id
+    ]
+    save_user_data(data)
+    return {"deleted": tx_id}
+
+
+@app.get("/api/portfolio/transactions")
+async def list_transactions(symbol: Optional[str] = None):
+    data = load_user_data()
+    txs = data.get("transactions", [])
+    if symbol:
+        txs = [t for t in txs if t.get("symbol") == symbol]
+    return {"transactions": txs}
+
+
+@app.get("/api/portfolio/pnl")
+async def get_pnl():
+    """Compute positions + totals from transactions.
+    current_price pulled from latest screener (candidates + review + filtered_out).
+    """
+    data = load_user_data()
+    txs = data.get("transactions", [])
+    by_sym: dict[str, list] = {}
+    for t in txs:
+        by_sym.setdefault(t["symbol"], []).append(t)
+
+    # Try latest screener for prices
+    try:
+        screener = _latest_screener_file()
+        all_entries = (
+            screener.get("candidates", [])
+            + screener.get("review_candidates", [])
+            + screener.get("filtered_out_stocks", [])
+        )
+        price_map = {
+            e["symbol"]: (e.get("metrics") or {}).get("price") or e.get("price")
+            for e in all_entries
+            if e.get("symbol")
+        }
+    except HTTPException:
+        price_map = {}
+
+    positions = []
+    total_cost = 0.0
+    total_mv = 0.0
+    for sym, ts in by_sym.items():
+        buys = [t for t in ts if t.get("type") == "BUY"]
+        sells = [t for t in ts if t.get("type") == "SELL"]
+        qty = sum(t["qty"] for t in buys) - sum(t["qty"] for t in sells)
+        if qty <= 0:
+            continue
+        cost = sum(t["price"] * t["qty"] for t in buys) - sum(
+            t["price"] * t["qty"] for t in sells
+        )
+        avg = cost / qty if qty else 0
+        cur_price = price_map.get(sym)
+        mv = cur_price * qty if cur_price is not None else None
+        pnl = (mv - cost) if mv is not None else None
+        pct = (pnl / cost * 100) if (pnl is not None and cost) else None
+        positions.append({
+            "symbol": sym,
+            "qty": qty,
+            "cost_basis": cost,
+            "avg_cost": avg,
+            "current_price": cur_price,
+            "market_value": mv,
+            "unrealized_pnl": pnl,
+            "unrealized_pct": pct,
+        })
+        total_cost += cost
+        if mv is not None:
+            total_mv += mv
+    return {
+        "positions": positions,
+        "total": {
+            "cost": total_cost,
+            "market_value": total_mv if total_mv else None,
+            "unrealized_pnl": (total_mv - total_cost) if total_mv else None,
+            "unrealized_pct": ((total_mv - total_cost) / total_cost * 100)
+            if total_cost
+            else None,
+        },
+    }
 
 
 # ---------------------------------------------------------------------------

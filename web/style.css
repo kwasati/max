@@ -3639,3 +3639,22 @@ details.section-explain[open] > summary::before { content: 'ซ่อนคำ�
 .review-count {
   color: #b45309;
 }
+
+/* ===== Plan 05 Phase 4: Portfolio Transactions + P&L ===== */
+.tx-section { border-top: 1px solid #d6cfbd; padding-top: 1rem; margin-top: 1rem; }
+.tx-section h3 { margin: 0 0 0.5rem 0; font-family: Fraunces, serif; }
+.tx-form { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.6rem; }
+.tx-form input, .tx-form select { padding: 4px 6px; border: 1px solid #d6cfbd; font-size: 0.85em; background: #fff; }
+.tx-form button { padding: 4px 12px; }
+.tx-item { display: flex; gap: 0.5rem; align-items: center; padding: 0.3rem 0; border-bottom: 1px solid #eee; font-size: 0.85em; }
+.tx-type-buy { color: #1d5b4f; font-weight: bold; }
+.tx-type-sell { color: #a02143; font-weight: bold; }
+.tx-delete { background: none; border: 0; color: #a02143; cursor: pointer; padding: 0 0.3rem; margin-left: auto; }
+.portfolio-pnl { padding: 1rem; margin: 1rem 0; border: 1px solid #d6cfbd; background: #fffdf8; }
+.portfolio-pnl h3 { margin: 0 0 0.5rem 0; font-family: Fraunces, serif; }
+.pnl-table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+.pnl-table th, .pnl-table td { padding: 4px 8px; border-bottom: 1px solid #d6cfbd; text-align: left; }
+.pnl-table th { background: #f4f0e6; font-family: 'JetBrains Mono', monospace; font-weight: 400; }
+.pnl-table td.neg, .pnl-table tfoot td.neg { color: #a02143; }
+.pnl-table td.pos, .pnl-table tfoot td.pos { color: #1d5b4f; }
+.pnl-table tfoot td { font-family: 'JetBrains Mono', monospace; }

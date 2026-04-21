@@ -249,7 +249,7 @@ function activateTab(tabName) {
     const panel = document.getElementById('page-' + tabName);
     if (panel) panel.classList.add('active');
     // Load data for specific tabs
-    if (tabName === 'home') loadHomeData();
+    if (tabName === 'home') { loadHomeData(); loadPortfolioPnL(); }
     else if (tabName === 'history') loadHistory();
     else if (tabName === 'requests') loadRequests();
     else if (tabName === 'dca') populateDCASymbols();
@@ -1508,6 +1508,18 @@ function renderDetail(d) {
           <div id="exit-triggers"></div>
           <div id="exit-summary" class="exit-summary"></div>
         </section>
+        <section id="tx-section" class="tx-section">
+          <h3>Transactions</h3>
+          <form id="tx-form" class="tx-form">
+            <select name="type" required><option value="BUY">BUY</option><option value="SELL">SELL</option></select>
+            <input name="qty" type="number" step="1" min="1" placeholder="qty" required>
+            <input name="price" type="number" step="0.01" min="0" placeholder="price" required>
+            <input name="date" type="date" required>
+            <input name="note" type="text" placeholder="note (optional)">
+            <button type="submit" class="btn-primary">Save</button>
+          </form>
+          <div id="tx-list"></div>
+        </section>
       </aside>
     </div>
     <div class="detail-tab-content" data-tab-content="history" hidden>
@@ -1559,6 +1571,30 @@ function renderDetail(d) {
     renderDetailCharts(d);
     renderAnalysisStub(fullSymbol);
     renderExitStatus(fullSymbol);
+    loadTransactions(fullSymbol);
+    const txForm = document.getElementById('tx-form');
+    if (txForm) {
+      txForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fd = new FormData(txForm);
+        const body = {
+          symbol: fullSymbol,
+          date: fd.get('date'),
+          type: fd.get('type'),
+          price: Number(fd.get('price')),
+          qty: Number(fd.get('qty')),
+          note: fd.get('note') || null,
+        };
+        await fetch(`${API}/api/portfolio/transactions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        txForm.reset();
+        loadTransactions(fullSymbol);
+        loadPortfolioPnL();
+      });
+    }
   }, 50);
 
   // Scroll to detail (desktop only, mobile is fullscreen)
@@ -1599,6 +1635,76 @@ async function renderExitStatus(symbol) {
     if (sumEl) sumEl.textContent = `High: ${s.high} · Medium: ${s.medium}`;
   } catch (e) {
     section.hidden = true;
+  }
+}
+
+// ===== PLAN 05 PHASE 4 — PORTFOLIO TRANSACTIONS + P&L =====
+async function loadTransactions(symbol) {
+  const list = document.getElementById('tx-list');
+  if (!list) return;
+  try {
+    const res = await fetch(`${API}/api/portfolio/transactions?symbol=${encodeURIComponent(symbol)}`);
+    const { transactions } = await res.json();
+    if (!transactions.length) {
+      list.innerHTML = '<p class="muted">ยังไม่มี transactions</p>';
+      return;
+    }
+    list.innerHTML = transactions.map(t => `
+      <div class="tx-item">
+        <span class="mono">${escapeHtml(t.date)}</span>
+        <span class="tx-type-${escapeHtml(t.type.toLowerCase())}">${escapeHtml(t.type)}</span>
+        <span>qty ${t.qty}</span>
+        <span>@ ${Number(t.price).toFixed(2)}</span>
+        ${t.note ? `<span class="muted">— ${escapeHtml(t.note)}</span>` : ''}
+        <button class="tx-delete" data-id="${escapeHtml(t.id)}">&#x2715;</button>
+      </div>
+    `).join('');
+    list.querySelectorAll('.tx-delete').forEach(btn => btn.addEventListener('click', async () => {
+      await fetch(`${API}/api/portfolio/transactions/${btn.dataset.id}`, { method: 'DELETE' });
+      loadTransactions(symbol);
+      loadPortfolioPnL();
+    }));
+  } catch (e) {
+    list.innerHTML = '<p class="error">โหลด transactions ไม่สำเร็จ</p>';
+  }
+}
+
+async function loadPortfolioPnL() {
+  const el = document.getElementById('portfolio-pnl');
+  if (!el) return;
+  try {
+    const res = await fetch(`${API}/api/portfolio/pnl`);
+    const { positions, total } = await res.json();
+    if (!positions.length) {
+      el.innerHTML = '<h3>My Portfolio</h3><p class="muted">ยังไม่มี transactions — เพิ่มจาก detail panel</p>';
+      return;
+    }
+    const rows = positions.map(p => {
+      const pnl = p.unrealized_pnl != null ? Number(p.unrealized_pnl).toFixed(0) : '-';
+      const pct = p.unrealized_pct != null ? Number(p.unrealized_pct).toFixed(1) + '%' : '-';
+      const cls = p.unrealized_pnl != null && p.unrealized_pnl < 0 ? 'neg' : 'pos';
+      const cur = p.current_price != null ? Number(p.current_price).toFixed(2) : '-';
+      return `<tr>
+        <td><strong>${escapeHtml(p.symbol)}</strong></td>
+        <td>${p.qty}</td>
+        <td>${Number(p.avg_cost).toFixed(2)}</td>
+        <td>${cur}</td>
+        <td class="${cls}">${pnl}</td>
+        <td class="${cls}">${pct}</td>
+      </tr>`;
+    }).join('');
+    const totalPnl = total.unrealized_pnl != null ? Number(total.unrealized_pnl).toFixed(0) : '-';
+    const totalPct = total.unrealized_pct != null ? Number(total.unrealized_pct).toFixed(1) + '%' : '-';
+    const totalCls = total.unrealized_pnl != null && total.unrealized_pnl < 0 ? 'neg' : 'pos';
+    el.innerHTML = `
+      <h3>My Portfolio</h3>
+      <table class="pnl-table">
+        <thead><tr><th>Sym</th><th>Qty</th><th>Avg</th><th>Cur</th><th>PnL</th><th>%</th></tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr><td colspan="4"><strong>Total</strong></td><td class="${totalCls}"><strong>${totalPnl}</strong></td><td class="${totalCls}"><strong>${totalPct}</strong></td></tr></tfoot>
+      </table>`;
+  } catch (e) {
+    el.innerHTML = '<h3>My Portfolio</h3><p class="error">โหลด P&L ไม่สำเร็จ</p>';
   }
 }
 
