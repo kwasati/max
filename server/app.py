@@ -8,6 +8,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import subprocess
 import sys
 import threading
@@ -1685,6 +1686,50 @@ def _build_analysis_prompt(stock: dict) -> str:
 {{"buffett": "...", "hong": "...", "max": "..."}}"""
 
 
+def build_analysis_prompt(symbol: str) -> str:
+    """Build the Thai Niwes analysis prompt for a symbol from snapshot + screener.
+
+    Extracted from GET /api/stock/{symbol}/analysis handler for reuse in on-demand
+    POST /analyze (plan niwes-algo-03-server). Resolves the stock via
+    ``_find_stock_for_analysis`` then delegates to ``_build_analysis_prompt`` which
+    renders the Buffett / เซียนฮง / Max Mahon prompt.
+
+    Raises HTTPException(404) if the symbol is not found in screener/snapshot.
+    """
+    stock, _ = _find_stock_for_analysis(symbol)
+    if stock is None:
+        raise HTTPException(404, f"Stock {symbol} not found")
+    return _build_analysis_prompt(stock)
+
+
+def parse_analysis_response(raw: str) -> dict:
+    """Extract JSON dict from Claude response text.
+
+    Strips markdown code fences (```json ... ```), then tries strict ``json.loads``.
+    Falls back to regex extract of the first ``{...}`` block, and finally returns
+    ``{"buffett": raw, "hong": "", "max": ""}`` so the endpoint can still respond
+    with the raw text if parsing fails.
+
+    Extracted from GET /api/stock/{symbol}/analysis handler for reuse in on-demand
+    POST /analyze (plan niwes-algo-03-server).
+    """
+    text = (raw or "").strip()
+    if text.startswith("```"):
+        lines = text.split("\n")
+        lines = [l for l in lines if not l.startswith("```")]
+        text = "\n".join(lines).strip()
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        m = re.search(r"\{.*\}", text, re.DOTALL)
+        if m:
+            try:
+                return json.loads(m.group(0))
+            except Exception:
+                pass
+        return {"buffett": raw, "hong": "", "max": ""}
+
+
 @app.get("/api/stock/{symbol}/analysis")
 async def get_stock_analysis(symbol: str):
     """AI-powered stock analysis from 3 perspectives."""
@@ -1708,7 +1753,7 @@ async def get_stock_analysis(symbol: str):
             "generated_at": entry.get("generated_at", ""),
         }
 
-    prompt = _build_analysis_prompt(stock)
+    prompt = build_analysis_prompt(symbol)
 
     try:
         loop = asyncio.get_event_loop()
@@ -1722,15 +1767,7 @@ async def get_stock_analysis(symbol: str):
             ),
         )
         raw_text = response.content[0].text.strip()
-
-        if raw_text.startswith("```"):
-            lines = raw_text.split("\n")
-            lines = [l for l in lines if not l.startswith("```")]
-            raw_text = "\n".join(lines).strip()
-
-        parsed = json.loads(raw_text)
-    except json.JSONDecodeError:
-        raise HTTPException(502, "Failed to parse AI response as JSON")
+        parsed = parse_analysis_response(raw_text)
     except Exception as e:
         logging.error(f"[analysis] Claude API error: {e}")
         raise HTTPException(502, f"AI analysis failed: {str(e)}")
