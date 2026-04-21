@@ -19,6 +19,9 @@ from data_adapter import (
     compute_payout_sustainability,
     check_hidden_value,
 )
+from case_study_detector import detect_case_study_tags, detect_moat_tags, load_patterns
+
+_PATTERNS = load_patterns()
 
 DEFAULT_FILTERS = {
     "min_dividend_yield": 5.0,
@@ -432,6 +435,8 @@ def assign_signals(data: dict, total_score: int) -> list:
         if declining and payout is not None and payout > 1.0:
             signals.append("DIVIDEND_TRAP")
 
+    signals.extend(detect_case_study_tags(data, _PATTERNS))
+    signals.extend(detect_moat_tags(data))
     return signals
 
 
@@ -614,6 +619,7 @@ def main():
                 print(f"  [{i+1}/{len(symbols)}] {sym} — filtered: {', '.join(filter_reasons[:2])}")
                 continue
 
+            data['_hidden_holdings'] = check_hidden_value(sym)
             result = quality_score(data)
 
             # Apply near-miss penalty
