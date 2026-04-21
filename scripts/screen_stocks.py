@@ -384,6 +384,47 @@ def detect_exit_signal(symbol: str, current_data: dict, historical_baseline: dic
     return triggers
 
 
+_BASELINES_PATH = Path(__file__).resolve().parent.parent / "data" / "exit_baselines.json"
+
+
+def load_exit_baselines() -> dict:
+    """Read data/exit_baselines.json. Returns {} if missing or parse error."""
+    if not _BASELINES_PATH.exists():
+        return {}
+    try:
+        return json.loads(_BASELINES_PATH.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def save_exit_baseline(symbol: str, metrics: dict, baselines: dict) -> dict:
+    """Save baseline for symbol when it first passes NIWES_5555. Writes atomic to JSON.
+
+    Returns updated baselines dict (same object mutated + written).
+    If symbol already has passed_5555=True entry: preserve earliest baseline,
+    only refresh date_refreshed field (don't overwrite pe/pbv/dy baseline).
+    """
+    today = datetime.now().strftime("%Y-%m-%d")
+    existing = baselines.get(symbol, {})
+    if existing.get("passed_5555"):
+        existing["date_refreshed"] = today
+        baselines[symbol] = existing
+    else:
+        baselines[symbol] = {
+            "passed_5555": True,
+            "pe_baseline": metrics.get("pe_ratio"),
+            "pbv_baseline": metrics.get("pb_ratio"),
+            "dy_baseline": metrics.get("dividend_yield"),
+            "date_added": today,
+            "date_refreshed": today,
+            "thesis_change_flag": False,
+        }
+    _BASELINES_PATH.write_text(
+        json.dumps(baselines, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    return baselines
+
+
 def load_exit_baseline(symbol: str) -> dict:
     """Load exit baseline for a symbol from data/exit_baselines.json.
 
