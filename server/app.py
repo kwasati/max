@@ -2129,9 +2129,12 @@ _PRICE_HIST_TTL_HOURS = 24
 
 
 @app.get("/api/stock/{symbol}/price-history")
-async def get_price_history(symbol: str):
-    """Return 10yr monthly closes from yfinance + 24h cache at data/price_history/{symbol}.json."""
-    cache_file = _PRICE_HIST_DIR / f"{symbol}.json"
+async def get_price_history(symbol: str, granularity: str = "yearly"):
+    """Price history — thaifin yearly (primary) or yfinance monthly (for DCA)."""
+    if granularity not in ("yearly", "monthly"):
+        raise HTTPException(400, f"granularity must be 'yearly' or 'monthly', got '{granularity}'")
+
+    cache_file = _PRICE_HIST_DIR / f"{symbol}_{granularity}.json"
     now = datetime.now()
     if cache_file.exists():
         try:
@@ -2142,30 +2145,59 @@ async def get_price_history(symbol: str):
         except (KeyError, ValueError, json.JSONDecodeError):
             pass
 
-    try:
-        import yfinance as yf
+    if granularity == "yearly":
+        # Thaifin primary — use yearly close from yearly_metrics
+        import sys
+        from pathlib import Path as _Path
+        _scripts_dir = _Path(__file__).resolve().parent.parent / "scripts"
+        if str(_scripts_dir) not in sys.path:
+            sys.path.insert(0, str(_scripts_dir))
+        from fetch_data import fetch_multi_year
         loop = asyncio.get_event_loop()
-        hist = await loop.run_in_executor(
-            None,
-            lambda: yf.Ticker(symbol).history(
-                period="10y", interval="1mo", auto_adjust=False
-            ),
-        )
-    except Exception as e:
-        raise HTTPException(503, f"yfinance fetch failed: {e}")
+        result = await loop.run_in_executor(None, lambda: fetch_multi_year(symbol))
+        if not result or "error" in result:
+            raise HTTPException(404, f"no data for {symbol}")
+        yearly = result.get("yearly_metrics", [])
+        data = [
+            {"date": f"{m['year']}-12-31", "close": m["close"]}
+            for m in yearly if m.get("close") is not None
+        ]
+        if not data:
+            raise HTTPException(404, f"no yearly close data for {symbol}")
+        payload = {
+            "symbol": symbol,
+            "source": "thaifin_yearly",
+            "granularity": "yearly",
+            "fetched_at": now.isoformat(timespec="seconds"),
+            "data": data,
+        }
+    else:
+        # Monthly granularity — yfinance (for DCA simulator)
+        try:
+            import yfinance as yf
+            loop = asyncio.get_event_loop()
+            hist = await loop.run_in_executor(
+                None,
+                lambda: yf.Ticker(symbol).history(
+                    period="10y", interval="1mo", auto_adjust=False
+                ),
+            )
+        except Exception as e:
+            raise HTTPException(503, f"yfinance fetch failed: {e}")
+        if hist.empty:
+            raise HTTPException(404, f"no monthly price history for {symbol}")
+        data = [
+            {"date": idx.strftime("%Y-%m-%d"), "close": float(row["Close"])}
+            for idx, row in hist.iterrows()
+        ]
+        payload = {
+            "symbol": symbol,
+            "source": "yfinance_monthly",
+            "granularity": "monthly",
+            "fetched_at": now.isoformat(timespec="seconds"),
+            "data": data,
+        }
 
-    if hist.empty:
-        raise HTTPException(404, f"no price history for {symbol}")
-
-    data = [
-        {"date": idx.strftime("%Y-%m-%d"), "close": float(row["Close"])}
-        for idx, row in hist.iterrows()
-    ]
-    payload = {
-        "symbol": symbol,
-        "fetched_at": now.isoformat(timespec="seconds"),
-        "data": data,
-    }
     cache_file.write_text(
         json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
     )
