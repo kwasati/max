@@ -408,48 +408,62 @@ function transformPicks(container) {
   });
 }
 
-// ===== HISTORY PAGE =====
-async function loadHistory() {
-  const list = document.getElementById('history-list');
-  if (!list) return;
-  list.innerHTML = '<div class="loading-state">กำลังโหลด…</div>';
+// ===== HISTORY PAGE (v2 — /api/history/v2 with expand-on-click) =====
+async function loadHistoryV2() {
+  const container = document.getElementById('history-list');
+  if (!container) return;
+  container.innerHTML = '<div class="loading-state">กำลังโหลด…</div>';
   try {
-    const data = await fetch(API + '/api/history').then(r => r.json());
-    const scans = (data && data.scans) || [];
-    if (!scans.length) {
-      list.innerHTML = '<div class="empty-state"><h3>ยังไม่มีประวัติ scan</h3><p>กดปุ่ม scan เพื่อเริ่ม</p></div>';
+    const res = await fetch(API + '/api/history/v2?limit=30');
+    if (!res.ok) throw new Error('http ' + res.status);
+    const { scans } = await res.json();
+    if (!scans || !scans.length) {
+      container.innerHTML = '<div class="empty-state"><h3>ยังไม่มีประวัติ scan</h3><p>กดปุ่ม scan เพื่อเริ่ม</p></div>';
       const chipEmpty = document.querySelector('#page-history .scan-count-chip');
       if (chipEmpty) chipEmpty.textContent = '0 SCANS';
       return;
     }
-    list.innerHTML = scans.map(s => `
-      <div class="history-item" data-scan-num="${s.num}">
-        <div class="history-head">
-          <div class="history-num">Scan #${s.num}</div>
-          <div class="history-date">${formatScanDate(s.date)}</div>
-        </div>
-        <div class="history-summary">${escapeHtml(s.summary || '')}</div>
-        <div class="history-stats">
-          <span><em>${s.counts?.passed ?? '—'}</em>ผ่าน</span>
-          <span><em>+${s.counts?.new ?? 0}</em>ใหม่</span>
-          <span><em>${s.counts?.filtered ?? '—'}</em>คัดออก</span>
-        </div>
-      </div>
-    `).join('');
-
-    list.querySelectorAll('.history-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const num = item.dataset.scanNum;
-        sessionStorage.setItem('report-from', 'history');
-        if (typeof openReport === 'function') openReport(num);
+    const sorted = [...scans].reverse();
+    container.innerHTML = sorted.map(s => {
+      const top3 = (s.top_candidates || []).slice(0, 3).map(c => c.symbol).join(' · ');
+      const topList = (s.top_candidates || []).map(c => {
+        const y = c.yield != null ? Number(c.yield).toFixed(1) + '%' : '-';
+        const pe = c.pe != null ? Number(c.pe).toFixed(1) : '-';
+        const tags = (c.tags || []).map(t => escapeHtml(String(t))).join(' ');
+        return `<div class="hist-cand"><strong>${escapeHtml(c.symbol || '')}</strong> score ${c.score || 0} · Y ${y} · PE ${pe} · ${tags}</div>`;
+      }).join('');
+      return `
+        <div class="history-entry" data-scan="${s.num || ''}">
+          <div class="history-row-main">
+            <span class="mono">${escapeHtml((s.date || '').slice(0, 10))}</span>
+            <span>scan ${(s.counts || {}).scanned ?? 0}</span>
+            <span>pass ${(s.counts || {}).passed ?? 0}</span>
+            <span>review ${(s.counts || {}).review ?? 0}</span>
+            <span>new ${(s.counts || {}).new ?? 0}</span>
+            <span class="mono">${escapeHtml(top3)}</span>
+            <span class="tag-default">${escapeHtml(s.scoring_version || '-')}</span>
+          </div>
+          <div class="history-expand" hidden>${topList}</div>
+        </div>`;
+    }).join('');
+    container.querySelectorAll('.history-entry').forEach(el => {
+      el.addEventListener('click', () => {
+        el.classList.toggle('expanded');
+        const exp = el.querySelector('.history-expand');
+        if (exp) exp.hidden = !el.classList.contains('expanded');
       });
     });
     const chip = document.querySelector('#page-history .scan-count-chip');
-    if (chip) chip.textContent = `${scans.length} SCANS`;
+    if (chip) chip.textContent = `${sorted.length} SCANS`;
   } catch (e) {
-    console.error('loadHistory', e);
-    list.innerHTML = '<div class="empty-state"><p>โหลดประวัติไม่ได้</p></div>';
+    console.error('loadHistoryV2', e);
+    container.innerHTML = '<p class="error">โหลดประวัติไม่สำเร็จ</p>';
   }
+}
+
+// Keep loadHistory as alias for backward compatibility (activateTab + SSE refresh)
+async function loadHistory() {
+  return loadHistoryV2();
 }
 
 function formatScanDate(iso) {
@@ -1510,7 +1524,7 @@ function renderDetail(d) {
   // Render charts after DOM is ready
   setTimeout(() => {
     renderDetailCharts(d);
-    fetchAnalysis(fullSymbol);
+    renderAnalysisStub(fullSymbol);
     renderExitStatus(fullSymbol);
   }, 50);
 
@@ -1553,6 +1567,59 @@ async function renderExitStatus(symbol) {
   } catch (e) {
     section.hidden = true;
   }
+}
+
+// ===== PHASE 4 — ON-DEMAND ANALYSIS =====
+function renderAnalysisStub(symbol) {
+  const section = document.getElementById('analysis-section');
+  if (!section) return;
+  section.innerHTML = `
+    <div class="analysis-ondemand">
+      <p class="muted">คลิก เพื่อให้ AI วิเคราะห์หุ้น ${escapeHtml(symbol)} (ใช้ API credit)</p>
+      <button id="analyze-btn" class="btn-primary">วิเคราะห์เพิ่มเติม (ใช้ AI)</button>
+    </div>`;
+  const btn = document.getElementById('analyze-btn');
+  if (btn) btn.addEventListener('click', () => triggerAnalysis(symbol));
+}
+
+async function triggerAnalysis(symbol) {
+  const btn = document.getElementById('analyze-btn');
+  const section = document.getElementById('analysis-section');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> กำลังวิเคราะห์...'; }
+  try {
+    let res = await fetch(API + '/api/stock/' + encodeURIComponent(symbol) + '/analysis');
+    let data;
+    if (res.status === 404) {
+      res = await fetch(API + '/api/stock/' + encodeURIComponent(symbol) + '/analyze', { method: 'POST' });
+      if (!res.ok) throw new Error('analyze failed: ' + res.status);
+      data = await res.json();
+    } else if (res.ok) {
+      data = await res.json();
+    } else { throw new Error('fetch: ' + res.status); }
+    renderAnalysisContent(data);
+  } catch (e) {
+    if (section) section.innerHTML = `<p class="error">วิเคราะห์ไม่สำเร็จ: ${escapeHtml(e.message)}</p>`;
+  }
+}
+
+function renderAnalysisContent(payload) {
+  const section = document.getElementById('analysis-section');
+  if (!section) return;
+  const at = payload.analyzed_at || '';
+  section.innerHTML = `
+    ${at ? `<div class="cache-badge">Cached · ${escapeHtml(at)}</div>` : ''}
+    <div class="analysis-card">
+      <div class="analysis-header"><span class="analysis-icon">\uD83C\uDFA9</span><span class="analysis-name">มุมมอง Buffett</span></div>
+      <p class="analysis-text">${escapeHtml(payload.buffett || '')}</p>
+    </div>
+    <div class="analysis-card">
+      <div class="analysis-header"><span class="analysis-icon">\uD83D\uDCB0</span><span class="analysis-name">มุมมองเซียนฮง</span></div>
+      <p class="analysis-text">${escapeHtml(payload.hong || '')}</p>
+    </div>
+    <div class="analysis-card">
+      <div class="analysis-header"><span class="analysis-icon">\uD83D\uDCCA</span><span class="analysis-name">Max Mahon สรุป</span></div>
+      <p class="analysis-text">${escapeHtml(payload.max || '')}</p>
+    </div>`;
 }
 
 async function fetchAnalysis(symbol) {

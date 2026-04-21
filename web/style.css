@@ -3567,3 +3567,57 @@ details.section-explain[open] > summary::before { content: 'ซ่อนคำ�
 .severity-medium { background: #fff4e0; border-left: 4px solid #b45309; }
 .trigger-type { font-family: 'JetBrains Mono', monospace; font-size: 0.75em; text-transform: uppercase; color: #121420; }
 .exit-summary { margin-top: 0.5rem; font-family: 'JetBrains Mono', monospace; color: #121420; }
+
+/* ===== PHASE 4 — ON-DEMAND ANALYSIS + HISTORY V2 ===== */
+.spinner {
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  border: 2px solid #f4f0e6;
+  border-top-color: #1d5b4f;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.cache-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #1d5b4f;
+  color: #f4f0e6;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7em;
+  border-radius: 2px;
+  margin-bottom: 0.5rem;
+}
+.analysis-ondemand .muted { color: #6b7280; margin-bottom: 0.5rem; }
+.btn-primary {
+  background: #1d5b4f;
+  color: #f4f0e6;
+  border: 0;
+  padding: 0.5rem 1rem;
+  font-family: 'IBM Plex Sans Thai', sans-serif;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.btn-primary:disabled { opacity: 0.6; cursor: wait; }
+.history-entry {
+  border: 1px solid #d6cfbd;
+  padding: 0.75rem;
+  margin: 0.5rem 0;
+  cursor: pointer;
+  background: #fffdf8;
+}
+.history-entry.expanded { background: #faf8f2; }
+.history-row-main {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.history-expand { margin-top: 0.5rem; }
+.hist-cand {
+  padding: 0.25rem 0;
+  border-bottom: 1px solid #eee;
+  font-size: 0.9em;
+}
