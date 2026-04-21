@@ -1455,6 +1455,12 @@ function renderDetail(d) {
         <div class="mini-chart"><div class="mini-head"><span>Price history (10y)</span><span>THB</span></div><canvas id="chart-price-history" height="120"></canvas></div>
         <div class="mini-chart"><div class="mini-head"><span>Yield trend</span><span>%</span></div><canvas id="chart-yield-trend" height="100"></canvas></div>
         <div class="mini-chart"><div class="mini-head"><span>Dividend history</span><span>10y</span></div><div id="dividend-history-table"></div></div>
+        <section id="exit-status-section" class="exit-status" hidden>
+          <h3>Watchlist Exit Status</h3>
+          <div id="exit-baseline"></div>
+          <div id="exit-triggers"></div>
+          <div id="exit-summary" class="exit-summary"></div>
+        </section>
       </aside>
     </div>
     <div class="detail-tab-content" data-tab-content="history" hidden>
@@ -1505,11 +1511,47 @@ function renderDetail(d) {
   setTimeout(() => {
     renderDetailCharts(d);
     fetchAnalysis(fullSymbol);
+    renderExitStatus(fullSymbol);
   }, 50);
 
   // Scroll to detail (desktop only, mobile is fullscreen)
   if (window.innerWidth >= 1024) {
     detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+// ===== PHASE 3 — WATCHLIST EXIT STATUS =====
+async function renderExitStatus(symbol) {
+  const section = document.getElementById('exit-status-section');
+  if (!section) return;
+  try {
+    const res = await fetch(API + '/api/watchlist/' + encodeURIComponent(symbol) + '/exit-status');
+    if (!res.ok) { section.hidden = true; return; }
+    const data = await res.json();
+    if (!data.in_watchlist) { section.hidden = true; return; }
+    section.hidden = false;
+    const b = data.baseline;
+    const baselineEl = document.getElementById('exit-baseline');
+    if (b) {
+      const pe = (b.pe_baseline != null) ? Number(b.pe_baseline).toFixed(2) : '-';
+      const pbv = (b.pbv_baseline != null) ? Number(b.pbv_baseline).toFixed(2) : '-';
+      const dy = (b.dy_baseline != null) ? Number(b.dy_baseline).toFixed(2) + '%' : '-';
+      baselineEl.innerHTML = `<p>Passed 5-5-5-5: <strong>${escapeHtml(b.date_added || '-')}</strong> · PE baseline <strong>${pe}</strong> · PBV <strong>${pbv}</strong> · Yield <strong>${dy}</strong></p>`;
+    } else if (baselineEl) {
+      baselineEl.innerHTML = '<p class="muted">ยังไม่มี baseline (scan ครั้งต่อไปจะสร้าง)</p>';
+    }
+    const triggersHtml = (data.triggers || []).map(t => `
+      <div class="exit-status-card severity-${escapeHtml(t.severity || 'medium')}">
+        <span class="trigger-type">${escapeHtml(t.type || '')}</span>
+        <p>${escapeHtml(t.reason || '')}</p>
+      </div>`).join('');
+    const triggersEl = document.getElementById('exit-triggers');
+    if (triggersEl) triggersEl.innerHTML = triggersHtml || '<p class="muted">ไม่มี trigger</p>';
+    const s = data.severity_summary || { high: 0, medium: 0 };
+    const sumEl = document.getElementById('exit-summary');
+    if (sumEl) sumEl.textContent = `High: ${s.high} · Medium: ${s.medium}`;
+  } catch (e) {
+    section.hidden = true;
   }
 }
 
