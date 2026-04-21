@@ -919,19 +919,28 @@ async function loadPriceHistoryChart(symbol, canvasId) {
       data: {
         labels: data.map(p => p.date),
         datasets: [{
-          label: 'ราคา',
+          label: 'ราคา (ปิดสิ้นปี)',
           data: data.map(p => p.close),
           borderColor: '#1f3f76',
           tension: 0.2,
           fill: false,
-          pointRadius: 0,
+          pointRadius: 3,
         }],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
-        scales: { x: { ticks: { maxTicksLimit: 10 } } },
+        scales: {
+          x: {
+            ticks: {
+              callback: function(val) {
+                const label = this.getLabelForValue(val) || '';
+                return label.slice(0, 4);
+              },
+            },
+          },
+        },
       },
     });
   } catch (e) {
@@ -945,15 +954,11 @@ async function loadPriceHistoryChart(symbol, canvasId) {
 function renderYieldTrend(canvasId, dividendHistory, yearlyMetrics) {
   const el = document.getElementById(canvasId);
   if (!el) return;
-  const years = Object.keys(dividendHistory || {}).sort();
-  const yearMap = new Map((yearlyMetrics || []).map(m => [String(m.year), m]));
-  const points = years
-    .map(y => {
-      const dps = dividendHistory[y];
-      const ym = yearMap.get(y) || {};
-      const priceAvg = ym.price_avg;
-      if (!priceAvg || priceAvg <= 0) return null;
-      return { year: y, value: (dps / priceAvg) * 100 };
+  const points = (yearlyMetrics || [])
+    .map(m => {
+      const dy = m.dividend_yield;  // unit=% from thaifin (datasource-stability Phase 1)
+      if (dy == null || dy <= 0) return null;
+      return { year: String(m.year), value: dy };
     })
     .filter(Boolean);
   if (points.length < 3) {
