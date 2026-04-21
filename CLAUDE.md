@@ -19,6 +19,31 @@
 - **FCF = OCF - capex** — ไม่ใช้ total investing activities
 - **Universe:** 933 stocks (SET 704 + mai 229) via thaifin
 
+### Data Source Invariants
+
+**Rule 1 — Historical/yearly data:**
+- ใช้ **thaifin เท่านั้น** สำหรับ field ที่เป็นต่อปี (close, dividend_yield, mkt_cap, bvps, payout_ratio, pe_ratio, pb_ratio, roe, net_margin, revenue, earnings, etc.)
+- yfinance yearly ใช้ได้เฉพาะเป็น **fallback** เมื่อ thaifin fail (ผ่าน `_fetch_yfinance_legacy` path ใน fetch_data.py)
+
+**Rule 2 — yfinance ใช้ได้เฉพาะ:**
+- Realtime price (current close)
+- 52-week range
+- Market cap snapshot (ปัจจุบัน — ใช้ thaifin ถ้ามี historical)
+- Forward PE
+- Raw dividends history (pandas Series of DPS events — สำหรับ DPS = source of truth)
+- DCA simulator (granular monthly price สำหรับ backtest — ผ่าน `/api/stock/{sym}/price-history?granularity=monthly`)
+
+**Rule 3 — ก่อนเพิ่ม field ใหม่ใน yearly_metrics:**
+- Cross-check `_fetch_thaifin` column list ก่อนเสมอ (data_adapter.py บรรทัด 107-146 reads)
+- ถ้า thaifin มี column นั้น → expose ตรงๆ ใน yearly_metrics dict (build at line 176-203) ห้ามเรียก yfinance
+- ถ้า thaifin ไม่มี → document reason ใน code comment (เช่น `interest_expense` ไม่มีใน thaifin → yfinance supplement)
+
+**ตัวอย่าง:**
+- ❌ เรียก `yf.Ticker(sym).history(period='10y', interval='1mo')` เพื่อ compute `price_avg` — thaifin มี `close` per year อยู่แล้ว
+- ❌ เรียก `yf.Ticker(sym).info.get('marketCap')` เพื่อ historical mcap — thaifin มี `mkt_cap` per year
+- ✅ เรียก `yf.Ticker(sym).history(period='10y', interval='1mo')` เฉพาะ DCA simulator endpoint ที่ต้องการ granular monthly
+- ✅ เรียก `yf.Ticker(sym).info.get('fiftyTwoWeekHigh')` เพราะ thaifin ไม่มี 52w range
+
 ### User Data
 - `user_data.json` — watchlist, blacklist, notes, custom lists (จัดการจาก UI ได้)
 
