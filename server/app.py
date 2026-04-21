@@ -203,6 +203,9 @@ async def get_screener():
         sym = _norm_sym(c.get("symbol", ""))
         c["is_new_in_batch"] = bool(sym) and sym not in historical
         c["in_watchlist"] = bool(sym) and sym in watched
+    for c in data.get("review_candidates", []):
+        sym = _norm_sym(c.get("symbol", ""))
+        c["in_watchlist"] = bool(sym) and sym in watched
     for c in data.get("filtered_out_stocks", []):
         sym = _norm_sym(c.get("symbol", ""))
         c["in_watchlist"] = bool(sym) and sym in watched
@@ -1685,25 +1688,6 @@ async def search_stocks(request: Request):
 # ---------------------------------------------------------------------------
 # AI Analysis API
 # ---------------------------------------------------------------------------
-ANALYSIS_CACHE_PATH = DATA_DIR / "analysis_cache.json"
-
-
-def _load_analysis_cache() -> dict:
-    if ANALYSIS_CACHE_PATH.exists():
-        try:
-            return json.loads(ANALYSIS_CACHE_PATH.read_text(encoding="utf-8"))
-        except Exception:
-            return {}
-    return {}
-
-
-def _save_analysis_cache(cache: dict):
-    ANALYSIS_CACHE_PATH.write_text(
-        json.dumps(cache, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
-
-
 def _find_stock_for_analysis(symbol: str) -> tuple[Optional[dict], Optional[str]]:
     """Find stock data from screener/snapshot. Returns (stock_dict, screener_date)."""
     scr_path = find_latest("screener_*.json", DATA_DIR)
