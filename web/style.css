@@ -686,6 +686,36 @@ table.watch tbody tr.selected { background: var(--forest-soft); }
   display: block;
 }
 
+/* Plan 04 Phase 2 — price history / yield trend / dividend history table */
+.chart-placeholder {
+  padding: 0.5rem;
+  background: #f4f0e6;
+  border: 1px dashed #d6cfbd;
+  color: #6b7280;
+  font-size: 0.85em;
+  text-align: center;
+  border-radius: 2px;
+  margin: 0.3rem 0;
+}
+.div-history {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85em;
+  margin-top: 0.5rem;
+}
+.div-history th, .div-history td {
+  border-bottom: 1px solid #d6cfbd;
+  padding: 4px 6px;
+  text-align: left;
+}
+.div-history th {
+  background: #f4f0e6;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 400;
+}
+.div-history td.neg { color: #a02143; }
+.div-history td.pos { color: #1d5b4f; }
+
 @media (max-width: 1024px) {
   .detail-panel#detail.open { grid-template-columns: 1fr; gap: 2rem; }
   .dive-body { padding-right: 0; }
