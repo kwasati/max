@@ -11,6 +11,7 @@ Produces markdown report with 6 sections from screener output:
 
 Pattern narratives loaded from case_study_patterns.json. Same input = same output (deterministic).
 """
+from collections import Counter
 from datetime import datetime
 from pathlib import Path
 import json
@@ -55,6 +56,19 @@ def _top_pick_md(c: dict) -> str:
     )
 
 
+def _fmt_sector_spread(top: list) -> str:
+    if not top:
+        return "_ไม่มี_"
+    sectors = Counter(c.get("sector", "Unknown") for c in top)
+    total = len(top)
+    lines = []
+    for sector, cnt in sectors.most_common():
+        pct = cnt / total * 100
+        warn = " ⚠ over-concentrated" if pct > 40 else ""
+        lines.append(f"- {sector}: {cnt}/{total} ({pct:.0f}%){warn}")
+    return "\n".join(lines)
+
+
 def _diff_new(current: list, prev: list) -> list:
     prev_syms = {c.get("symbol") for c in (prev or [])}
     return [c for c in current if c.get("symbol") not in prev_syms]
@@ -85,6 +99,7 @@ def generate_report_md(screener_data: dict, scan_num: int, prev_scan: dict | Non
         f"# รายงานตรวจหุ้น Niwes 5-5-5-5 (รอบที่ {scan_num})\n",
         f"_วันที่ {date} · ผ่าน {len(cands)} · review {len(review)} · new {len(new_in)}_\n",
         "## Top Picks\n\n" + ("\n".join(_top_pick_md(c) for c in top) or "_ไม่มีหุ้นผ่านรอบนี้_"),
+        "\n## Sector Spread\n\n" + _fmt_sector_spread(top),
         "\n## Review Candidates\n\n" + (
             "\n".join(
                 f"- **{r['symbol']}** ({r.get('sector','')}) — {'; '.join(r.get('review_reasons', []))}"

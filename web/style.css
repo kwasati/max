@@ -3621,3 +3621,21 @@ details.section-explain[open] > summary::before { content: 'ซ่อนคำ�
   border-bottom: 1px solid #eee;
   font-size: 0.9em;
 }
+
+/* ===== REVIEW TAB (niwes-algo-05 Phase 2) ===== */
+.badge-review {
+  background: #b45309;
+  color: #f4f0e6;
+  padding: 1px 6px;
+  font-size: 0.75em;
+  border-radius: 2px;
+  margin-left: 0.3rem;
+  display: inline-block;
+}
+.review-reasons {
+  color: #b45309;
+  font-size: 0.9em;
+}
+.review-count {
+  color: #b45309;
+}
