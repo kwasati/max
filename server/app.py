@@ -47,6 +47,8 @@ DATA_DIR = PROJECT_DIR / "data"
 REPORTS_DIR = PROJECT_DIR / "reports"
 SCRIPTS_DIR = PROJECT_DIR / "scripts"
 WEB_DIR = PROJECT_DIR / "web"
+_ANALYSIS_CACHE_DIR = PROJECT_DIR / "data" / "analysis_cache"
+_ANALYSIS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
 # Env / Auth
@@ -1731,64 +1733,15 @@ def parse_analysis_response(raw: str) -> dict:
 
 
 @app.get("/api/stock/{symbol}/analysis")
-async def get_stock_analysis(symbol: str):
-    """AI-powered stock analysis from 3 perspectives."""
-    if _anthropic_client is None:
-        raise HTTPException(503, "anthropic package not installed")
-
-    stock, scr_date = _find_stock_for_analysis(symbol)
-    if stock is None:
-        raise HTTPException(404, f"Stock {symbol} not found")
-
-    cache_key = f"{_norm_sym(symbol)}_{scr_date}"
-    cache = _load_analysis_cache()
-    if cache_key in cache:
-        entry = cache[cache_key]
-        return {
-            "symbol": symbol,
-            "buffett": entry["buffett"],
-            "hong": entry["hong"],
-            "max": entry["max"],
-            "cached": True,
-            "generated_at": entry.get("generated_at", ""),
-        }
-
-    prompt = build_analysis_prompt(symbol)
-
-    try:
-        loop = asyncio.get_event_loop()
-        response = await loop.run_in_executor(
-            None,
-            lambda: _anthropic_client.messages.create(
-                model="claude-opus-4-7",
-                max_tokens=2000,
-                messages=[{"role": "user", "content": prompt}],
-                timeout=60.0,
-            ),
+async def get_cached_analysis(symbol: str):
+    """Return cached AI analysis — no Claude call. Use POST /analyze to generate."""
+    cache_file = _ANALYSIS_CACHE_DIR / f"{symbol}.json"
+    if not cache_file.exists():
+        raise HTTPException(
+            404,
+            detail={"status": "no_cache", "hint": "POST /api/stock/{symbol}/analyze to generate"}
         )
-        raw_text = response.content[0].text.strip()
-        parsed = parse_analysis_response(raw_text)
-    except Exception as e:
-        logging.error(f"[analysis] Claude API error: {e}")
-        raise HTTPException(502, f"AI analysis failed: {str(e)}")
-
-    generated_at = datetime.now().isoformat()
-    cache[cache_key] = {
-        "buffett": parsed.get("buffett", ""),
-        "hong": parsed.get("hong", ""),
-        "max": parsed.get("max", ""),
-        "generated_at": generated_at,
-    }
-    _save_analysis_cache(cache)
-
-    return {
-        "symbol": symbol,
-        "buffett": parsed.get("buffett", ""),
-        "hong": parsed.get("hong", ""),
-        "max": parsed.get("max", ""),
-        "cached": False,
-        "generated_at": generated_at,
-    }
+    return json.loads(cache_file.read_text(encoding="utf-8"))
 
 
 # ---------------------------------------------------------------------------
