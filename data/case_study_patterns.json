@@ -3,7 +3,13 @@
     "tag": "RETAIL_DEFENSIVE_MOAT",
     "source": "docs/niwes/06-case-cpall.md",
     "rules": {
-      "sector_keywords": ["retail", "commerce", "consumer", "food", "ค้าปลีก"],
+      "sector_keywords": [
+        "retail",
+        "commerce",
+        "consumer",
+        "food",
+        "ค้าปลีก"
+      ],
       "dividend_streak_min": 5,
       "pe_max": 15,
       "dividend_yield_min": 5,
@@ -15,7 +21,11 @@
     "tag": "BANK_VALUE_PBV1",
     "source": "docs/niwes/07-case-tcap.md",
     "rules": {
-      "sector_keywords": ["financial", "bank", "ธนาคาร"],
+      "sector_keywords": [
+        "financial",
+        "bank",
+        "ธนาคาร"
+      ],
       "pbv_max": 1.0,
       "pe_max": 9,
       "dividend_yield_min": 5,
@@ -39,21 +49,77 @@
     "source": "docs/niwes/10-case-fpt.md",
     "rules": {
       "country": "VN",
-      "sector_keywords": ["technology", "it", "communications"],
+      "sector_keywords": [
+        "technology",
+        "it",
+        "communications"
+      ],
       "market_cap_min": 50000000000,
-      "roe_3yr_avg_min": 0.10,
+      "roe_3yr_avg_min": 0.1,
       "dividend_yield_min": 3
     },
-    "narrative": "Vietnam tech scale 50B+ ROE 10%+ (แบบ FPT)"
+    "narrative": "Vietnam tech scale 50B+ ROE 10%+ (แบบ FPT)",
+    "disabled": true,
+    "disabled_reason": "data_adapter ยังไม่รองรับ VN data — enable หลังเพิ่ม VN data source"
   },
   "ENERGY_CYCLICAL_EXIT": {
     "tag": "ENERGY_CYCLICAL_EXIT",
     "source": "docs/niwes/09-case-or.md",
     "rules": {
-      "sector_keywords": ["energy", "petroleum", "oil"],
+      "sector_keywords": [
+        "energy",
+        "petroleum",
+        "oil"
+      ],
       "structural_disruption": true
     },
     "anti_rules": true,
     "narrative": "Energy/petroleum กำลังถูก disrupt (EV) — ทบทวน thesis (แบบ OR)"
+  },
+  "UTILITY_DEFENSIVE": {
+    "tag": "UTILITY_DEFENSIVE",
+    "source": "docs/niwes/03-philosophy.md",
+    "rules": {
+      "sector_keywords": [
+        "utilit",
+        "power",
+        "infrastructure",
+        "energy"
+      ],
+      "market_cap_min": 30000000000,
+      "dividend_streak_min": 10,
+      "dividend_yield_min": 4
+    },
+    "narrative": "Utility/infra defensive — regulated revenue + streak ยาว (แบบ GULF/RATCH/EGCO)"
+  },
+  "HOSPITAL_AGING": {
+    "tag": "HOSPITAL_AGING",
+    "source": "docs/niwes/03-philosophy.md",
+    "rules": {
+      "sector_keywords": [
+        "health",
+        "hospital",
+        "medical"
+      ],
+      "market_cap_min": 10000000000,
+      "roe_3yr_avg_min": 0.1,
+      "dividend_streak_min": 5
+    },
+    "narrative": "Hospital — aging demographics ผลดี long-term (แบบ BDMS/BH)"
+  },
+  "F&B_CONSUMER_BRAND": {
+    "tag": "F&B_CONSUMER_BRAND",
+    "source": "docs/niwes/03-philosophy.md",
+    "rules": {
+      "sector_keywords": [
+        "food",
+        "beverage",
+        "agro-industry"
+      ],
+      "market_cap_min": 10000000000,
+      "dividend_streak_min": 5,
+      "dividend_yield_min": 3
+    },
+    "narrative": "F&B brand — consumer staples, pricing power (แบบ CBG/OSP/TU/MINT)"
   }
 }

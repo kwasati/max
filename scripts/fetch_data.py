@@ -6,6 +6,7 @@ Supplement: yfinance always used for realtime price, 52w range, forward PE, etc.
 """
 
 import json
+import logging
 import math
 import sys
 import time
@@ -14,6 +15,8 @@ from pathlib import Path
 
 import yfinance as yf
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 # Ensure project root is in sys.path for `from scripts.xxx` imports
 _project_root = str(Path(__file__).resolve().parent.parent)
@@ -468,6 +471,30 @@ def fetch_multi_year(symbol: str) -> dict:
     return _fetch_yfinance_legacy(symbol)
 
 
+def fetch_multi_year_safe(symbol: str) -> dict:
+    """Wrap fetch_multi_year with try/except for delisted/invalid symbols.
+
+    Returns {'symbol', 'delisted': True, 'error': str} on failure.
+    Also converts error-dict results (e.g. "near-empty info") into delisted
+    shape so callers have a single check.
+    Callers must check .get('delisted') before processing.
+    """
+    try:
+        result = fetch_multi_year(symbol)
+    except Exception as e:
+        logger.warning(f"fetch failed for {symbol}: {e}")
+        return {"symbol": symbol, "delisted": True, "error": str(e)}
+
+    # Adapter returns error-dict instead of raising when data is unavailable
+    # (e.g. symbol not found, near-empty info). Normalize to delisted shape.
+    if isinstance(result, dict) and "error" in result and not result.get("price"):
+        err = result.get("error", "unknown")
+        logger.warning(f"fetch returned error for {symbol}: {err}")
+        return {"symbol": symbol, "delisted": True, "error": str(err)}
+
+    return result
+
+
 def main():
     # Read from user_data.json (new format)
     if USER_DATA.exists():
@@ -483,7 +510,14 @@ def main():
     for i, sym in enumerate(symbols):
         try:
             print(f"  [{i+1}/{len(symbols)}] {sym}", end=" ")
-            data = fetch_multi_year(sym)
+            data = fetch_multi_year_safe(sym)
+
+            if data.get("delisted"):
+                logger.info(f"skip delisted {sym}: {data.get('error', 'unknown')}")
+                print(f"DELISTED/ERROR: {data.get('error', 'unknown')}")
+                results.append(data)
+                continue
+
             results.append(data)
 
             if "error" in data:
