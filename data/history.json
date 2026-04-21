@@ -1,0 +1,334 @@
+{
+  "scans": [
+    {
+      "num": 1,
+      "date": "2026-04-19T14:58:43",
+      "counts": {
+        "scanned": 933,
+        "passed": 21,
+        "new": 6,
+        "filtered": 912
+      },
+      "summary": "KLINIQ, SAUCE, CHG เด่น · +6 ใหม่",
+      "report": "scan_2026-04-19.md",
+      "top_candidates": [],
+      "watchlist_status": [],
+      "entry_thesis": {},
+      "dividend_paid_since_entry": {},
+      "price_snapshot": {},
+      "scoring_version": "niwes-dividend-first-v1-legacy"
+    },
+    {
+      "num": 2,
+      "date": "2026-04-21T15:41:19",
+      "counts": {
+        "scanned": 35,
+        "passed": 11,
+        "review": 0,
+        "new": 0,
+        "filtered": 24
+      },
+      "summary": "BBL.BK, QH.BK, TCAP.BK · +0 ใหม่",
+      "report": "scan_2026-04-21.md",
+      "scoring_version": "niwes-dividend-first-v1",
+      "top_candidates": [
+        {
+          "symbol": "BBL.BK",
+          "score": 64,
+          "yield": null,
+          "pe": 6.825726,
+          "pbv": 0.5471205,
+          "tags": [
+            "NIWES_5555",
+            "QUALITY_DIVIDEND",
+            "DEEP_VALUE"
+          ]
+        },
+        {
+          "symbol": "QH.BK",
+          "score": 64,
+          "yield": null,
+          "pe": 8.8125,
+          "pbv": 0.49946865,
+          "tags": [
+            "NIWES_5555",
+            "HIDDEN_VALUE",
+            "QUALITY_DIVIDEND"
+          ]
+        },
+        {
+          "symbol": "TCAP.BK",
+          "score": 61,
+          "yield": null,
+          "pe": 7.537517,
+          "pbv": 0.7195697,
+          "tags": [
+            "NIWES_5555",
+            "HIDDEN_VALUE",
+            "QUALITY_DIVIDEND",
+            "DEEP_VALUE"
+          ]
+        },
+        {
+          "symbol": "KTB.BK",
+          "score": 59,
+          "yield": null,
+          "pe": 9.057971,
+          "pbv": 0.9408683,
+          "tags": [
+            "NIWES_5555",
+            "QUALITY_DIVIDEND"
+          ]
+        },
+        {
+          "symbol": "KBANK.BK",
+          "score": 56,
+          "yield": null,
+          "pe": 9.156977,
+          "pbv": 0.7705511,
+          "tags": [
+            "NIWES_5555",
+            "QUALITY_DIVIDEND"
+          ]
+        },
+        {
+          "symbol": "PTT.BK",
+          "score": 53,
+          "yield": null,
+          "pe": 11.031746,
+          "pbv": 0.8730278,
+          "tags": [
+            "NIWES_5555",
+            "QUALITY_DIVIDEND"
+          ]
+        },
+        {
+          "symbol": "RATCH.BK",
+          "score": 45,
+          "yield": null,
+          "pe": 10.227273,
+          "pbv": 0.6807709,
+          "tags": [
+            "NIWES_5555",
+            "QUALITY_DIVIDEND"
+          ]
+        },
+        {
+          "symbol": "KKP.BK",
+          "score": 41,
+          "yield": null,
+          "pe": 10.983263,
+          "pbv": 0.9870648,
+          "tags": [
+            "NIWES_5555",
+            "QUALITY_DIVIDEND",
+            "OVERPRICED"
+          ]
+        },
+        {
+          "symbol": "LH.BK",
+          "score": 38,
+          "yield": null,
+          "pe": 12.129032,
+          "pbv": 0.94591194,
+          "tags": [
+            "NIWES_5555"
+          ]
+        },
+        {
+          "symbol": "EGCO.BK",
+          "score": 36,
+          "yield": null,
+          "pe": 12.249444,
+          "pbv": 0.5803157,
+          "tags": [
+            "NIWES_5555"
+          ]
+        },
+        {
+          "symbol": "OR.BK",
+          "score": 36,
+          "yield": null,
+          "pe": 12.765958,
+          "pbv": 1.2658229,
+          "tags": [
+            "NIWES_5555"
+          ]
+        }
+      ],
+      "watchlist_status": [],
+      "entry_thesis": {
+        "BBL.BK": {
+          "sector": "Banking",
+          "pe": 6.825726,
+          "pbv": 0.5471205,
+          "yield": null,
+          "streak": 22,
+          "tags": [
+            "NIWES_5555",
+            "QUALITY_DIVIDEND",
+            "DEEP_VALUE"
+          ]
+        },
+        "QH.BK": {
+          "sector": "Property Development",
+          "pe": 8.8125,
+          "pbv": 0.49946865,
+          "yield": null,
+          "streak": 23,
+          "tags": [
+            "NIWES_5555",
+            "HIDDEN_VALUE",
+            "QUALITY_DIVIDEND"
+          ]
+        },
+        "TCAP.BK": {
+          "sector": "Banking",
+          "pe": 7.537517,
+          "pbv": 0.7195697,
+          "yield": null,
+          "streak": 23,
+          "tags": [
+            "NIWES_5555",
+            "HIDDEN_VALUE",
+            "QUALITY_DIVIDEND",
+            "DEEP_VALUE"
+          ]
+        },
+        "KTB.BK": {
+          "sector": "Banking",
+          "pe": 9.057971,
+          "pbv": 0.9408683,
+          "yield": null,
+          "streak": 23,
+          "tags": [
+            "NIWES_5555",
+            "QUALITY_DIVIDEND"
+          ]
+        },
+        "KBANK.BK": {
+          "sector": "Banking",
+          "pe": 9.156977,
+          "pbv": 0.7705511,
+          "yield": null,
+          "streak": 21,
+          "tags": [
+            "NIWES_5555",
+            "QUALITY_DIVIDEND"
+          ]
+        },
+        "PTT.BK": {
+          "sector": "Energy & Utilities",
+          "pe": 11.031746,
+          "pbv": 0.8730278,
+          "yield": null,
+          "streak": 24,
+          "tags": [
+            "NIWES_5555",
+            "QUALITY_DIVIDEND"
+          ]
+        },
+        "RATCH.BK": {
+          "sector": "Energy & Utilities",
+          "pe": 10.227273,
+          "pbv": 0.6807709,
+          "yield": null,
+          "streak": 24,
+          "tags": [
+            "NIWES_5555",
+            "QUALITY_DIVIDEND"
+          ]
+        },
+        "KKP.BK": {
+          "sector": "Banking",
+          "pe": 10.983263,
+          "pbv": 0.9870648,
+          "yield": null,
+          "streak": 25,
+          "tags": [
+            "NIWES_5555",
+            "QUALITY_DIVIDEND",
+            "OVERPRICED"
+          ]
+        },
+        "LH.BK": {
+          "sector": "Property Development",
+          "pe": 12.129032,
+          "pbv": 0.94591194,
+          "yield": null,
+          "streak": 24,
+          "tags": [
+            "NIWES_5555"
+          ]
+        },
+        "EGCO.BK": {
+          "sector": "Energy & Utilities",
+          "pe": 12.249444,
+          "pbv": 0.5803157,
+          "yield": null,
+          "streak": 26,
+          "tags": [
+            "NIWES_5555"
+          ]
+        },
+        "OR.BK": {
+          "sector": "Energy & Utilities",
+          "pe": 12.765958,
+          "pbv": 1.2658229,
+          "yield": null,
+          "streak": 5,
+          "tags": [
+            "NIWES_5555"
+          ]
+        }
+      },
+      "dividend_paid_since_entry": {},
+      "price_snapshot": {
+        "BBL.BK": {
+          "price": null,
+          "date": "2026-04-20"
+        },
+        "QH.BK": {
+          "price": null,
+          "date": "2026-04-20"
+        },
+        "TCAP.BK": {
+          "price": null,
+          "date": "2026-04-20"
+        },
+        "KTB.BK": {
+          "price": null,
+          "date": "2026-04-20"
+        },
+        "KBANK.BK": {
+          "price": null,
+          "date": "2026-04-20"
+        },
+        "PTT.BK": {
+          "price": null,
+          "date": "2026-04-20"
+        },
+        "RATCH.BK": {
+          "price": null,
+          "date": "2026-04-20"
+        },
+        "KKP.BK": {
+          "price": null,
+          "date": "2026-04-20"
+        },
+        "LH.BK": {
+          "price": null,
+          "date": "2026-04-20"
+        },
+        "EGCO.BK": {
+          "price": null,
+          "date": "2026-04-20"
+        },
+        "OR.BK": {
+          "price": null,
+          "date": "2026-04-20"
+        }
+      }
+    }
+  ]
+}
