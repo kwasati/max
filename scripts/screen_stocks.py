@@ -51,68 +51,81 @@ HARD_FILTERS = load_filters()
 
 
 def hard_filter(data: dict) -> tuple:
-    """Niwes 5-5-5-5 hard filter.
+    """Niwes 5-5-5-5 hard filter — 3-tier (PASS/REVIEW/FAIL).
 
-    1. dividend_yield ≥ 5%
-    2. dividend_streak ≥ 5 years
-    3. EPS positive 5/5 latest years (no loss using normalized earnings)
-    4. P/E ≤ 15
-    5. P/BV ≤ 1.5
-    6. market_cap ≥ 5B THB
+    1. dividend_yield ≥ 5% (hard FAIL)
+    2. dividend_streak: ≥5 PASS / 3-4 REVIEW / <3 FAIL
+    3. EPS: 5/5 positive PASS / 4/5 & last 3 positive REVIEW / else FAIL
+    4. P/E ≤ 15 (hard FAIL)
+    5. P/BV ≤ 1.5 (hard FAIL)
+    6. market_cap ≥ 5B THB (hard FAIL, early return)
+
+    Returns (status, reasons, near_miss) where status ∈ {'PASS','REVIEW','FAIL'}.
+    Rule: any FAIL → 'FAIL'; no FAIL + any REVIEW → 'REVIEW'; else 'PASS'.
     """
-    reasons = []
-    near_miss = []
-    agg = data.get("aggregates", {})
+    fail_reasons: list[str] = []
+    review_reasons: list[str] = []
+    near_miss: list[str] = []
+    agg = data.get("aggregates") or {}
     info_mcap = data.get("market_cap") or 0
 
-    # 6. Market cap
+    # 6. Market cap — hard gate with early return (unchanged)
     if info_mcap < HARD_FILTERS["min_market_cap"]:
-        reasons.append(f"market cap {info_mcap/1e9:.1f}B < {HARD_FILTERS['min_market_cap']/1e9:.0f}B")
-        return False, reasons, near_miss
+        fail_reasons.append(f"market cap {info_mcap/1e9:.1f}B < {HARD_FILTERS['min_market_cap']/1e9:.0f}B")
+        return "FAIL", fail_reasons, near_miss
 
-    # 1. Dividend yield ≥5%
-    dy = data.get("dividend_yield")
-    if dy is None:
-        reasons.append("ไม่มีข้อมูลปันผล")
-    elif dy < HARD_FILTERS["min_dividend_yield"]:
-        reasons.append(f"dividend yield {dy:.1f}% < {HARD_FILTERS['min_dividend_yield']:.0f}%")
-
-    # 2. Dividend streak ≥5y
+    # 2. Dividend streak — 3-tier
     streak = agg.get("dividend_streak", 0)
-    if streak < HARD_FILTERS["min_dividend_streak"]:
-        reasons.append(f"dividend streak {streak}yr < {HARD_FILTERS['min_dividend_streak']}yr")
+    if streak < 3:
+        fail_reasons.append(f"dividend streak {streak}yr < 3 (FAIL)")
+    elif streak < HARD_FILTERS["min_dividend_streak"]:
+        review_reasons.append(f"dividend streak {streak}yr (3-4 = REVIEW)")
 
-    # 3. No loss 5 years (using normalized earnings)
+    # 3. EPS — 3-tier
     norm_eps = compute_normalized_earnings(data)
     if norm_eps:
         sorted_years = sorted(norm_eps.keys())[-5:]
-        recent_eps = [norm_eps[y] for y in sorted_years]
-        positive_years = sum(1 for e in recent_eps if e is not None and e > 0)
-        total_years = len(recent_eps)
-        if total_years >= 5:
-            if positive_years < HARD_FILTERS["min_eps_positive_years"]:
-                reasons.append(f"EPS positive {positive_years}/{total_years}yr < 5/5")
+        eps_recent = [norm_eps[y] for y in sorted_years]
+        pos = sum(1 for e in eps_recent if e is not None and e > 0)
+        total = len(eps_recent)
+        if total < 5:
+            fail_reasons.append(f"EPS history {total}yr (need 5)")
+        elif pos == HARD_FILTERS["min_eps_positive_years"]:
+            pass  # PASS
+        elif pos == 4 and all(e is not None and e > 0 for e in eps_recent[-3:]):
+            review_reasons.append("EPS 4/5 & last 3 positive (COVID exception = REVIEW)")
         else:
-            # Not enough history — fail gracefully
-            reasons.append(f"EPS history only {total_years}yr (need 5)")
+            fail_reasons.append(f"EPS positive {pos}/5 (FAIL)")
     else:
-        reasons.append("ไม่มีข้อมูล EPS")
+        fail_reasons.append("ไม่มีข้อมูล EPS")
 
-    # 4. P/E ≤15
+    # 1. Dividend yield — hard
+    dy = data.get("dividend_yield")
+    if dy is None:
+        fail_reasons.append("ไม่มีข้อมูลปันผล")
+    elif dy < HARD_FILTERS["min_dividend_yield"]:
+        fail_reasons.append(f"dividend yield {dy:.1f}% < {HARD_FILTERS['min_dividend_yield']:.0f}%")
+
+    # 4. P/E — hard
     pe = data.get("pe_ratio")
     if pe is None or pe <= 0:
-        reasons.append("ไม่มี P/E ที่ใช้ได้")
+        fail_reasons.append("ไม่มี P/E ที่ใช้ได้")
     elif pe > HARD_FILTERS["max_pe"]:
-        reasons.append(f"P/E {pe:.1f} > {HARD_FILTERS['max_pe']:.0f}")
+        fail_reasons.append(f"P/E {pe:.1f} > {HARD_FILTERS['max_pe']:.0f}")
 
-    # 5. P/BV ≤1.5
+    # 5. P/BV — hard
     pbv = data.get("pb_ratio")
     if pbv is None or pbv <= 0:
-        reasons.append("ไม่มี P/BV ที่ใช้ได้")
+        fail_reasons.append("ไม่มี P/BV ที่ใช้ได้")
     elif pbv > HARD_FILTERS["max_pbv"]:
-        reasons.append(f"P/BV {pbv:.2f} > {HARD_FILTERS['max_pbv']:.1f}")
+        fail_reasons.append(f"P/BV {pbv:.2f} > {HARD_FILTERS['max_pbv']:.1f}")
 
-    return len(reasons) == 0, reasons, near_miss
+    # Aggregate 3-tier result
+    if fail_reasons:
+        return "FAIL", fail_reasons + review_reasons, near_miss
+    if review_reasons:
+        return "REVIEW", review_reasons, near_miss
+    return "PASS", [], near_miss
 
 
 def dividend_score(data: dict) -> tuple:
