@@ -3508,3 +3508,23 @@ details.section-explain[open] > summary::before { content: 'ซ่อนคำ�
   from { transform: translateY(100%); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+/* Plan 04 Phase 1: case study + moat tag classes */
+.tag-case-study {
+  background: #1d5b4f;
+  color: #f4f0e6;
+  padding: 1px 6px;
+  font-size: 0.75em;
+  border-radius: 2px;
+  display: inline-block;
+  margin: 1px 2px;
+}
+.tag-moat {
+  background: #a02143;
+  color: #f4f0e6;
+  padding: 1px 6px;
+  font-size: 0.75em;
+  border-radius: 2px;
+  display: inline-block;
+  margin: 1px 2px;
+}

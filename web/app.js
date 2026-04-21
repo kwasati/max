@@ -497,16 +497,19 @@ function starCellHTML(sym, on) {
 }
 
 // ==== Tag helpers (P4) ====
+const CASE_STUDY_TAGS = new Set(['RETAIL_DEFENSIVE_MOAT','BANK_VALUE_PBV1','HOLDING_CO_HIDDEN','VIETNAM_GROWTH_EXPOSURE','ENERGY_CYCLICAL_EXIT','UTILITY_DEFENSIVE','HOSPITAL_AGING','F&B_CONSUMER_BRAND']);
+const MOAT_TAGS = new Set(['BRAND_MOAT','STRUCTURAL_MOAT','GOVT_LOCKIN']);
+
 function rowTagClass(sig) {
-  const s = String(sig).toLowerCase();
-  if (s.includes('compounder')) return 'compounder';
-  if (s.includes('dividend_king') || s === 'king') return 'king';
-  if (s.includes('cash_cow') || s === 'cow') return 'cow';
-  if (s.includes('contra')) return 'contra';
-  if (s.includes('trap') || s.includes('yield_trap')) return 'trap';
-  if (s.includes('turnaround')) return 'turnaround';
-  if (s.includes('warning') || s.includes('data_warning')) return 'warning';
-  return '';
+  if (sig === 'NIWES_5555') return 'tag-king';
+  if (sig === 'HIDDEN_VALUE') return 'tag-hidden';
+  if (sig === 'DEEP_VALUE') return 'tag-value';
+  if (sig === 'QUALITY_DIVIDEND') return 'tag-compounder';
+  if (sig === 'DIVIDEND_TRAP') return 'tag-trap';
+  if (sig === 'DATA_WARNING') return 'tag-warning';
+  if (CASE_STUDY_TAGS.has(sig)) return 'tag-case-study';
+  if (MOAT_TAGS.has(sig)) return 'tag-moat';
+  return 'tag-default';
 }
 
 // ==== Row formatters (P4) ====
@@ -553,9 +556,9 @@ function stockRowHTML(c) {
   const price = c.price ?? c.metrics?.current_price ?? c.close ?? null;
   const signals = c.signals || [];
 
-  const tagsHTML = signals.slice(0, 3).map(s =>
-    `<span class="tag ${rowTagClass(s)}">${tagLabel(s)}</span>`
-  ).join('');
+  const tagsHTML = (c.signals || []).map(s =>
+    `<span class="${rowTagClass(s)}">${escapeHtml(s)}</span>`
+  ).join(' ');
 
   const scoreVal = Math.max(0, Math.min(100, Number(score) || 0));
   const isLow = scoreVal < 50;
@@ -829,16 +832,48 @@ async function loadDetail(symbol) {
   }
 }
 
+// ===== SCORE BREAKDOWN (Plan 04 Phase 1) =====
+function renderScoreBreakdown(canvasId, breakdown) {
+  if (!breakdown) return null;
+  const el = document.getElementById(canvasId);
+  if (!el) return null;
+  return new Chart(el.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: ['Score'],
+      datasets: [
+        { label: 'Dividend (50)', data: [breakdown.dividend || 0], backgroundColor: '#1d5b4f' },
+        { label: 'Valuation (25)', data: [breakdown.valuation || 0], backgroundColor: '#1f3f76' },
+        { label: 'Cash Flow (15)', data: [breakdown.cash_flow || 0], backgroundColor: '#b45309' },
+        { label: 'Hidden (10)', data: [breakdown.hidden_value || 0], backgroundColor: '#6b7280' },
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { x: { stacked: true, max: 100 }, y: { stacked: true, display: false } },
+      plugins: { legend: { position: 'right', labels: { font: { size: 10 } } } },
+    },
+  });
+}
+
 // ===== CHART RENDERING (P5 Editorial Palette) =====
 function renderDetailCharts(stockData) {
   const yearly = stockData.yearly_metrics || [];
-  if (yearly.length < 2 && Object.keys(stockData.dividend_history || {}).length < 2) return;
+  const hasBasic = yearly.length >= 2 || Object.keys(stockData.dividend_history || {}).length >= 2;
 
   // Destroy existing charts
-  ['divChart', 'roeChart', 'revenueChart'].forEach(id => {
+  ['divChart', 'roeChart', 'revenueChart', 'chart-score-breakdown'].forEach(id => {
     const existing = Chart.getChart(id);
     if (existing) existing.destroy();
   });
+
+  // Score breakdown can render independently of yearly history
+  const bd = stockData.breakdown || (stockData.candidate || {}).breakdown;
+  if (bd) renderScoreBreakdown('chart-score-breakdown', bd);
+
+  if (!hasBasic) return;
 
   const gridColor = 'rgba(30, 29, 26, 0.06)';
   const FOREST = '#1d5b4f';
@@ -1303,6 +1338,7 @@ function renderDetail(d) {
           </div>
           ${factRowsHTML(d)}
         </div>
+        <div class="mini-chart"><div class="mini-head"><span>Score breakdown</span><span>/100</span></div><canvas id="chart-score-breakdown" height="60"></canvas></div>
         <div class="mini-chart"><div class="mini-head"><span>Dividend per share</span><span>฿/share</span></div><canvas id="divChart"></canvas></div>
         <div class="mini-chart"><div class="mini-head"><span>ROE history</span><span>%</span></div><canvas id="roeChart"></canvas></div>
         <div class="mini-chart"><div class="mini-head"><span>Revenue trend</span><span>M฿</span></div><canvas id="revenueChart"></canvas></div>
