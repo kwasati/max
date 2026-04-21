@@ -47,6 +47,7 @@
       <button class="tab" data-tab="passed" data-type="stock">ผ่านเกณฑ์</button>
       <button class="tab" data-tab="watchlist" data-type="stock">ติดตาม</button>
       <button class="tab" data-tab="filtered" data-type="stock">หลุดรอบ</button>
+      <button class="tab" data-tab="review" data-type="page">รีวิว</button>
       <button class="tab" data-tab="history" data-type="page">ประวัติ</button>
       <button class="tab" data-tab="requests" data-type="page">คำขอ</button>
       <button class="tab" data-tab="dca" data-type="page">จำลอง DCA</button>
@@ -147,6 +148,35 @@
   </div>
 
 </div>
+
+<!-- ===== REVIEW PAGE ===== -->
+<section class="page-panel" id="page-review">
+  <div class="history-container">
+    <div class="history-head-bar">
+      <span class="history-meta mono">№REV</span>
+      <h3 class="serif history-title">รีวิว (3-tier REVIEW bucket)</h3>
+      <span class="scan-count-chip review-count mono">— REVIEW</span>
+    </div>
+    <span class="section-num mono history-section-num">REVIEW CANDIDATES</span>
+    <div class="watch-wrap">
+      <table class="watch">
+        <thead>
+          <tr>
+            <th>Stock</th>
+            <th>Sector</th>
+            <th>Review Reasons</th>
+            <th>Yield</th>
+            <th>P/E</th>
+            <th>Streak</th>
+          </tr>
+        </thead>
+        <tbody id="review-list">
+          <tr><td colspan="6"><div class="loading-state">—</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
 
 <!-- ===== HISTORY PAGE ===== -->
 <section class="page-panel" id="page-history">

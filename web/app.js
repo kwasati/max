@@ -254,6 +254,7 @@ function activateTab(tabName) {
     else if (tabName === 'requests') loadRequests();
     else if (tabName === 'dca') populateDCASymbols();
     else if (tabName === 'settings') loadSettings();
+    else if (tabName === 'review') loadReviewTab();
   }
 }
 
@@ -634,6 +635,38 @@ function filteredRowHTML(s) {
     <td class="num">—</td>
     <td class="num">—</td>
   </tr>`;
+}
+
+function reviewRowHTML(r) {
+  const m = r.basic_metrics || {};
+  const dy = m.dy != null ? Number(m.dy).toFixed(1) + '%' : '-';
+  const pe = m.pe != null ? Number(m.pe).toFixed(1) : '-';
+  const streak = m.streak != null ? m.streak : '-';
+  const reasons = (r.review_reasons || []).map(escapeHtml).join('; ');
+  return `<tr data-sym="${escapeHtml(r.symbol)}">
+    <td><strong>${escapeHtml(r.symbol)}</strong> ${escapeHtml(r.name || '')}</td>
+    <td>${escapeHtml(r.sector || '-')}</td>
+    <td class="review-reasons">${reasons} <span class="badge-review">REVIEW</span></td>
+    <td>${dy}</td>
+    <td>${pe}</td>
+    <td>${streak}</td>
+  </tr>`;
+}
+
+async function loadReviewTab() {
+  const tbody = document.getElementById('review-list');
+  if (!tbody) return;
+  try {
+    const res = await fetch(`${API}/api/screener`);
+    const data = await res.json();
+    const reviews = data.review_candidates || [];
+    tbody.innerHTML = reviews.map(reviewRowHTML).join('') ||
+      '<tr><td colspan="6"><em>ไม่มี review candidates</em></td></tr>';
+    const countEl = document.querySelector('.review-count');
+    if (countEl) countEl.textContent = `${reviews.length} REVIEW`;
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="6"><em>โหลดไม่สำเร็จ</em></td></tr>';
+  }
 }
 
 function bindRowClicks() {
