@@ -49,6 +49,7 @@ SCRIPTS_DIR = PROJECT_DIR / "scripts"
 WEB_DIR = PROJECT_DIR / "web"
 _ANALYSIS_CACHE_DIR = PROJECT_DIR / "data" / "analysis_cache"
 _ANALYSIS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+_CACHE_TTL_DAYS = 7  # plan 05 Phase 3 — Claude cache TTL
 
 # ---------------------------------------------------------------------------
 # Env / Auth
@@ -1734,14 +1735,29 @@ def parse_analysis_response(raw: str) -> dict:
 
 @app.get("/api/stock/{symbol}/analysis")
 async def get_cached_analysis(symbol: str):
-    """Return cached AI analysis — no Claude call. Use POST /analyze to generate."""
+    """Cache-only — no Claude call. Returns 404 with stale_cache if >7d old."""
     cache_file = _ANALYSIS_CACHE_DIR / f"{symbol}.json"
     if not cache_file.exists():
         raise HTTPException(
             404,
             detail={"status": "no_cache", "hint": "POST /api/stock/{symbol}/analyze to generate"}
         )
-    return json.loads(cache_file.read_text(encoding="utf-8"))
+    cached = json.loads(cache_file.read_text(encoding="utf-8"))
+    try:
+        age = datetime.now() - datetime.fromisoformat(cached.get("analyzed_at", ""))
+    except (ValueError, TypeError):
+        age = timedelta(days=999)  # treat as stale if parse fails
+    if age > timedelta(days=_CACHE_TTL_DAYS):
+        raise HTTPException(
+            404,
+            detail={
+                "status": "stale_cache",
+                "hint": f"cache older than {_CACHE_TTL_DAYS}d — POST /api/stock/{{symbol}}/analyze to refresh",
+                "cached_at": cached.get("analyzed_at"),
+                "age_days": age.days,
+            },
+        )
+    return cached
 
 
 @app.post("/api/stock/{symbol}/analyze")
