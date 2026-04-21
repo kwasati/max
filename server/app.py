@@ -1744,6 +1744,42 @@ async def get_cached_analysis(symbol: str):
     return json.loads(cache_file.read_text(encoding="utf-8"))
 
 
+@app.post("/api/stock/{symbol}/analyze")
+async def trigger_analysis(symbol: str):
+    """Trigger Claude analysis on-demand, cache result, return payload."""
+    if _anthropic_client is None:
+        raise HTTPException(503, "anthropic package not installed or MAX_ANTHROPIC_API_KEY missing")
+    try:
+        prompt = build_analysis_prompt(symbol)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, f"build_analysis_prompt failed: {e}")
+    loop = asyncio.get_event_loop()
+    response = await loop.run_in_executor(
+        None,
+        lambda: _anthropic_client.messages.create(
+            model="claude-opus-4-7",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}],
+            timeout=60.0,
+        ),
+    )
+    raw = response.content[0].text.strip()
+    parsed = parse_analysis_response(raw)
+    payload = {
+        "analyzed_at": datetime.now().isoformat(timespec="seconds"),
+        "model": "claude-opus-4-7",
+        "buffett": parsed.get("buffett", ""),
+        "hong": parsed.get("hong", ""),
+        "max": parsed.get("max", ""),
+    }
+    (_ANALYSIS_CACHE_DIR / f"{symbol}.json").write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    return payload
+
+
 # ---------------------------------------------------------------------------
 # Exit Check API (Plan 08 — Niwes exit strategy)
 # ---------------------------------------------------------------------------
