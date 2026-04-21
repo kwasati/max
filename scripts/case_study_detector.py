@@ -36,10 +36,13 @@ def detect_case_study_tags(stock: dict, patterns: dict) -> list[str]:
     pbv = stock.get("pb_ratio")
     mcap = stock.get("market_cap") or 0
     sector = stock.get("sector", "")
+    symbol = stock.get("symbol", "")
     for p in patterns.values():
         if p.get("anti_rules") or p.get("disabled"):
             continue
         r = p.get("rules", {})
+        if "exclude_symbols" in r and symbol in r["exclude_symbols"]:
+            continue
         if "sector_keywords" in r and not _matches_sector(sector, r["sector_keywords"]):
             continue
         if "dividend_streak_min" in r and streak < r["dividend_streak_min"]:

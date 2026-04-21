@@ -87,11 +87,21 @@
         "ไฟฟ้า",
         "สาธารณูปโภค"
       ],
+      "exclude_symbols": [
+        "PTT.BK",
+        "PTTEP.BK",
+        "BCP.BK",
+        "TOP.BK",
+        "ESSO.BK",
+        "SPRC.BK",
+        "IRPC.BK",
+        "OR.BK"
+      ],
       "market_cap_min": 30000000000,
       "dividend_streak_min": 10,
       "dividend_yield_min": 4
     },
-    "narrative": "Utility/infra defensive — regulated revenue + streak ยาว (แบบ GULF/RATCH/EGCO)"
+    "narrative": "Utility/infra defensive — regulated revenue + streak ยาว (แบบ GULF/RATCH/EGCO); exclude petroleum/oil (SET จัดกลุ่มเดียวกันแต่ธุรกิจต่าง)"
   },
   "HOSPITAL_AGING": {
     "tag": "HOSPITAL_AGING",
