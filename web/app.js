@@ -1620,10 +1620,25 @@ async function triggerAnalysis(symbol) {
   const section = document.getElementById('analysis-section');
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> กำลังวิเคราะห์...'; }
   try {
-    let res = await fetch(API + '/api/stock/' + encodeURIComponent(symbol) + '/analysis');
+    let res = await fetch(`${API}/api/stock/${encodeURIComponent(symbol)}/analysis`);
     let data;
     if (res.status === 404) {
-      res = await fetch(API + '/api/stock/' + encodeURIComponent(symbol) + '/analyze', { method: 'POST' });
+      let err = {};
+      try { err = await res.json(); } catch {}
+      const d = err.detail || err;
+      if (d && d.status === 'stale_cache') {
+        const ok = confirm(`Cache อายุ ${d.age_days} วัน — วิเคราะห์ใหม่? (ใช้ API credit)`);
+        if (!ok) {
+          if (section) {
+            section.innerHTML = `<p class="muted">Cache อายุ ${d.age_days} วัน (${escapeHtml(d.cached_at || '-')}) — กด 'Refresh' เพื่อใช้ของใหม่</p><button id="analyze-btn" class="btn-primary">Refresh</button>`;
+            const refreshBtn = document.getElementById('analyze-btn');
+            if (refreshBtn) refreshBtn.addEventListener('click', () => triggerAnalysis(symbol));
+          }
+          return;
+        }
+      }
+      // no_cache OR stale_cache with user consent → POST to trigger
+      res = await fetch(`${API}/api/stock/${encodeURIComponent(symbol)}/analyze`, { method: 'POST' });
       if (!res.ok) throw new Error('analyze failed: ' + res.status);
       data = await res.json();
     } else if (res.ok) {
