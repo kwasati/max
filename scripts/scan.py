@@ -246,16 +246,6 @@ def build_exit_alerts_section(exit_alerts: list) -> str:
     return "\n\n".join(parts)
 
 
-def extract_summary(raw_text: str, top_candidates: list, new_in_batch: list) -> str:
-    """สรุป 1 บรรทัด: symbols เด่น 3 ตัวแรก + จำนวนใหม่"""
-    top_syms = [c["symbol"].replace(".BK", "") for c in top_candidates[:3]]
-    top_str = ", ".join(top_syms) if top_syms else "ไม่มีตัวเด่น"
-    new_count = len(new_in_batch)
-    if new_count > 0:
-        return f"{top_str} เด่น · +{new_count} ใหม่"
-    return f"{top_str} เด่น"
-
-
 def load_history() -> dict:
     if not HISTORY_FILE.exists():
         return {"scans": []}
@@ -321,26 +311,12 @@ def main():
     report_path.write_text(report_md, encoding="utf-8")
     print(f"report written: {report_path}")
 
-    # TODO(niwes-algo-02 task 6): wire build_v2_entry + append_scan_v2 (history_manager)
-    #
-    # summary = extract_summary(report_md, top_candidates, new_in_batch)
-    # entry = {
-    #     "num": scan_num,
-    #     "date": datetime.now().isoformat(timespec="seconds"),
-    #     "counts": {
-    #         "scanned": screener_data.get("total_scanned", 0),
-    #         "passed": screener_data.get("passed_filter", 0),
-    #         "new": len(new_in_batch),
-    #         "filtered": screener_data.get("filtered_out", 0),
-    #     },
-    #     "summary": summary,
-    #     "report": report_path.name,
-    # }
-    # history["scans"].append(entry)
-    # HISTORY_FILE.write_text(
-    #     json.dumps(history, ensure_ascii=False, indent=2), encoding="utf-8"
-    # )
-    # print(f"History updated -> {HISTORY_FILE} (scan #{scan_num})")
+    # Wire v2 history
+    from history_manager import build_v2_entry, append_scan_v2
+
+    history_entry = build_v2_entry(screener_data, scan_num, report_path.name)
+    append_scan_v2(history_entry, history)  # pass loaded history dict to avoid re-read
+    print(f"history entry appended: scan_num={scan_num}")
 
 
 if __name__ == "__main__":
