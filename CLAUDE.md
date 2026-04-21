@@ -3,7 +3,10 @@
 ## Architecture
 - **Agent:** Max Mahon — Thai stock analyst, Niwes Dividend-First style
 - **Stack:** Python + thaifin + yfinance (supplement) + Anthropic SDK (claude-opus-4-7)
-- **AI:** Weekly pipeline + discovery ใช้ SDK + prompt caching (ไม่ใช่ CLI subprocess อีกต่อไป) — เรียก `anthropic.Anthropic().messages.create()` ตรง, auth ผ่าน `MAX_ANTHROPIC_API_KEY`
+- **AI:** On-demand only — **scan pipeline = pure deterministic algo** (Niwes framework แกะเป็น Python rules: case study detectors + moat tags + 3-tier PASS/REVIEW/FAIL + exit baseline + sector spread). Claude SDK ใช้เฉพาะเมื่อ Karl กดขอ 'วิเคราะห์เพิ่มเติม' ใน UI ต่อหุ้น 1 ตัว (POST `/api/stock/{sym}/analyze`) — auth ผ่าน `MAX_ANTHROPIC_API_KEY`, cache TTL 7 วัน
+- **Scoring version:** `niwes-dividend-first-v2` (screener + history v2 schema)
+- **Reference files:** `data/case_study_patterns.json` (8 patterns: RETAIL_DEFENSIVE_MOAT/BANK_VALUE_PBV1/HOLDING_CO_HIDDEN/VIETNAM_GROWTH_EXPOSURE[disabled]/ENERGY_CYCLICAL_EXIT + UTILITY_DEFENSIVE/HOSPITAL_AGING/F&B_CONSUMER_BRAND), `data/exit_baselines.json`, `data/history.json` (v2 schema: top_candidates/watchlist_status/entry_thesis/dividend_paid_since_entry/price_snapshot), `user_data.json` (`transactions[]` portfolio tracking)
+- **Alerting:** Telegram high-severity exit alerts via `scripts/telegram_alert.py` (uses `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` from root `.env`)
 - **Server:** FastAPI on port 50089, Cloudflare Tunnel → max.intensivetrader.com
 - **Schedule:** APScheduler ใน server (cron เดียว, อาทิตย์ 09:00 เรียก scan)
 - **Philosophy:** Dr.Niwes Way: VI ฉบับ ดร.นิเวศน์ — Dividend-First + Hidden Value + 5-5-5-5
