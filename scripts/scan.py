@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -25,8 +26,14 @@ except Exception:
 load_dotenv(Path("C:/WORKSPACE/.env"))
 
 
+_SCREENER_DATE_PATTERN = re.compile(r"^screener_\d{4}-\d{2}-\d{2}\.json$")
+
+
 def get_latest_screener() -> Path:
-    files = sorted(DATA_DIR.glob("screener_*.json"), reverse=True)
+    files = sorted(
+        [f for f in DATA_DIR.glob("screener_*.json") if _SCREENER_DATE_PATTERN.match(f.name)],
+        reverse=True,
+    )
     if not files:
         print("No screener data found. Run screen_stocks.py first.")
         sys.exit(1)

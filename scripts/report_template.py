@@ -41,7 +41,7 @@ def _top_pick_md(c: dict) -> str:
     sig_lines = "\n".join(f"- `{s}` — {_TAG_NARRATIVES.get(s, '')}" for s in c.get("signals", []))
     m = c.get("metrics", {}) or {}
     a = c.get("aggregates", {}) or {}
-    yield_v = m.get("dy", 0) or 0
+    yield_v = m.get("dividend_yield", 0) or 0
     pe_v = m.get("pe", "-") if m.get("pe") is not None else "-"
     pbv_v = c.get("pb_ratio") or m.get("pb_ratio", "-")
     if pbv_v is None:
