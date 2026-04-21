@@ -1,5 +1,72 @@
 # Max Mahon Changelog
 
+## v5.0.0 — 2026-04-21 · Niwes Algo Framework + Data Source Refactor
+
+**Major refactor** — Max เปลี่ยนจาก Claude-in-loop analyst เป็น pure deterministic algo framework. Scan pipeline ไม่พึ่ง LLM ทุกรอบ (reproducible, ถูก, audit ได้). Claude เหลือแค่ on-demand เมื่อกดขอ 'วิเคราะห์เพิ่มเติม' ใน UI.
+
+### สมอง Niwes เป็น Python rules
+- **8 case study patterns** ใน `data/case_study_patterns.json` — CPALL (RETAIL_DEFENSIVE_MOAT), TCAP (BANK_VALUE_PBV1), QH (HOLDING_CO_HIDDEN), GULF/RATCH (UTILITY_DEFENSIVE), BDMS (HOSPITAL_AGING), CBG/TU (F&B_CONSUMER_BRAND) + OR (ENERGY_CYCLICAL_EXIT anti) + FPT (VIETNAM_GROWTH_EXPOSURE disabled)
+- **3 moat tags** — BRAND_MOAT / STRUCTURAL_MOAT / GOVT_LOCKIN (sector + margin + streak heuristics)
+- **Exclude petroleum** จาก utility/structural moat (PTT/PTTEP/BCP/TOP/ESSO/SPRC/IRPC/OR) — SET จัดกลุ่มเดียวกันแต่ธุรกิจต่าง
+
+### 3-tier Hard Filter (PASS/REVIEW/FAIL)
+- Dividend streak 3-tier — ≥5 ปี PASS / 3-4 REVIEW / <3 FAIL
+- EPS 3-tier — 5/5 PASS / 4/5 + last 3 positive REVIEW (COVID exception) / else FAIL
+- Yield/PE/PBV/Mcap ยัง hard — ไม่ผ่านคือ FAIL ทันที
+- REVIEW bucket = หุ้นก้ำกึ่งที่ Karl ต้องตัดสินใจเอง (UI tab 'รีวิว')
+
+### Exit baseline + Telegram alert
+- `data/exit_baselines.json` — save snapshot ตอนผ่าน NIWES_5555 ครั้งแรก (pe/pbv/dy baseline)
+- `detect_exit_signal()` — check FILTER_DEGRADATION / VALUATION_BUBBLE / THESIS_CHANGE_FLAG
+- Telegram alert — ส่งแจ้งเตือนถ้ามี high-severity trigger ใน watchlist (ผ่าน `scripts/telegram_alert.py`)
+
+### History v2 + portfolio tracking
+- history.json schema v2 — เพิ่ม `top_candidates[]` / `watchlist_status[]` / `entry_thesis{}` / `dividend_paid_since_entry{}` / `price_snapshot{}` ต่อ scan
+- `user_data.transactions[]` — BUY/SELL tracking
+- CRUD + P&L endpoints: POST/DELETE/GET `/api/portfolio/transactions`, GET `/api/portfolio/pnl` (compute cost basis + unrealized pnl)
+
+### Report Template (deterministic, no LLM)
+- `scripts/report_template.py` — markdown generator 7 sections (frontmatter / header / Top Picks / Sector Spread / Review / New / Exit Alerts / Watch Out / footer)
+- Sector Spread flag `⚠ over-concentrated` ถ้า single sector > 40%
+- Scoring version bumped: `niwes-dividend-first-v1` → `niwes-dividend-first-v2`
+
+### On-demand Claude (not scan pipeline)
+- `GET /api/stock/{sym}/analysis` — cache-only (TTL 7 วัน, 404 if no cache)
+- `POST /api/stock/{sym}/analyze` — trigger Claude + write cache (Karl กดขอใน UI)
+- UI: replace auto-load with button + stale_cache confirm dialog
+
+### UI extensions (web/)
+- **Score breakdown** stacked bar (4 segments: dividend 50/valuation 25/cashflow 15/hidden 10)
+- **Price history chart** (yearly, 10-15 points)
+- **Yield trend** — rolling 5y avg
+- **Dividend history table** — year / DPS / YoY% / Payout%
+- **Watchlist exit status** section — baseline + triggers + severity summary
+- **Review tab** — render review_candidates
+- Case study + moat tags display ใน stock table
+
+### Data Source Stability (bug fix)
+- **Problem:** build แรกกู vาง yfinance ดึง historical yearly data (price_avg via `yf.Ticker().history(period='10y')`) — yfinance หุ้นไทย > 3-5 ปีไม่ครบ = log spam "possibly delisted"
+- **Fix:** ใช้ thaifin เป็นหลัก (ตาม CLAUDE.md) — expose 5 orphan fields (`close`, `dividend_yield`, `mkt_cap`, `bvps`, `payout_ratio`) per year ใน yearly_metrics
+- `/api/stock/{sym}/price-history` — default thaifin yearly, `?granularity=monthly` fallback yfinance (DCA use case)
+- `_holding_mcap()` — ลอง thaifin ก่อน fallback yfinance
+- CLAUDE.md: เพิ่ม **"Data Source Invariants"** section (Rule 1-3 + don't/do examples) — ป้องกันพลาดซ้ำ
+
+### Post-fix bugs
+- Bug: scan.py `sorted(glob('screener_*.json'))` lexicographic — picked curated file (c > 2 lexically) → regex-filter `screener_YYYY-MM-DD.json`
+- Bug: report_template field name — `m.get('dy')` → `m.get('dividend_yield')` (actual screener uses `dividend_yield`)
+
+### Integration test
+- `scripts/integration_test.py` — curated 10 symbols + benchmark <300s
+- Runtime ~20s · 3/5 tag assertions pass (data-driven, not bug)
+
+### Scan results (first post-refactor scan_num=3)
+- 933 stocks → **54 candidates PASS** + 3 REVIEW + 874 filtered
+- Sector spread: Property 17% / Banking 15% / Finance 13% / Energy 13% — กระจายดี
+- Case study hits: QH HOLDING_CO_HIDDEN, TU F&B_CONSUMER_BRAND + RETAIL_MOAT, RATCH/EGCO UTILITY_DEFENSIVE, 4 BANK_VALUE_PBV1
+- Dividend champions: 11 ตัว streak ≥ 25 ปี (EGCO 26, METCO 26, ALUCON 26, LANNA 26, PTTEP 26, KYE 26, SUC 25, STANLY 25, KKP 25, SCCC 25, HTC 25)
+
+---
+
 ## v4.0.0 — 2026-04-19 · UX + Flow Rework
 
 **Breaking change** — ยุบ weekly + discovery เป็น scan เดียว, wipe watchlist seed, restructure UI
