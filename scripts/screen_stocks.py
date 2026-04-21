@@ -344,11 +344,11 @@ def detect_exit_signal(symbol: str, current_data: dict, historical_baseline: dic
     # --- Trigger 1: FILTER_DEGRADATION ---
     # If stock previously passed 5-5-5-5 but now fails any Niwes hard filter
     if baseline.get("passed_5555"):
-        passed_now, fail_reasons, _ = hard_filter(current_data)
-        if not passed_now:
+        status_now, fail_reasons, _ = hard_filter(current_data)
+        if status_now != "PASS":
             triggers.append({
                 "type": "FILTER_DEGRADATION",
-                "reason": f"เคยผ่าน 5-5-5-5 แต่ตอนนี้ fail: {'; '.join(fail_reasons[:3])}",
+                "reason": f"เคยผ่าน 5-5-5-5 แต่ตอนนี้ {status_now}: {'; '.join(fail_reasons[:3])}",
                 "severity": "high" if len(fail_reasons) >= 2 else "medium",
             })
 
@@ -591,6 +591,7 @@ def main():
     print(f"Max Mahon v5 screening {len(symbols)} stocks (Niwes 5-5-5-5)...")
 
     candidates = []
+    review_candidates: list[dict] = []
     filtered_stocks = []
     filtered_out = 0
     error_count = 0
@@ -611,8 +612,11 @@ def main():
                 print(f"  [{i+1}/{len(symbols)}] {sym} — error: {data['error']}")
                 continue
 
-            passed, filter_reasons, near_miss = hard_filter(data)
-            if not passed:
+            # Set hidden holdings before hard_filter — available for all buckets (PASS/REVIEW/FAIL)
+            data['_hidden_holdings'] = check_hidden_value(sym)
+
+            status, filter_reasons, near_miss = hard_filter(data)
+            if status == "FAIL":
                 filtered_out += 1
                 filtered_stocks.append({
                     "symbol": sym,
@@ -632,7 +636,24 @@ def main():
                 print(f"  [{i+1}/{len(symbols)}] {sym} — filtered: {', '.join(filter_reasons[:2])}")
                 continue
 
-            data['_hidden_holdings'] = check_hidden_value(sym)
+            if status == "REVIEW":
+                review_candidates.append({
+                    "symbol": sym,
+                    "name": data.get("name", sym),
+                    "sector": data.get("sector", "N/A"),
+                    "review_reasons": filter_reasons,
+                    "basic_metrics": {
+                        "price": data.get("price"),
+                        "pe": data.get("pe_ratio"),
+                        "pbv": data.get("pb_ratio"),
+                        "dy": data.get("dividend_yield"),
+                        "streak": (data.get("aggregates") or {}).get("dividend_streak"),
+                    },
+                })
+                print(f"  [{i+1}/{len(symbols)}] {sym} — review: {', '.join(filter_reasons[:2])}")
+                continue
+
+            # status == "PASS"
             result = quality_score(data)
 
             # Apply near-miss penalty
@@ -733,13 +754,20 @@ def main():
     out = {
         "date": today,
         "agent": "Max Mahon v5",
-        "scoring_version": "niwes-dividend-first-v1",
+        "scoring_version": "niwes-dividend-first-v2",
         "total_scanned": len(symbols),
         "passed_filter": len(candidates),
+        "review_count": len(review_candidates),
         "filtered_out": filtered_out,
         "new_discoveries": len(new_finds),
+        "counts": {
+            "passed": len(candidates),
+            "review": len(review_candidates),
+            "filtered_out": filtered_out,
+        },
         "hard_filters": HARD_FILTERS,
         "candidates": candidates,
+        "review_candidates": review_candidates,
         "filtered_out_stocks": filtered_stocks,
     }
 
@@ -747,7 +775,7 @@ def main():
     out_path.write_text(json.dumps(out, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
 
     print(f"\n{'='*60}")
-    print(f"Scanned: {len(symbols)} | Passed: {len(candidates)} | Filtered: {filtered_out} | Errors: {error_count} | New: {len(new_finds)}")
+    print(f"Scanned: {len(symbols)} | Passed: {len(candidates)} | Review: {len(review_candidates)} | Filtered: {filtered_out} | Errors: {error_count} | New: {len(new_finds)}")
     print(f"\nTop 10:")
     for c in candidates[:10]:
         marker = "★" if c["in_watchlist"] else "✦ NEW"
