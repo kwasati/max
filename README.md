@@ -41,7 +41,6 @@ scripts/
   update_universe.py # refresh SET/mai universe
   screen_stocks.py   # hard filters + quality score
   scan.py            # Claude scan (top picks + summary)
-  run_scan.py        # pipeline runner
 server/
   app.py             # FastAPI server, scheduler, SSE
 web/                 # dashboard frontend
