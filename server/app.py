@@ -1316,20 +1316,6 @@ class ListUpdate(BaseModel):
     remove: list[str] = []
 
 
-@app.put("/api/user/lists/{list_name}")
-async def update_custom_list(list_name: str, body: ListUpdate):
-    data = load_user_data()
-    cl = data.setdefault("custom_lists", {})
-    items = set(cl.get(list_name, []))
-    for s in body.add:
-        items.add(_normalize_symbol(s))
-    for s in body.remove:
-        items.discard(_normalize_symbol(s))
-    cl[list_name] = sorted(items)
-    save_user_data(data)
-    return {"list": list_name, "symbols": cl[list_name]}
-
-
 @app.delete("/api/user/lists/{list_name}")
 async def delete_custom_list(list_name: str):
     data = load_user_data()
