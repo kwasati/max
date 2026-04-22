@@ -15,7 +15,7 @@
       "dividend_yield_min": 5,
       "market_cap_min": 5000000000
     },
-    "narrative": "ธุรกิจค้าปลีก/consumer defensive — ขาดไม่ได้ของผู้บริโภค ผ่านวิกฤติได้ (แบบ CPALL 17 ปี)"
+    "narrative": "ธุรกิจค้าปลีก/consumer defensive — ผู้บริโภคใช้ทุกวัน ไม่ขาดไม่ได้ ร้านสะดวกซื้อ/ห้างใหญ่/อาหารพร้อมทาน เป็นแก่นของ cash flow ที่ตลาดไทยรู้ดี ดร.นิเวศน์ ถือ CPALL 17 ปีจากปี 2540 ผ่านต้มยำกุ้ง โรคระบาด เงินเฟ้อ และค่าเงินผันผวน — ปันผลเพิ่มทุกปี ไม่มีปีขาดทุน Payout สม่ำเสมอ ROE สูง 15%+ — เป็น compounding machine ที่ตลาดยอมให้ PE 15-20 เพราะรู้ว่าของจริง.\n\nจุดระวัง: e-commerce disruption (Lazada/Shopee) ที่กินมาร์เก็ตแชร์สินค้า non-food, cost of living pressure ที่กดดันยอดใช้จ่ายต่อบิล, และ inventory/supply chain ช่วงวิกฤต ถ้า same-store-sales growth ติดลบ 2 ไตรมาสติด หรือ ROE หล่นต่ำกว่า 10% ต่อเนื่อง = สัญญาณ thesis change ต้อง revisit."
   },
   "BANK_VALUE_PBV1": {
     "tag": "BANK_VALUE_PBV1",
@@ -31,7 +31,7 @@
       "dividend_yield_min": 5,
       "market_cap_min": 5000000000
     },
-    "narrative": "ธนาคาร mid-tier PBV<1 + yield 5%+ (แบบ TCAP)"
+    "narrative": "ธนาคารไทย mid-tier ที่ซื้อขายใต้มูลค่าบัญชี — กรณีคลาสสิก VI ที่ ดร.นิเวศน์ ใช้เป็นตัวอย่าง TCAP ซื้อช่วง PBV 0.5-0.8 ยอมถือยาวให้ cycle ทำงาน ปันผล 5-8% จ่ายสม่ำเสมอ 20+ ปี แม้ ROE จะอยู่แค่ 7-10% แต่ PBV <1 แปลว่าตลาดกำลังให้ discount ตามมูลค่าตรงข้ามกับงบ — เป็นการจ่ายเงินซื้อทุน 1 บาทด้วยราคา 60-80 สตางค์ คือ margin of safety ในตัวเอง.\n\nจุดระวัง: NPL + credit cost ในรอบ downturn ที่กัดกินกำไร, digital disruption (fintech/mobile banking) ที่กดดัน fee income, และ regulatory pressure เรื่อง LTV/DSR ถ้า ROE หล่นต่ำกว่า 6% ต่อเนื่อง หรือ payout ratio ขึ้นเกิน 70% ขณะ EPS หด = สัญญาณ thesis เปลี่ยน ถึงเวลา reassess."
   },
   "HOLDING_CO_HIDDEN": {
     "tag": "HOLDING_CO_HIDDEN",
@@ -42,7 +42,7 @@
       "dividend_yield_min": 5,
       "pbv_max": 1.5
     },
-    "narrative": "Holding company sum-of-parts > parent mcap (แบบ QH ถือ HMPRO)"
+    "narrative": "Holding company ที่ sum-of-parts มากกว่า parent mcap — QH ถือ HMPRO ที่ market value เกิน market cap ของ QH เอง INTUCH ถือ ADVANC ที่เป็น hidden jewel — ตลาดไทยไม่ pricing in asset ที่ซ่อนอยู่ในงบ เพราะ structure ซับซ้อน นักลงทุนทั่วไปไม่ตามอ่าน annual report ดร.นิเวศน์ ใช้กลยุทธ์ตีแตก holding co. เพื่อได้ stake ในธุรกิจดีใน discount มหาศาล — เป็น deep value ที่ผสมกับ quality.\n\nจุดระวัง: hidden holding ต้องเป็น asset ที่ producing income จริง ไม่ใช่ตัวเลขงบตั้งอยู่เฉยๆ (เช่น land bank ที่ไม่ develop) ต้องดูว่า parent เอา dividend จาก subsidiary มาจ่ายให้ผู้ถือหุ้น parent ไหม ถ้า NAV discount ปิด (PBV เข้า 1.5+) หรือ subsidiary เริ่มมี governance issue = เวลาออก."
   },
   "VIETNAM_GROWTH_EXPOSURE": {
     "tag": "VIETNAM_GROWTH_EXPOSURE",
@@ -58,9 +58,7 @@
       "roe_3yr_avg_min": 0.1,
       "dividend_yield_min": 3
     },
-    "narrative": "Vietnam tech scale 50B+ ROE 10%+ (แบบ FPT)",
-    "disabled": true,
-    "disabled_reason": "data_adapter ยังไม่รองรับ VN data — enable หลังเพิ่ม VN data source"
+    "narrative": "Vietnam tech scale 50B+ THB ที่มี ROE 10%+ และปันผลขึ้นต่อเนื่อง — FPT เป็นตัวอย่างหลัก ดร.นิเวศน์ มองว่าเวียดนามคือประเทศไทย 20 ปีก่อน GDP growth 6-7% ต่อปี ประชากรอายุน้อย เศรษฐกิจยังขยาย valuation ยังถูกกว่าไทยและจีน — ถือเป็น structural growth ที่หาไม่ได้ใน SET ที่ติด trap of slow growth.\n\nจุดระวัง: currency risk (VND devalue), regulatory risk (นักลงทุนต่างชาติ foreign ownership limit), และ disclosure ที่ไม่ละเอียดเท่าตลาดไทย ต้องระวัง accounting practice ถ้า ROE หล่นต่ำกว่า 8% หรือ FX shock ทำให้ THB-denominated return ติดลบ 2 ปีติด = ทบทวน position size."
   },
   "UTILITY_DEFENSIVE": {
     "tag": "UTILITY_DEFENSIVE",
@@ -87,7 +85,7 @@
       "dividend_streak_min": 10,
       "dividend_yield_min": 4
     },
-    "narrative": "Utility/infra defensive — regulated revenue + streak ยาว (แบบ GULF/RATCH/EGCO); exclude petroleum/oil (SET จัดกลุ่มเดียวกันแต่ธุรกิจต่าง)"
+    "narrative": "Utility/infrastructure defensive — รายได้ regulated มี PPA long-term 20-25 ปี กับ EGAT หรือรัฐ เป็น cash flow ที่คาดเดาได้ที่สุดในตลาด GULF/RATCH/EGCO จ่ายปันผลสม่ำเสมอ streak 10+ ปี เพราะธุรกิจไม่มี demand shock ไฟฟ้าใช้ทุกวัน ดร.นิเวศน์ ชอบหมวดนี้เพราะ macro-proof — ภาวะเศรษฐกิจตกก็ยังใช้ไฟ ใช้น้ำ ใช้ทางด่วน.\n\nจุดระวัง: energy transition risk (โรงไฟฟ้าถ่านหิน/ก๊าซที่ phase out), cost of capital ที่ rising เมื่อดอกเบี้ยขึ้น (utility พึ่ง leverage), และ regulatory tariff review ที่อาจถูกปรับลด ถ้า FFO/debt หล่นต่ำกว่า 10% ต่อเนื่อง หรือ ROE หล่นต่ำกว่า 8% = ธุรกิจเริ่มไม่ healthy ต้องทบทวน exclude petroleum/oil เพราะ SET จัดกลุ่มเดียวกันแต่ธุรกิจต่างกันสิ้นเชิง."
   },
   "HOSPITAL_AGING": {
     "tag": "HOSPITAL_AGING",
@@ -102,7 +100,7 @@
       "roe_3yr_avg_min": 0.1,
       "dividend_streak_min": 5
     },
-    "narrative": "Hospital — aging demographics ผลดี long-term (แบบ BDMS/BH)"
+    "narrative": "Hospital sector ที่รับ tailwind จาก aging demographics — ไทยเข้า aged society แล้ว (2565) ประชากรอายุ 60+ ปีขึ้นไปเกิน 20% ในปี 2575 BDMS/BH/CHG เป็น beneficiary หลัก ดร.นิเวศน์ มองว่า structural tailwind 20+ ปี ไม่ใช่ cyclical ความต้องการบริการการแพทย์ไม่ลดตาม economic cycle — เป็น defensive growth ที่หาได้ยากในตลาดไทย.\n\nจุดระวัง: regulatory price control (กรมการค้าภายในคุม OPD fee), medical tourism recovery ที่ยังไม่กลับ pre-COVID ในบางตัว, cost inflation (medical supply + doctor compensation) และ competition จาก specialty clinic ถ้า occupancy rate หล่นใต้ 70% ต่อเนื่อง หรือ EBITDA margin หด 300bp ใน 2 ปี = ธุรกิจเริ่มถูก disrupted หรือ over-expanded."
   },
   "F&B_CONSUMER_BRAND": {
     "tag": "F&B_CONSUMER_BRAND",
@@ -117,6 +115,6 @@
       "dividend_streak_min": 5,
       "dividend_yield_min": 3
     },
-    "narrative": "F&B brand — consumer staples, pricing power (แบบ CBG/OSP/TU/MINT)"
+    "narrative": "F&B consumer brand ที่มี pricing power จาก brand moat — CBG/OSP/TU/MINT คือแบรนด์ที่ผู้บริโภคซื้อซ้ำทุกเดือน ไม่สนใจ generic ที่ถูกกว่า ดร.นิเวศน์ ชอบเพราะเป็น consumer staples ที่ inflation-proof — ขึ้นราคาได้ 3-5% ต่อปีโดยไม่เสีย volume เป็น moat ที่ Buffett เรียก 'economic castle' — กำไรสม่ำเสมอ Cash conversion cycle สั้น ROE สูง 15%+ ตลอด cycle.\n\nจุดระวัง: commodity input cost (น้ำตาล/น้ำมันปาล์ม/meat) ที่ swing แรงๆ ทำให้ margin หด ชั่วคราว, private label จากห้างใหญ่ที่กดดัน mid-tier, และ export exposure ที่ expose ต่อ FX ถ้า market share หล่นต่อเนื่อง 3 ปี หรือ gross margin หดต่ำกว่า 20% (จาก 25%+ ปกติ) = brand moat เริ่มอ่อน ต้องทบทวน."
   }
 }
