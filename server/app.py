@@ -2090,6 +2090,15 @@ async def get_stock_patterns(symbol: str):
         s for s in signals
         if s in {"BRAND_MOAT", "STRUCTURAL_MOAT", "GOVT_LOCKIN"}
     ]
+    # v6 Phase 2 — matched_patterns[] with narrative lookup
+    matched_patterns = [
+        {
+            "tag": tag,
+            "narrative": (patterns.get(tag) or {}).get("narrative", ""),
+            "source": (patterns.get(tag) or {}).get("source"),
+        }
+        for tag in case_tags
+    ]
     return {
         "symbol": symbol,
         "signals": signals,
@@ -2097,6 +2106,7 @@ async def get_stock_patterns(symbol: str):
         "moat_tags": moat_tags,
         "hidden_holdings": _check_hidden_value(symbol),
         "bucket": bucket,
+        "matched_patterns": matched_patterns,
     }
 
 
