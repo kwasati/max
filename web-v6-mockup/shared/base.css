@@ -610,6 +610,125 @@ button {
 }
 
 /* ==========================================================
+   MODAL OVERLAY — unfolding supplementary broadsheet
+   ========================================================== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 24, 20, 0.6);
+  z-index: 80;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-5);
+  overflow-y: auto;
+}
+.modal-backdrop.open { display: flex; }
+
+.modal-sheet {
+  background: var(--paper);
+  width: 100%;
+  max-width: 900px;
+  border-top: var(--rule-thick) solid var(--accent);
+  border-bottom: 1px solid var(--rule);
+  border-left: 1px solid var(--rule);
+  border-right: 1px solid var(--rule);
+  padding: var(--sp-6) var(--sp-7) var(--sp-6);
+  position: relative;
+  max-height: calc(100vh - var(--sp-7));
+  overflow-y: auto;
+  /* subtle paper texture already from body; reinforce with inner hair rule */
+}
+
+.modal-kicker {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  border-bottom: 1px solid var(--rule-hair);
+  padding-bottom: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.modal-headline {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: var(--fs-2xl);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  margin-bottom: var(--sp-2);
+}
+.modal-dek {
+  font-family: var(--font-head);
+  font-style: italic;
+  color: var(--ink-soft);
+  font-size: var(--fs-md);
+  margin-bottom: var(--sp-5);
+  border-bottom: 3px double var(--rule);
+  padding-bottom: var(--sp-4);
+}
+
+.modal-close {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-4);
+  font-family: var(--font-head);
+  font-weight: 400;
+  font-size: 1.8rem;
+  line-height: 1;
+  color: var(--ink-dim);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  border-bottom: none;
+  z-index: 2;
+  transition: color 120ms ease;
+}
+.modal-close:hover { color: var(--accent); }
+
+.modal-demo-note {
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: var(--fs-xs);
+  color: var(--ink-faint);
+  text-align: center;
+  margin-top: var(--sp-5);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--rule-hair);
+}
+
+/* Mobile bottom-sheet variant */
+@media (max-width: 900px) {
+  .modal-backdrop { padding: 0; align-items: stretch; justify-content: stretch; }
+  .modal-sheet {
+    max-width: 100%;
+    max-height: 100vh;
+    height: 100vh;
+    border: none;
+    border-top: var(--rule-thick) solid var(--accent);
+    padding: var(--sp-5) var(--sp-5) var(--sp-7);
+    animation: sheet-slide-up 220ms ease-out;
+  }
+  .modal-close {
+    top: var(--sp-3);
+    left: var(--sp-3);
+    right: auto;
+    font-size: 1.4rem;
+  }
+  .modal-close::before { content: '← '; font-size: 0.9em; }
+  .modal-headline { font-size: var(--fs-xl); }
+}
+@keyframes sheet-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* ==========================================================
    MOBILE BOTTOM NAV
    ========================================================== */
 .mobile-nav {

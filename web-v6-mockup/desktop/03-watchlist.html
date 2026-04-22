@@ -59,15 +59,7 @@
   font-size: var(--fs-sm);
 }
 
-/* Compare overlay */
-.compare-overlay {
-  display: none;
-  margin: var(--sp-7) 0;
-  border-top: 3px double var(--rule);
-  border-bottom: 3px double var(--rule);
-  padding: var(--sp-6) 0;
-}
-.compare-overlay.active { display: block; }
+/* Compare modal grid (inside .modal-sheet) */
 .compare-grid {
   display: grid;
   grid-template-columns: auto repeat(3, 1fr);
@@ -262,17 +254,25 @@
     <div class="foot-hint">Select two or three positions to compare side-by-side.</div>
     <div class="flex gap-3">
       <button class="btn ghost">+ Add by Symbol</button>
-      <button class="btn primary" onclick="document.querySelector('.compare-overlay').classList.add('active');this.scrollIntoView({behavior:'smooth'})">Compare Selected · 2/3</button>
+      <button class="btn primary" onclick="openCompareModal()">เทียบหุ้นที่เลือก · 2/3</button>
     </div>
   </div>
 
-  <!-- COMPARE OVERLAY -->
-  <section class="compare-overlay active">
-    <div class="section-num" style="margin-top:0">
-      <span class="no">02a · Compare View</span>
-      <span>Side-by-Side · Difference Values Bolded</span>
+  <div class="ornament"></div>
+</main>
+
+<!-- COMPARE MODAL OVERLAY -->
+<div class="modal-backdrop open" id="compareModal" onclick="if(event.target===this)closeCompareModal()">
+  <div class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="compareHeadline">
+    <button class="modal-close" onclick="closeCompareModal()" aria-label="Close">×</button>
+
+    <div class="modal-kicker">
+      <span>Supplementary Sheet · № 02a</span>
+      <span>Side-by-Side</span>
     </div>
-    <h3 class="section-title" style="font-size:var(--fs-xl)">BBL vs TCAP</h3>
+    <h3 class="modal-headline" id="compareHeadline">COMPARISON · 2 STOCKS</h3>
+    <p class="modal-dek">BBL vs TCAP — difference values bolded in oxblood</p>
+
     <div class="compare-grid">
       <div class="row-label"></div>
       <div class="sym-head">BBL</div>
@@ -285,7 +285,7 @@
       <div class="val dim">+13</div>
 
       <div class="row-label">Yield</div>
-      <div class="val">9.91%</div>
+      <div class="val best">9.91%</div>
       <div class="val">7.20%</div>
       <div class="val dim">−2.71</div>
 
@@ -314,6 +314,11 @@
       <div class="val best">9.2%</div>
       <div class="val dim">+1.4</div>
 
+      <div class="row-label">Exit Signal</div>
+      <div class="val" style="font-size:var(--fs-sm)"><span class="sev hold">Hold</span></div>
+      <div class="val" style="font-size:var(--fs-sm)"><span class="sev hold">Hold</span></div>
+      <div class="val dim">—</div>
+
       <div class="row-label">Mcap (B THB)</div>
       <div class="val best">324</div>
       <div class="val">58</div>
@@ -324,14 +329,31 @@
       <div class="val" style="font-size:var(--fs-xs)">5555, HV, DV</div>
       <div class="val"></div>
     </div>
+
     <p class="lede" style="margin-top:var(--sp-6);max-width:60ch">
       TCAP ชนะด้าน score · P/E · payout discipline · ROE. BBL ชนะด้าน P/BV · streak · ขนาดเชิงโครงสร้าง.
       ทั้งคู่ผ่าน Niwes · ทั้งคู่ worth holding — เลือกได้ตาม conviction.
     </p>
-  </section>
 
-  <div class="ornament"></div>
-</main>
+    <div class="modal-demo-note">
+      ← modal overlay preview · click × / backdrop / Escape to close (demo: re-open via button)
+    </div>
+  </div>
+</div>
+
+<script>
+function openCompareModal() {
+  document.getElementById('compareModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeCompareModal() {
+  document.getElementById('compareModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeCompareModal();
+});
+</script>
 
 </body>
 </html>

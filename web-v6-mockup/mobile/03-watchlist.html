@@ -42,6 +42,39 @@
   line-height: 1;
 }
 .wl-right .sig { margin-top: 6px; }
+
+/* Compare modal grid (mobile — stacked narrow) */
+.compare-grid {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr;
+  gap: 0;
+  margin-top: 12px;
+  font-size: 0.85rem;
+}
+.compare-grid > div {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--rule-hair);
+}
+.compare-grid .row-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.compare-grid .val {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  text-align: center;
+}
+.compare-grid .sym-head {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 1.1rem;
+  text-align: center;
+  border-bottom: 2px solid var(--rule);
+}
+.compare-grid .val.best { color: var(--accent); font-weight: 700; }
 </style>
 </head>
 <body>
@@ -202,12 +235,95 @@
 
   <div style="padding:24px 0;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
     <button class="btn ghost">+ Add Symbol</button>
-    <button class="btn primary">Compare Selected</button>
+    <button class="btn primary" onclick="openCompareModal()">เทียบหุ้นที่เลือก</button>
   </div>
 
   <div class="ornament"></div>
 
 </main>
+
+<!-- COMPARE MODAL · bottom-sheet on mobile -->
+<div class="modal-backdrop open" id="compareModal" onclick="if(event.target===this)closeCompareModal()">
+  <div class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="compareHeadline">
+    <button class="modal-close" onclick="closeCompareModal()" aria-label="Close">Back</button>
+
+    <div class="modal-kicker" style="margin-top:28px">
+      <span>Supplementary · № 02a</span>
+      <span>Side-by-Side</span>
+    </div>
+    <h3 class="modal-headline" id="compareHeadline">COMPARISON · 2 STOCKS</h3>
+    <p class="modal-dek">BBL vs TCAP — best values bolded in oxblood</p>
+
+    <div class="compare-grid">
+      <div class="row-label"></div>
+      <div class="sym-head">BBL</div>
+      <div class="sym-head">TCAP</div>
+
+      <div class="row-label">Score</div>
+      <div class="val">74</div>
+      <div class="val best">87</div>
+
+      <div class="row-label">Yield</div>
+      <div class="val best">9.91%</div>
+      <div class="val">7.20%</div>
+
+      <div class="row-label">P/E</div>
+      <div class="val">6.9×</div>
+      <div class="val best">6.1×</div>
+
+      <div class="row-label">P/BV</div>
+      <div class="val best">0.55×</div>
+      <div class="val">0.68×</div>
+
+      <div class="row-label">Streak</div>
+      <div class="val best">22 y</div>
+      <div class="val">15 y</div>
+
+      <div class="row-label">Payout</div>
+      <div class="val best">43%</div>
+      <div class="val">52%</div>
+
+      <div class="row-label">ROE</div>
+      <div class="val">7.8%</div>
+      <div class="val best">9.2%</div>
+
+      <div class="row-label">Exit</div>
+      <div class="val" style="font-size:0.75rem"><span class="sev hold">Hold</span></div>
+      <div class="val" style="font-size:0.75rem"><span class="sev hold">Hold</span></div>
+
+      <div class="row-label">Mcap</div>
+      <div class="val best">324B</div>
+      <div class="val">58B</div>
+
+      <div class="row-label">Signals</div>
+      <div class="val" style="font-size:0.65rem">5555, QD</div>
+      <div class="val" style="font-size:0.65rem">5555, HV</div>
+    </div>
+
+    <p class="lede" style="margin-top:20px;max-width:none;font-size:0.92rem">
+      TCAP ชนะด้าน score · P/E · payout · ROE. BBL ชนะด้าน P/BV · streak · ขนาด.
+      ทั้งคู่ผ่าน Niwes — เลือกได้ตาม conviction.
+    </p>
+
+    <div class="modal-demo-note">
+      ↑ bottom sheet preview · tap "Back" / backdrop to close (demo: reopen via button)
+    </div>
+  </div>
+</div>
+
+<script>
+function openCompareModal() {
+  document.getElementById('compareModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeCompareModal() {
+  document.getElementById('compareModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeCompareModal();
+});
+</script>
 
 <nav class="mobile-nav">
   <a href="01-home.html"><span class="num">01</span>List</a>
