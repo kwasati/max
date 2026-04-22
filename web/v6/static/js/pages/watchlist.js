@@ -49,7 +49,7 @@ function _renderShell() {
     '<div class="foot-action">' +
       '<div class="foot-hint">Select two or three positions to compare side-by-side.</div>' +
       '<div class="flex gap-3">' +
-        '<button class="btn ghost" id="wl-add-btn" type="button" disabled>+ Add by Symbol</button>' +
+        '<button class="btn ghost" id="wl-add-btn" type="button">+ Add by Symbol</button>' +
         '<button class="btn primary" id="wl-cmp-btn" type="button" disabled>เทียบหุ้นที่เลือก · 0/' + MAX_COMPARE + '</button>' +
       '</div>' +
     '</div>' +
@@ -196,7 +196,70 @@ function _bindRows(tbody) {
 function _bindFooter(root) {
   const cmpBtn = root.querySelector('#wl-cmp-btn');
   if (cmpBtn) cmpBtn.addEventListener('click', function () { _openCompare(root); });
-  // Add-by-symbol handler wired in Phase 3.
+  const addBtn = root.querySelector('#wl-add-btn');
+  if (addBtn) addBtn.addEventListener('click', function () { _openAddModal(root); });
+}
+
+function _openAddModal(root) {
+  const html =
+    '<p style="font-family:var(--font-body);color:var(--ink-soft);margin-bottom:var(--sp-4)">' +
+      'กรอก symbol (เช่น "CPALL" หรือ "CPALL.BK") — ถ้าไม่ใส่ <code>.BK</code> ระบบจะเติมให้อัตโนมัติ.' +
+    '</p>' +
+    '<input type="text" id="wl-add-input" ' +
+      'style="width:100%;padding:10px 12px;border:1px solid var(--rule);' +
+      'background:var(--paper-3);font-family:var(--font-mono);font-size:var(--fs-md);' +
+      'color:var(--ink);outline:none;margin-bottom:var(--sp-4);text-transform:uppercase" ' +
+      'placeholder="BBL" autocomplete="off" />' +
+    '<div id="wl-add-err" style="display:none;color:var(--accent);font-family:var(--font-body);' +
+      'font-size:var(--fs-sm);margin-bottom:var(--sp-3)"></div>' +
+    '<div style="display:flex;justify-content:flex-end;gap:var(--sp-3)">' +
+      '<button type="button" class="btn ghost" id="wl-add-cancel">Cancel</button>' +
+      '<button type="button" class="btn primary" id="wl-add-save">เพิ่มหุ้น</button>' +
+    '</div>';
+  window.MMComponents.openModal(html, {
+    kicker: 'Supplementary · Add Position',
+    headline: 'Add by Symbol',
+    dek: 'เพิ่มหุ้นใน watchlist ด้วย ticker — auto-append .BK ถ้าจำเป็น.'
+  });
+  const input = document.getElementById('wl-add-input');
+  const save = document.getElementById('wl-add-save');
+  const cancel = document.getElementById('wl-add-cancel');
+  const err = document.getElementById('wl-add-err');
+  if (input) {
+    input.focus();
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); if (save) save.click(); }
+    });
+  }
+  if (cancel) cancel.addEventListener('click', function () { window.MMComponents.closeModal(); });
+  if (save) save.addEventListener('click', async function () {
+    const raw = input ? input.value : '';
+    const sym = _normalizeSymbol(raw);
+    if (!sym) {
+      if (err) { err.style.display = 'block'; err.textContent = 'กรุณากรอก symbol'; }
+      return;
+    }
+    save.disabled = true;
+    try {
+      await window.MMApi.put('/api/user/watchlist', { add: [sym] });
+      window.MMComponents.closeModal();
+      window.MMComponents.showToast('เพิ่ม ' + sym + ' เข้า watchlist แล้ว', 'info');
+      if (root) _load(root);
+    } catch (e) {
+      save.disabled = false;
+      if (err) {
+        err.style.display = 'block';
+        err.textContent = 'เพิ่มไม่สำเร็จ: ' + (e && e.message || e);
+      }
+    }
+  });
+}
+
+function _normalizeSymbol(raw) {
+  const s = String(raw || '').trim().toUpperCase();
+  if (!s) return '';
+  if (s.indexOf('.') !== -1) return s;
+  return s + '.BK';
 }
 
 async function _openCompare(root) {
