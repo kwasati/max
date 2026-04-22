@@ -329,7 +329,90 @@ async def get_stock(symbol: str):
 
     # Normalize field names so frontend gets consistent schema
     _normalize_stock(stock_data)
+
+    # v6 Phase 2 — enrich response with narrative + five_year_history + dividend_history_10y
+    stock_data["narrative"] = _load_cached_narrative(symbol)
+    stock_data["five_year_history"] = _build_five_year_history(stock_data)
+    stock_data["dividend_history_10y"] = _build_dividend_history_10y(stock_data)
+    # reasons_narrative: current 'reasons' is already a list[str]; keep shape, alias for frontend clarity
+    stock_data["reasons_narrative"] = stock_data.get("reasons") or []
+
     return stock_data
+
+
+def _load_cached_narrative(symbol: str) -> dict:
+    """Return narrative {case_text, lede} from Claude analysis cache if present, else nulls."""
+    cache_path = _ANALYSIS_CACHE_DIR / f"{symbol}.json"
+    if cache_path.exists():
+        try:
+            cached = json.loads(cache_path.read_text(encoding="utf-8"))
+            max_text = cached.get("max") or cached.get("buffett") or ""
+            if max_text:
+                # First paragraph becomes lede; full text is case_text
+                lede = max_text.split("\n\n", 1)[0] if "\n\n" in max_text else max_text[:200]
+                return {"case_text": max_text, "lede": lede}
+        except Exception:
+            pass
+    return {"case_text": None, "lede": None}
+
+
+def _build_five_year_history(stock_data: dict) -> list[dict]:
+    """Join yearly_metrics + dividend_history into 5-year table."""
+    yearly = stock_data.get("yearly_metrics") or []
+    if not yearly:
+        return []
+    # Sort descending by year, take last 5
+    sorted_yrs = sorted(yearly, key=lambda y: y.get("year", 0), reverse=True)[:5]
+    div_hist = stock_data.get("dividend_history") or {}
+    # Normalize dividend_history keys to string year
+    dps_by_year: dict[str, float] = {}
+    for k, v in div_hist.items():
+        try:
+            dps_by_year[str(int(float(k)))] = float(v) if v is not None else None
+        except (TypeError, ValueError):
+            dps_by_year[str(k)] = v
+    out = []
+    for y in sorted_yrs:
+        yr = y.get("year")
+        out.append({
+            "year": yr,
+            "revenue": y.get("revenue"),
+            "net_income": y.get("net_income") or y.get("earnings"),
+            "eps": y.get("eps"),
+            "roe": y.get("roe"),
+            "net_margin": y.get("net_margin"),
+            "de": y.get("de") or y.get("debt_to_equity"),
+            "ocf": y.get("ocf") or y.get("operating_cashflow"),
+            "dps": dps_by_year.get(str(yr)),
+        })
+    return out
+
+
+def _build_dividend_history_10y(stock_data: dict) -> list[dict]:
+    """Explicit 10-year {year, dps, yield_pct} aggregate."""
+    div_hist = stock_data.get("dividend_history") or {}
+    yearly = {
+        str(y.get("year")): y for y in (stock_data.get("yearly_metrics") or [])
+        if y.get("year") is not None
+    }
+    # Normalize + sort
+    rows: list[dict] = []
+    for k, v in div_hist.items():
+        try:
+            yr = int(float(k))
+            dps = float(v) if v is not None else None
+        except (TypeError, ValueError):
+            continue
+        close = None
+        y_entry = yearly.get(str(yr))
+        if y_entry:
+            close = y_entry.get("close") or y_entry.get("price")
+        yield_pct = None
+        if dps and close and close > 0:
+            yield_pct = round(dps / close * 100, 2)
+        rows.append({"year": yr, "dps": dps, "yield_pct": yield_pct})
+    rows.sort(key=lambda r: r["year"], reverse=True)
+    return rows[:10]
 
 
 def _normalize_stock(d: dict):
