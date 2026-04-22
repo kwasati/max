@@ -2173,12 +2173,100 @@ async def get_exit_status(symbol: str):
     triggers = (entry or {}).get("exit_triggers", []) if entry else []
     sev_high = sum(1 for t in triggers if t.get("severity") == "high")
     sev_med = sum(1 for t in triggers if t.get("severity") == "medium")
+
+    # v6 Phase 2 — enrich with narrative + trigger_rules + entry_context
+    baseline = baselines.get(symbol) or {}
+    metrics = (entry or {}).get("metrics") or {}
+    current_score = (entry or {}).get("score")
+    entry_score = baseline.get("entry_score")
+    date_added = baseline.get("date_added")
+    weeks_held = None
+    if date_added:
+        try:
+            d = datetime.strptime(date_added, "%Y-%m-%d")
+            weeks_held = int((datetime.now() - d).days / 7)
+        except ValueError:
+            weeks_held = None
+
+    delta_score = None
+    if current_score is not None and entry_score is not None:
+        delta_score = current_score - entry_score
+
+    # 5-row trigger_rules table — expose threshold + current + status per Niwes sell rule
+    def _rule_status(trig_list: list, label: str) -> str:
+        for t in trig_list:
+            if t.get("rule") == label or t.get("label") == label:
+                sev = t.get("severity", "")
+                return "FIRED" if sev in ("high", "medium") else "OK"
+        return "OK"
+
+    trigger_rules = [
+        {
+            "label": "P/E expansion",
+            "threshold": "> 1.5x baseline",
+            "current": metrics.get("pe"),
+            "status": _rule_status(triggers, "pe_expansion"),
+        },
+        {
+            "label": "P/BV expansion",
+            "threshold": "> 1.5x baseline",
+            "current": metrics.get("pb_ratio"),
+            "status": _rule_status(triggers, "pbv_expansion"),
+        },
+        {
+            "label": "Yield compression",
+            "threshold": "< 50% of baseline",
+            "current": metrics.get("dividend_yield"),
+            "status": _rule_status(triggers, "yield_compression"),
+        },
+        {
+            "label": "Dividend cut",
+            "threshold": "DPS cut > 30%",
+            "current": metrics.get("dividend_yield"),
+            "status": _rule_status(triggers, "dividend_cut"),
+        },
+        {
+            "label": "Score decay",
+            "threshold": "Δ < -15 from entry",
+            "current": delta_score,
+            "status": "FIRED" if (delta_score is not None and delta_score < -15) else "OK",
+        },
+    ]
+
+    entry_context = {
+        "entry_date": date_added,
+        "entry_pe": baseline.get("pe_baseline"),
+        "entry_yield": baseline.get("dy_baseline"),
+        "delta_score": delta_score,
+        "weeks_held": weeks_held,
+    }
+
+    # Narrative — italicized paragraph matching mockup section 10
+    if date_added:
+        narrative = (
+            f"เข้า watchlist วันที่ {date_added} · P/E ตอนเข้า "
+            f"{baseline.get('pe_baseline') or '-'} · Yield ตอนเข้า "
+            f"{baseline.get('dy_baseline') or '-'}%. "
+        )
+        if delta_score is not None:
+            direction = "ขึ้น" if delta_score >= 0 else "ลง"
+            narrative += f"Score {direction} {abs(delta_score)} จุด จากตอนเข้า. "
+        if sev_high == 0 and sev_med == 0:
+            narrative += "ยังไม่มีสัญญาณ exit — hold ต่อ."
+        else:
+            narrative += f"มีสัญญาณเตือน {sev_high} high / {sev_med} medium — review."
+    else:
+        narrative = "ยังไม่ได้ set baseline — รอหุ้นผ่าน 5-5-5-5 ก่อน."
+
     return {
         "symbol": symbol,
         "in_watchlist": in_watchlist,
-        "baseline": baselines.get(symbol),
+        "baseline": baseline or None,
         "triggers": triggers,
         "severity_summary": {"high": sev_high, "medium": sev_med},
+        "narrative": narrative,
+        "trigger_rules": trigger_rules,
+        "entry_context": entry_context,
     }
 
 
