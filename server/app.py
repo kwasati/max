@@ -3061,6 +3061,10 @@ _V6_STATIC = _V6_DIR / "static"
 
 @app.get("/mobile", response_class=HTMLResponse)
 @app.get("/m", response_class=HTMLResponse)
+@app.get("/m/watchlist", response_class=HTMLResponse)
+@app.get("/m/portfolio", response_class=HTMLResponse)
+@app.get("/m/simulator", response_class=HTMLResponse)
+@app.get("/m/settings", response_class=HTMLResponse)
 async def serve_mobile():
     if not _V6_MOBILE.exists():
         raise HTTPException(404, "v6 mobile shell missing")
@@ -3070,6 +3074,10 @@ async def serve_mobile():
 
 
 @app.get("/", response_class=HTMLResponse)
+@app.get("/watchlist", response_class=HTMLResponse)
+@app.get("/portfolio", response_class=HTMLResponse)
+@app.get("/simulator", response_class=HTMLResponse)
+@app.get("/settings", response_class=HTMLResponse)
 async def serve_index():
     if not _V6_DESKTOP.exists():
         raise HTTPException(404, "v6 desktop shell missing")
