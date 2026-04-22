@@ -66,7 +66,6 @@ def main():
         user_data = {"watchlist": [], "notes": {}}
 
     watchlist = user_data.get("watchlist", [])
-    notes = user_data.get("notes", {})
 
     history = load_history()
     scan_num = next_scan_num(history)
