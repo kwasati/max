@@ -1507,6 +1507,8 @@ async def list_transactions(symbol: Optional[str] = None):
 async def get_pnl():
     """Compute positions + totals from transactions.
     current_price pulled from latest screener (candidates + review + filtered_out).
+    v6 Phase 2 — adds name, dividends_received, dividend_yield_on_cost, weight_pct
+    per position; total.dividends_received + total.cash_reserve top-level.
     """
     data = load_user_data()
     txs = data.get("transactions", [])
@@ -1514,7 +1516,8 @@ async def get_pnl():
     for t in txs:
         by_sym.setdefault(t["symbol"], []).append(t)
 
-    # Try latest screener for prices
+    # Try latest screener for prices + name + dividend_history
+    screener_map: dict[str, dict] = {}
     try:
         screener = _latest_screener_file()
         all_entries = (
@@ -1522,17 +1525,22 @@ async def get_pnl():
             + screener.get("review_candidates", [])
             + screener.get("filtered_out_stocks", [])
         )
-        price_map = {
-            e["symbol"]: (e.get("metrics") or {}).get("price") or e.get("price")
-            for e in all_entries
-            if e.get("symbol")
-        }
+        for e in all_entries:
+            sym = e.get("symbol")
+            if sym:
+                screener_map[sym] = e
     except HTTPException:
-        price_map = {}
+        pass
+
+    price_map = {
+        sym: (e.get("metrics") or {}).get("price") or e.get("price")
+        for sym, e in screener_map.items()
+    }
 
     positions = []
     total_cost = 0.0
     total_mv = 0.0
+    total_dividends = 0.0
     for sym, ts in by_sym.items():
         buys = [t for t in ts if t.get("type") == "BUY"]
         sells = [t for t in ts if t.get("type") == "SELL"]
@@ -1547,8 +1555,52 @@ async def get_pnl():
         mv = cur_price * qty if cur_price is not None else None
         pnl = (mv - cost) if mv is not None else None
         pct = (pnl / cost * 100) if (pnl is not None and cost) else None
+
+        # v6 — name lookup
+        s_entry = screener_map.get(sym) or {}
+        name = s_entry.get("name") or sym
+        if "_" in name:
+            parts = name.split("_", 1)
+            name = parts[1] if len(parts) > 1 else name
+
+        # v6 — dividends_received: cumulative DPS × qty held per ex-div date
+        # Simplification: sum (dps × qty) for dividend years on/after earliest BUY date
+        dividends_received = 0.0
+        div_hist = s_entry.get("dividend_history") or {}
+        earliest_buy_date = None
+        if buys:
+            try:
+                earliest_buy_date = min(t.get("date") or "" for t in buys)
+            except Exception:
+                earliest_buy_date = None
+        earliest_year = None
+        if earliest_buy_date and len(earliest_buy_date) >= 4:
+            try:
+                earliest_year = int(earliest_buy_date[:4])
+            except ValueError:
+                earliest_year = None
+        latest_annual_dps = None
+        for k, v in div_hist.items():
+            try:
+                yr = int(float(k))
+                dps = float(v) if v is not None else 0
+            except (TypeError, ValueError):
+                continue
+            if earliest_year is None or yr >= earliest_year:
+                dividends_received += dps * qty
+            # latest DPS for yoc
+            if latest_annual_dps is None or yr > latest_annual_dps[0]:
+                latest_annual_dps = (yr, dps)
+
+        dividend_yield_on_cost = None
+        if latest_annual_dps and latest_annual_dps[1] and cost and qty:
+            dividend_yield_on_cost = round(
+                (latest_annual_dps[1] * qty) / cost * 100, 2
+            )
+
         positions.append({
             "symbol": sym,
+            "name": name,
             "qty": qty,
             "cost_basis": cost,
             "avg_cost": avg,
@@ -1556,10 +1608,21 @@ async def get_pnl():
             "market_value": mv,
             "unrealized_pnl": pnl,
             "unrealized_pct": pct,
+            "dividends_received": round(dividends_received, 2),
+            "dividend_yield_on_cost": dividend_yield_on_cost,
+            "weight_pct": None,  # filled below once total_mv is known
         })
         total_cost += cost
+        total_dividends += dividends_received
         if mv is not None:
             total_mv += mv
+
+    # Compute weight_pct per position now that total_mv is known
+    if total_mv:
+        for p in positions:
+            if p["market_value"] is not None:
+                p["weight_pct"] = round(p["market_value"] / total_mv * 100, 2)
+
     return {
         "positions": positions,
         "total": {
@@ -1569,6 +1632,8 @@ async def get_pnl():
             "unrealized_pct": ((total_mv - total_cost) / total_cost * 100)
             if total_cost
             else None,
+            "dividends_received": round(total_dividends, 2),
+            "cash_reserve": float(data.get("cash_reserve") or 0),
         },
     }
 
