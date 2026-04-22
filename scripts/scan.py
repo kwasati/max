@@ -1,7 +1,6 @@
 """Max Mahon v5 — Unified Scan (Niwes): top candidates + watchlist update + new in batch + watch out."""
 
 import json
-import os
 import re
 import sys
 from datetime import datetime
