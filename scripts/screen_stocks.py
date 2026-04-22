@@ -404,6 +404,8 @@ def save_exit_baseline(symbol: str, metrics: dict, baselines: dict) -> dict:
     Returns updated baselines dict (same object mutated + written).
     If symbol already has passed_5555=True entry: preserve earliest baseline,
     only refresh date_refreshed field (don't overwrite pe/pbv/dy baseline).
+    metrics may include optional 'entry_score' (int) to snapshot the screener score
+    at baseline creation time (used by v6 watchlist Δ Entry calculation).
     """
     today = datetime.now().strftime("%Y-%m-%d")
     existing = baselines.get(symbol, {})
@@ -416,6 +418,7 @@ def save_exit_baseline(symbol: str, metrics: dict, baselines: dict) -> dict:
             "pe_baseline": metrics.get("pe_ratio"),
             "pbv_baseline": metrics.get("pb_ratio"),
             "dy_baseline": metrics.get("dividend_yield"),
+            "entry_score": metrics.get("entry_score"),
             "date_added": today,
             "date_refreshed": today,
             "thesis_change_flag": False,
@@ -722,6 +725,7 @@ def main():
                         "pe_ratio": data.get("pe_ratio"),
                         "pb_ratio": data.get("pb_ratio"),
                         "dividend_yield": data.get("dividend_yield"),
+                        "entry_score": result.get("score"),
                     },
                     baselines,
                 )
