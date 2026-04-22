@@ -1,0 +1,411 @@
+/* ==========================================================
+   MAX MAHON v6 — Home page (desktop)
+   Ports web-v6-mockup/desktop/01-home.html → live data.
+   All sample content replaced with /api/screener,
+   /api/screener/trend, /api/status calls.
+   ========================================================== */
+
+// Public: shell imports this module and calls mount()
+export async function mount(container) {
+  window.MMComponents.renderLoading(container, 'Loading issue');
+
+  let screener, trend, status;
+  try {
+    [screener, trend, status] = await Promise.all([
+      window.MMApi.get('/api/screener'),
+      window.MMApi.get('/api/screener/trend?weeks=12'),
+      window.MMApi.get('/api/status'),
+    ]);
+  } catch (e) {
+    window.MMComponents.renderError(container, e.message, function () { mount(container); });
+    return;
+  }
+
+  _updateMasthead(status);
+  _ensureChartJs().then(function () {
+    container.innerHTML = _buildHomeHtml(screener, trend);
+    _mountTrendChart(trend);
+    _wireControls(screener);
+  });
+}
+
+// ----- Masthead re-render with live status -----
+function _updateMasthead(status) {
+  var host = document.getElementById('masthead');
+  if (!host) return;
+  var date = status && status.last_data_date
+    ? window.MMUtils.fmtDateLong(status.last_data_date).toUpperCase()
+    : window.MMUtils.fmtDateLong(new Date()).toUpperCase();
+  host.innerHTML = window.MMComponents.renderMasthead({
+    vol: 'VI',
+    no: '17',
+    date: date,
+    next_scan: 'SAT 09:00',
+    edition: 'Thai Stock Edition',
+    active: 'home'
+  });
+}
+
+// ----- Chart.js loader -----
+function _ensureChartJs() {
+  if (window.Chart) return Promise.resolve();
+  return new Promise(function (resolve, reject) {
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
+    s.onload = resolve;
+    s.onerror = function () { reject(new Error('Chart.js failed to load')); };
+    document.head.appendChild(s);
+  });
+}
+
+// ----- Card renderer -----
+function _renderCard(stock) {
+  var esc = window.MMUtils.escapeHtml;
+  var sym = esc(stock.symbol || '');
+  var name = esc(stock.name || '');
+  var metrics = stock.metrics || {};
+  var yieldPct = metrics.dividend_yield;
+  var pe = metrics.pe;
+  var pb = metrics.pb_ratio;
+  var mcap = metrics.mcap;
+
+  var signals = stock.signals || [];
+  var tags = '';
+  if (signals.indexOf('NIWES_5555') !== -1) {
+    tags += '<span class="tag primary">Niwes 5-5-5-5</span>';
+  }
+  if (signals.indexOf('HIDDEN_VALUE') !== -1) {
+    tags += '<span class="tag">Hidden Value</span>';
+  }
+  if (signals.indexOf('DEEP_VALUE') !== -1) {
+    tags += '<span class="tag">Deep Value</span>';
+  }
+  if (signals.indexOf('QUALITY_DIVIDEND') !== -1) {
+    tags += '<span class="tag">Quality Div</span>';
+  }
+
+  var scoreCurr = stock.score == null ? 0 : Math.round(stock.score);
+  var prevScore = stock.previous_score;
+  var delta = window.MMUtils.fmtScoreDelta(prevScore, scoreCurr);
+  var streak = stock.score_streak_weeks;
+  var deltaArrowStyle = '';
+  if (prevScore != null && scoreCurr < prevScore) {
+    deltaArrowStyle = ' style="color:var(--ink-dim)"';
+  }
+  var streakLine = '';
+  if (streak && streak >= 2) {
+    streakLine = '<br>' + esc(streak + ' wk streak');
+  } else if (prevScore == null) {
+    streakLine = '<br>first pass';
+  }
+
+  var ribbon = stock.is_new_this_week
+    ? '<div class="new-ribbon">New</div>'
+    : '';
+
+  var yieldStr = yieldPct == null ? '—' : window.MMUtils.fmtPercent(yieldPct);
+  var peStr = pe == null ? '—' : window.MMUtils.fmtNum(pe, 1);
+  var pbStr = pb == null ? '—' : window.MMUtils.fmtNum(pb, 2);
+  var mcapStr = mcap == null ? '—' : window.MMUtils.fmtCompact(mcap);
+
+  return (
+    '<article class="card" data-sym="' + sym + '">' +
+      ribbon +
+      '<div class="card-head">' +
+        '<div>' +
+          '<div class="card-sym">' + sym + '</div>' +
+          '<div class="card-name">' + name + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="card-tags">' + tags + '</div>' +
+      '<div class="card-score-row">' +
+        '<div><span class="score-big">' + scoreCurr + '</span><span class="score-max">/100</span></div>' +
+        '<div class="score-delta"><span class="arrow"' + deltaArrowStyle + '>' + delta.arrow + '</span>' + esc(delta.text) + streakLine + '</div>' +
+      '</div>' +
+      '<div class="card-metrics">' +
+        '<div><span class="lbl">Yield</span><span class="v">' + yieldStr + '</span></div>' +
+        '<div><span class="lbl">P/E</span><span class="v">' + peStr + '</span></div>' +
+        '<div><span class="lbl">P/BV</span><span class="v">' + pbStr + '</span></div>' +
+        '<div><span class="lbl">Mcap</span><span class="v">' + mcapStr + '</span></div>' +
+      '</div>' +
+    '</article>'
+  );
+}
+
+// ----- Summary / lede strip -----
+function _buildLedeAndSummary(screener) {
+  var s = screener.summary || {};
+  var esc = window.MMUtils.escapeHtml;
+  var passed = s.passed_count || 0;
+  var avgYield = s.avg_yield == null ? 0 : s.avg_yield;
+  var topScore = s.top_score || 0;
+  var newEnt = s.new_entrants || 0;
+  var total = s.total_scanned || 0;
+  var topSyms = (screener.candidates || [])
+    .slice()
+    .sort(function (a, b) { return (b.score || 0) - (a.score || 0); })
+    .slice(0, 5);
+  var topSymLabel = topSyms.length ? topSyms[0].symbol : '—';
+
+  var ledeHtml =
+    '<section class="lede-block" style="padding:var(--sp-5) 0;border-bottom:1px solid var(--rule)">' +
+      '<div class="lede-inner" style="max-width:68ch;margin:0 auto;text-align:center">' +
+        '<div class="kicker" style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:var(--sp-3)">The Weekly Screen</div>' +
+        '<h2 class="lede-headline" style="font-family:var(--font-head);font-weight:900;font-size:var(--fs-2xl);line-height:1.1;letter-spacing:-0.015em;margin-bottom:var(--sp-3)">' +
+          passed + ' names cleared the 5-5-5-5 gate this week.' +
+        '</h2>' +
+        '<p class="lede-sub" style="font-family:var(--font-head);font-style:italic;font-size:var(--fs-md);color:var(--ink-soft);line-height:1.45">' +
+          esc(newEnt) + ' first-time entrants. Average yield held at ' +
+          esc(window.MMUtils.fmtNum(avgYield, 1)) + '%, with top scorer ' +
+          esc(topSymLabel) + ' clearing ' + esc(topScore) + ' on the Niwes Dividend-First scale. ' +
+          'The universe stood at ' + esc(total) + '.' +
+        '</p>' +
+      '</div>' +
+    '</section>';
+
+  var summaryHtml =
+    '<section class="summary-strip">' +
+      '<div class="summary-cell"><span class="label">Scanned</span><span class="val mono">' + total + '</span></div>' +
+      '<div class="summary-cell"><span class="label">Passed</span><span class="val mono">' + passed + '</span></div>' +
+      '<div class="summary-cell"><span class="label">Review Bucket</span><span class="val mono">' + (s.review_count || 0) + '</span></div>' +
+      '<div class="summary-cell"><span class="label">Avg Yield</span><span class="val mono">' + window.MMUtils.fmtNum(avgYield, 1) + '<span style="font-size:0.7em">%</span></span></div>' +
+      '<div class="summary-cell"><span class="label">Top Score</span><span class="val mono">' + topScore + '</span></div>' +
+      '<div class="summary-cell"><span class="label">New Entrants</span><span class="val mono">' + newEnt + '</span></div>' +
+      '<div class="summary-cell"><span class="label">Sectors</span><span class="val mono">' + (s.sectors || 0) + '</span></div>' +
+    '</section>';
+
+  return ledeHtml + summaryHtml;
+}
+
+// ----- Trend + leaders strip -----
+function _buildTrendStrip(screener, trend) {
+  var esc = window.MMUtils.escapeHtml;
+  var topSyms = (screener.candidates || [])
+    .slice()
+    .sort(function (a, b) { return (b.score || 0) - (a.score || 0); })
+    .slice(0, 5);
+  var leadersHtml = '';
+  topSyms.forEach(function (s) {
+    var yld = (s.metrics || {}).dividend_yield;
+    leadersHtml +=
+      '<li>' +
+        '<span class="sym">' + esc(s.symbol) + '</span>' +
+        '<span class="val">' + (s.score == null ? '—' : Math.round(s.score)) +
+        ' · Yld ' + (yld == null ? '—' : window.MMUtils.fmtPercent(yld, 1)) +
+        '</span>' +
+      '</li>';
+  });
+  if (!leadersHtml) leadersHtml = '<li><span class="val" style="color:var(--ink-dim);font-style:italic">No leaders this week</span></li>';
+
+  return (
+    '<section class="mini-chart-strip" style="display:grid;grid-template-columns:2fr 1fr;gap:var(--sp-6);padding:var(--sp-5) 0;border-bottom:1px solid var(--rule);align-items:center">' +
+      '<div>' +
+        '<div class="micro" style="margin-bottom:var(--sp-2)">Pass Count · Trailing 12 Weeks</div>' +
+        '<div class="mini-chart-box" style="height:140px"><canvas id="v6-home-trend"></canvas></div>' +
+      '</div>' +
+      '<div class="strip-right" style="border-left:1px solid var(--rule-hair);padding-left:var(--sp-5)">' +
+        '<h3 style="font-family:var(--font-head);font-weight:700;font-size:var(--fs-md);margin-bottom:var(--sp-3)">This Week\'s Leaders</h3>' +
+        '<ul style="list-style:none;font-family:var(--font-body)">' + leadersHtml + '</ul>' +
+      '</div>' +
+    '</section>'
+  );
+}
+
+// ----- Filter bar -----
+function _buildFilterBar(totalCount) {
+  return (
+    '<div class="filter-bar" style="margin-bottom:var(--sp-5)" id="v6-home-filters">' +
+      '<div class="filter-group">' +
+        '<span class="lbl">Sort</span>' +
+        '<button class="filter-chip active" data-sort="score">Score</button>' +
+        '<button class="filter-chip" data-sort="yield">Yield</button>' +
+        '<button class="filter-chip" data-sort="pe">P/E</button>' +
+        '<button class="filter-chip" data-sort="pb">P/BV</button>' +
+        '<button class="filter-chip" data-sort="delta">&Delta; Score</button>' +
+      '</div>' +
+      '<div class="filter-group">' +
+        '<span class="lbl">Signal</span>' +
+        '<button class="filter-chip active" data-signal="ALL">All</button>' +
+        '<button class="filter-chip" data-signal="NIWES_5555">Niwes 5-5-5-5</button>' +
+        '<button class="filter-chip" data-signal="HIDDEN_VALUE">Hidden Value</button>' +
+        '<button class="filter-chip" data-signal="DEEP_VALUE">Deep Value</button>' +
+        '<button class="filter-chip" data-signal="QUALITY_DIVIDEND">Quality Div</button>' +
+      '</div>' +
+      '<div class="filter-group">' +
+        '<span class="lbl" style="margin-right:0">Showing</span>' +
+        '<span class="val mono" style="color:var(--ink);font-weight:500" id="v6-home-count">— of ' + totalCount + '</span>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+// ----- Top-level assembly -----
+function _buildHomeHtml(screener, trend) {
+  var candidates = (screener.candidates || []).slice();
+  var sectionHdr =
+    '<div class="section-num">' +
+      '<span class="no">01 · Watchlist</span>' +
+      '<span>' + candidates.length + ' names · Sorted by score · Descending</span>' +
+    '</div>';
+
+  var emptyState = '';
+  if (candidates.length === 0) {
+    emptyState =
+      '<section style="padding:var(--sp-7) 0;text-align:center">' +
+        '<p style="font-family:var(--font-head);font-style:italic;font-size:var(--fs-lg);color:var(--ink-soft)">' +
+          'ยังไม่มีหุ้นที่ผ่านเกณฑ์ในรอบนี้' +
+        '</p>' +
+      '</section>';
+  }
+
+  var gridHtml =
+    '<section class="card-grid" id="v6-home-grid"></section>' +
+    '<div class="ornament"></div>' +
+    '<section class="text-c" style="padding:var(--sp-5) 0" id="v6-home-pager"></section>' +
+    '<div class="page-foot" style="padding:var(--sp-6) 0;border-top:3px double var(--rule);margin-top:var(--sp-7);text-align:center;font-family:var(--font-head);font-style:italic;color:var(--ink-dim);font-size:var(--fs-sm)">' +
+      'Max Mahon — The Dividend Review · Published weekly · Algorithmic screen, human discipline.' +
+    '</div>';
+
+  return _buildLedeAndSummary(screener) +
+         _buildTrendStrip(screener, trend) +
+         sectionHdr +
+         _buildFilterBar(candidates.length) +
+         (candidates.length ? gridHtml : emptyState);
+}
+
+// ----- Trend chart -----
+function _mountTrendChart(trend) {
+  var canvas = document.getElementById('v6-home-trend');
+  if (!canvas || !window.Chart) return;
+  var weeks = (trend && trend.weeks) || [];
+  var labels = weeks.map(function (w) { return w.week_label || w.scan_date || ''; });
+  var data = weeks.map(function (w) { return w.passed || 0; });
+  var root = getComputedStyle(document.documentElement);
+  var textInk = root.getPropertyValue('--ink').trim();
+  var inkDim = root.getPropertyValue('--ink-dim').trim();
+  var ruleHair = 'rgba(26,24,20,0.18)';
+  window.Chart.defaults.font.family = 'Lora, serif';
+  window.Chart.defaults.color = inkDim;
+  new window.Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: textInk,
+        borderWidth: 0,
+        barThickness: 14,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, border: { color: ruleHair }, ticks: { font: { size: 10 } } },
+        y: { grid: { color: ruleHair, drawBorder: false }, border: { display: false }, ticks: { font: { size: 10 } }, suggestedMin: 0 }
+      }
+    }
+  });
+}
+
+// ----- Client-side filter / sort / pagination -----
+var _state = {
+  sort: 'score',
+  signal: 'ALL',
+  page: 1,
+  pageSize: 15,
+  all: []
+};
+
+function _applyFilterSort() {
+  var arr = _state.all.slice();
+  if (_state.signal !== 'ALL') {
+    arr = arr.filter(function (c) {
+      return (c.signals || []).indexOf(_state.signal) !== -1;
+    });
+  }
+  arr.sort(function (a, b) {
+    if (_state.sort === 'score') return (b.score || 0) - (a.score || 0);
+    if (_state.sort === 'yield') {
+      return ((b.metrics || {}).dividend_yield || 0) - ((a.metrics || {}).dividend_yield || 0);
+    }
+    if (_state.sort === 'pe') {
+      return ((a.metrics || {}).pe || 999) - ((b.metrics || {}).pe || 999);
+    }
+    if (_state.sort === 'pb') {
+      return ((a.metrics || {}).pb_ratio || 999) - ((b.metrics || {}).pb_ratio || 999);
+    }
+    if (_state.sort === 'delta') {
+      return (b.score_delta || 0) - (a.score_delta || 0);
+    }
+    return 0;
+  });
+  return arr;
+}
+
+function _renderGrid() {
+  var grid = document.getElementById('v6-home-grid');
+  var pager = document.getElementById('v6-home-pager');
+  var countEl = document.getElementById('v6-home-count');
+  if (!grid) return;
+  var filtered = _applyFilterSort();
+  var visible = filtered.slice(0, _state.page * _state.pageSize);
+  grid.innerHTML = visible.map(_renderCard).join('');
+  // wire click
+  Array.prototype.forEach.call(grid.querySelectorAll('.card'), function (card) {
+    card.addEventListener('click', function () {
+      var sym = card.getAttribute('data-sym');
+      if (sym) location.href = '/report/' + encodeURIComponent(sym);
+    });
+  });
+  // count label
+  if (countEl) {
+    countEl.textContent = visible.length + ' of ' + filtered.length;
+  }
+  // pager
+  if (pager) {
+    var remaining = filtered.length - visible.length;
+    if (remaining > 0) {
+      pager.innerHTML = '<button class="btn ghost" id="v6-home-loadmore">Load remaining ' + remaining + ' of ' + filtered.length + ' &rarr;</button>';
+      var btn = document.getElementById('v6-home-loadmore');
+      if (btn) btn.addEventListener('click', function () {
+        _state.page++;
+        _renderGrid();
+      });
+    } else {
+      pager.innerHTML = '';
+    }
+  }
+}
+
+function _wireControls(screener) {
+  _state.all = screener.candidates || [];
+  _state.page = 1;
+  var bar = document.getElementById('v6-home-filters');
+  if (bar) {
+    Array.prototype.forEach.call(bar.querySelectorAll('[data-sort]'), function (btn) {
+      btn.addEventListener('click', function () {
+        Array.prototype.forEach.call(bar.querySelectorAll('[data-sort]'), function (b) {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        _state.sort = btn.getAttribute('data-sort');
+        _state.page = 1;
+        _renderGrid();
+      });
+    });
+    Array.prototype.forEach.call(bar.querySelectorAll('[data-signal]'), function (btn) {
+      btn.addEventListener('click', function () {
+        Array.prototype.forEach.call(bar.querySelectorAll('[data-signal]'), function (b) {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        _state.signal = btn.getAttribute('data-signal');
+        _state.page = 1;
+        _renderGrid();
+      });
+    });
+  }
+  _renderGrid();
+}

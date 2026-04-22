@@ -3059,23 +3059,53 @@ _V6_MOBILE = _V6_DIR / "mobile" / "index.html"
 _V6_STATIC = _V6_DIR / "static"
 
 
+def _render_shell(html_path: Path) -> HTMLResponse:
+    if not html_path.exists():
+        raise HTTPException(404, "v6 shell missing")
+    html = html_path.read_text(encoding="utf-8")
+    html = html.replace("{{CACHEBUST}}", str(int(time.time())))
+    return HTMLResponse(html)
+
+
 @app.get("/mobile", response_class=HTMLResponse)
 @app.get("/m", response_class=HTMLResponse)
 async def serve_mobile():
-    if not _V6_MOBILE.exists():
-        raise HTTPException(404, "v6 mobile shell missing")
-    html = _V6_MOBILE.read_text(encoding="utf-8")
-    html = html.replace("{{CACHEBUST}}", str(int(time.time())))
-    return HTMLResponse(html)
+    return _render_shell(_V6_MOBILE)
 
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
-    if not _V6_DESKTOP.exists():
-        raise HTTPException(404, "v6 desktop shell missing")
-    html = _V6_DESKTOP.read_text(encoding="utf-8")
-    html = html.replace("{{CACHEBUST}}", str(int(time.time())))
-    return HTMLResponse(html)
+    return _render_shell(_V6_DESKTOP)
+
+
+# Desktop SPA routes — all route to the same shell; page JS picks module by pathname
+@app.get("/home", response_class=HTMLResponse)
+@app.get("/watchlist", response_class=HTMLResponse)
+@app.get("/portfolio", response_class=HTMLResponse)
+@app.get("/simulator", response_class=HTMLResponse)
+@app.get("/settings", response_class=HTMLResponse)
+async def serve_desktop_page():
+    return _render_shell(_V6_DESKTOP)
+
+
+@app.get("/report/{symbol}", response_class=HTMLResponse)
+async def serve_desktop_report(symbol: str):
+    return _render_shell(_V6_DESKTOP)
+
+
+# Mobile SPA routes
+@app.get("/m/home", response_class=HTMLResponse)
+@app.get("/m/watchlist", response_class=HTMLResponse)
+@app.get("/m/portfolio", response_class=HTMLResponse)
+@app.get("/m/simulator", response_class=HTMLResponse)
+@app.get("/m/settings", response_class=HTMLResponse)
+async def serve_mobile_page():
+    return _render_shell(_V6_MOBILE)
+
+
+@app.get("/m/report/{symbol}", response_class=HTMLResponse)
+async def serve_mobile_report(symbol: str):
+    return _render_shell(_V6_MOBILE)
 
 
 _V6_SHARED = _V6_DIR / "shared"
