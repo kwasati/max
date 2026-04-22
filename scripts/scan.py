@@ -40,26 +40,6 @@ def get_latest_screener() -> Path:
     return files[0]
 
 
-def build_filtered_section(stock: dict, reason: str = "") -> str:
-    """สำหรับ watchlist stocks ที่ fail filter (schema: symbol, name, sector, reasons, basic_metrics)"""
-    sym = stock.get("symbol", "?")
-    name = stock.get("name", sym)
-    basic = stock.get("basic_metrics", {})
-    fail_reasons = stock.get("reasons", [])
-
-    lines = [f"### {name} ({sym}) — ❌ หลุดรอบนี้"]
-    if reason:
-        lines.append(f"- Watchlist note: {reason}")
-    lines.append(f"- Sector: {stock.get('sector', 'N/A')}")
-    lines.append(f"- Fail reasons: {'; '.join(fail_reasons) if fail_reasons else 'N/A'}")
-    lines.append(
-        f"- Price: ฿{fmt(basic.get('price'))} | P/E: {fmt(basic.get('pe'))} | "
-        f"Yield: {fmt(basic.get('dividend_yield'))}% | ROE: {fmt(basic.get('roe'), pct=True)} | "
-        f"D/E: {fmt(basic.get('de'))} | MCap: {fmt(basic.get('mcap'), billions=True)}"
-    )
-    return "\n".join(lines)
-
-
 def load_historical_candidates(current_screener: Path) -> set:
     """รวบรวม symbols ทั้งหมดที่เคยอยู่ใน candidates array ของ screener รอบก่อนๆ (ไม่รวม current)"""
     seen = set()
