@@ -2,9 +2,11 @@
 
 import json
 import logging
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -398,6 +400,55 @@ def load_exit_baselines() -> dict:
         return {}
 
 
+_SCREENER_DATE_PATTERN = re.compile(r"^screener_\d{4}-\d{2}-\d{2}\.json$")
+
+
+def load_prior_screener_files() -> list[Path]:
+    """Return prior screener_YYYY-MM-DD.json files sorted by mtime (newest first).
+
+    Uses regex filter to avoid curated/backup files from leaking into sort
+    (per MEMORY lesson: lex sort on glob can include files like
+    'screener_2026-04-22_curated.json' — always filter + use mtime).
+    """
+    files = [
+        f for f in DATA_DIR.glob("screener_*.json")
+        if _SCREENER_DATE_PATTERN.match(f.name)
+    ]
+    return sorted(files, key=lambda p: p.stat().st_mtime, reverse=True)
+
+
+def compute_score_streak(symbol: str, current_score: int, prior_files: list[Path]) -> tuple[int, Optional[int]]:
+    """Count consecutive prior scans where score went up for this symbol.
+
+    Returns (streak_weeks, previous_score). Streak = number of consecutive
+    prior scans where score was <= the one after it (i.e., score moved up or stayed).
+    Stops at first decrease.
+    """
+    streak = 0
+    last = current_score
+    previous_score: Optional[int] = None
+    for f in prior_files[:20]:
+        try:
+            data = json.loads(f.read_text(encoding="utf-8"))
+            match = next(
+                (c for c in data.get('candidates', []) if c.get('symbol') == symbol),
+                None,
+            )
+            if not match or match.get('score') is None:
+                break
+            match_score = match['score']
+            if previous_score is None:
+                previous_score = match_score
+            if match_score <= last:
+                streak += 1
+                last = match_score
+            else:
+                break
+        except Exception:
+            break
+    return streak, previous_score
+
+
 def save_exit_baseline(symbol: str, metrics: dict, baselines: dict) -> dict:
     """Save baseline for symbol when it first passes NIWES_5555. Writes atomic to JSON.
 
@@ -633,6 +684,9 @@ def main():
     # Exit baseline tracking (Niwes sell rules) — load once, update on NIWES_5555
     baselines = load_exit_baselines()
 
+    # v6 Phase 6 — load prior screener files for score streak computation
+    prior_screener_files = load_prior_screener_files()
+
     candidates = []
     review_candidates: list[dict] = []
     filtered_stocks = []
@@ -745,12 +799,19 @@ def main():
                     avg_dps = sum(dh[y] for y in recent_5) / len(recent_5)
                     five_yr_yield = avg_dps / data["price"] * 100 if data["price"] > 0 else None
 
+            # v6 Phase 6 — score streak + previous score (computed from prior screener files)
+            streak_weeks, prev_score = compute_score_streak(
+                sym, result["score"], prior_screener_files,
+            )
+
             entry = {
                 "symbol": sym,
                 "name": data.get("name", sym),
                 "sector": data.get("sector", "N/A"),
                 "in_watchlist": in_watchlist,
                 "score": result["score"],
+                "score_streak_weeks": streak_weeks,
+                "previous_score": prev_score,
                 "breakdown": result["breakdown"],
                 "signals": result["signals"],
                 "reasons": result["reasons"],
