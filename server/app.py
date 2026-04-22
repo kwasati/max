@@ -754,17 +754,18 @@ async def get_scan_report(num: Optional[int] = None):
 
 CONFIG_PATH = PROJECT_DIR / "config.json"
 DEFAULT_CONFIG = {
-    "schedule": {"enabled": True, "day_of_week": "sun", "hour": 9, "minute": 0},
+    "schedule": {"enabled": True, "day_of_week": "sat", "hour": 9, "minute": 0},
     "filters": {
-        "min_roe_avg": 0.15,
-        "min_roe_floor": 0.12,
-        "min_net_margin": 0.10,
-        "max_de_non_fin": 1.5,
-        "max_de_financial": 10,
-        "min_eps_positive_years": 3,
-        "min_fcf_positive_years": 3,
+        "min_dividend_yield": 5.0,
+        "min_dividend_streak": 5,
+        "min_eps_positive_years": 5,
+        "max_pe": 15.0,
+        "bonus_pe": 8.0,
+        "max_pbv": 1.5,
+        "bonus_pbv": 1.0,
         "min_market_cap": 5_000_000_000,
     },
+    "universe": "set_mai",
 }
 
 
