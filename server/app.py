@@ -3051,26 +3051,35 @@ async def portfolio_backtest(req: PortfolioBacktestRequest):
 
 
 # ---------------------------------------------------------------------------
-# Static files (SPA) — mount last so API routes take priority
+# Static files (SPA) — v6 shells — mount last so API routes take priority
 # ---------------------------------------------------------------------------
+_V6_DIR = WEB_DIR / "v6"
+_V6_DESKTOP = _V6_DIR / "desktop" / "index.html"
+_V6_MOBILE = _V6_DIR / "mobile" / "index.html"
+_V6_STATIC = _V6_DIR / "static"
+
+
 @app.get("/mobile", response_class=HTMLResponse)
+@app.get("/m", response_class=HTMLResponse)
 async def serve_mobile():
-    mobile_path = WEB_DIR / "mobile.html"
-    html = mobile_path.read_text(encoding="utf-8")
+    if not _V6_MOBILE.exists():
+        raise HTTPException(404, "v6 mobile shell missing")
+    html = _V6_MOBILE.read_text(encoding="utf-8")
+    html = html.replace("{{CACHEBUST}}", str(int(time.time())))
     return HTMLResponse(html)
+
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
-    index_path = WEB_DIR / "index.html"
-    html = index_path.read_text(encoding="utf-8")
-    css_mtime = int((WEB_DIR / "style.css").stat().st_mtime)
-    js_mtime = int((WEB_DIR / "app.js").stat().st_mtime)
-    html = html.replace("style.css?v=__CB__", f"style.css?v={css_mtime}")
-    html = html.replace("app.js?v=__CB__", f"app.js?v={js_mtime}")
+    if not _V6_DESKTOP.exists():
+        raise HTTPException(404, "v6 desktop shell missing")
+    html = _V6_DESKTOP.read_text(encoding="utf-8")
+    html = html.replace("{{CACHEBUST}}", str(int(time.time())))
     return HTMLResponse(html)
 
-if WEB_DIR.exists():
-    app.mount("/", StaticFiles(directory=str(WEB_DIR)), name="static")
+
+if _V6_STATIC.exists():
+    app.mount("/static/v6", StaticFiles(directory=str(_V6_STATIC)), name="v6-static")
 
 
 # ---------------------------------------------------------------------------
