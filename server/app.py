@@ -2031,7 +2031,12 @@ def _latest_screener_file() -> dict:
 
 @app.get("/api/history/v2")
 async def get_history_v2(limit: int = 50, symbol: Optional[str] = None):
-    """Return v2 history with optional symbol filter + pagination."""
+    """Return v2 history with optional symbol filter + pagination.
+
+    v6 Phase 2 — enrich each scan's counts with avg_yield, top_score, new_entrants,
+    sectors (derived from top_candidates when missing). Empty state returns a
+    stable {scans: [], count: 0, signature_version: "v2"} shape.
+    """
     _project_root = str(PROJECT_DIR)
     if _project_root not in sys.path:
         sys.path.insert(0, _project_root)
@@ -2039,14 +2044,39 @@ async def get_history_v2(limit: int = 50, symbol: Optional[str] = None):
 
     limit = min(max(limit, 1), 200)
     hist = _load_v2_history()
-    scans = hist.get("scans", [])
+    scans = hist.get("scans", []) or []
     if symbol:
         scans = [
             s for s in scans
             if any(c.get("symbol") == symbol for c in s.get("top_candidates", []))
         ]
     scans = scans[-limit:]
-    return {"scans": scans, "count": len(scans)}
+
+    # v6 Phase 2 — ensure each scan entry's counts exposes the full v6 shape
+    for s in scans:
+        counts = s.get("counts") or {}
+        top = s.get("top_candidates") or []
+        yields = [c.get("yield") for c in top if c.get("yield") is not None]
+        sectors = {c.get("sector") for c in top if c.get("sector")}
+        # preserve existing keys, fill missing
+        counts.setdefault("passed", counts.get("passed", 0))
+        counts.setdefault("review", counts.get("review", 0))
+        counts.setdefault("failed", counts.get("filtered", counts.get("failed", 0)))
+        if counts.get("avg_yield") is None:
+            counts["avg_yield"] = round(sum(yields) / len(yields), 2) if yields else 0
+        if counts.get("top_score") is None:
+            counts["top_score"] = max((c.get("score", 0) for c in top), default=0)
+        if counts.get("new_entrants") is None:
+            counts["new_entrants"] = counts.get("new", 0)
+        if counts.get("sectors") is None:
+            counts["sectors"] = len(sectors)
+        s["counts"] = counts
+
+    return {
+        "scans": scans,
+        "count": len(scans),
+        "signature_version": "v2",
+    }
 
 
 @app.get("/api/stock/{symbol}/patterns")
