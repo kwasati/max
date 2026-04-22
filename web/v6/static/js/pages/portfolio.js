@@ -1,17 +1,20 @@
 /* ==========================================================
    MAX MAHON v6 — Portfolio Page (Desktop)
-   Section 04a Real Holdings (Simulated allocation added next
-   commit / Phase 2 of Plan 06).
-   Fetches live from /api/portfolio/pnl — NO hardcoded stock
-   data. No color for gains/losses; uses ↑/↓ chars + italic.
+   Section 04a Real Holdings + Section 04b Simulated Allocation.
+   Fetches live from /api/portfolio/pnl + /api/portfolio/simulated
+   — NO hardcoded stock data. No color for gains/losses; uses
+   ↑/↓ chars + weight + italic.
    ========================================================== */
 
 let _realChart = null;
+let _simChart = null;
+let _simState = { positions: [], cash_reserve_pct: 0, concentration_profile: '30/30/30/10' };
 
 /** Entry point called by the shell bootstrap. */
 export function mount(root) {
   root.innerHTML = _renderShell();
   _loadReal(root);
+  _loadSimulated(root);
 }
 
 // ---- Shell ------------------------------------------------------------------
@@ -48,6 +51,35 @@ function _renderShell() {
       '</div>' +
     '</section>' +
 
+    // DIVIDER
+    '<div class="divider-block">' +
+      '<div class="ornament" style="margin:0"></div>' +
+      '<div class="divider-title mt-4">Simulated Allocation Below</div>' +
+      '<div class="divider-sub">Target weights for future capital · not yet deployed.</div>' +
+    '</div>' +
+
+    // 04b SIMULATED
+    '<div class="section-num">' +
+      '<span class="no">04b · Simulated</span>' +
+      '<span>PORT จำลอง · Target Weights</span>' +
+    '</div>' +
+    '<section class="portfolio-section" id="port-sim">' +
+      '<div class="pie-wrap">' +
+        '<div class="pie-box"><canvas id="simPie"></canvas></div>' +
+        '<div class="pie-total" id="sim-totals">' +
+          '<div class="lbl">Target Allocation</div>' +
+          '<div class="val">—</div>' +
+          '<div class="sub">loading</div>' +
+        '</div>' +
+      '</div>' +
+      '<div id="sim-right">' +
+        '<div id="sim-table-host"></div>' +
+        '<div class="flex jb ac mt-5" style="padding-top:var(--sp-4);border-top:1px solid var(--rule)">' +
+          '<div class="micro" id="sim-footmeta">&nbsp;</div>' +
+          '<button class="btn ghost" id="sim-add-btn" type="button">+ เพิ่มหุ้น</button>' +
+        '</div>' +
+      '</div>' +
+    '</section>' +
 
     '<div class="ornament"></div>'
   );
@@ -350,6 +382,296 @@ async function _openDeleteTxModal(root, symbol) {
   }
 }
 
-// Simulated allocation (Phase 2 — implemented next commit)
-function _loadSimulated(_root) { /* phase-2 */ }
-function _bindSimActions(_root) { /* phase-2 */ }
+// ============================================================================
+// PHASE 2 — Simulated allocation
+// ============================================================================
+
+async function _loadSimulated(root) {
+  const tableHost = root.querySelector('#sim-table-host');
+  window.MMComponents.renderLoading(tableHost, 'Loading target allocation');
+  try {
+    const data = await window.MMApi.get('/api/portfolio/simulated');
+    _simState.positions = (data.positions || []).map(function (p) { return Object.assign({}, p); });
+    _simState.cash_reserve_pct = data.cash_reserve_pct || 0;
+    _simState.concentration_profile = data.concentration_profile || '30/30/30/10';
+    _simState.total_weight_pct = data.total_weight_pct || 0;
+    _simState.projected_yoc_pct = data.projected_yoc_pct || 0;
+    _renderSimulated(root);
+  } catch (e) {
+    window.MMComponents.renderError(
+      tableHost,
+      'โหลด Simulated ไม่สำเร็จ: ' + (e && e.message || e),
+      function () { _loadSimulated(root); }
+    );
+  }
+  _bindSimActions(root);
+}
+
+function _renderSimulated(root) {
+  const tableHost = root.querySelector('#sim-table-host');
+  const totalsHost = root.querySelector('#sim-totals');
+  const footMeta = root.querySelector('#sim-footmeta');
+  const E = window.MMUtils.escapeHtml;
+  const F = window.MMUtils;
+  const positions = _simState.positions || [];
+  const cashPct = _simState.cash_reserve_pct || 0;
+
+  // --- Empty state ---
+  if (positions.length === 0) {
+    tableHost.innerHTML =
+      '<div class="empty-note">' +
+        'ยังไม่มี allocation จำลอง · กด <strong>+ เพิ่มหุ้น</strong> เพื่อตั้งพอร์ตเป้าหมาย.' +
+      '</div>';
+    totalsHost.innerHTML =
+      '<div class="lbl">Target Allocation</div>' +
+      '<div class="val">0.0%</div>' +
+      '<div class="sub italic">projected yoc · —</div>';
+    footMeta.textContent = 'Target 0 positions · ' + _simState.concentration_profile;
+    _drawSimChart([], []);
+    return;
+  }
+
+  // --- Table ---
+  let totalW = 0;
+  positions.forEach(function (p) { totalW += Number(p.weight_pct || 0); });
+
+  let rows = '';
+  positions.forEach(function (p, i) {
+    const wVisual = Math.max(2, Math.min(60, Math.round((p.weight_pct || 0) * 1.5)));
+    const yld = (p.target_yield_pct != null) ? p.target_yield_pct.toFixed(2) + '%' : '—';
+    const price = (p.current_price != null) ? F.fmtNum(p.current_price, 2) : '—';
+    const score = (p.score != null) ? String(p.score) : '—';
+    let signalHtml = '';
+    (p.signals || []).forEach(function (s) {
+      const cls = (s === 'NIWES_5555') ? 'tag primary' : 'tag';
+      signalHtml += '<span class="' + cls + '" style="font-size:0.58rem">' + E(s) + '</span>';
+    });
+
+    rows += '<tr data-sim-idx="' + i + '">' +
+      '<td>' +
+        '<span class="sym">' + E(p.symbol) + '</span> ' +
+        '<input type="text" class="dim italic" data-sim-label="' + i + '" value="' + E(p.label || '') + '" placeholder="label..." style="background:transparent;border:none;border-bottom:1px dashed var(--rule-hair);color:var(--ink-dim);font-family:var(--font-head);font-style:italic;font-size:var(--fs-sm);width:150px;padding:2px 4px">' +
+      '</td>' +
+      '<td class="num">' +
+        '<span class="weight-bar" style="width:' + wVisual + 'px"></span>' +
+        '<input type="number" class="weight-input" data-sim-weight="' + i + '" value="' + (p.weight_pct || 0) + '" step="0.5" min="0" max="100"> %' +
+      '</td>' +
+      '<td class="num">' + price + '</td>' +
+      '<td class="num">' + yld + '</td>' +
+      '<td class="num">' + score + '</td>' +
+      '<td><span class="sim-signals">' + signalHtml + '</span></td>' +
+      '<td class="num"><button class="row-del" data-sim-del="' + i + '" title="ลบออกจาก allocation">&times;</button></td>' +
+      '</tr>';
+  });
+
+  // Cash row
+  const cashVisual = Math.max(2, Math.min(60, Math.round(cashPct * 1.5)));
+  rows += '<tr data-sim-cash="1">' +
+    '<td class="italic dim">Cash reserve</td>' +
+    '<td class="num">' +
+      '<span class="weight-bar" style="width:' + cashVisual + 'px"></span>' +
+      '<input type="number" class="weight-input" id="sim-cash-pct" value="' + cashPct + '" step="0.5" min="0" max="100"> %' +
+    '</td>' +
+    '<td class="num dim">—</td>' +
+    '<td class="num dim">—</td>' +
+    '<td class="num dim">—</td>' +
+    '<td></td>' +
+    '<td></td>' +
+    '</tr>';
+
+  tableHost.innerHTML =
+    '<table class="data-table">' +
+      '<thead><tr>' +
+        '<th>Position</th>' +
+        '<th class="num">Weight</th>' +
+        '<th class="num">Price Now</th>' +
+        '<th class="num">Target Yield</th>' +
+        '<th class="num">Score</th>' +
+        '<th>Signal</th>' +
+        '<th style="width:30px"></th>' +
+      '</tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table>';
+
+  // --- Totals panel ---
+  const grandTotal = totalW + cashPct;
+  const warnClass = Math.abs(grandTotal - 100) > 0.1 ? ' weight-sum-warn' : '';
+  totalsHost.innerHTML =
+    '<div class="lbl">Target Allocation</div>' +
+    '<div class="val">' + grandTotal.toFixed(1) + '%</div>' +
+    '<div class="sub' + warnClass + '">' +
+      (Math.abs(grandTotal - 100) > 0.1 ? '⚠ sum ≠ 100%' : 'projected yoc · ') +
+      (Math.abs(grandTotal - 100) > 0.1 ? '' : '<span class="mono" style="font-style:normal">' + (_simState.projected_yoc_pct || 0).toFixed(2) + '%</span>') +
+    '</div>';
+
+  // --- Footer meta ---
+  footMeta.textContent =
+    'Target ' + positions.length + ' positions + cash · ' + _simState.concentration_profile + ' · ตาม ดร.นิเวศน์';
+
+  // --- Chart ---
+  const labels = positions.map(function (p) { return p.symbol + ' ' + (p.weight_pct || 0).toFixed(0) + '%'; });
+  const vals = positions.map(function (p) { return Number(p.weight_pct || 0); });
+  if (cashPct > 0) {
+    labels.push('Cash ' + cashPct.toFixed(0) + '%');
+    vals.push(cashPct);
+  }
+  _drawSimChart(labels, vals);
+
+  // --- Wire inline edits ---
+  tableHost.querySelectorAll('[data-sim-weight]').forEach(function (inp) {
+    inp.addEventListener('blur', function () {
+      const i = parseInt(inp.getAttribute('data-sim-weight'), 10);
+      const v = parseFloat(inp.value);
+      if (isNaN(v) || v < 0) { inp.value = _simState.positions[i].weight_pct || 0; return; }
+      _simState.positions[i].weight_pct = v;
+      _persistSim(root);
+    });
+  });
+  tableHost.querySelectorAll('[data-sim-label]').forEach(function (inp) {
+    inp.addEventListener('blur', function () {
+      const i = parseInt(inp.getAttribute('data-sim-label'), 10);
+      _simState.positions[i].label = inp.value || '';
+      _persistSim(root);
+    });
+  });
+  tableHost.querySelectorAll('[data-sim-del]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const i = parseInt(btn.getAttribute('data-sim-del'), 10);
+      const sym = _simState.positions[i].symbol;
+      if (!window.confirm('ลบ ' + sym + ' ออกจาก allocation?')) return;
+      _simState.positions.splice(i, 1);
+      _persistSim(root);
+    });
+  });
+  const cashInp = tableHost.querySelector('#sim-cash-pct');
+  if (cashInp) {
+    cashInp.addEventListener('blur', function () {
+      const v = parseFloat(cashInp.value);
+      if (isNaN(v) || v < 0) { cashInp.value = _simState.cash_reserve_pct || 0; return; }
+      _simState.cash_reserve_pct = v;
+      _persistSim(root);
+    });
+  }
+}
+
+function _drawSimChart(labels, data) {
+  const canvas = document.getElementById('simPie');
+  if (!canvas || typeof Chart === 'undefined') return;
+  if (_simChart) { _simChart.destroy(); _simChart = null; }
+  if (!data.length) return;
+  _simChart = new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: _pieColors(data.length),
+        borderColor: _pieBorder(),
+        borderWidth: 2,
+        spacing: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '58%',
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: { font: { size: 10 }, boxWidth: 10, padding: 5 }
+        }
+      }
+    }
+  });
+}
+
+function _bindSimActions(root) {
+  const addBtn = root.querySelector('#sim-add-btn');
+  if (addBtn && !addBtn._bound) {
+    addBtn._bound = true;
+    addBtn.addEventListener('click', function () { _openAddSimModal(root); });
+  }
+}
+
+// ---- Persist simulated state ----------------------------------------------
+
+async function _persistSim(root) {
+  // Validate sum
+  let sumW = 0;
+  _simState.positions.forEach(function (p) { sumW += Number(p.weight_pct || 0); });
+  const grand = sumW + (_simState.cash_reserve_pct || 0);
+  if (grand > 100.01) {
+    window.MMComponents.showToast('รวม weight + cash > 100% (' + grand.toFixed(1) + '%)', 'error');
+    // Re-render to revert any visual change? Just re-render state.
+    _renderSimulated(root);
+    return;
+  }
+  try {
+    const body = {
+      positions: _simState.positions.map(function (p) {
+        return {
+          symbol: p.symbol,
+          label: p.label || '',
+          weight_pct: Number(p.weight_pct || 0)
+        };
+      }),
+      cash_reserve_pct: Number(_simState.cash_reserve_pct || 0)
+    };
+    await window.MMApi.put('/api/portfolio/simulated', body);
+    window.MMComponents.showToast('Saved');
+    // Re-fetch to refresh computed metrics (projected_yoc, price, score, signals)
+    _loadSimulated(root);
+  } catch (e) {
+    window.MMComponents.showToast('บันทึกไม่สำเร็จ: ' + (e && e.message || e), 'error');
+  }
+}
+
+// ---- Add simulated position modal -----------------------------------------
+
+function _openAddSimModal(root) {
+  const html =
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-4)">' +
+      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim)">Symbol' +
+        '<input type="text" id="sim-add-symbol" placeholder="BBL" style="margin-top:4px;width:100%;padding:8px;border:1px solid var(--rule);background:var(--paper-3);font-family:var(--font-mono);color:var(--ink)">' +
+      '</label>' +
+      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim)">Weight %' +
+        '<input type="number" id="sim-add-weight" step="0.5" min="0" max="100" placeholder="10" style="margin-top:4px;width:100%;padding:8px;border:1px solid var(--rule);background:var(--paper-3);font-family:var(--font-mono);color:var(--ink)">' +
+      '</label>' +
+      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim);grid-column:1/-1">Label' +
+        '<input type="text" id="sim-add-label" placeholder="core defensive / hidden value / ..." style="margin-top:4px;width:100%;padding:8px;border:1px solid var(--rule);background:var(--paper-3);font-family:var(--font-mono);color:var(--ink)">' +
+      '</label>' +
+    '</div>' +
+    '<div style="display:flex;justify-content:flex-end;gap:var(--sp-3);margin-top:var(--sp-5)">' +
+      '<button type="button" class="btn ghost" id="sim-add-cancel">Cancel</button>' +
+      '<button type="button" class="btn primary" id="sim-add-save">Add</button>' +
+    '</div>';
+  window.MMComponents.openModal(html, {
+    kicker: 'Simulated',
+    headline: 'เพิ่มหุ้นใน allocation',
+    dek: 'กำหนด weight เป้าหมาย · label ช่วยจัดกลุ่ม.'
+  });
+
+  document.getElementById('sim-add-cancel').addEventListener('click', function () {
+    window.MMComponents.closeModal();
+  });
+  document.getElementById('sim-add-save').addEventListener('click', function () {
+    const sym = (document.getElementById('sim-add-symbol').value || '').trim().toUpperCase();
+    const w = parseFloat(document.getElementById('sim-add-weight').value);
+    const lbl = (document.getElementById('sim-add-label').value || '').trim();
+    if (!sym) return window.MMComponents.showToast('ใส่ symbol', 'error');
+    if (isNaN(w) || w <= 0) return window.MMComponents.showToast('weight ต้อง > 0', 'error');
+    // Check sum
+    let curSum = _simState.cash_reserve_pct || 0;
+    _simState.positions.forEach(function (p) { curSum += Number(p.weight_pct || 0); });
+    if (curSum + w > 100.01) {
+      return window.MMComponents.showToast('เกิน 100% (จะกลายเป็น ' + (curSum + w).toFixed(1) + '%)', 'error');
+    }
+    // Duplicate check
+    const dup = _simState.positions.some(function (p) { return p.symbol === sym; });
+    if (dup) return window.MMComponents.showToast(sym + ' มีอยู่แล้ว', 'warn');
+
+    _simState.positions.push({ symbol: sym, label: lbl, weight_pct: w });
+    window.MMComponents.closeModal();
+    _persistSim(root);
+  });
+}
