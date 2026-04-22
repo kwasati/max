@@ -40,22 +40,6 @@ def get_latest_screener() -> Path:
     return files[0]
 
 
-def load_historical_candidates(current_screener: Path) -> set:
-    """รวบรวม symbols ทั้งหมดที่เคยอยู่ใน candidates array ของ screener รอบก่อนๆ (ไม่รวม current)"""
-    seen = set()
-    for f in DATA_DIR.glob("screener_*.json"):
-        if f.name == current_screener.name:
-            continue
-        try:
-            data = json.loads(f.read_text(encoding="utf-8"))
-            for c in data.get("candidates", []):
-                if c.get("symbol"):
-                    seen.add(c["symbol"])
-        except Exception:
-            continue
-    return seen
-
-
 def classify_stocks(screener_data: dict, watchlist: list, current_screener: Path):
     """แยกเป็น 3 groups: top_candidates, watchlist_current, new_in_batch"""
     candidates = screener_data.get("candidates", [])
