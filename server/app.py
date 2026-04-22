@@ -185,6 +185,25 @@ async def get_watchlist():
     return read_json(path)
 
 
+def _load_previous_screener(exclude_current: Path) -> Optional[dict]:
+    """Load the screener JSON immediately preceding the latest one, sorted by filename date."""
+    files = sorted(
+        [
+            f for f in DATA_DIR.glob("screener_*.json")
+            if re.match(r"^screener_\d{4}-\d{2}-\d{2}\.json$", f.name)
+        ],
+        reverse=True,
+    )
+    for f in files:
+        if f == exclude_current:
+            continue
+        try:
+            return read_json(f)
+        except Exception:
+            continue
+    return None
+
+
 @app.get("/api/screener")
 async def get_screener():
     path = find_latest("screener_*.json", DATA_DIR)
@@ -199,16 +218,62 @@ async def get_screener():
     except Exception:
         user_data = {"watchlist": []}
     watched = {_norm_sym(s) for s in (user_data.get("watchlist") or [])}
+
+    # v6 Phase 2 — load previous scan scores for delta computation
+    prev = _load_previous_screener(exclude_current=path)
+    prev_scores: dict[str, int] = {}
+    if prev:
+        for pc in (prev.get("candidates") or []):
+            sym = _norm_sym(pc.get("symbol", ""))
+            score = pc.get("score")
+            if sym and score is not None:
+                prev_scores[sym] = score
+
     for c in data.get("candidates", []):
         sym = _norm_sym(c.get("symbol", ""))
         c["is_new_in_batch"] = bool(sym) and sym not in historical
         c["in_watchlist"] = bool(sym) and sym in watched
+        # v6 additions — score delta + streak + is_new_this_week alias
+        prev_score = prev_scores.get(sym)
+        c["previous_score"] = prev_score
+        cur_score = c.get("score")
+        c["score_delta"] = (
+            (cur_score - prev_score) if (prev_score is not None and cur_score is not None) else None
+        )
+        c["is_new_this_week"] = c.get("is_new_in_batch", False)
+        # score_streak_weeks preserved from scan.py if set; else null
+        if "score_streak_weeks" not in c:
+            c["score_streak_weeks"] = None
     for c in data.get("review_candidates", []):
         sym = _norm_sym(c.get("symbol", ""))
         c["in_watchlist"] = bool(sym) and sym in watched
     for c in data.get("filtered_out_stocks", []):
         sym = _norm_sym(c.get("symbol", ""))
         c["in_watchlist"] = bool(sym) and sym in watched
+
+    # v6 additions — top-level summary block
+    cands = data.get("candidates", []) or []
+    yields = [
+        (c.get("metrics") or {}).get("dividend_yield")
+        for c in cands
+    ]
+    yields = [y for y in yields if y is not None]
+    sectors = {c.get("sector") for c in cands if c.get("sector")}
+    passed_count = sum(
+        1 for c in cands if "NIWES_5555" in (c.get("signals") or [])
+    )
+    # If no explicit PASS tier, fall back to all candidates as "passed"
+    if passed_count == 0:
+        passed_count = len(cands)
+    data["summary"] = {
+        "total_scanned": data.get("total_scanned", 0),
+        "passed_count": passed_count,
+        "review_count": len(data.get("review_candidates", []) or []),
+        "avg_yield": round(sum(yields) / len(yields), 2) if yields else 0,
+        "top_score": max((c.get("score", 0) for c in cands), default=0),
+        "new_entrants": sum(1 for c in cands if c.get("is_new_in_batch")),
+        "sectors": len(sectors),
+    }
     return data
 
 
