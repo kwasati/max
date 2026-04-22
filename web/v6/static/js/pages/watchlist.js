@@ -1,8 +1,8 @@
 /* ==========================================================
-   MAX MAHON v6 — Watchlist Page (Desktop) · Phase 1
-   Renders summary strip + table. Fetches live from
-   /api/watchlist/enriched — NO hardcoded stock data.
-   Compare + add-by-symbol wired in Phase 2/3.
+   MAX MAHON v6 — Watchlist Page (Desktop)
+   Renders summary strip + table + compare modal overlay.
+   Fetches live from /api/watchlist/enriched — NO hardcoded data.
+   Add-by-symbol wired in Phase 3.
    ========================================================== */
 
 const MAX_COMPARE = 3;
@@ -194,7 +194,97 @@ function _bindRows(tbody) {
 }
 
 function _bindFooter(root) {
-  // Phase 2/3 wire the actual handlers; buttons are disabled until then.
+  const cmpBtn = root.querySelector('#wl-cmp-btn');
+  if (cmpBtn) cmpBtn.addEventListener('click', function () { _openCompare(root); });
+  // Add-by-symbol handler wired in Phase 3.
+}
+
+async function _openCompare(root) {
+  const syms = Array.from(_selected);
+  if (syms.length < MIN_COMPARE) return;
+  window.MMComponents.openModal(
+    '<div id="wl-cmp-body"></div>',
+    {
+      kicker: 'Supplementary Sheet · № 02a · Side-by-Side',
+      headline: 'COMPARISON · ' + syms.length + ' STOCKS',
+      dek: syms.join(' · ') + ' — best values bolded in oxblood'
+    }
+  );
+  const body = document.getElementById('wl-cmp-body');
+  window.MMComponents.renderLoading(body, 'Loading comparison');
+  try {
+    const data = await window.MMApi.get('/api/watchlist/compare?symbols=' + encodeURIComponent(syms.join(',')));
+    body.innerHTML = _renderCompareGrid(data);
+  } catch (e) {
+    window.MMComponents.renderError(
+      body,
+      'โหลดเปรียบเทียบไม่สำเร็จ: ' + (e && e.message || e)
+    );
+  }
+}
+
+function _renderCompareGrid(data) {
+  const syms = data.symbols || [];
+  const rows = data.rows || [];
+  const esc = window.MMUtils.escapeHtml;
+
+  const cols = 'auto repeat(' + syms.length + ', 1fr) auto';
+  let html =
+    '<div class="compare-grid" style="grid-template-columns:' + cols + '">' +
+      '<div class="row-label"></div>';
+  for (let i = 0; i < syms.length; i++) {
+    html += '<div class="sym-head">' + esc(syms[i]) + '</div>';
+  }
+  html += '<div class="sym-head dim" style="font-style:italic;font-family:var(--font-head);font-weight:400">Delta</div>';
+
+  for (let r = 0; r < rows.length; r++) {
+    const row = rows[r];
+    html += '<div class="row-label">' + esc(row.label) + '</div>';
+    const vals = row.values || [];
+    for (let c = 0; c < vals.length; c++) {
+      const v = vals[c];
+      const cls = (row.best_index === c) ? 'val best' : 'val';
+      html += '<div class="' + cls + '">' + _fmtCompareCell(row.label, v) + '</div>';
+    }
+    for (let c = vals.length; c < syms.length; c++) {
+      html += '<div class="val">—</div>';
+    }
+    html += '<div class="val dim">' + esc(row.delta || '—') + '</div>';
+  }
+  html += '</div>';
+
+  html +=
+    '<p class="lede" style="margin-top:var(--sp-6);max-width:60ch">' +
+      'เปรียบเทียบ ' + syms.length + ' หุ้น · ค่าที่ดีที่สุดในแต่ละบรรทัดเน้นสี. ' +
+      'อ่านประกอบกับสัญญาณ exit + Niwes signals ที่ด้านล่าง.' +
+    '</p>';
+  return html;
+}
+
+function _fmtCompareCell(label, v) {
+  if (v === null || v === undefined) return '—';
+  if (label === 'Exit Signal') {
+    return '<span style="font-size:var(--fs-sm)">' + window.MMComponents.renderSevBadge(String(v)) + '</span>';
+  }
+  if (label === 'Yield' || label === 'Payout' || label === 'ROE') {
+    return window.MMUtils.fmtPercent(v, 2);
+  }
+  if (label === 'P/E' || label === 'P/BV') {
+    return Number(v).toFixed(2) + '×';
+  }
+  if (label === 'Streak') {
+    return String(v) + ' y';
+  }
+  if (label === 'Mcap (B THB)') {
+    return String(v);
+  }
+  if (label === 'Signals') {
+    return window.MMUtils.escapeHtml(String(v || '—')) || '—';
+  }
+  if (typeof v === 'number') {
+    return String(v);
+  }
+  return window.MMUtils.escapeHtml(String(v));
 }
 
 async function _onStarRemove(sym, rowEl) {
