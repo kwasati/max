@@ -70,7 +70,6 @@ def main():
     history = load_history()
     scan_num = next_scan_num(history)
     today = datetime.now().strftime("%Y-%m-%d")
-    scan_date = screener_data.get("date", today)
 
     # Wire deterministic report generation (niwes-algo-02 task 3)
     from report_template import generate_report_md
