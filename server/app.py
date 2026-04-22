@@ -3078,6 +3078,12 @@ async def serve_index():
     return HTMLResponse(html)
 
 
+_V6_SHARED = _V6_DIR / "shared"
+# Mount shared/ FIRST (longer path wins in FastAPI mount resolution) so
+# /static/v6/shared/tokens.css → web/v6/shared/tokens.css, while
+# /static/v6/js/... and /static/v6/css/... still map to web/v6/static/.
+if _V6_SHARED.exists():
+    app.mount("/static/v6/shared", StaticFiles(directory=str(_V6_SHARED)), name="v6-shared")
 if _V6_STATIC.exists():
     app.mount("/static/v6", StaticFiles(directory=str(_V6_STATIC)), name="v6-static")
 

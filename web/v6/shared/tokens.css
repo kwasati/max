@@ -1,0 +1,75 @@
+/* ==========================================================
+   MAX MAHON · THE DIVIDEND REVIEW
+   Design Tokens — Vintage Financial Newspaper
+   Palette discipline: cream + ink + ONE accent (oxblood)
+   ========================================================== */
+
+:root {
+  /* -------- Paper & Ink -------- */
+  --paper:        #F4EFE6;   /* cream base */
+  --paper-2:      #EDE6D6;   /* slightly darker panel */
+  --paper-3:      #FBF8F1;   /* near-white inset */
+  --ink:          #1A1814;   /* near-black body */
+  --ink-soft:     #3A362E;   /* de-emphasized body */
+  --ink-dim:      #6A6459;   /* meta, captions */
+  --ink-faint:    #9C9588;   /* hairline labels */
+
+  /* -------- Rule Lines -------- */
+  --rule:         #1A1814;             /* primary rule = ink */
+  --rule-hair:    rgba(26,24,20,0.22); /* fine hairline */
+  --rule-fade:    rgba(26,24,20,0.12); /* very faint */
+
+  /* -------- Single Accent -------- */
+  --accent:       #7A1F2B;   /* deep oxblood / burgundy — THE ONE COLOR */
+  --accent-ink:   #5A1520;   /* deeper for hover/active */
+  --accent-soft:  #EFE1E1;   /* extremely desaturated tint */
+
+  /* -------- Grayscale only (NO other hues) -------- */
+  --gray-900: #1A1814;
+  --gray-700: #3A362E;
+  --gray-500: #6A6459;
+  --gray-300: #B7B0A1;
+  --gray-200: #D4CCB9;
+  --gray-100: #E5DECC;
+
+  /* -------- Typography -------- */
+  --font-head:  'Playfair Display', 'IBM Plex Serif Thai', Georgia, serif;
+  --font-body:  'Lora', 'IBM Plex Serif Thai', Georgia, serif;
+  --font-mono:  'JetBrains Mono', ui-monospace, 'Courier New', monospace;
+  --font-micro: 'JetBrains Mono', 'IBM Plex Serif Thai', monospace;
+
+  /* -------- Scale -------- */
+  --fs-xs:   0.72rem;
+  --fs-sm:   0.82rem;
+  --fs-base: 1rem;
+  --fs-md:   1.14rem;
+  --fs-lg:   1.4rem;
+  --fs-xl:   1.85rem;
+  --fs-2xl:  2.6rem;
+  --fs-3xl:  3.8rem;
+  --fs-disp: 5.2rem;
+
+  /* -------- Rhythm -------- */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+  --sp-7: 3rem;
+  --sp-8: 4rem;
+
+  /* -------- Rule weights -------- */
+  --rule-thin:   1px;
+  --rule-med:    2px;
+  --rule-thick:  4px;
+
+  /* -------- Layout -------- */
+  --col-max: 1320px;
+  --col-narrow: 720px;
+
+  /* -------- Radius (near-zero, newspaper) -------- */
+  --r-0: 0;
+  --r-1: 1px;
+  --r-2: 2px;
+}

@@ -1,0 +1,106 @@
+/* ==========================================================
+   MAX MAHON v6 — Page-level Component Extensions
+   Complements shared/base.css with repeating layout blocks
+   that were inlined per-page in the mockup (lede-block,
+   mini-chart-strip, page-foot).
+   Extracted verbatim from web-v6-mockup/desktop/01-home.html
+   so pages stay thin and the shell renders without inline CSS.
+   ========================================================== */
+
+/* ---- Lede / issue headline block ---------------------------- */
+.lede-block {
+  padding: var(--sp-5) 0;
+  border-bottom: 1px solid var(--rule);
+}
+.lede-inner {
+  max-width: 68ch;
+  margin: 0 auto;
+  text-align: center;
+}
+.kicker {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: var(--sp-3);
+}
+.lede-headline {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: var(--fs-2xl);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  margin-bottom: var(--sp-3);
+}
+.lede-sub {
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: var(--fs-md);
+  color: var(--ink-soft);
+  line-height: 1.45;
+}
+
+/* ---- Mini chart strip (home trend + top-3 list) ------------- */
+.mini-chart-strip {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--sp-6);
+  padding: var(--sp-5) 0;
+  border-bottom: 1px solid var(--rule);
+  align-items: center;
+}
+.mini-chart-strip .caption {
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: var(--fs-sm);
+  color: var(--ink-dim);
+  margin-top: var(--sp-2);
+}
+.mini-chart-box { height: 140px; }
+.strip-right {
+  border-left: 1px solid var(--rule-hair);
+  padding-left: var(--sp-5);
+}
+.strip-right h3 {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: var(--fs-md);
+  margin-bottom: var(--sp-3);
+}
+.strip-right ul { list-style: none; font-family: var(--font-body); }
+.strip-right li {
+  padding: 4px 0;
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--fs-sm);
+  border-bottom: 1px dotted var(--rule-hair);
+}
+.strip-right li .sym { font-family: var(--font-head); font-weight: 700; }
+.strip-right li .val {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+/* ---- Page foot (issue colophon) ----------------------------- */
+.page-foot {
+  padding: var(--sp-6) 0;
+  border-top: 3px double var(--rule);
+  margin-top: var(--sp-7);
+  text-align: center;
+  font-family: var(--font-head);
+  font-style: italic;
+  color: var(--ink-dim);
+  font-size: var(--fs-sm);
+}
+
+/* ---- Shell empty-state (before page JS mounts) -------------- */
+.mm-shell-empty {
+  padding: var(--sp-8) var(--sp-6);
+  text-align: center;
+  font-family: var(--font-head);
+  font-style: italic;
+  color: var(--ink-dim);
+  font-size: var(--fs-md);
+}
