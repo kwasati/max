@@ -2484,6 +2484,184 @@ async def get_price_history(symbol: str, granularity: str = "yearly"):
     return payload
 
 
+# ============================================================================
+# v6 Phase 3 — Portfolio simulator endpoints
+# ============================================================================
+
+
+def _yf_monthly_series(ticker_symbol: str) -> Optional[list[tuple]]:
+    """Fetch monthly price + dividend history for a symbol. Returns list of
+    (date, close_price, dividend_on_this_month) tuples. None on failure.
+    Cash proxy returns a flat-1.0 series built in caller.
+    """
+    try:
+        import yfinance as yf
+        import pandas as pd
+    except Exception:
+        return None
+    try:
+        t = yf.Ticker(ticker_symbol)
+        hist = t.history(period="max", interval="1mo", auto_adjust=False)
+        if hist.empty:
+            return None
+        hist.index = hist.index.tz_localize(None) if hist.index.tz else hist.index
+        try:
+            divs = t.dividends
+            divs.index = divs.index.tz_localize(None) if divs.index.tz else divs.index
+        except Exception:
+            divs = None
+        rows = []
+        for idx, row in hist.iterrows():
+            month_start = pd.Timestamp(year=idx.year, month=idx.month, day=1)
+            month_end = month_start + pd.offsets.MonthEnd(0)
+            div_this_month = 0.0
+            if divs is not None and not divs.empty:
+                mask = (divs.index >= month_start) & (divs.index <= month_end)
+                div_this_month = float(divs[mask].sum()) if mask.any() else 0.0
+            close = float(row.get("Close") or 0)
+            rows.append((month_start.strftime("%Y-%m-%d"), close, div_this_month))
+        return rows
+    except Exception:
+        return None
+
+
+class DcaPortfolioRequest(BaseModel):
+    positions: list[dict]
+    monthly_amount: float
+    duration_years: int = 10
+    reinvest_dividends: bool = True
+
+
+@app.post("/api/simulate/dca-portfolio")
+async def simulate_dca_portfolio(req: DcaPortfolioRequest):
+    """Multi-stock DCA with weighted allocation. No benchmark.
+
+    Loops per-position using monthly yfinance series; sums by month.
+    """
+    if not req.positions:
+        raise HTTPException(400, "positions list is empty")
+    total_weight = sum((p.get("weight_pct") or 0) for p in req.positions)
+    if total_weight <= 0:
+        raise HTTPException(400, "weight_pct sum must be > 0")
+
+    duration_months = max(1, int(req.duration_years * 12))
+    # Fetch series per symbol
+    series_by_sym: dict[str, list[tuple]] = {}
+    for p in req.positions:
+        sym = (p.get("symbol") or "").strip()
+        if not sym or sym.lower() == "cash":
+            continue
+        if not sym.endswith(".BK") and "." not in sym:
+            sym = sym + ".BK"
+        rows = _yf_monthly_series(sym)
+        if not rows:
+            raise HTTPException(503, f"no monthly history for {sym}")
+        series_by_sym[sym] = rows[-duration_months:]
+
+    if not series_by_sym:
+        raise HTTPException(400, "no non-cash positions to simulate")
+
+    # Build monthly index from the shortest series
+    n_months = min(len(v) for v in series_by_sym.values())
+    n_months = min(n_months, duration_months)
+    if n_months < 1:
+        raise HTTPException(400, "insufficient price history")
+
+    # Per-position state
+    per_pos: dict[str, dict] = {}
+    for p in req.positions:
+        sym = (p.get("symbol") or "").strip()
+        if not sym or sym.lower() == "cash":
+            continue
+        if not sym.endswith(".BK") and "." not in sym:
+            sym = sym + ".BK"
+        per_pos[sym] = {
+            "symbol": sym,
+            "weight_pct": float(p.get("weight_pct") or 0),
+            "shares": 0.0,
+            "invested": 0.0,
+            "dividends": 0.0,
+        }
+
+    timeline = []
+    total_invested_cum = 0.0
+    total_dividends_cum = 0.0
+    for m in range(n_months):
+        # Monthly contribution
+        for sym, pos in per_pos.items():
+            alloc = req.monthly_amount * (pos["weight_pct"] / total_weight)
+            price = series_by_sym[sym][m][1]
+            if price > 0:
+                shares_bought = alloc / price
+                pos["shares"] += shares_bought
+                pos["invested"] += alloc
+            # Dividend for the month (per share held)
+            div_per_share = series_by_sym[sym][m][2]
+            if div_per_share:
+                div_cash = div_per_share * pos["shares"]
+                pos["dividends"] += div_cash
+                total_dividends_cum += div_cash
+                if req.reinvest_dividends and price > 0:
+                    pos["shares"] += div_cash / price
+
+        total_invested_cum += req.monthly_amount
+        portfolio_value = sum(
+            pos["shares"] * series_by_sym[sym][m][1]
+            for sym, pos in per_pos.items()
+        )
+        timeline.append({
+            "month_index": m,
+            "date": series_by_sym[list(series_by_sym.keys())[0]][m][0],
+            "invested_cumulative": round(total_invested_cum, 2),
+            "portfolio_value": round(portfolio_value, 2),
+            "dividends_cumulative": round(total_dividends_cum, 2),
+        })
+
+    final_value = timeline[-1]["portfolio_value"]
+    total_return_pct = (
+        round((final_value - total_invested_cum) / total_invested_cum * 100, 2)
+        if total_invested_cum else 0
+    )
+    years = n_months / 12
+    cagr_pct = (
+        round(((final_value / total_invested_cum) ** (1 / years) - 1) * 100, 2)
+        if years > 0 and total_invested_cum > 0 and final_value > 0 else 0
+    )
+
+    per_position = []
+    for sym, pos in per_pos.items():
+        last_price = series_by_sym[sym][-1][1]
+        ending = pos["shares"] * last_price
+        ret_pct = (
+            round((ending - pos["invested"]) / pos["invested"] * 100, 2)
+            if pos["invested"] else 0
+        )
+        per_position.append({
+            "symbol": sym,
+            "weight_pct": pos["weight_pct"],
+            "invested": round(pos["invested"], 2),
+            "ending_value": round(ending, 2),
+            "return_pct": ret_pct,
+            "dividends": round(pos["dividends"], 2),
+        })
+
+    avg_yoc = 0
+    if total_invested_cum > 0 and total_dividends_cum > 0:
+        avg_yoc = round(total_dividends_cum / total_invested_cum * 100, 2)
+
+    return {
+        "total_invested": round(total_invested_cum, 2),
+        "ending_value": round(final_value, 2),
+        "total_return_pct": total_return_pct,
+        "cagr_pct": cagr_pct,
+        "total_dividends": round(total_dividends_cum, 2),
+        "avg_yoc_pct": avg_yoc,
+        "duration_months": n_months,
+        "per_position": per_position,
+        "timeline": timeline,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Static files (SPA) — mount last so API routes take priority
 # ---------------------------------------------------------------------------
