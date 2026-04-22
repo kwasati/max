@@ -3059,23 +3059,35 @@ _V6_MOBILE = _V6_DIR / "mobile" / "index.html"
 _V6_STATIC = _V6_DIR / "static"
 
 
+def _render_shell(html_path: Path) -> HTMLResponse:
+    if not html_path.exists():
+        raise HTTPException(404, "v6 shell missing")
+    html = html_path.read_text(encoding="utf-8")
+    html = html.replace("{{CACHEBUST}}", str(int(time.time())))
+    return HTMLResponse(html)
+
+
 @app.get("/mobile", response_class=HTMLResponse)
 @app.get("/m", response_class=HTMLResponse)
 async def serve_mobile():
-    if not _V6_MOBILE.exists():
-        raise HTTPException(404, "v6 mobile shell missing")
-    html = _V6_MOBILE.read_text(encoding="utf-8")
-    html = html.replace("{{CACHEBUST}}", str(int(time.time())))
-    return HTMLResponse(html)
+    return _render_shell(_V6_MOBILE)
 
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
-    if not _V6_DESKTOP.exists():
-        raise HTTPException(404, "v6 desktop shell missing")
-    html = _V6_DESKTOP.read_text(encoding="utf-8")
-    html = html.replace("{{CACHEBUST}}", str(int(time.time())))
-    return HTMLResponse(html)
+    return _render_shell(_V6_DESKTOP)
+
+
+# Desktop SPA route — settings page shares the desktop shell; page JS picks module by pathname.
+@app.get("/settings", response_class=HTMLResponse)
+async def serve_desktop_settings():
+    return _render_shell(_V6_DESKTOP)
+
+
+# Mobile SPA route — settings page shares the mobile shell.
+@app.get("/m/settings", response_class=HTMLResponse)
+async def serve_mobile_settings():
+    return _render_shell(_V6_MOBILE)
 
 
 _V6_SHARED = _V6_DIR / "shared"
