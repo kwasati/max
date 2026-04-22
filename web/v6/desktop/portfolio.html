@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio · Max Mahon</title>
+<meta name="description" content="Max Mahon — Real holdings + simulated allocation, Niwes Dividend-First.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400;1,700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=IBM+Plex+Serif+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/v6/shared/tokens.css?v={{CACHEBUST}}">
+<link rel="stylesheet" href="/static/v6/shared/base.css?v={{CACHEBUST}}">
+<link rel="stylesheet" href="/static/v6/css/components.css?v={{CACHEBUST}}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="/static/v6/js/device.js?v={{CACHEBUST}}"></script>
+<script src="/static/v6/js/utils.js?v={{CACHEBUST}}"></script>
+<script src="/static/v6/js/components.js?v={{CACHEBUST}}"></script>
+<script src="/static/v6/js/api.js?v={{CACHEBUST}}"></script>
+</head>
+<body>
+
+<div id="masthead"></div>
+<main id="app" class="container">
+  <div class="mm-shell-empty">Loading issue&hellip;</div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  function bootMasthead() {
+    var now = new Date();
+    var route = (location.pathname.replace(/^\//, '').split('/')[0]) || 'home';
+    var mastCtx = {
+      vol:       'VI',
+      no:        '17',
+      date:      MMUtils.fmtDateLong(now).toUpperCase(),
+      next_scan: 'SAT 09:00',
+      edition:   'Portfolio Edition',
+      active:    route
+    };
+    var host = document.getElementById('masthead');
+    if (host) host.innerHTML = MMComponents.renderMasthead(mastCtx);
+  }
+
+  async function bootPage() {
+    var route = (location.pathname.replace(/^\//, '').split('/')[0]) || 'home';
+    var app = document.getElementById('app');
+    try {
+      var mod = await import('/static/v6/js/pages/' + route + '.js?v={{CACHEBUST}}');
+      if (mod && typeof mod.mount === 'function') {
+        mod.mount(app);
+      } else {
+        MMComponents.renderError(app, 'Page module for "' + route + '" did not export mount().');
+      }
+    } catch (e) {
+      app.innerHTML =
+        '<div class="mm-shell-empty">' +
+          'Page &ldquo;' + MMUtils.escapeHtml(route) + '&rdquo; not yet implemented.' +
+        '</div>';
+    }
+  }
+
+  function boot() {
+    bootMasthead();
+    bootPage();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
+</script>
+
+</body>
+</html>

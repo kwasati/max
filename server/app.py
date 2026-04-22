@@ -3067,32 +3067,24 @@ def _render_shell(html_path: Path) -> HTMLResponse:
     return HTMLResponse(html)
 
 
-@app.get("/mobile", response_class=HTMLResponse)
-@app.get("/m", response_class=HTMLResponse)
-@app.get("/m/watchlist", response_class=HTMLResponse)
-@app.get("/m/portfolio", response_class=HTMLResponse)
-@app.get("/m/simulator", response_class=HTMLResponse)
-@app.get("/m/settings", response_class=HTMLResponse)
-async def serve_mobile():
-    return _render_shell(_V6_MOBILE)
+def _render_shell_path(rel: str, fallback: Path) -> HTMLResponse:
+    """Render a dedicated shell if present, else fall back to the generic one."""
+    path = _V6_DIR / rel
+    target = path if path.exists() else fallback
+    if not target.exists():
+        raise HTTPException(404, f"v6 shell missing: {rel}")
+    html = target.read_text(encoding="utf-8")
+    html = html.replace("{{CACHEBUST}}", str(int(time.time())))
+    return HTMLResponse(html)
 
 
+# Desktop SPA routes — generic shell unless a dedicated shell file exists
 @app.get("/", response_class=HTMLResponse)
+@app.get("/home", response_class=HTMLResponse)
 @app.get("/watchlist", response_class=HTMLResponse)
-@app.get("/portfolio", response_class=HTMLResponse)
 @app.get("/simulator", response_class=HTMLResponse)
 @app.get("/settings", response_class=HTMLResponse)
 async def serve_index():
-    return _render_shell(_V6_DESKTOP)
-
-
-# Desktop SPA routes — all route to the same shell; page JS picks module by pathname
-@app.get("/home", response_class=HTMLResponse)
-@app.get("/watchlist", response_class=HTMLResponse)
-@app.get("/portfolio", response_class=HTMLResponse)
-@app.get("/simulator", response_class=HTMLResponse)
-@app.get("/settings", response_class=HTMLResponse)
-async def serve_desktop_page():
     return _render_shell(_V6_DESKTOP)
 
 
@@ -3101,19 +3093,32 @@ async def serve_desktop_report(symbol: str):
     return _render_shell(_V6_DESKTOP)
 
 
+@app.get("/portfolio", response_class=HTMLResponse)
+async def serve_desktop_portfolio():
+    """Desktop portfolio — dedicated shell preloads Chart.js."""
+    return _render_shell_path("desktop/portfolio.html", _V6_DESKTOP)
+
+
 # Mobile SPA routes
+@app.get("/mobile", response_class=HTMLResponse)
+@app.get("/m", response_class=HTMLResponse)
 @app.get("/m/home", response_class=HTMLResponse)
 @app.get("/m/watchlist", response_class=HTMLResponse)
-@app.get("/m/portfolio", response_class=HTMLResponse)
 @app.get("/m/simulator", response_class=HTMLResponse)
 @app.get("/m/settings", response_class=HTMLResponse)
-async def serve_mobile_page():
+async def serve_mobile():
     return _render_shell(_V6_MOBILE)
 
 
 @app.get("/m/report/{symbol}", response_class=HTMLResponse)
 async def serve_mobile_report(symbol: str):
     return _render_shell(_V6_MOBILE)
+
+
+@app.get("/m/portfolio", response_class=HTMLResponse)
+async def serve_mobile_portfolio():
+    """Mobile portfolio — dedicated shell preloads Chart.js."""
+    return _render_shell_path("mobile/portfolio.html", _V6_MOBILE)
 
 
 _V6_SHARED = _V6_DIR / "shared"
