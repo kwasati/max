@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Max Mahon v6 · Design Review · Vol. VI Prospectus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400;1,700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=IBM+Plex+Serif+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/tokens.css">
+<link rel="stylesheet" href="shared/base.css">
+<style>
+.cover-mast {
+  text-align: center;
+  padding: var(--sp-8) 0 var(--sp-6);
+  border-bottom: 3px double var(--rule);
+}
+.cover-brand {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: clamp(3.5rem, 7vw, 6rem);
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+  margin-bottom: 0.25em;
+}
+.cover-tag {
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: clamp(1.2rem, 2vw, 1.8rem);
+  color: var(--ink-soft);
+  letter-spacing: 0.04em;
+  margin-bottom: var(--sp-5);
+}
+.cover-meta {
+  display: flex;
+  justify-content: center;
+  gap: var(--sp-5);
+  flex-wrap: wrap;
+  padding: var(--sp-4) 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.cover-meta strong { color: var(--ink); font-weight: 500; }
+
+.prospectus {
+  padding: var(--sp-7) 0 var(--sp-5);
+  text-align: center;
+  max-width: 70ch;
+  margin: 0 auto;
+}
+.prospectus .k { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-dim); margin-bottom: var(--sp-3); }
+.prospectus h2 { font-family: var(--font-head); font-weight: 900; font-size: var(--fs-2xl); line-height: 1.1; letter-spacing: -0.01em; margin-bottom: var(--sp-4); }
+.prospectus p { font-family: var(--font-head); font-style: italic; font-size: var(--fs-md); color: var(--ink-soft); line-height: 1.5; }
+
+.toc-block {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  margin: var(--sp-6) 0;
+  border-top: 1px solid var(--rule);
+  border-left: 1px solid var(--rule);
+}
+.toc-section {
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: var(--sp-5);
+}
+.toc-section h3 {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--rule-hair);
+  margin-bottom: var(--sp-3);
+}
+.toc-list { list-style: none; }
+.toc-list li {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  padding: var(--sp-3) 0;
+  border-bottom: 1px dotted var(--rule-hair);
+  align-items: baseline;
+  gap: var(--sp-3);
+}
+.toc-list li:last-child { border-bottom: none; }
+.toc-list a {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: var(--fs-md);
+  border-bottom: none;
+  color: var(--ink);
+}
+.toc-list a:hover { color: var(--accent); }
+.toc-list .no {
+  font-family: var(--font-mono);
+  color: var(--ink-faint);
+  font-size: var(--fs-xs);
+}
+.toc-list .desc {
+  font-family: var(--font-head);
+  font-style: italic;
+  color: var(--ink-dim);
+  font-size: var(--fs-sm);
+  grid-column: 2 / 4;
+  margin-top: -4px;
+}
+.toc-list .page {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--ink-dim);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Design notes */
+.notes-block {
+  column-count: 2;
+  column-gap: var(--sp-6);
+  column-rule: 1px solid var(--rule-hair);
+  padding: var(--sp-5) 0;
+  font-size: 1.02rem;
+  line-height: 1.7;
+  text-align: justify;
+  hyphens: auto;
+  break-inside: avoid;
+}
+.notes-block h3 {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: var(--fs-lg);
+  margin-top: var(--sp-5);
+  margin-bottom: var(--sp-2);
+  break-after: avoid;
+}
+.notes-block h3:first-child { margin-top: 0; }
+.notes-block p { margin-bottom: var(--sp-3); }
+
+/* Palette swatches */
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0;
+  border-top: 1px solid var(--rule);
+  border-left: 1px solid var(--rule);
+  margin: var(--sp-4) 0;
+}
+.swatch {
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: var(--sp-4);
+}
+.swatch-color {
+  height: 90px;
+  margin-bottom: var(--sp-3);
+  border: 1px solid var(--rule-hair);
+}
+.swatch-name { font-family: var(--font-head); font-weight: 700; font-size: var(--fs-sm); }
+.swatch-hex { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink-dim); letter-spacing: 0.1em; text-transform: uppercase; }
+.swatch-role { font-family: var(--font-head); font-style: italic; font-size: var(--fs-xs); color: var(--ink-dim); margin-top: 2px; }
+
+/* Type specimens */
+.specimen {
+  padding: var(--sp-4) 0;
+  border-bottom: 1px solid var(--rule-hair);
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: var(--sp-5);
+  align-items: baseline;
+}
+.specimen .label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.specimen .label .name { color: var(--ink); display: block; font-weight: 500; font-size: var(--fs-sm); letter-spacing: 0.08em; margin-bottom: 2px; }
+.specimen .sample { font-size: 1.6rem; line-height: 1.2; }
+
+.colophon {
+  text-align: center;
+  padding: var(--sp-7) 0;
+  border-top: 3px double var(--rule);
+  margin-top: var(--sp-7);
+  font-family: var(--font-head);
+  font-style: italic;
+  color: var(--ink-dim);
+  font-size: var(--fs-sm);
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- COVER MASTHEAD -->
+  <section class="cover-mast">
+    <h1 class="cover-brand">Max Mahon</h1>
+    <div class="cover-tag">· The Dividend Review ·</div>
+    <div class="cover-meta">
+      <div>VOLUME <strong>VI</strong></div>
+      <div>·</div>
+      <div>DESIGN REVIEW <strong>PROSPECTUS</strong></div>
+      <div>·</div>
+      <div>ISSUE <strong>NO. 00</strong></div>
+      <div>·</div>
+      <div>APRIL <strong>22, 2026</strong></div>
+    </div>
+  </section>
+
+  <!-- PROSPECTUS -->
+  <section class="prospectus">
+    <div class="k">To the editor · One reader</div>
+    <h2>A dividend weekly, set in lead type.</h2>
+    <p>
+      This is the visual direction proposed for Max Mahon version six — a Thai dividend-first
+      investing tool rendered as a vintage financial weekly. Five pages, each on desktop and
+      mobile: ten mockups plus this cover. Review the twelve specimens below and tell me
+      which columns hold and which should be reset.
+    </p>
+  </section>
+
+  <!-- TOC -->
+  <div class="section-num">
+    <span class="no">00a · Table of Contents</span>
+    <span>Twelve Specimens · Desktop + Mobile</span>
+  </div>
+
+  <div class="toc-block">
+
+    <div class="toc-section">
+      <h3>№ Desktop Edition</h3>
+      <ul class="toc-list">
+        <li>
+          <span class="no">01</span>
+          <a href="desktop/01-home.html">Watchlist · Passing Stocks</a>
+          <span class="page">p. 01</span>
+          <span class="desc">Summary strip, 15 stock cards, trend chart.</span>
+        </li>
+        <li>
+          <span class="no">02</span>
+          <a href="desktop/02-report.html">Full Report · BBL Deep Dive</a>
+          <span class="page">p. 02</span>
+          <span class="desc">Editorial article, score donut, 10-section layout.</span>
+        </li>
+        <li>
+          <span class="no">03</span>
+          <a href="desktop/03-watchlist.html">Saved Positions · Compare View</a>
+          <span class="page">p. 03</span>
+          <span class="desc">Tracked positions, exit severity, side-by-side compare.</span>
+        </li>
+        <li>
+          <span class="no">04</span>
+          <a href="desktop/04-portfolio.html">Portfolio · Real &amp; Simulated</a>
+          <span class="page">p. 04</span>
+          <span class="desc">Two stacked sections, donut pies, position tables.</span>
+        </li>
+        <li>
+          <span class="no">05</span>
+          <a href="desktop/05-simulator.html">Simulator · DCA &amp; Backtest</a>
+          <span class="page">p. 05</span>
+          <span class="desc">Three tabs, accumulation charts, portfolio backtest.</span>
+        </li>
+        <li>
+          <span class="no">06</span>
+          <a href="desktop/06-settings.html">Settings · Schedule &amp; Filters</a>
+          <span class="page">p. 06</span>
+          <span class="desc">Auto-scan day/time, Niwes threshold sliders, universe.</span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="toc-section">
+      <h3>№ Mobile Edition</h3>
+      <ul class="toc-list">
+        <li>
+          <span class="no">01</span>
+          <a href="mobile/01-home.html">Watchlist · Mobile</a>
+          <span class="page">p. 07</span>
+          <span class="desc">Single-column cards, bottom nav, compact masthead.</span>
+        </li>
+        <li>
+          <span class="no">02</span>
+          <a href="mobile/02-report.html">Full Report · Mobile</a>
+          <span class="page">p. 08</span>
+          <span class="desc">Article + all sections stacked for portrait.</span>
+        </li>
+        <li>
+          <span class="no">03</span>
+          <a href="mobile/03-watchlist.html">Saved · Mobile</a>
+          <span class="page">p. 09</span>
+          <span class="desc">Stacked card list, inline notes, severity chips.</span>
+        </li>
+        <li>
+          <span class="no">04</span>
+          <a href="mobile/04-portfolio.html">Portfolio · Mobile</a>
+          <span class="page">p. 10</span>
+          <span class="desc">Real + Simulated stacked, donut above position list.</span>
+        </li>
+        <li>
+          <span class="no">05</span>
+          <a href="mobile/05-simulator.html">Simulator · Mobile</a>
+          <span class="page">p. 11</span>
+          <span class="desc">Dropdown mode selector instead of tab bar.</span>
+        </li>
+        <li>
+          <span class="no">06</span>
+          <a href="mobile/06-settings.html">Settings · Mobile</a>
+          <span class="page">p. 12</span>
+          <span class="desc">Wide sliders, day chips, radio cards.</span>
+        </li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- DESIGN RATIONALE -->
+  <div class="section-num">
+    <span class="no">00b · Design Rationale</span>
+    <span>The Case for Newsprint</span>
+  </div>
+
+  <div class="notes-block">
+    <h3>Why a newspaper, not a dashboard.</h3>
+    <p class="drop-cap">
+      Max Mahon is a weekend research tool, not a trading cockpit. The user will open it once a
+      week to read sixty-odd dividend candidates and decide whether to rebalance. That reading
+      posture — slow, literate, weekend-coffee — belongs to the weekend edition of a financial
+      paper, not to a real-time admin panel. Every layout choice here proceeds from that brief.
+    </p>
+    <p>
+      Cards behave like article stubs. The full report behaves like a Saturday long-read, with
+      byline, drop cap, pull quote, and a two-column set text. The score is treated as a lead
+      number in the way Barron's treats a fund rating. Severity — hold, review, consider-exit —
+      is expressed through rule weight and italic, not through traffic-light color. This keeps
+      the tool readable, weighted, and — by our own house rule — mobile-forgiving.
+    </p>
+
+    <h3>One accent, no decoration.</h3>
+    <p>
+      Color discipline was the hardest single decision. The existing v5 mockup used forest
+      green, burgundy, amber, navy, and gold. That palette is a dashboard palette. For the
+      weekly edition we pulled all of them and kept a single oxblood as the accent — used
+      only for the current navigation indicator, the new-entrant ribbon, the exit-severity
+      border, and a single highlighted data point on each chart. Everything else is ink on
+      cream paper, in three shades of gray. If the accent ever needs to compete with another
+      color, the design has failed.
+    </p>
+
+    <h3>Numbers live in monospace.</h3>
+    <p>
+      All numerical values render in JetBrains Mono with tabular numerals. Everything else is
+      Lora for running text and Playfair Display for headlines and scores. Thai support falls
+      to IBM Plex Serif Thai when a Latin serif cannot render a glyph. Score 74 is the same
+      weight and density as score 9, ten million, or 324B — because in a weekly screen the
+      digits are the story.
+    </p>
+
+    <h3>Rule lines instead of boxes.</h3>
+    <p>
+      There are no card shadows. No box radii above two pixels. No gradients. Hierarchy is
+      enforced by horizontal rules (thin, thick, double), vertical column rules, and the
+      occasional three-em ornament. This matches how pre-1980s financial weeklies organized
+      hundreds of rows of tabular data — and it survives a print-to-PDF export, which the
+      dashboard style does not.
+    </p>
+
+    <h3>Mobile preserves identity, not layout.</h3>
+    <p>
+      The mobile edition is not the desktop scaled. Masthead compresses to a single stacked
+      block. Top-nav becomes a five-icon bottom bar with numeric chapter labels. Tabs in the
+      simulator become a dropdown. Cards collapse to one column. The drop cap shrinks to 3.6
+      em. But the fonts, the rule discipline, and the oxblood accent survive intact — a
+      reader should recognize the paper on either surface.
+    </p>
+
+    <h3>What was deliberately not built.</h3>
+    <p>
+      No dark mode (the brief is a newspaper; newspapers are not dark). No animation beyond
+      subtle hover. No data export, print stylesheets, or accessibility-specific variants
+      yet — this is a direction mockup, not a release. Charts use sample data that
+      approximates realistic Thai dividend patterns; the numbers are illustrative.
+    </p>
+  </div>
+
+  <!-- PALETTE -->
+  <div class="section-num">
+    <span class="no">00c · Palette</span>
+    <span>Cream · Ink · One Accent</span>
+  </div>
+
+  <div class="palette-grid">
+    <div class="swatch">
+      <div class="swatch-color" style="background:#F4EFE6"></div>
+      <div class="swatch-name">Paper</div>
+      <div class="swatch-hex">#F4EFE6</div>
+      <div class="swatch-role">Primary surface</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#EDE6D6"></div>
+      <div class="swatch-name">Paper 2</div>
+      <div class="swatch-hex">#EDE6D6</div>
+      <div class="swatch-role">Panel tint</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#1A1814"></div>
+      <div class="swatch-name" style="color:var(--paper)">Ink</div>
+      <div class="swatch-hex" style="color:rgba(244,239,230,0.7)">#1A1814</div>
+      <div class="swatch-role" style="color:rgba(244,239,230,0.55)">Body + rules</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#6A6459"></div>
+      <div class="swatch-name" style="color:var(--paper)">Ink Dim</div>
+      <div class="swatch-hex" style="color:rgba(244,239,230,0.75)">#6A6459</div>
+      <div class="swatch-role" style="color:rgba(244,239,230,0.55)">Meta, captions</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#7A1F2B"></div>
+      <div class="swatch-name" style="color:var(--paper)">Oxblood</div>
+      <div class="swatch-hex" style="color:rgba(244,239,230,0.75)">#7A1F2B</div>
+      <div class="swatch-role" style="color:rgba(244,239,230,0.55)">The one accent</div>
+    </div>
+    <div class="swatch">
+      <div class="swatch-color" style="background:#D4CCB9"></div>
+      <div class="swatch-name">Line</div>
+      <div class="swatch-hex">#D4CCB9</div>
+      <div class="swatch-role">Hairline rules</div>
+    </div>
+  </div>
+
+  <!-- TYPOGRAPHY -->
+  <div class="section-num">
+    <span class="no">00d · Typography</span>
+    <span>Three Typefaces · Strict Hierarchy</span>
+  </div>
+
+  <div>
+    <div class="specimen">
+      <div class="label">
+        <span class="name">Playfair Display</span>
+        Headlines · Scores
+      </div>
+      <div class="sample serif" style="font-weight:900;font-size:2.4rem;line-height:1">
+        Fifty-four names cleared.
+      </div>
+    </div>
+    <div class="specimen">
+      <div class="label">
+        <span class="name">Playfair Display · Italic</span>
+        Pull Quotes · Subheads
+      </div>
+      <div class="sample serif italic" style="font-weight:400;font-size:1.5rem;color:var(--ink-soft)">
+        “Yields nine-point-nine, covered twice over by cash.”
+      </div>
+    </div>
+    <div class="specimen">
+      <div class="label">
+        <span class="name">Lora</span>
+        Body Text · Editorial
+      </div>
+      <div class="sample body" style="font-size:1rem;line-height:1.6;max-width:48ch">
+        The case is not that BBL will compound at fifteen percent. It will not. The case is that
+        at fifty-five percent of book value, the market is quoting the franchise at half its
+        liquidation value — and paying one to hold.
+      </div>
+    </div>
+    <div class="specimen">
+      <div class="label">
+        <span class="name">JetBrains Mono</span>
+        Numbers · Metadata
+      </div>
+      <div class="sample mono" style="font-size:1.5rem;font-weight:500">
+        74 · 9.91% · 6.9× · 324B THB
+      </div>
+    </div>
+    <div class="specimen">
+      <div class="label">
+        <span class="name">IBM Plex Serif Thai</span>
+        Thai Fallback
+      </div>
+      <div class="sample serif" style="font-size:1.2rem;line-height:1.5">
+        จ่ายปันผล 22 ปีติดต่อกัน · ผ่านวิกฤติ 2008, 2020, 2024 rate cycle
+      </div>
+    </div>
+  </div>
+
+  <!-- COLOPHON -->
+  <div class="colophon">
+    Max Mahon — The Dividend Review · Vol. VI Design Review · Prospectus issued
+    Sat, April 22, 2026 · Type: Playfair Display, Lora, IBM Plex Serif Thai, JetBrains Mono ·
+    Palette: one cream, one ink, one oxblood · Print-safe · No cookies · No tracking ·
+    Built for one reader.
+  </div>
+
+</div>
+
+</body>
+</html>
