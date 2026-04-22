@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Max Mahon · The Dividend Review — Watchlist Weekly</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400;1,700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=IBM+Plex+Serif+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/base.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+.lede-block {
+  padding: var(--sp-5) 0;
+  border-bottom: 1px solid var(--rule);
+}
+.lede-inner {
+  max-width: 68ch;
+  margin: 0 auto;
+  text-align: center;
+}
+.kicker {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: var(--sp-3);
+}
+.lede-headline {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: var(--fs-2xl);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  margin-bottom: var(--sp-3);
+}
+.lede-sub {
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: var(--fs-md);
+  color: var(--ink-soft);
+  line-height: 1.45;
+}
+.mini-chart-strip {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--sp-6);
+  padding: var(--sp-5) 0;
+  border-bottom: 1px solid var(--rule);
+  align-items: center;
+}
+.mini-chart-strip .caption {
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: var(--fs-sm);
+  color: var(--ink-dim);
+  margin-top: var(--sp-2);
+}
+.mini-chart-box { height: 140px; }
+.strip-right {
+  border-left: 1px solid var(--rule-hair);
+  padding-left: var(--sp-5);
+}
+.strip-right h3 {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: var(--fs-md);
+  margin-bottom: var(--sp-3);
+}
+.strip-right ul { list-style: none; font-family: var(--font-body); }
+.strip-right li {
+  padding: 4px 0;
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--fs-sm);
+  border-bottom: 1px dotted var(--rule-hair);
+}
+.strip-right li .sym { font-family: var(--font-head); font-weight: 700; }
+.strip-right li .val { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink-soft); }
+.page-foot {
+  padding: var(--sp-6) 0;
+  border-top: 3px double var(--rule);
+  margin-top: var(--sp-7);
+  text-align: center;
+  font-family: var(--font-head);
+  font-style: italic;
+  color: var(--ink-dim);
+  font-size: var(--fs-sm);
+}
+</style>
+</head>
+<body>
+
+<!-- ============= MASTHEAD ============= -->
+<header class="masthead">
+  <div class="mast-top">
+    <div class="mast-meta-l">
+      <div>VOL. VI · NO. 17</div>
+      <div><strong>SATURDAY</strong> · APRIL 25, 2026</div>
+    </div>
+    <div class="mast-title">
+      <h1 class="mast-brand">Max Mahon</h1>
+      <div class="mast-sub">· The Dividend Review ·</div>
+    </div>
+    <div class="mast-meta-r">
+      <div>THAI STOCK EDITION</div>
+      <div>AUTO · NEXT SCAN <strong>SAT 09:00</strong></div>
+    </div>
+  </div>
+  <div class="mast-bottom">
+    <nav class="mast-nav">
+      <a href="01-home.html" class="active">Watchlist</a>
+      <a href="02-report.html">Full Report</a>
+      <a href="03-watchlist.html">Saved</a>
+      <a href="04-portfolio.html">Portfolio</a>
+      <a href="05-simulator.html">Simulator</a>
+      <a href="06-settings.html">Settings</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- ============= LEDE ============= -->
+  <section class="lede-block">
+    <div class="lede-inner">
+      <div class="kicker">The Weekly Screen · Issue Seventeen</div>
+      <h2 class="lede-headline">Fifty-four names cleared the 5-5-5-5 gate this week.</h2>
+      <p class="lede-sub">
+        Three first-time entrants — all banks — led the tally. Average yield held at 6.8%,
+        with top scorer BBL clearing seventy-four on the Niwes Dividend-First scale.
+        The universe stood at nine hundred thirty-three; the discipline, unchanged since volume one.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============= SUMMARY STRIP ============= -->
+  <section class="summary-strip">
+    <div class="summary-cell">
+      <span class="label">Scanned</span>
+      <span class="val mono">933</span>
+    </div>
+    <div class="summary-cell">
+      <span class="label">Passed</span>
+      <span class="val mono">54</span>
+    </div>
+    <div class="summary-cell">
+      <span class="label">Review Bucket</span>
+      <span class="val mono">3</span>
+    </div>
+    <div class="summary-cell">
+      <span class="label">Avg Yield</span>
+      <span class="val mono">6.8<span style="font-size:0.7em">%</span></span>
+    </div>
+    <div class="summary-cell">
+      <span class="label">Top Score</span>
+      <span class="val mono">87</span>
+    </div>
+    <div class="summary-cell">
+      <span class="label">New Entrants</span>
+      <span class="val mono">3</span>
+    </div>
+    <div class="summary-cell">
+      <span class="label">Sectors</span>
+      <span class="val mono">9</span>
+    </div>
+  </section>
+
+  <!-- ============= TREND STRIP ============= -->
+  <section class="mini-chart-strip">
+    <div>
+      <div class="micro" style="margin-bottom:var(--sp-2)">Pass Count · Trailing 12 Weeks</div>
+      <div class="mini-chart-box"><canvas id="trendChart"></canvas></div>
+      <div class="caption">Pass rate has steadied between forty-eight and fifty-six since Issue No. 09. Yield compression modestly evident.</div>
+    </div>
+    <div class="strip-right">
+      <h3>This Week's Leaders</h3>
+      <ul>
+        <li><span class="sym">BBL</span><span class="val">74 · Yld 9.9%</span></li>
+        <li><span class="sym">TCAP</span><span class="val">87 · Yld 7.2%</span></li>
+        <li><span class="sym">INTUCH</span><span class="val">79 · Yld 6.8%</span></li>
+        <li><span class="sym">KBANK</span><span class="val">71 · Yld 8.1%</span></li>
+        <li><span class="sym">SCB</span><span class="val">68 · Yld 7.9%</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============= SECTION HEADER ============= -->
+  <div class="section-num">
+    <span class="no">01 · Watchlist</span>
+    <span>Fifty-four names · Sorted by score · Descending</span>
+  </div>
+
+  <!-- ============= FILTER BAR ============= -->
+  <div class="filter-bar" style="margin-bottom:var(--sp-5)">
+    <div class="filter-group">
+      <span class="lbl">Sort</span>
+      <button class="filter-chip active">Score</button>
+      <button class="filter-chip">Yield</button>
+      <button class="filter-chip">P/E</button>
+      <button class="filter-chip">P/BV</button>
+      <button class="filter-chip">Δ Score</button>
+    </div>
+    <div class="filter-group">
+      <span class="lbl">Signal</span>
+      <button class="filter-chip active">All</button>
+      <button class="filter-chip">Niwes 5-5-5-5</button>
+      <button class="filter-chip">Hidden Value</button>
+      <button class="filter-chip">Deep Value</button>
+      <button class="filter-chip">Quality Div</button>
+    </div>
+    <div class="filter-group">
+      <span class="lbl" style="margin-right:0">Showing</span>
+      <span class="val mono" style="color:var(--ink);font-weight:500">15 of 54</span>
+    </div>
+  </div>
+
+  <!-- ============= CARD GRID ============= -->
+  <section class="card-grid">
+
+    <!-- BBL -->
+    <article class="card" onclick="window.location='02-report.html'">
+      <div class="new-ribbon">New</div>
+      <div class="card-head">
+        <div>
+          <div class="card-sym">BBL</div>
+          <div class="card-name">Bangkok Bank</div>
+        </div>
+      </div>
+      <div class="card-tags">
+        <span class="tag primary">Niwes 5-5-5-5</span>
+        <span class="tag">Quality Div</span>
+      </div>
+      <div class="card-score-row">
+        <div><span class="score-big">74</span><span class="score-max">/100</span></div>
+        <div class="score-delta"><span class="arrow">↑</span>65 → 74<br>3 wk streak</div>
+      </div>
+      <div class="card-metrics">
+        <div><span class="lbl">Yield</span><span class="v">9.91%</span></div>
+        <div><span class="lbl">P/E</span><span class="v">6.9</span></div>
+        <div><span class="lbl">P/BV</span><span class="v">0.55</span></div>
+        <div><span class="lbl">Mcap</span><span class="v">324B</span></div>
+      </div>
+    </article>
+
+    <!-- TCAP -->
+    <article class="card" onclick="window.location='02-report.html'">
+      <div class="card-head">
+        <div>
+          <div class="card-sym">TCAP</div>
+          <div class="card-name">Thanachart Capital</div>
+        </div>
+      </div>
+      <div class="card-tags">
+        <span class="tag primary">Niwes 5-5-5-5</span>
+        <span class="tag">Hidden Value</span>
+        <span class="tag">Deep Value</span>
+      </div>
+      <div class="card-score-row">
+        <div><span class="score-big">87</span><span class="score-max">/100</span></div>
+        <div class="score-delta"><span class="arrow">↑</span>82 → 87<br>Top score wk</div>
+      </div>
+      <div class="card-metrics">
+        <div><span class="lbl">Yield</span><span class="v">7.20%</span></div>
+        <div><span class="lbl">P/E</span><span class="v">6.1</span></div>
+        <div><span class="lbl">P/BV</span><span class="v">0.68</span></div>
+        <div><span class="lbl">Mcap</span><span class="v">58B</span></div>
+      </div>
+    </article>
+
+    <!-- INTUCH -->
+    <article class="card" onclick="window.location='02-report.html'">
+      <div class="card-head">
+        <div>
+          <div class="card-sym">INTUCH</div>
+          <div class="card-name">Intouch Holdings</div>
+        </div>
+      </div>
+      <div class="card-tags">
+        <span class="tag primary">Niwes 5-5-5-5</span>
+        <span class="tag">Hidden Value</span>
+      </div>
+      <div class="card-score-row">
+        <div><span class="score-big">79</span><span class="score-max">/100</span></div>
+        <div class="score-delta"><span class="arrow">↑</span>76 → 79</div>
+      </div>
+      <div class="card-metrics">
+        <div><span class="lbl">Yield</span><span class="v">6.83%</span></div>
+        <div><span class="lbl">P/E</span><span class="v">11.2</span></div>
+        <div><span class="lbl">P/BV</span><span class="v">1.12</span></div>
+        <div><span class="lbl">Mcap</span><span class="v">241B</span></div>
+      </div>
+    </article>
+
+    <!-- KBANK -->
+    <article class="card" onclick="window.location='02-report.html'">
+      <div class="new-ribbon">New</div>
+      <div class="card-head">
+        <div>
+          <div class="card-sym">KBANK</div>
+          <div class="card-name">Kasikornbank</div>
+        </div>
+      </div>
+      <div class="card-tags">
+        <span class="tag primary">Niwes 5-5-5-5</span>
+      </div>
+      <div class="card-score-row">
+        <div><span class="score-big">71</span><span class="score-max">/100</span></div>
+        <div class="score-delta"><span class="arrow">↑</span>New entry<br>first pass</div>
+      </div>
+      <div class="card-metrics">
+        <div><span class="lbl">Yield</span><span class="v">8.12%</span></div>
+        <div><span class="lbl">P/E</span><span class="v">7.4</span></div>
+        <div><span class="lbl">P/BV</span><span class="v">0.62</span></div>
+        <div><span class="lbl">Mcap</span><span class="v">326B</span></div>
+      </div>
+    </article>
+
+    <!-- SCB -->
+    <article class="card" onclick="window.location='02-report.html'">
+      <div class="new-ribbon">New</div>
+      <div class="card-head">
+        <div>
+          <div class="card-sym">SCB</div>
+          <div class="card-name">SCB X Public Co.</div>
+        </div>
+      </div>
+      <div class="card-tags">
+        <span class="tag primary">Niwes 5-5-5-5</span>
+        <span class="tag">Deep Value</span>
+      </div>
+      <div class="card-score-row">
+        <div><span class="score-big">68</span><span class="score-max">/100</span></div>
+        <div class="score-delta"><span class="arrow">↑</span>New entry</div>
+      </div>
+      <div class="card-metrics">
+        <div><span class="lbl">Yield</span><span class="v">7.91%</span></div>
+        <div><span class="lbl">P/E</span><span class="v">7.9</span></div>
+        <div><span class="lbl">P/BV</span><span class="v">0.74</span></div>
+        <div><span class="lbl">Mcap</span><span class="v">361B</span></div>
+      </div>
+    </article>
+
+    <!-- QH -->
+    <article class="card" onclick="window.location='02-report.html'">
+      <div class="card-head">
+        <div>
+          <div class="card-sym">QH</div>
+          <div class="card-name">Quality Houses</div>
+        </div>
+      </div>
+      <div class="card-tags">
+        <span class="tag primary">Niwes 5-5-5-5</span>
+        <span class="tag">Hidden Value</span>
+      </div>
+      <div class="card-score-row">
+        <div><span class="score-big">73</span><span class="score-max">/100</span></div>
+        <div class="score-delta"><span class="arrow">↑</span>68 → 73</div>
+      </div>
+      <div class="card-metrics">
+        <div><span class="lbl">Yield</span><span class="v">6.40%</span></div>
+        <div><span class="lbl">P/E</span><span class="v">8.3</span></div>
+        <div><span class="lbl">P/BV</span><span class="v">0.81</span></div>
+        <div><span class="lbl">Mcap</span><span class="v">22B</span></div>
+      </div>
+    </article>
+
+    <!-- LH -->
+    <article class="card" onclick="window.location='02-report.html'">
+      <div class="card-head">
+        <div>
+          <div class="card-sym">LH</div>
+          <div class="card-name">Land &amp; Houses</div>
+        </div>
+      </div>
+      <div class="card-tags">
+        <span class="tag primary">Niwes 5-5-5-5</span>
+        <span class="tag">Quality Div</span>
+      </div>
+      <div class="card-score-row">
+        <div><span class="score-big">66</span><span class="score-max">/100</span></div>
+        <div class="score-delta">= 66 → 66</div>
+      </div>
+      <div class="card-metrics">
+        <div><span class="lbl">Yield</span><span class="v">6.12%</span></div>
+        <div><span class="lbl">P/E</span><span class="v">9.1</span></div>
+        <div><span class="lbl">P/BV</span><span class="v">1.02</span></div>
+        <div><span class="lbl">Mcap</span><span class="v">81B</span></div>
+      </div>
+    </article>
+
+    <!-- CPALL -->
+    <article class="card" onclick="window.location='02-report.html'">
+      <div class="card-head">
+        <div>
+          <div class="card-sym">CPALL</div>
+          <div class="card-name">CP All Public Co.</div>
+        </div>
+      </div>
+      <div class="card-tags">
+        <span class="tag primary">Niwes 5-5-5-5</span>
+      </div>
+      <div class="card-score-row">
+        <div><span class="score-big">62</span><span class="score-max">/100</span></div>
+        <div class="score-delta"><span class="arrow" style="color:var(--ink-dim)">↓</span>67 → 62</div>
+      </div>
+      <div class="card-metrics">
+        <div><span class="lbl">Yield</span><span class="v">5.08%</span></div>
+        <div><span class="lbl">P/E</span><span class="v">13.4</span></div>
+        <div><span class="lbl">P/BV</span><span class="v">1.48</span></div>
+        <div><span class="lbl">Mcap</span><span class="v">524B</span></div>
+      </div>
+    </article>
+
+    <!-- BJC -->
+    <article class="card" onclick="window.location='02-report.html'">
+      <div class="card-head">
+        <div>
+          <div class="card-sym">BJC</div>
+          <div class="card-name">Berli Jucker</div>
+        </div>
+      </div>
+      <div class="card-tags">
+        <span class="tag primary">Niwes 5-5-5-5</span>
+      </div>
+      <div class="card-score-row">
+        <div><span class="score-big">58</span><span class="score-max">/100</span></div>
+        <div class="score-delta"><span class="arrow">↑</span>54 → 58</div>
+      </div>
+      <div class="card-metrics">
+        <div><span class="lbl">Yield</span><span class="v">5.12%</span></div>
+        <div><span class="lbl">P/E</span><span class="v">12.8</span></div>
+        <div><span class="lbl">P/BV</span><span class="v">1.41</span></div>
+        <div><span class="lbl">Mcap</span><span class="v">142B</span></div>
+      </div>
+    </article>
+
+    <!-- TOP -->
+    <article class="card" onclick="window.location='02-report.html'">
+      <div class="card-head">
+        <div>
+          <div class="card-sym">TOP</div>
+          <div class="card-name">Thai Oil</div>
+        </div>
+      </div>
+      <div class="card-tags">
+        <span class="tag primary">Niwes 5-5-5-5</span>
+        <span class="tag">Deep Value</span>
+      </div>
+      <div class="card-score-row">
+        <div><span class="score-big">70</span><span class="score-max">/100</span></div>
+        <div class="score-delta"><span class="arrow">↑</span>65 → 70</div>
+      </div>
+      <div class="card-metrics">
+        <div><span class="lbl">Yield</span><span class="v">8.64%</span></div>
+        <div><span class="lbl">P/E</span><span class="v">7.1</span></div>
+        <div><span class="lbl">P/BV</span><span class="v">0.72</span></div>
+        <div><span class="lbl">Mcap</span><span class="v">108B</span></div>
+      </div>
+    </article>
+
+    <!-- PTT -->
+    <article class="card" onclick="window.location='02-report.html'">
+      <div class="card-head">
+        <div>
+          <div class="card-sym">PTT</div>
+          <div class="card-name">PTT Public Co.</div>
+        </div>
+      </div>
+      <div class="card-tags">
+        <span class="tag primary">Niwes 5-5-5-5</span>
+      </div>
+      <div class="card-score-row">
+        <div><span class="score-big">65</span><span class="score-max">/100</span></div>
+        <div class="score-delta"><span class="arrow">↑</span>60 → 65</div>
+      </div>
+      <div class="card-metrics">
+        <div><span class="lbl">Yield</span><span class="v">6.41%</span></div>
+        <div><span class="lbl">P/E</span><span class="v">9.4</span></div>
+        <div><span class="lbl">P/BV</span><span class="v">0.91</span></div>
+        <div><span class="lbl">Mcap</span><span class="v">1.02T</span></div>
+      </div>
+    </article>
+
+    <!-- MAKRO -->
+    <article class="card" onclick="window.location='02-report.html'">
+      <div class="card-head">
+        <div>
+          <div class="card-sym">MAKRO</div>
+          <div class="card-name">Siam Makro</div>
+        </div>
+      </div>
+      <div class="card-tags">
+        <span class="tag primary">Niwes 5-5-5-5</span>
+      </div>
+      <div class="card-score-row">
+        <div><span class="score-big">56</span><span class="score-max">/100</span></div>
+        <div class="score-delta"><span class="arrow" style="color:var(--ink-dim)">↓</span>60 → 56</div>
+      </div>
+      <div class="card-metrics">
+        <div><span class="lbl">Yield</span><span class="v">5.33%</span></div>
+        <div><span class="lbl">P/E</span><span class="v">14.2</span></div>
+        <div><span class="lbl">P/BV</span><span class="v">1.48</span></div>
+        <div><span class="lbl">Mcap</span><span class="v">384B</span></div>
+      </div>
+    </article>
+
+    <!-- AOT -->
+    <article class="card" onclick="window.location='02-report.html'">
+      <div class="card-head">
+        <div>
+          <div class="card-sym">AOT</div>
+          <div class="card-name">Airports of Thailand</div>
+        </div>
+      </div>
+      <div class="card-tags">
+        <span class="tag primary">Niwes 5-5-5-5</span>
+        <span class="tag">Quality Div</span>
+      </div>
+      <div class="card-score-row">
+        <div><span class="score-big">64</span><span class="score-max">/100</span></div>
+        <div class="score-delta">= flat wk/wk</div>
+      </div>
+      <div class="card-metrics">
+        <div><span class="lbl">Yield</span><span class="v">5.74%</span></div>
+        <div><span class="lbl">P/E</span><span class="v">12.1</span></div>
+        <div><span class="lbl">P/BV</span><span class="v">1.42</span></div>
+        <div><span class="lbl">Mcap</span><span class="v">618B</span></div>
+      </div>
+    </article>
+
+    <!-- ADVANC -->
+    <article class="card" onclick="window.location='02-report.html'">
+      <div class="card-head">
+        <div>
+          <div class="card-sym">ADVANC</div>
+          <div class="card-name">Advanced Info Service</div>
+        </div>
+      </div>
+      <div class="card-tags">
+        <span class="tag primary">Niwes 5-5-5-5</span>
+        <span class="tag">Quality Div</span>
+      </div>
+      <div class="card-score-row">
+        <div><span class="score-big">69</span><span class="score-max">/100</span></div>
+        <div class="score-delta"><span class="arrow">↑</span>66 → 69</div>
+      </div>
+      <div class="card-metrics">
+        <div><span class="lbl">Yield</span><span class="v">5.18%</span></div>
+        <div><span class="lbl">P/E</span><span class="v">11.9</span></div>
+        <div><span class="lbl">P/BV</span><span class="v">1.39</span></div>
+        <div><span class="lbl">Mcap</span><span class="v">627B</span></div>
+      </div>
+    </article>
+
+    <!-- AP -->
+    <article class="card" onclick="window.location='02-report.html'">
+      <div class="card-head">
+        <div>
+          <div class="card-sym">AP</div>
+          <div class="card-name">AP (Thailand)</div>
+        </div>
+      </div>
+      <div class="card-tags">
+        <span class="tag primary">Niwes 5-5-5-5</span>
+        <span class="tag">Deep Value</span>
+      </div>
+      <div class="card-score-row">
+        <div><span class="score-big">61</span><span class="score-max">/100</span></div>
+        <div class="score-delta"><span class="arrow">↑</span>57 → 61</div>
+      </div>
+      <div class="card-metrics">
+        <div><span class="lbl">Yield</span><span class="v">7.83%</span></div>
+        <div><span class="lbl">P/E</span><span class="v">6.2</span></div>
+        <div><span class="lbl">P/BV</span><span class="v">0.84</span></div>
+        <div><span class="lbl">Mcap</span><span class="v">24B</span></div>
+      </div>
+    </article>
+
+  </section>
+
+  <div class="ornament"></div>
+
+  <section class="text-c" style="padding:var(--sp-5) 0">
+    <button class="btn ghost">Load remaining 39 of 54 →</button>
+  </section>
+
+  <div class="page-foot">
+    Max Mahon — The Dividend Review · Published weekly since Vol. I, No. 01 · Algorithmic screen, human discipline.
+  </div>
+
+</main>
+
+<script>
+const textInk = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
+const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+const inkDim = getComputedStyle(document.documentElement).getPropertyValue('--ink-dim').trim();
+const ruleHair = 'rgba(26,24,20,0.18)';
+
+Chart.defaults.font.family = 'Lora, serif';
+Chart.defaults.color = inkDim;
+
+new Chart(document.getElementById('trendChart'), {
+  type: 'bar',
+  data: {
+    labels: ['W6','W7','W8','W9','W10','W11','W12','W13','W14','W15','W16','W17'],
+    datasets: [{
+      data: [41, 47, 52, 50, 49, 53, 55, 51, 48, 52, 50, 54],
+      backgroundColor: textInk,
+      borderWidth: 0,
+      barThickness: 14,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, border: { color: ruleHair }, ticks: { font: { size: 10 } } },
+      y: { grid: { color: ruleHair, drawBorder: false }, border: { display: false }, ticks: { font: { size: 10 }, stepSize: 20 }, suggestedMin: 0, suggestedMax: 70 }
+    }
+  }
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BBL · Full Report — Max Mahon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400;1,700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=IBM+Plex+Serif+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/base.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+/* Article headline block */
+.article-head {
+  padding: var(--sp-6) 0 var(--sp-5);
+  border-bottom: 3px double var(--rule);
+  text-align: center;
+}
+.article-kicker {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: var(--sp-3);
+}
+.article-sym {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: var(--fs-3xl);
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+  margin-bottom: var(--sp-2);
+}
+.article-name {
+  font-family: var(--font-head);
+  font-style: italic;
+  font-weight: 400;
+  font-size: var(--fs-md);
+  color: var(--ink-soft);
+  margin-bottom: var(--sp-4);
+}
+.article-tags {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+/* THE CASE — 2-col editorial */
+.case-body {
+  padding: var(--sp-6) 0;
+}
+.case-body .byline { text-align: center; margin-bottom: var(--sp-5); }
+.case-cols {
+  column-count: 2;
+  column-gap: var(--sp-6);
+  column-rule: 1px solid var(--rule-hair);
+  text-align: justify;
+  hyphens: auto;
+  font-size: 1.02rem;
+  line-height: 1.7;
+}
+.case-cols p { margin-bottom: var(--sp-4); }
+.case-cols p:first-child { text-indent: 0; }
+
+/* Score breakdown */
+.score-block {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: var(--sp-6);
+  padding: var(--sp-6) 0;
+  align-items: center;
+}
+.score-display {
+  text-align: center;
+}
+.score-display .huge {
+  font-family: var(--font-mono);
+  font-weight: 300;
+  font-size: 11rem;
+  line-height: 0.8;
+  letter-spacing: -0.05em;
+  color: var(--ink);
+}
+.score-display .slash {
+  font-family: var(--font-head);
+  font-style: italic;
+  color: var(--ink-dim);
+  font-size: var(--fs-lg);
+  margin-top: var(--sp-3);
+}
+.score-display .scoring-version {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-top: var(--sp-4);
+}
+.score-chart-wrap {
+  position: relative;
+  height: 320px;
+}
+
+/* Checklist */
+.checklist {
+  margin: var(--sp-5) 0;
+}
+.checklist-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: var(--sp-4);
+  padding: var(--sp-3) 0;
+  border-bottom: 1px solid var(--rule-hair);
+  align-items: baseline;
+}
+.checklist-item:first-child { border-top: 1px solid var(--rule); }
+.checklist-item:last-child { border-bottom: 1px solid var(--rule); }
+.check-label {
+  font-family: var(--font-head);
+  font-size: var(--fs-md);
+  font-weight: 500;
+}
+.check-actual {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: var(--fs-md);
+}
+.check-threshold {
+  font-family: var(--font-mono);
+  color: var(--ink-dim);
+  font-size: var(--fs-sm);
+}
+.check-mark {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: var(--fs-lg);
+  width: 20px;
+  text-align: center;
+}
+.check-mark.pass { color: var(--ink); }
+.check-mark.fail { color: var(--accent); }
+
+/* Reasons */
+.reasons-grid {
+  column-count: 3;
+  column-gap: var(--sp-5);
+  margin: var(--sp-5) 0;
+}
+.reason-item {
+  break-inside: avoid;
+  padding: var(--sp-3) 0;
+  border-bottom: 1px solid var(--rule-hair);
+  display: flex;
+  gap: var(--sp-3);
+  align-items: baseline;
+}
+.reason-num {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  color: var(--ink-faint);
+  min-width: 24px;
+}
+.reason-text {
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+.reason-text strong { font-family: var(--font-head); font-weight: 700; }
+
+/* Case pattern */
+.pattern-block {
+  border-top: 3px double var(--rule);
+  border-bottom: 3px double var(--rule);
+  padding: var(--sp-5);
+  margin: var(--sp-5) 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--sp-6);
+}
+.pattern-label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: var(--sp-2);
+}
+.pattern-name {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: var(--fs-xl);
+  line-height: 1;
+  color: var(--accent);
+  letter-spacing: -0.01em;
+}
+.pattern-body {
+  font-family: var(--font-body);
+  font-size: var(--fs-md);
+  line-height: 1.65;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+/* Chart blocks */
+.chart-pair {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: var(--sp-6);
+  margin: var(--sp-5) 0;
+  align-items: flex-start;
+}
+.chart-box { height: 260px; }
+.chart-caption {
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: var(--fs-sm);
+  color: var(--ink-dim);
+  text-align: center;
+  margin-top: var(--sp-3);
+}
+
+/* Exit baseline */
+.exit-panel {
+  border: 3px double var(--accent);
+  padding: var(--sp-5);
+  margin: var(--sp-5) 0;
+}
+.exit-panel .head {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: var(--sp-3);
+}
+.exit-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-5);
+  padding: var(--sp-4) 0;
+  border-top: 1px solid var(--rule-hair);
+  border-bottom: 1px solid var(--rule-hair);
+  margin: var(--sp-4) 0;
+}
+.exit-cell .lbl { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-dim); }
+.exit-cell .v { font-family: var(--font-mono); font-size: var(--fs-lg); font-weight: 500; display: block; margin-top: 4px; }
+.exit-cell .sub { font-family: var(--font-head); font-style: italic; font-size: var(--fs-xs); color: var(--ink-dim); display: block; margin-top: 2px; }
+
+/* Deep analyze CTA */
+.analyze-block {
+  text-align: center;
+  padding: var(--sp-7) 0;
+  border-top: 3px double var(--rule);
+  margin-top: var(--sp-7);
+}
+.analyze-block .sub {
+  font-family: var(--font-head);
+  font-style: italic;
+  color: var(--ink-dim);
+  max-width: 50ch;
+  margin: var(--sp-4) auto;
+  font-size: var(--fs-md);
+}
+.analyze-pending {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  font-style: normal;
+  margin-top: var(--sp-4);
+}
+.analyze-pending::before {
+  content: '∙ ';
+  color: var(--accent);
+  animation: pulse 1.4s infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.2; } }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="mast-top">
+    <div class="mast-meta-l">
+      <div>VOL. VI · NO. 17</div>
+      <div><strong>SATURDAY</strong> · APRIL 25, 2026</div>
+    </div>
+    <div class="mast-title">
+      <h1 class="mast-brand">Max Mahon</h1>
+      <div class="mast-sub">· The Dividend Review ·</div>
+    </div>
+    <div class="mast-meta-r">
+      <div>FULL REPORT EDITION</div>
+      <div>SCORING · <strong>NIWES-DIV-FIRST V2</strong></div>
+    </div>
+  </div>
+  <div class="mast-bottom">
+    <nav class="mast-nav">
+      <a href="01-home.html">Watchlist</a>
+      <a href="02-report.html" class="active">Full Report</a>
+      <a href="03-watchlist.html">Saved</a>
+      <a href="04-portfolio.html">Portfolio</a>
+      <a href="05-simulator.html">Simulator</a>
+      <a href="06-settings.html">Settings</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- ARTICLE HEAD -->
+  <section class="article-head">
+    <div class="article-kicker">Full Report · Issue No. 17 · Banking Sector</div>
+    <h1 class="article-sym">BBL</h1>
+    <div class="article-name">Bangkok Bank Public Company Limited · SET · Banks</div>
+    <div class="article-tags">
+      <span class="tag primary">Niwes 5-5-5-5</span>
+      <span class="tag">Quality Dividend</span>
+      <span class="tag">BANK_VALUE_PBV1</span>
+    </div>
+  </section>
+
+  <!-- SECTION 1 — THE CASE -->
+  <div class="section-num">
+    <span class="no">01 · The Case</span>
+    <span>Editorial Narrative · Read First</span>
+  </div>
+
+  <section class="case-body">
+    <div class="byline">By <strong>Max Mahon</strong> · Staff Analyst · Published Sat, 25 Apr 2026 09:00 ICT</div>
+    <div class="case-cols">
+      <p class="drop-cap">
+        Bangkok Bank — the oldest of the Thai financial trio and, at a discount to its tangible
+        book value, also the most boring — is trading at nine-point-nine percent dividend yield
+        and six-point-nine times earnings. That is not a typo. Nor is it a one-quarter
+        aberration. The bank has paid a dividend every year for twenty-two consecutive years,
+        through the 2008 crisis, through 2020, through the 2024 rate cycle. On the Niwes
+        Dividend-First scale, it clears all five gates of the 5-5-5-5 test, scoring seventy-four
+        of one hundred.
+      </p>
+      <p>
+        The case is not that BBL will compound at fifteen percent. It will not. The case is that
+        at fifty-five percent of book value, the market is quoting the franchise at half its
+        liquidation value — and paying one to hold. Cash flow from operations covers the
+        dividend two-point-one times over. Payout ratio sits at forty-three percent. The bank
+        has, historically, not bought back shares; it has, historically, simply paid them out.
+      </p>
+      <p class="pull-quote">
+        Yields nine-point-nine, covered twice over by cash. The five-five-five-five test cleared
+        on all five.
+      </p>
+      <p>
+        What is priced in: slower loan growth, net interest margin compression, and the
+        structural drag of a Thai economy growing at two-point-one percent. What is not priced
+        in: that BBL's loan book is weighted to corporate and trade finance, not mortgage —
+        giving it less sensitivity to the domestic housing cycle than KBANK or SCB. It has the
+        largest foreign-branch network of any Thai bank (thirty-one branches in ASEAN plus
+        three in Europe), a legacy of the Sophonpanich era that the current market does not
+        seem to weight.
+      </p>
+      <p>
+        The Niwes framework does not ask whether the stock will double. It asks whether, held
+        for ten to twenty years, the dividends alone will have paid for the position. At a
+        nine-point-nine yield, the answer is arithmetic: the position pays for itself in ten
+        years at current distribution rates — faster if the bank grows nominal earnings at the
+        pace of Thai inflation. That is the case. It is not complicated. It rarely is.
+      </p>
+    </div>
+  </section>
+
+  <!-- SECTION 2 — SCORE BREAKDOWN -->
+  <div class="section-num">
+    <span class="no">02 · Score Breakdown</span>
+    <span>Of One Hundred · Per Niwes Dividend-First Schema</span>
+  </div>
+
+  <section class="score-block">
+    <div class="score-display">
+      <div class="huge">74</div>
+      <div class="slash">of one hundred</div>
+      <div class="scoring-version">niwes-dividend-first · v2</div>
+    </div>
+    <div>
+      <div class="score-chart-wrap"><canvas id="scoreChart"></canvas></div>
+    </div>
+  </section>
+
+  <table class="data-table" style="margin-top:var(--sp-4)">
+    <thead>
+      <tr><th style="width:40%">Component</th><th class="num">Max</th><th class="num">Scored</th><th>Driver</th></tr>
+    </thead>
+    <tbody>
+      <tr><td class="sym">Dividend Sustainability</td><td class="num">50</td><td class="num pos">40</td><td class="dim">Yield 15 · Streak 15 · Payout 7 · Growth 3</td></tr>
+      <tr><td class="sym">Valuation</td><td class="num">25</td><td class="num pos">23</td><td class="dim">P/E 10 · P/BV 10 · EV/EBITDA 3</td></tr>
+      <tr><td class="sym">Cash Flow Strength</td><td class="num">15</td><td class="num pos">6</td><td class="dim">FCF 5 · OCF/NI 1 · Int Coverage N/A (bank)</td></tr>
+      <tr><td class="sym">Hidden Value</td><td class="num">10</td><td class="num">0</td><td class="dim">No flagged holding</td></tr>
+      <tr><td class="sym italic">Modifier · Valuation Grade A</td><td class="num">—</td><td class="num pos">+5</td><td class="dim">A-grade value (P/BV 0.55)</td></tr>
+      <tr style="border-top:2px solid var(--rule)"><td class="sym">Total</td><td class="num">100</td><td class="num" style="font-size:1.2em">74</td><td></td></tr>
+    </tbody>
+  </table>
+
+  <!-- SECTION 3 — CHECKLIST -->
+  <div class="section-num">
+    <span class="no">03 · The 5-5-5-5 Test</span>
+    <span>Hard Filters · Pass All or Fail</span>
+  </div>
+
+  <div class="checklist">
+    <div class="checklist-item">
+      <div class="check-label">Dividend Yield</div>
+      <div class="check-actual">9.91<span class="dim" style="font-weight:400">%</span></div>
+      <div class="check-threshold">≥ 5.00%</div>
+      <div class="check-mark pass">✓</div>
+    </div>
+    <div class="checklist-item">
+      <div class="check-label">Dividend Streak</div>
+      <div class="check-actual">22 <span class="dim" style="font-weight:400;font-size:0.8em">yrs</span></div>
+      <div class="check-threshold">≥ 5 yrs consecutive</div>
+      <div class="check-mark pass">✓</div>
+    </div>
+    <div class="checklist-item">
+      <div class="check-label">EPS Positive · Last Five Years</div>
+      <div class="check-actual">5 / 5</div>
+      <div class="check-threshold">No loss years</div>
+      <div class="check-mark pass">✓</div>
+    </div>
+    <div class="checklist-item">
+      <div class="check-label">Price / Earnings</div>
+      <div class="check-actual">6.9×</div>
+      <div class="check-threshold">≤ 15× (bonus ≤ 8×)</div>
+      <div class="check-mark pass">✓</div>
+    </div>
+    <div class="checklist-item">
+      <div class="check-label">Price / Book</div>
+      <div class="check-actual">0.55×</div>
+      <div class="check-threshold">≤ 1.5× (bonus ≤ 1.0×)</div>
+      <div class="check-mark pass">✓</div>
+    </div>
+    <div class="checklist-item">
+      <div class="check-label">Market Cap</div>
+      <div class="check-actual">324B <span class="dim" style="font-weight:400;font-size:0.8em">THB</span></div>
+      <div class="check-threshold">≥ 5B THB</div>
+      <div class="check-mark pass">✓</div>
+    </div>
+  </div>
+
+  <!-- SECTION 4 — REASONS -->
+  <div class="section-num">
+    <span class="no">04 · Reasons</span>
+    <span>Why This Passes · Nine Points</span>
+  </div>
+
+  <div class="reasons-grid">
+    <div class="reason-item">
+      <span class="reason-num">01</span>
+      <div class="reason-text"><strong>Yield สูง 9.9%</strong> — นำหุ้นธนาคารใหญ่ทั้งสามตัว และสูงสุดในรอบ 8 ปี</div>
+    </div>
+    <div class="reason-item">
+      <span class="reason-num">02</span>
+      <div class="reason-text"><strong>จ่ายปันผล 22 ปีติดต่อกัน</strong> — ผ่านวิกฤติ 2008 · 2020 · 2024 rate cycle</div>
+    </div>
+    <div class="reason-item">
+      <span class="reason-num">03</span>
+      <div class="reason-text"><strong>P/E 6.9 ถูกมาก</strong> — ต่ำกว่าค่าเฉลี่ย 10 ปีของตัวเองที่ 9.2×</div>
+    </div>
+    <div class="reason-item">
+      <span class="reason-num">04</span>
+      <div class="reason-text"><strong>P/BV 0.55</strong> — ตลาดให้มูลค่าน้อยกว่าครึ่งของ book value ที่ประเมินแล้ว</div>
+    </div>
+    <div class="reason-item">
+      <span class="reason-num">05</span>
+      <div class="reason-text"><strong>Payout 43%</strong> — ปลอดภัย ไม่ใช่จ่ายจากหนี้ ไม่ใช่ dividend trap</div>
+    </div>
+    <div class="reason-item">
+      <span class="reason-num">06</span>
+      <div class="reason-text"><strong>OCF cover dividend 2.1×</strong> — เงินสดจ่ายค่าปันผลได้สองเท่ายังเหลือสำรอง</div>
+    </div>
+    <div class="reason-item">
+      <span class="reason-num">07</span>
+      <div class="reason-text"><strong>Foreign branch network</strong> — 31 สาขา ASEAN + 3 ยุโรป ไม่ติดเศรษฐกิจไทยล้วน</div>
+    </div>
+    <div class="reason-item">
+      <span class="reason-num">08</span>
+      <div class="reason-text"><strong>Corporate loan bias</strong> — ไม่เน้น mortgage ช่วยลด housing cycle exposure</div>
+    </div>
+    <div class="reason-item">
+      <span class="reason-num">09</span>
+      <div class="reason-text"><strong>Valuation grade A</strong> — ได้ modifier +5 จากเกณฑ์ถูกหลายมิติพร้อมกัน</div>
+    </div>
+  </div>
+
+  <!-- SECTION 5 — PATTERN -->
+  <div class="section-num">
+    <span class="no">05 · Case Study Pattern</span>
+    <span>Matched · BANK_VALUE_PBV1</span>
+  </div>
+
+  <div class="pattern-block">
+    <div>
+      <div class="pattern-label">Pattern</div>
+      <div class="pattern-name">BANK_VALUE_<br>PBV1</div>
+    </div>
+    <div class="pattern-body">
+      <p style="margin-bottom:var(--sp-3)">
+        ดร.นิเวศน์ เคยอธิบายไว้ว่า ธนาคารขนาดใหญ่ที่ซื้อขายต่ำกว่า book value เป็นของหายาก —
+        และเมื่อมี ต้องดูว่าตลาดกำลังกลัวอะไร. กรณี BBL ตลาดกำลังกลัว NIM compression + โตช้า
+        — ซึ่งไม่ผิด แต่ลืมไปว่า ธนาคารนี้ปันผล 9.9% คุ้มแล้วกับ margin ที่ถดถอย
+      </p>
+      <p>
+        รูปแบบนี้ match กับ TCAP · KBANK ปี 2018-2020 ที่ซื้อขายต่ำกว่า book 30-40% และ
+        ภายใน 5 ปี กลับมา trade ที่ P/BV 1.0 พร้อมจ่ายปันผลสะสมไปแล้วเกินครึ่งของต้นทุนเดิม
+      </p>
+    </div>
+  </div>
+
+  <!-- SECTION 6 — KEY NUMBERS -->
+  <div class="section-num">
+    <span class="no">06 · Key Numbers</span>
+    <span>Five-Year Financial History</span>
+  </div>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Metric</th>
+        <th class="num">2021</th>
+        <th class="num">2022</th>
+        <th class="num">2023</th>
+        <th class="num">2024</th>
+        <th class="num">2025</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="sym">Revenue (B THB)</td><td class="num">129.4</td><td class="num">134.2</td><td class="num">148.7</td><td class="num">154.1</td><td class="num">161.8</td></tr>
+      <tr><td class="sym">Net Income (B THB)</td><td class="num">26.5</td><td class="num">29.3</td><td class="num">41.6</td><td class="num">45.2</td><td class="num">47.0</td></tr>
+      <tr><td class="sym">EPS (THB)</td><td class="num">13.87</td><td class="num">15.35</td><td class="num">21.79</td><td class="num">23.68</td><td class="num">24.62</td></tr>
+      <tr><td class="sym">ROE (%)</td><td class="num">5.1</td><td class="num">5.5</td><td class="num">7.4</td><td class="num">7.9</td><td class="num">7.8</td></tr>
+      <tr><td class="sym">Net Margin (%)</td><td class="num">20.5</td><td class="num">21.8</td><td class="num">28.0</td><td class="num">29.3</td><td class="num">29.0</td></tr>
+      <tr><td class="sym">D/E (×)</td><td class="num">8.9</td><td class="num">8.7</td><td class="num">8.4</td><td class="num">8.3</td><td class="num">8.1</td></tr>
+      <tr><td class="sym">OCF (B THB)</td><td class="num">48.2</td><td class="num">52.1</td><td class="num">58.7</td><td class="num">61.4</td><td class="num">64.8</td></tr>
+      <tr><td class="sym">DPS (THB)</td><td class="num">5.50</td><td class="num">6.00</td><td class="num">7.50</td><td class="num">8.50</td><td class="num">10.50</td></tr>
+    </tbody>
+  </table>
+
+  <!-- SECTION 7 — DIVIDEND HISTORY -->
+  <div class="section-num">
+    <span class="no">07 · Dividend History</span>
+    <span>Ten Years of Distributions</span>
+  </div>
+
+  <div class="chart-pair">
+    <div>
+      <div class="chart-box"><canvas id="dpsChart"></canvas></div>
+      <div class="chart-caption">DPS growth — compounded 6.5% over ten years, uninterrupted through crisis.</div>
+    </div>
+    <div>
+      <table class="data-table">
+        <thead><tr><th>Year</th><th class="num">DPS</th><th class="num">Yield %</th></tr></thead>
+        <tbody>
+          <tr><td class="sym">2016</td><td class="num">6.50</td><td class="num">3.8</td></tr>
+          <tr><td class="sym">2017</td><td class="num">6.50</td><td class="num">3.3</td></tr>
+          <tr><td class="sym">2018</td><td class="num">7.00</td><td class="num">3.5</td></tr>
+          <tr><td class="sym">2019</td><td class="num">7.00</td><td class="num">4.5</td></tr>
+          <tr><td class="sym">2020</td><td class="num">2.50</td><td class="num">2.3</td></tr>
+          <tr><td class="sym">2021</td><td class="num">5.50</td><td class="num">4.8</td></tr>
+          <tr><td class="sym">2022</td><td class="num">6.00</td><td class="num">5.1</td></tr>
+          <tr><td class="sym">2023</td><td class="num">7.50</td><td class="num">6.3</td></tr>
+          <tr><td class="sym">2024</td><td class="num">8.50</td><td class="num">7.4</td></tr>
+          <tr><td class="sym">2025</td><td class="num">10.50</td><td class="num pos">9.9</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECTION 8 — SCORE HISTORY -->
+  <div class="section-num">
+    <span class="no">08 · Score History</span>
+    <span>Twelve Weekly Scans</span>
+  </div>
+
+  <div class="chart-pair">
+    <div>
+      <div class="chart-box"><canvas id="scoreHistChart"></canvas></div>
+      <div class="chart-caption">Score trajectory since first appearance on the scan · Week 6 → Week 17.</div>
+    </div>
+    <div>
+      <table class="data-table">
+        <thead><tr><th>Scan Date</th><th class="num">Score</th><th>Signals</th><th class="num">Δ</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">Feb 08</td><td class="num">58</td><td class="dim">5555</td><td class="num">—</td></tr>
+          <tr><td class="mono">Feb 15</td><td class="num">60</td><td class="dim">5555</td><td class="num pos">+2</td></tr>
+          <tr><td class="mono">Feb 22</td><td class="num">61</td><td class="dim">5555, QD</td><td class="num pos">+1</td></tr>
+          <tr><td class="mono">Mar 01</td><td class="num">63</td><td class="dim">5555, QD</td><td class="num pos">+2</td></tr>
+          <tr><td class="mono">Mar 08</td><td class="num">64</td><td class="dim">5555, QD</td><td class="num pos">+1</td></tr>
+          <tr><td class="mono">Mar 15</td><td class="num">65</td><td class="dim">5555, QD</td><td class="num pos">+1</td></tr>
+          <tr><td class="mono">Mar 22</td><td class="num">67</td><td class="dim">5555, QD, DV</td><td class="num pos">+2</td></tr>
+          <tr><td class="mono">Mar 29</td><td class="num">68</td><td class="dim">5555, QD, DV</td><td class="num pos">+1</td></tr>
+          <tr><td class="mono">Apr 05</td><td class="num">70</td><td class="dim">5555, QD, DV</td><td class="num pos">+2</td></tr>
+          <tr><td class="mono">Apr 12</td><td class="num">72</td><td class="dim">5555, QD, DV</td><td class="num pos">+2</td></tr>
+          <tr><td class="mono">Apr 19</td><td class="num">73</td><td class="dim">5555, QD</td><td class="num pos">+1</td></tr>
+          <tr><td class="mono">Apr 25</td><td class="num" style="font-weight:700">74</td><td class="dim">5555, QD</td><td class="num pos">+1</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECTION 9 — EXIT BASELINE -->
+  <div class="section-num">
+    <span class="no">09 · Exit Baseline</span>
+    <span>Watchlist Position · Monitoring Active</span>
+  </div>
+
+  <div class="exit-panel">
+    <div class="head">Current Assessment · <span class="sev hold">HOLD</span></div>
+
+    <p class="body" style="font-style:italic;color:var(--ink-soft);margin-bottom:var(--sp-4)">
+      เข้า watchlist วันที่ 15 กุมภาพันธ์ 2568 ที่ราคา 142 บาท · ตั้งแต่นั้นมา score ขึ้น จาก 60 → 74
+      และราคา +12%. ไม่มีสัญญาณ exit — yield ยังสูงกว่า 8%, PE ยังต่ำกว่า 8×, streak ยังต่อเนื่อง
+    </p>
+
+    <div class="exit-grid">
+      <div class="exit-cell">
+        <span class="lbl">Entry Date</span>
+        <span class="v">15 ก.พ. 68</span>
+        <span class="sub">10 weeks ago</span>
+      </div>
+      <div class="exit-cell">
+        <span class="lbl">Entry P/E</span>
+        <span class="v">7.8×</span>
+        <span class="sub">current 6.9×</span>
+      </div>
+      <div class="exit-cell">
+        <span class="lbl">Entry Yield</span>
+        <span class="v">8.2%</span>
+        <span class="sub">current 9.9%</span>
+      </div>
+      <div class="exit-cell">
+        <span class="lbl">Δ Score</span>
+        <span class="v">+14</span>
+        <span class="sub">60 → 74</span>
+      </div>
+    </div>
+
+    <table class="data-table">
+      <thead><tr><th>Trigger Rule</th><th class="num">Threshold</th><th class="num">Current</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td class="sym">Yield drops below</td><td class="num">&lt; 4.0%</td><td class="num">9.91%</td><td><span class="sev hold">Hold</span></td></tr>
+        <tr><td class="sym">P/E exceeds</td><td class="num">&gt; 20×</td><td class="num">6.9×</td><td><span class="sev hold">Hold</span></td></tr>
+        <tr><td class="sym">Dividend streak breaks</td><td class="num">= 0</td><td class="num">22 yr</td><td><span class="sev hold">Hold</span></td></tr>
+        <tr><td class="sym">Payout exceeds</td><td class="num">&gt; 90%</td><td class="num">43%</td><td><span class="sev hold">Hold</span></td></tr>
+        <tr><td class="sym">Data warning flag</td><td class="num">=1</td><td class="num">0</td><td><span class="sev hold">Hold</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 10 — DEEP ANALYZE -->
+  <div class="analyze-block">
+    <div class="kicker" style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:var(--sp-3)">
+      № 10 · Beyond the Algorithm
+    </div>
+    <h2 style="font-family:var(--font-head);font-weight:900;font-size:var(--fs-2xl);line-height:1.1;margin-bottom:var(--sp-3)">
+      Ask Max to go deeper.
+    </h2>
+    <p class="sub">
+      The algorithm scores what can be measured. For qualitative assessment — competitive moat,
+      management quality, sector structural risk — invoke deep analysis powered by Claude Opus.
+    </p>
+    <button class="btn primary" style="margin-top:var(--sp-4)">ขอ Max วิเคราะห์เพิ่มเติม</button>
+    <div class="analyze-pending">Pending · est. 45 seconds · cached 7 days</div>
+  </div>
+
+  <div class="page-foot" style="padding:var(--sp-6) 0;border-top:3px double var(--rule);margin-top:var(--sp-7);text-align:center;font-family:var(--font-head);font-style:italic;color:var(--ink-dim);font-size:var(--fs-sm)">
+    End of Report · BBL · Issue No. 17 · Max Mahon — The Dividend Review
+  </div>
+
+</main>
+
+<script>
+const textInk = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
+const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+const inkDim = getComputedStyle(document.documentElement).getPropertyValue('--ink-dim').trim();
+const gray200 = getComputedStyle(document.documentElement).getPropertyValue('--gray-200').trim();
+const gray300 = getComputedStyle(document.documentElement).getPropertyValue('--gray-300').trim();
+const gray500 = getComputedStyle(document.documentElement).getPropertyValue('--gray-500').trim();
+const ruleHair = 'rgba(26,24,20,0.15)';
+
+Chart.defaults.font.family = 'Lora, serif';
+Chart.defaults.color = inkDim;
+
+// Score donut — grayscale + one oxblood accent
+new Chart(document.getElementById('scoreChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Dividend · 40', 'Valuation · 23', 'Cash Flow · 6', 'Hidden Value · 0', 'Modifier · +5', 'Remaining · 26'],
+    datasets: [{
+      data: [40, 23, 6, 0.1, 5, 26],
+      backgroundColor: [ accent, textInk, gray500, gray300, '#4A3F3A', 'rgba(26,24,20,0.08)' ],
+      borderColor: '#F4EFE6',
+      borderWidth: 2,
+      spacing: 2,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '62%',
+    plugins: {
+      legend: {
+        position: 'right',
+        align: 'center',
+        labels: {
+          font: { family: 'JetBrains Mono', size: 10 },
+          boxWidth: 10,
+          boxHeight: 10,
+          padding: 8
+        }
+      }
+    }
+  }
+});
+
+// DPS bar chart
+new Chart(document.getElementById('dpsChart'), {
+  type: 'bar',
+  data: {
+    labels: ['2016','2017','2018','2019','2020','2021','2022','2023','2024','2025'],
+    datasets: [{
+      data: [6.5, 6.5, 7.0, 7.0, 2.5, 5.5, 6.0, 7.5, 8.5, 10.5],
+      backgroundColor: (ctx) => ctx.dataIndex === 9 ? accent : textInk,
+      borderWidth: 0,
+      barThickness: 22,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, border: { color: ruleHair }, ticks: { font: { size: 10 } } },
+      y: { grid: { color: ruleHair }, border: { display: false }, ticks: { font: { size: 10 }, callback: v => v + ' ฿' } }
+    }
+  }
+});
+
+// Score history line
+new Chart(document.getElementById('scoreHistChart'), {
+  type: 'line',
+  data: {
+    labels: ['Feb 08','Feb 15','Feb 22','Mar 01','Mar 08','Mar 15','Mar 22','Mar 29','Apr 05','Apr 12','Apr 19','Apr 25'],
+    datasets: [{
+      data: [58, 60, 61, 63, 64, 65, 67, 68, 70, 72, 73, 74],
+      borderColor: textInk,
+      backgroundColor: 'rgba(26,24,20,0.04)',
+      borderWidth: 2,
+      pointRadius: 3,
+      pointBackgroundColor: textInk,
+      pointBorderWidth: 0,
+      pointHoverRadius: 6,
+      pointHoverBackgroundColor: accent,
+      tension: 0,
+      fill: true,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, border: { color: ruleHair }, ticks: { font: { size: 9 } } },
+      y: { grid: { color: ruleHair }, border: { display: false }, ticks: { font: { size: 10 }, stepSize: 5 }, suggestedMin: 50, suggestedMax: 80 }
+    }
+  }
+});
+</script>
+
+</body>
+</html>
