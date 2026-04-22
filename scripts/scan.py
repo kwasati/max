@@ -40,18 +40,6 @@ def get_latest_screener() -> Path:
     return files[0]
 
 
-def fmt(val, pct=False, billions=False):
-    if val is None:
-        return "N/A"
-    if pct:
-        return f"{val * 100:.1f}%"
-    if billions:
-        return f"{val / 1e9:.1f}B"
-    if isinstance(val, float):
-        return f"{val:,.2f}"
-    return f"{val:,}"
-
-
 def build_stock_section(stock: dict, reason: str = "") -> str:
     """รับ candidate จาก screener (มี yearly_metrics, dividend_history, aggregates) สร้าง section markdown"""
     sym = stock.get("symbol", "?")
