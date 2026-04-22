@@ -34,22 +34,6 @@ def get_latest_screener() -> Path:
     return files[0]
 
 
-def build_exit_alerts_section(exit_alerts: list) -> str:
-    """Format Watchlist Exit Alerts section for scan report (Plan 08)."""
-    if not exit_alerts:
-        return "— ไม่มี exit alert ในรอบนี้"
-    parts = []
-    for a in exit_alerts:
-        sym = a.get("symbol", "?")
-        name = a.get("name", sym)
-        status = a.get("status", "")
-        lines = [f"### {name} ({sym}) — ⚠ EXIT ALERT ({status})"]
-        for t in a.get("triggers", []):
-            lines.append(f"- **{t['type']}** [{t['severity']}] — {t['reason']}")
-        parts.append("\n".join(lines))
-    return "\n\n".join(parts)
-
-
 def load_history() -> dict:
     if not HISTORY_FILE.exists():
         return {"scans": []}
