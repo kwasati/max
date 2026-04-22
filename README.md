@@ -25,7 +25,7 @@ max-server.bat
 py -m uvicorn server.app:app --port 50089
 
 # Run the pipeline manually
-py scripts/run_scan.py                # full scan (fetch + screen + analyze)
+# Trigger scan via API: curl -X POST http://localhost:50089/api/scan/trigger -H "Authorization: Bearer $MAX_TOKEN"
 py scripts/fetch_data.py              # fetch data only
 py scripts/screen_stocks.py           # screen stocks only
 py scripts/scan.py                    # scan step only
