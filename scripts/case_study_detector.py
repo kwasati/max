@@ -38,7 +38,7 @@ def detect_case_study_tags(stock: dict, patterns: dict) -> list[str]:
     sector = stock.get("sector", "")
     symbol = stock.get("symbol", "")
     for p in patterns.values():
-        if p.get("anti_rules") or p.get("disabled"):
+        if p.get("disabled"):
             continue
         r = p.get("rules", {})
         if "exclude_symbols" in r and symbol in r["exclude_symbols"]:
