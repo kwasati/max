@@ -914,6 +914,7 @@ DEFAULT_CONFIG = {
         "min_market_cap": 5_000_000_000,
     },
     "universe": "set_mai",
+    "last_saved_at": None,
 }
 
 
@@ -946,22 +947,72 @@ def save_config(config: dict):
 # Settings API
 # ---------------------------------------------------------------------------
 
+_ALLOWED_FILTER_KEYS = {
+    "min_dividend_yield",
+    "min_dividend_streak",
+    "min_eps_positive_years",
+    "max_pe",
+    "bonus_pe",
+    "max_pbv",
+    "bonus_pbv",
+    "min_market_cap",
+}
+_ALLOWED_UNIVERSE = {"set_only", "set_mai"}
+
+
+def _compute_next_run() -> Optional[str]:
+    """Return ISO datestr of next scheduled scan (if scheduler enabled + job exists)."""
+    try:
+        job = scheduler.get_job("max_pipeline")
+    except Exception:
+        return None
+    if not job or not job.next_run_time:
+        return None
+    try:
+        return job.next_run_time.isoformat(timespec="seconds")
+    except Exception:
+        return str(job.next_run_time)
+
+
 @app.get("/api/settings")
 async def get_settings():
-    return load_config()
+    config = load_config()
+    config["next_run_at"] = _compute_next_run()
+    return config
 
 
 @app.post("/api/settings")
 async def post_settings(request: Request):
     body = await request.json()
+    # v6 Phase 2 — validate schema
+    filters = body.get("filters")
+    if filters is not None:
+        if not isinstance(filters, dict):
+            raise HTTPException(400, "filters must be an object")
+        unknown = set(filters.keys()) - _ALLOWED_FILTER_KEYS
+        if unknown:
+            raise HTTPException(
+                400,
+                f"unknown filter keys: {sorted(unknown)}; allowed: {sorted(_ALLOWED_FILTER_KEYS)}",
+            )
+    universe = body.get("universe")
+    if universe is not None and universe not in _ALLOWED_UNIVERSE:
+        raise HTTPException(
+            400,
+            f"universe must be one of {sorted(_ALLOWED_UNIVERSE)}, got '{universe}'",
+        )
+
     config = load_config()
     for k in body:
         if k in config and isinstance(config[k], dict) and isinstance(body[k], dict):
             config[k].update(body[k])
         else:
             config[k] = body[k]
+    # Stamp last_saved_at on every save
+    config["last_saved_at"] = datetime.now().isoformat(timespec="seconds")
     save_config(config)
     apply_schedule(config)
+    config["next_run_at"] = _compute_next_run()
     return {"status": "ok", "config": config}
 
 
