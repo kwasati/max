@@ -21,5 +21,10 @@
   },
   "custom_lists": {},
   "updated_at": "2026-04-19T16:54:28.096876",
-  "transactions": []
+  "transactions": [],
+  "cash_reserve": 0,
+  "simulated_portfolio": {
+    "positions": [],
+    "cash_reserve_pct": 0.0
+  }
 }
