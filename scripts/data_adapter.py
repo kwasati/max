@@ -395,24 +395,6 @@ def _fetch_yfinance_supplement(symbol: str) -> dict:
                 "operating_income_by_year": {}, "interest_expense_by_year": {}}
 
 
-def _fetch_yfinance_full(symbol: str) -> dict | None:
-    """Full yfinance fallback — same logic as old fetch_multi_year."""
-    try:
-        import yfinance as yf
-        yf_sym = _to_yf_symbol(symbol)
-        tk = yf.Ticker(yf_sym)
-        info = tk.info or {}
-
-        if len(info) < 5:
-            return None
-
-        return {"tk": tk, "info": info}
-
-    except Exception as e:
-        logger.warning("yfinance full fallback failed for %s: %s", symbol, e)
-        return None
-
-
 # Public API aliases
 fetch_from_thaifin = _fetch_thaifin
 fetch_yfinance_supplement = _fetch_yfinance_supplement
