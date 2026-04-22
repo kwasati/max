@@ -1311,19 +1311,6 @@ async def update_note(symbol: str, body: NoteUpdate):
     return {"notes": data["notes"]}
 
 
-class ListUpdate(BaseModel):
-    add: list[str] = []
-    remove: list[str] = []
-
-
-@app.delete("/api/user/lists/{list_name}")
-async def delete_custom_list(list_name: str):
-    data = load_user_data()
-    data.get("custom_lists", {}).pop(list_name, None)
-    save_user_data(data)
-    return {"deleted": list_name}
-
-
 # ---------------------------------------------------------------------------
 # Portfolio Transactions + P&L API (Plan 05 Phase 4)
 # ---------------------------------------------------------------------------
