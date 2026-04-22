@@ -15,13 +15,7 @@ REPORTS_DIR = ROOT / "reports"
 USER_DATA = ROOT / "user_data.json"
 HISTORY_FILE = DATA_DIR / "history.json"
 
-# Plan 08 — make screen_stocks importable for exit signal detection
 sys.path.insert(0, str(ROOT / "scripts"))
-try:
-    from screen_stocks import detect_exit_signal, load_exit_baseline
-except Exception:
-    detect_exit_signal = None
-    load_exit_baseline = None
 
 load_dotenv(Path("C:/WORKSPACE/.env"))
 
@@ -38,71 +32,6 @@ def get_latest_screener() -> Path:
         print("No screener data found. Run screen_stocks.py first.")
         sys.exit(1)
     return files[0]
-
-
-def classify_stocks(screener_data: dict, watchlist: list, current_screener: Path):
-    """แยกเป็น 3 groups: top_candidates, watchlist_current, new_in_batch"""
-    candidates = screener_data.get("candidates", [])
-    filtered_out = screener_data.get("filtered_out_stocks", [])
-    wl_set = set(watchlist)
-
-    # top_candidates: score >= 50, ไม่อยู่ใน watchlist, sort desc, cap 15
-    top = [c for c in candidates if c.get("score", 0) >= 50 and c["symbol"] not in wl_set]
-    top.sort(key=lambda x: x.get("score", 0), reverse=True)
-    top = top[:15]
-
-    # watchlist_current: watchlist symbols ที่เจอใน screener (passed or failed)
-    cand_by_sym = {c["symbol"]: c for c in candidates}
-    fail_by_sym = {f["symbol"]: f for f in filtered_out}
-
-    watchlist_current = []
-    for sym in watchlist:
-        if sym in cand_by_sym:
-            stock = dict(cand_by_sym[sym])
-            stock["_status"] = "PASSED"
-            watchlist_current.append(stock)
-        elif sym in fail_by_sym:
-            stock = dict(fail_by_sym[sym])
-            stock["_status"] = "FAILED"
-            watchlist_current.append(stock)
-
-    # new_in_batch: top_candidates ที่ symbol ไม่เคยอยู่ใน candidates array ของ screener รอบก่อน
-    historical = load_historical_candidates(current_screener)
-    new_in_batch = [c for c in top if c["symbol"] not in historical]
-
-    # Plan 08 — watchlist_exit_alerts: stocks with exit triggers per Niwes exit rules
-    watchlist_exit_alerts = []
-    if detect_exit_signal is not None and load_exit_baseline is not None:
-        for stock in watchlist_current:
-            sym = stock.get("symbol", "")
-            if not sym:
-                continue
-            baseline = load_exit_baseline(sym)
-            if not baseline:
-                continue
-            m = stock.get("metrics") or stock.get("basic_metrics") or {}
-            current_data = {
-                "dividend_yield": m.get("dividend_yield"),
-                "pe_ratio": m.get("pe"),
-                "pb_ratio": m.get("pb_ratio"),
-                "market_cap": m.get("mcap"),
-                "aggregates": stock.get("aggregates", {}),
-                "yearly_metrics": stock.get("yearly_metrics", []),
-            }
-            triggers = detect_exit_signal(sym, current_data, baseline)
-            if triggers:
-                sigs = list(stock.get("signals") or [])
-                if "EXIT_SIGNAL" not in sigs:
-                    sigs.append("EXIT_SIGNAL")
-                stock["signals"] = sigs
-                watchlist_exit_alerts.append({
-                    "symbol": sym,
-                    "name": stock.get("name", sym),
-                    "status": stock.get("_status"),
-                    "triggers": triggers,
-                })
-
-    return top, watchlist_current, new_in_batch, watchlist_exit_alerts
 
 
 def build_exit_alerts_section(exit_alerts: list) -> str:
@@ -154,15 +83,6 @@ def main():
 
     watchlist = user_data.get("watchlist", [])
     notes = user_data.get("notes", {})
-
-    top_candidates, watchlist_current, new_in_batch, watchlist_exit_alerts = classify_stocks(
-        screener_data, watchlist, screener_path
-    )
-
-    print(
-        f"Classified: top={len(top_candidates)} watchlist={len(watchlist_current)} "
-        f"new={len(new_in_batch)} exit_alerts={len(watchlist_exit_alerts)}"
-    )
 
     history = load_history()
     scan_num = next_scan_num(history)
