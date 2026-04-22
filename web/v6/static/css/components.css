@@ -104,3 +104,194 @@
   color: var(--ink-dim);
   font-size: var(--fs-md);
 }
+
+/* ---- Portfolio page (04a Real + 04b Simulated) -------------- */
+.portfolio-section {
+  display: grid;
+  grid-template-columns: 40% 60%;
+  gap: var(--sp-6);
+  margin: var(--sp-5) 0 var(--sp-7);
+}
+.pie-wrap {
+  border-right: 1px solid var(--rule-hair);
+  padding-right: var(--sp-6);
+}
+.pie-box { height: 360px; position: relative; }
+.pie-caption {
+  font-family: var(--font-head);
+  font-style: italic;
+  color: var(--ink-dim);
+  text-align: center;
+  margin-top: var(--sp-4);
+  font-size: var(--fs-sm);
+}
+.pie-total {
+  text-align: center;
+  margin-top: var(--sp-5);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--rule);
+}
+.pie-total .lbl {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.pie-total .val {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: var(--fs-2xl);
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+.pie-total .sub {
+  font-family: var(--font-head);
+  font-style: italic;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  margin-top: 4px;
+}
+.divider-block {
+  margin: var(--sp-7) 0;
+  border-top: 3px double var(--rule);
+  border-bottom: 3px double var(--rule);
+  padding: var(--sp-4) 0;
+  text-align: center;
+}
+.divider-title {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: var(--fs-xl);
+  letter-spacing: -0.01em;
+}
+.divider-sub {
+  font-family: var(--font-head);
+  font-style: italic;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  margin-top: 4px;
+}
+.weight-bar {
+  display: inline-block;
+  height: 4px;
+  background: var(--ink);
+  vertical-align: middle;
+  margin-right: 8px;
+}
+.pnl-arrow {
+  display: inline-block;
+  width: 0.9em;
+  margin-right: 2px;
+  font-weight: 700;
+}
+.pnl-up   { font-weight: 500; }
+.pnl-down { font-style: italic; }
+.pnl-flat { color: var(--ink-soft); }
+.row-del {
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  padding: 2px 6px;
+  line-height: 1;
+}
+.row-del:hover { color: var(--accent); }
+
+.weight-input {
+  width: 60px;
+  padding: 2px 4px;
+  border: 1px solid var(--rule-hair);
+  background: var(--paper-3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  text-align: right;
+  color: var(--ink);
+}
+.weight-input:focus {
+  outline: none;
+  border-color: var(--ink);
+}
+.weight-sum-warn {
+  font-family: var(--font-head);
+  font-style: italic;
+  color: var(--accent);
+  font-size: var(--fs-sm);
+}
+.sim-signals {
+  display: inline-flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.empty-note {
+  padding: var(--sp-6) 0;
+  text-align: center;
+  font-family: var(--font-head);
+  font-style: italic;
+  color: var(--ink-dim);
+  font-size: var(--fs-md);
+  border-top: 1px solid var(--rule-hair);
+  border-bottom: 1px solid var(--rule-hair);
+}
+
+/* ---- Portfolio mobile --------------------------------------- */
+.port-m-pie-box { height: 240px; }
+.port-m-pie-total { text-align: center; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--rule); }
+.port-m-pie-total .lbl { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-dim); }
+.port-m-pie-total .val { font-family: var(--font-head); font-weight: 900; font-size: 1.6rem; line-height: 1; }
+.port-m-pie-total .sub { font-family: var(--font-head); font-style: italic; color: var(--ink-soft); font-size: 0.8rem; margin-top: 3px; }
+.stock-row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--rule-hair);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+.stock-row:first-child { border-top: 1px solid var(--rule); }
+.stock-row:last-child { border-bottom: 1px solid var(--rule); }
+.stock-row .left .sym {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 1rem;
+}
+.stock-row .left .meta {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--ink-dim);
+  margin-top: 3px;
+}
+.stock-row .right {
+  text-align: right;
+  min-width: 44px;
+}
+.stock-row .right .val {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 500;
+}
+.stock-row .right .pl {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  margin-top: 3px;
+}
+.weight-tiny {
+  display: inline-block;
+  height: 3px;
+  background: var(--ink);
+  vertical-align: middle;
+  margin-right: 6px;
+}
+.stock-row .row-del {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.foot-cta {
+  text-align: center;
+  padding: 20px 0;
+}

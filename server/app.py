@@ -3069,11 +3069,39 @@ async def serve_mobile():
     return HTMLResponse(html)
 
 
+@app.get("/m/portfolio", response_class=HTMLResponse)
+async def serve_mobile_portfolio():
+    """Mobile portfolio page — dedicated shell because it loads Chart.js."""
+    path = _V6_DIR / "mobile" / "portfolio.html"
+    if path.exists():
+        html = path.read_text(encoding="utf-8")
+    elif _V6_MOBILE.exists():
+        html = _V6_MOBILE.read_text(encoding="utf-8")
+    else:
+        raise HTTPException(404, "v6 mobile portfolio shell missing")
+    html = html.replace("{{CACHEBUST}}", str(int(time.time())))
+    return HTMLResponse(html)
+
+
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
     if not _V6_DESKTOP.exists():
         raise HTTPException(404, "v6 desktop shell missing")
     html = _V6_DESKTOP.read_text(encoding="utf-8")
+    html = html.replace("{{CACHEBUST}}", str(int(time.time())))
+    return HTMLResponse(html)
+
+
+@app.get("/portfolio", response_class=HTMLResponse)
+async def serve_desktop_portfolio():
+    """Desktop portfolio page — dedicated shell because it loads Chart.js."""
+    path = _V6_DIR / "desktop" / "portfolio.html"
+    if path.exists():
+        html = path.read_text(encoding="utf-8")
+    elif _V6_DESKTOP.exists():
+        html = _V6_DESKTOP.read_text(encoding="utf-8")
+    else:
+        raise HTTPException(404, "v6 desktop portfolio shell missing")
     html = html.replace("{{CACHEBUST}}", str(int(time.time())))
     return HTMLResponse(html)
 
