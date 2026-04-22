@@ -14,5 +14,7 @@
     "max_pbv": 1.5,
     "bonus_pbv": 1.0,
     "min_market_cap": 5000000000
-  }
+  },
+  "universe": "set_mai",
+  "last_saved_at": null
 }
