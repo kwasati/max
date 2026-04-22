@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Simulator · Max Mahon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400;1,700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=IBM+Plex+Serif+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/base.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+.tab-bar {
+  display: flex;
+  border-top: 3px double var(--rule);
+  border-bottom: 1px solid var(--rule);
+  margin: var(--sp-5) 0 var(--sp-6);
+  gap: 0;
+}
+.tab {
+  flex: 1;
+  padding: var(--sp-4);
+  border-right: 1px solid var(--rule-hair);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  text-align: center;
+  cursor: pointer;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: -1px;
+  transition: all 120ms ease;
+  border-top: none;
+  border-left: none;
+}
+.tab:last-child { border-right: none; }
+.tab.active {
+  color: var(--ink);
+  font-weight: 500;
+  background: var(--paper-3);
+  border-bottom: 3px solid var(--accent);
+}
+.tab:hover:not(.active) { background: var(--paper-3); color: var(--ink); }
+
+.sim-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: var(--sp-6);
+}
+.sim-inputs {
+  border-right: 1px solid var(--rule-hair);
+  padding-right: var(--sp-5);
+}
+.input-group {
+  margin-bottom: var(--sp-5);
+  padding-bottom: var(--sp-5);
+  border-bottom: 1px solid var(--rule-hair);
+}
+.input-group:last-child { border-bottom: none; }
+.input-label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: var(--sp-2);
+}
+.input-help {
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: var(--fs-xs);
+  color: var(--ink-faint);
+  margin-top: 4px;
+}
+.input-text, .input-sel {
+  width: 100%;
+  font-family: var(--font-head);
+  font-size: var(--fs-md);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  padding: var(--sp-3) 0;
+  color: var(--ink);
+}
+.input-text:focus, .input-sel:focus { outline: none; border-bottom: 2px solid var(--accent); }
+.input-number-big {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: var(--fs-2xl);
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  padding: var(--sp-2) 0;
+  background: transparent;
+  color: var(--ink);
+}
+.input-number-big:focus { outline: none; border-bottom: 2px solid var(--accent); }
+
+.result-head {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-5);
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: var(--sp-4) 0;
+  margin-bottom: var(--sp-5);
+}
+.result-cell .lbl {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.result-cell .v {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: var(--fs-xl);
+  line-height: 1;
+  margin-top: 4px;
+  letter-spacing: -0.01em;
+}
+.result-cell .v .mono { font-family: var(--font-mono); font-weight: 500; }
+.result-cell .sub {
+  font-family: var(--font-head);
+  font-style: italic;
+  color: var(--ink-soft);
+  font-size: var(--fs-xs);
+  margin-top: 4px;
+}
+
+.sim-chart-big { height: 420px; }
+
+.multi-row {
+  display: grid;
+  grid-template-columns: 1fr 80px 40px;
+  gap: var(--sp-3);
+  align-items: center;
+  padding: var(--sp-2) 0;
+  border-bottom: 1px dotted var(--rule-hair);
+}
+.multi-row .x { color: var(--ink-dim); cursor: pointer; text-align: center; border-bottom: none; }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="mast-top">
+    <div class="mast-meta-l">
+      <div>VOL. VI · NO. 17</div>
+      <div><strong>SATURDAY</strong> · APRIL 25, 2026</div>
+    </div>
+    <div class="mast-title">
+      <h1 class="mast-brand">Max Mahon</h1>
+      <div class="mast-sub">· The Dividend Review ·</div>
+    </div>
+    <div class="mast-meta-r">
+      <div>SIMULATOR EDITION</div>
+      <div>THREE MODES · <strong>DCA · BACKTEST</strong></div>
+    </div>
+  </div>
+  <div class="mast-bottom">
+    <nav class="mast-nav">
+      <a href="01-home.html">Watchlist</a>
+      <a href="02-report.html">Full Report</a>
+      <a href="03-watchlist.html">Saved</a>
+      <a href="04-portfolio.html">Portfolio</a>
+      <a href="05-simulator.html" class="active">Simulator</a>
+      <a href="06-settings.html">Settings</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+
+  <div class="section-num">
+    <span class="no">05 · Simulator</span>
+    <span>Three Modes · Retrospective + Accumulation</span>
+  </div>
+
+  <h2 class="section-title">What-If.</h2>
+  <p class="section-kicker">
+    วิเคราะห์ย้อนหลัง — ถ้าทยอยเก็บรายเดือน · ทยอยเก็บทั้งพอร์ต · หรือถือพอร์ตตั้งแต่ปีนู้น — วันนี้จะเป็นยังไง
+  </p>
+
+  <!-- ============= TABS ============= -->
+  <div class="tab-bar">
+    <button class="tab active" onclick="selectTab('dca-single', this)">DCA รายตัว</button>
+    <button class="tab" onclick="selectTab('dca-multi', this)">DCA ทั้งพอร์ต</button>
+    <button class="tab" onclick="selectTab('backtest', this)">Portfolio Backtest</button>
+  </div>
+
+  <!-- ============= TAB 1: DCA SINGLE ============= -->
+  <div id="dca-single" class="tab-content active">
+    <section class="sim-layout">
+      <aside class="sim-inputs">
+        <div class="input-group">
+          <div class="input-label">Stock</div>
+          <select class="input-sel">
+            <option>BBL · Bangkok Bank</option>
+            <option>TCAP · Thanachart Capital</option>
+            <option>INTUCH · Intouch Holdings</option>
+            <option>KBANK · Kasikornbank</option>
+          </select>
+          <div class="input-help">หุ้นที่ผ่าน 5-5-5-5 ในรอบล่าสุด (54 ตัว)</div>
+        </div>
+        <div class="input-group">
+          <div class="input-label">Monthly Amount</div>
+          <input class="input-number-big" value="฿ 20,000" />
+          <div class="input-help">จำนวนเงินที่ลงทุกเดือน · ทบต่อเนื่อง</div>
+        </div>
+        <div class="input-group">
+          <div class="input-label">Duration</div>
+          <input class="input-number-big" value="15 years" />
+          <div class="input-help">ช่วงเวลา DCA</div>
+        </div>
+        <div class="input-group">
+          <div class="input-label">Dividend Reinvestment</div>
+          <select class="input-sel">
+            <option>Yes · reinvest into same stock</option>
+            <option>No · take as cash</option>
+          </select>
+        </div>
+        <button class="btn primary w-full">Run Simulation</button>
+      </aside>
+
+      <div>
+        <div class="result-head">
+          <div class="result-cell">
+            <span class="lbl">Invested</span>
+            <span class="v">฿ <span class="mono">3.60M</span></span>
+            <span class="sub">฿20k × 180 months</span>
+          </div>
+          <div class="result-cell">
+            <span class="lbl">Accumulated Value</span>
+            <span class="v">฿ <span class="mono">9.42M</span></span>
+            <span class="sub">+162% total return</span>
+          </div>
+          <div class="result-cell">
+            <span class="lbl">Shares Held</span>
+            <span class="v mono">58,940</span>
+            <span class="sub">avg cost 61.08</span>
+          </div>
+          <div class="result-cell">
+            <span class="lbl">Div Paid Lifetime</span>
+            <span class="v">฿ <span class="mono">1.87M</span></span>
+            <span class="sub">yield-on-cost 8.7%</span>
+          </div>
+        </div>
+
+        <div class="sim-chart-big"><canvas id="dcaChart"></canvas></div>
+        <p class="lede" style="margin-top:var(--sp-5);max-width:64ch">
+          BBL · ถ้าทยอยซื้อเดือนละ ฿20,000 ตั้งแต่ปี 2011 · ลงทุนรวม ฿3.6M · วันนี้ถือมูลค่า ฿9.4M
+          และได้ปันผลสะสม ฿1.87M · หารปันผลต่อปีเฉลี่ย ฿124k ต่อปี · yield-on-cost อยู่ที่ 8.7%
+        </p>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============= TAB 2: DCA MULTI ============= -->
+  <div id="dca-multi" class="tab-content">
+    <section class="sim-layout">
+      <aside class="sim-inputs">
+        <div class="input-group">
+          <div class="input-label">Portfolio Composition</div>
+          <div class="multi-row">
+            <span class="sym" style="font-family:var(--font-head);font-weight:700">BBL</span>
+            <span class="mono text-r">30%</span>
+            <span class="x">×</span>
+          </div>
+          <div class="multi-row">
+            <span class="sym" style="font-family:var(--font-head);font-weight:700">TCAP</span>
+            <span class="mono text-r">25%</span>
+            <span class="x">×</span>
+          </div>
+          <div class="multi-row">
+            <span class="sym" style="font-family:var(--font-head);font-weight:700">INTUCH</span>
+            <span class="mono text-r">20%</span>
+            <span class="x">×</span>
+          </div>
+          <div class="multi-row">
+            <span class="sym" style="font-family:var(--font-head);font-weight:700">ADVANC</span>
+            <span class="mono text-r">15%</span>
+            <span class="x">×</span>
+          </div>
+          <div class="multi-row">
+            <span class="sym" style="font-family:var(--font-head);font-weight:700">QH</span>
+            <span class="mono text-r">10%</span>
+            <span class="x">×</span>
+          </div>
+          <button class="btn ghost mt-4 w-full">+ Add Stock</button>
+        </div>
+        <div class="input-group">
+          <div class="input-label">Monthly Amount (total)</div>
+          <input class="input-number-big" value="฿ 50,000" />
+        </div>
+        <div class="input-group">
+          <div class="input-label">Duration</div>
+          <input class="input-number-big" value="10 years" />
+        </div>
+        <button class="btn primary w-full">Run Portfolio DCA</button>
+      </aside>
+
+      <div>
+        <div class="result-head">
+          <div class="result-cell">
+            <span class="lbl">Invested</span>
+            <span class="v">฿ <span class="mono">6.00M</span></span>
+            <span class="sub">฿50k × 120 months</span>
+          </div>
+          <div class="result-cell">
+            <span class="lbl">Ending Value</span>
+            <span class="v">฿ <span class="mono">13.8M</span></span>
+            <span class="sub">+130% total return</span>
+          </div>
+          <div class="result-cell">
+            <span class="lbl">CAGR</span>
+            <span class="v mono">8.9%</span>
+            <span class="sub">annualized</span>
+          </div>
+          <div class="result-cell">
+            <span class="lbl">Div Paid Lifetime</span>
+            <span class="v">฿ <span class="mono">2.31M</span></span>
+            <span class="sub">avg YoC 7.4%</span>
+          </div>
+        </div>
+
+        <div class="sim-chart-big"><canvas id="multiChart"></canvas></div>
+
+        <table class="data-table mt-5">
+          <thead>
+            <tr><th>Position</th><th class="num">Weight</th><th class="num">Invested</th><th class="num">Ending Value</th><th class="num">Return</th><th class="num">Div Paid</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="sym">BBL</td><td class="num">30%</td><td class="num">1,800,000</td><td class="num">4,680,000</td><td class="num pos">+160%</td><td class="num">720,000</td></tr>
+            <tr><td class="sym">TCAP</td><td class="num">25%</td><td class="num">1,500,000</td><td class="num">3,750,000</td><td class="num pos">+150%</td><td class="num">580,000</td></tr>
+            <tr><td class="sym">INTUCH</td><td class="num">20%</td><td class="num">1,200,000</td><td class="num">2,640,000</td><td class="num pos">+120%</td><td class="num">410,000</td></tr>
+            <tr><td class="sym">ADVANC</td><td class="num">15%</td><td class="num">900,000</td><td class="num">1,800,000</td><td class="num pos">+100%</td><td class="num">310,000</td></tr>
+            <tr><td class="sym">QH</td><td class="num">10%</td><td class="num">600,000</td><td class="num">930,000</td><td class="num pos">+55%</td><td class="num">290,000</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============= TAB 3: PORTFOLIO BACKTEST ============= -->
+  <div id="backtest" class="tab-content">
+    <section class="sim-layout">
+      <aside class="sim-inputs">
+        <div class="input-group">
+          <div class="input-label">Portfolio</div>
+          <textarea style="width:100%;min-height:140px;font-family:var(--font-mono);font-size:var(--fs-sm);padding:var(--sp-3);border:1px solid var(--rule);background:var(--paper-3);resize:vertical">BBL  20
+TCAP 15
+INTUCH 13
+QH 10
+ADVANC 10
+AOT 8
+PTT 8
+KBANK 7
+TOP 5
+Cash 4</textarea>
+          <div class="input-help">Symbol + weight% ต่อบรรทัด</div>
+        </div>
+        <div class="input-group">
+          <div class="input-label">Start Date</div>
+          <input class="input-text" value="2010-01-01" />
+          <div class="input-help">จุดเริ่มถือพอร์ต</div>
+        </div>
+        <div class="input-group">
+          <div class="input-label">End Date</div>
+          <input class="input-text" value="2026-04-25" />
+        </div>
+        <div class="input-group">
+          <div class="input-label">Rebalance</div>
+          <select class="input-sel">
+            <option>Never · buy & hold</option>
+            <option>Annual</option>
+            <option>Quarterly</option>
+          </select>
+        </div>
+        <button class="btn primary w-full">Run Backtest</button>
+      </aside>
+
+      <div>
+        <div class="lede" style="max-width:64ch;margin-bottom:var(--sp-5)">
+          ถ้าถือพอร์ตนี้ตั้งแต่ <strong>1 มกราคม 2010</strong> จนถึงวันนี้ · 16 ปี 4 เดือน · ไม่ rebalance
+        </div>
+
+        <div class="result-head">
+          <div class="result-cell">
+            <span class="lbl">Total Return</span>
+            <span class="v mono">+318%</span>
+            <span class="sub">from ฿ 1M → ฿ 4.18M</span>
+          </div>
+          <div class="result-cell">
+            <span class="lbl">CAGR</span>
+            <span class="v mono">9.1%</span>
+            <span class="sub">annualized · excl. div</span>
+          </div>
+          <div class="result-cell">
+            <span class="lbl">Div Received</span>
+            <span class="v mono">+142%</span>
+            <span class="sub">of initial capital</span>
+          </div>
+          <div class="result-cell">
+            <span class="lbl">Max Drawdown</span>
+            <span class="v mono">−34%</span>
+            <span class="sub">Mar 2020 · COVID</span>
+          </div>
+        </div>
+
+        <div class="sim-chart-big"><canvas id="backtestChart"></canvas></div>
+
+        <h3 style="font-family:var(--font-head);font-weight:700;font-size:var(--fs-md);margin-top:var(--sp-6);margin-bottom:var(--sp-3)">Dividend Received · Per Year</h3>
+        <table class="data-table">
+          <thead><tr><th>Year</th><th class="num">Div</th><th class="num">YoC</th><th>Year</th><th class="num">Div</th><th class="num">YoC</th></tr></thead>
+          <tbody>
+            <tr><td class="sym">2010</td><td class="num">48,200</td><td class="num">4.8%</td><td class="sym">2018</td><td class="num">92,100</td><td class="num">9.2%</td></tr>
+            <tr><td class="sym">2011</td><td class="num">54,100</td><td class="num">5.4%</td><td class="sym">2019</td><td class="num">84,500</td><td class="num">8.4%</td></tr>
+            <tr><td class="sym">2012</td><td class="num">61,300</td><td class="num">6.1%</td><td class="sym">2020</td><td class="num">42,800</td><td class="num">4.3%</td></tr>
+            <tr><td class="sym">2013</td><td class="num">68,700</td><td class="num">6.9%</td><td class="sym">2021</td><td class="num">78,400</td><td class="num">7.8%</td></tr>
+            <tr><td class="sym">2014</td><td class="num">72,500</td><td class="num">7.2%</td><td class="sym">2022</td><td class="num">88,200</td><td class="num">8.8%</td></tr>
+            <tr><td class="sym">2015</td><td class="num">75,800</td><td class="num">7.6%</td><td class="sym">2023</td><td class="num">112,900</td><td class="num">11.3%</td></tr>
+            <tr><td class="sym">2016</td><td class="num">81,400</td><td class="num">8.1%</td><td class="sym">2024</td><td class="num">128,500</td><td class="num">12.9%</td></tr>
+            <tr><td class="sym">2017</td><td class="num">86,900</td><td class="num">8.7%</td><td class="sym">2025</td><td class="num">142,860</td><td class="num pos">14.3%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="ornament"></div>
+
+</main>
+
+<script>
+function selectTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  // delay to ensure chart renders
+  setTimeout(() => {
+    Object.values(Chart.instances || {}).forEach(c => c.resize());
+  }, 50);
+}
+
+const textInk = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
+const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+const inkDim = getComputedStyle(document.documentElement).getPropertyValue('--ink-dim').trim();
+const ruleHair = 'rgba(26,24,20,0.12)';
+
+Chart.defaults.font.family = 'Lora, serif';
+Chart.defaults.color = inkDim;
+
+// DCA single — line accumulated value + invested
+const months = Array.from({length:180}, (_,i) => i);
+const invested = months.map(m => 20000*(m+1));
+const accumulated = months.map(m => invested[m] * (1 + 0.62 * Math.pow((m+1)/180, 0.9)) + 10000*Math.sin(m/12));
+
+new Chart(document.getElementById('dcaChart'), {
+  type: 'line',
+  data: {
+    labels: months.map(m => m % 12 === 0 ? `'${(11+Math.floor(m/12)).toString().slice(-2)}` : ''),
+    datasets: [
+      {
+        label: 'Accumulated Value',
+        data: accumulated,
+        borderColor: textInk,
+        backgroundColor: 'rgba(26,24,20,0.08)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 0,
+        borderWidth: 2,
+      },
+      {
+        label: 'Invested',
+        data: invested,
+        borderColor: accent,
+        borderWidth: 1.5,
+        borderDash: [4, 4],
+        pointRadius: 0,
+        fill: false,
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { font: { family: 'JetBrains Mono', size: 10 }, usePointStyle: true } } },
+    scales: {
+      x: { grid: { display: false }, border: { color: ruleHair }, ticks: { font: { size: 9 } } },
+      y: { grid: { color: ruleHair }, border: { display: false }, ticks: { font: { size: 10 }, callback: v => '฿' + (v/1e6).toFixed(1) + 'M' } }
+    }
+  }
+});
+
+// Multi DCA
+new Chart(document.getElementById('multiChart'), {
+  type: 'line',
+  data: {
+    labels: Array.from({length:120}, (_,i) => i % 12 === 0 ? `Y${Math.floor(i/12)+1}` : ''),
+    datasets: [
+      {
+        label: 'Portfolio Value',
+        data: Array.from({length:120}, (_,i) => 50000 * (i+1) + (i**1.7) * 280),
+        borderColor: textInk,
+        backgroundColor: 'rgba(26,24,20,0.06)',
+        fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2
+      },
+      {
+        label: 'Invested',
+        data: Array.from({length:120}, (_,i) => 50000*(i+1)),
+        borderColor: accent, borderWidth: 1.5, borderDash: [4,4], pointRadius: 0, fill: false
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { font: { family: 'JetBrains Mono', size: 10 }, usePointStyle: true } } },
+    scales: {
+      x: { grid: { display: false }, border: { color: ruleHair }, ticks: { font: { size: 9 } } },
+      y: { grid: { color: ruleHair }, border: { display: false }, ticks: { font: { size: 10 }, callback: v => '฿' + (v/1e6).toFixed(1) + 'M' } }
+    }
+  }
+});
+
+// Backtest line — starting 1M Jan 2010 to 4.18M today
+const years = Array.from({length:196}, (_,i) => i);  // 196 months = ~16.3y
+function simPath(seed) {
+  let v = 1e6; const out = [];
+  for (let i=0; i<196; i++) {
+    let r = 0.007 + 0.005*Math.sin(i/7 + seed);
+    if (i === 122 || i === 123) r = -0.17;  // 2020 covid
+    if (i === 130) r = 0.12;
+    v *= (1+r); out.push(v);
+  }
+  return out;
+}
+new Chart(document.getElementById('backtestChart'), {
+  type: 'line',
+  data: {
+    labels: years.map(i => i % 12 === 0 ? (2010 + Math.floor(i/12)).toString() : ''),
+    datasets: [
+      {
+        label: 'Portfolio Value',
+        data: simPath(1),
+        borderColor: textInk,
+        backgroundColor: 'rgba(26,24,20,0.06)',
+        fill: true, tension: 0.25, pointRadius: 0, borderWidth: 2
+      },
+      {
+        label: 'SET Index (benchmark)',
+        data: simPath(2).map(v => v*0.75),
+        borderColor: accent,
+        borderWidth: 1.5,
+        borderDash: [3,3],
+        pointRadius: 0, fill: false
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { font: { family: 'JetBrains Mono', size: 10 }, usePointStyle: true } } },
+    scales: {
+      x: { grid: { display: false }, border: { color: ruleHair }, ticks: { font: { size: 9 } } },
+      y: { grid: { color: ruleHair }, border: { display: false }, ticks: { font: { size: 10 }, callback: v => '฿' + (v/1e6).toFixed(1) + 'M' } }
+    }
+  }
+});
+</script>
+
+</body>
+</html>

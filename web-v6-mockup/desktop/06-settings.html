@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Settings · Max Mahon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400;1,700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=IBM+Plex+Serif+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/base.css">
+<style>
+.settings-wrap {
+  max-width: 820px;
+  margin: 0 auto;
+}
+.setting-block {
+  border-bottom: 1px solid var(--rule);
+  padding: var(--sp-6) 0;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: var(--sp-6);
+}
+.setting-label {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: var(--fs-md);
+  line-height: 1.2;
+}
+.setting-help {
+  font-family: var(--font-head);
+  font-style: italic;
+  color: var(--ink-dim);
+  font-size: var(--fs-sm);
+  margin-top: 6px;
+}
+.setting-control {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+/* Switch */
+.switch {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  gap: var(--sp-3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.switch-box {
+  width: 52px;
+  height: 24px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  position: relative;
+  transition: background 120ms ease;
+}
+.switch-box::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 18px; height: 18px;
+  background: var(--ink);
+  transition: left 160ms ease;
+}
+.switch input:checked ~ .switch-box {
+  background: var(--accent);
+}
+.switch input:checked ~ .switch-box::after {
+  left: 28px;
+  background: var(--paper);
+}
+.switch input { display: none; }
+.switch.on .switch-box { background: var(--accent); }
+.switch.on .switch-box::after { left: 28px; background: var(--paper); }
+.switch.on span { color: var(--ink); }
+
+/* Slider */
+.slider-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--sp-4);
+  align-items: center;
+  padding: var(--sp-3) 0;
+  border-bottom: 1px dotted var(--rule-hair);
+}
+.slider-label {
+  font-family: var(--font-body);
+  font-size: var(--fs-md);
+}
+.slider-label .sub {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--ink-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.slider-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 260px;
+}
+.slider-val {
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  font-weight: 500;
+  min-width: 70px;
+  text-align: right;
+  color: var(--ink);
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 2px;
+}
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 180px;
+  height: 2px;
+  background: var(--ink);
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  background: var(--accent);
+  cursor: pointer;
+  border: 1px solid var(--accent-ink);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 14px; height: 14px;
+  background: var(--accent);
+  cursor: pointer;
+  border: 1px solid var(--accent-ink);
+}
+
+/* Radio card */
+.radio-row {
+  display: flex;
+  gap: var(--sp-3);
+}
+.radio-card {
+  flex: 1;
+  border: 1px solid var(--rule-hair);
+  padding: var(--sp-4);
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+.radio-card:hover { border-color: var(--rule); }
+.radio-card.active {
+  border: 2px solid var(--accent);
+  background: var(--paper-3);
+}
+.radio-card .r-title {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: var(--fs-md);
+  margin-bottom: 4px;
+}
+.radio-card .r-sub {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.radio-card.active .r-sub { color: var(--accent); }
+
+/* Time picker */
+.time-row {
+  display: flex;
+  gap: var(--sp-4);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.day-chips {
+  display: flex;
+  gap: 2px;
+}
+.day-chip {
+  width: 40px; height: 40px;
+  border: 1px solid var(--rule-hair);
+  background: var(--paper);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.day-chip.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--paper);
+}
+.time-input {
+  font-family: var(--font-mono);
+  font-size: var(--fs-lg);
+  font-weight: 500;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--rule-hair);
+  background: var(--paper);
+  width: 110px;
+}
+.time-input:focus { outline: none; border-color: var(--accent); }
+
+.save-row {
+  text-align: center;
+  padding: var(--sp-7) 0;
+  border-top: 3px double var(--rule);
+  margin-top: var(--sp-7);
+}
+.save-row .btn.primary { font-size: var(--fs-sm); padding: var(--sp-4) var(--sp-7); letter-spacing: 0.22em; }
+.save-row .last-saved {
+  font-family: var(--font-head);
+  font-style: italic;
+  color: var(--ink-dim);
+  font-size: var(--fs-sm);
+  margin-top: var(--sp-4);
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="mast-top">
+    <div class="mast-meta-l">
+      <div>VOL. VI · NO. 17</div>
+      <div><strong>SATURDAY</strong> · APRIL 25, 2026</div>
+    </div>
+    <div class="mast-title">
+      <h1 class="mast-brand">Max Mahon</h1>
+      <div class="mast-sub">· The Dividend Review ·</div>
+    </div>
+    <div class="mast-meta-r">
+      <div>SETTINGS EDITION</div>
+      <div>LAST SAVED · <strong>APR 21, 18:42</strong></div>
+    </div>
+  </div>
+  <div class="mast-bottom">
+    <nav class="mast-nav">
+      <a href="01-home.html">Watchlist</a>
+      <a href="02-report.html">Full Report</a>
+      <a href="03-watchlist.html">Saved</a>
+      <a href="04-portfolio.html">Portfolio</a>
+      <a href="05-simulator.html">Simulator</a>
+      <a href="06-settings.html" class="active">Settings</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+
+  <div class="section-num">
+    <span class="no">06 · Settings</span>
+    <span>Schedule · Thresholds · Universe</span>
+  </div>
+
+  <h2 class="section-title">House Rules.</h2>
+  <p class="section-kicker">ตั้งค่าการ scan + เกณฑ์กรองของ ดร.นิเวศน์. บันทึกเมื่อกด Save ด้านล่าง.</p>
+
+  <div class="settings-wrap">
+
+    <!-- AUTO SCAN -->
+    <div class="setting-block">
+      <div>
+        <div class="setting-label">Auto Scan</div>
+        <div class="setting-help">ระบบจะดึงข้อมูลใหม่ + เรียก screen ทุกสัปดาห์ในเวลาที่กำหนด</div>
+      </div>
+      <div class="setting-control">
+        <label class="switch on">
+          <input type="checkbox" checked>
+          <div class="switch-box"></div>
+          <span>Enabled</span>
+        </label>
+        <div class="time-row mt-4">
+          <div class="day-chips">
+            <div class="day-chip">Sun</div>
+            <div class="day-chip">Mon</div>
+            <div class="day-chip">Tue</div>
+            <div class="day-chip">Wed</div>
+            <div class="day-chip">Thu</div>
+            <div class="day-chip">Fri</div>
+            <div class="day-chip active">Sat</div>
+          </div>
+          <input class="time-input" value="09:00" />
+          <span class="micro">ICT · Next run · <strong style="color:var(--ink)">May 02, 09:00</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- NIWES THRESHOLDS -->
+    <div class="setting-block">
+      <div>
+        <div class="setting-label">Niwes Filter Thresholds</div>
+        <div class="setting-help">
+          เกณฑ์ 5-5-5-5 + market cap · ปรับให้เข้มขึ้น = หุ้นผ่านน้อยลง · ย่อหย่อน = ผ่านมากขึ้น
+        </div>
+      </div>
+      <div class="setting-control">
+        <div class="slider-row">
+          <div class="slider-label">Min Dividend Yield<span class="sub">Niwes default · 5.0%</span></div>
+          <div class="slider-wrap">
+            <input type="range" min="1" max="10" step="0.5" value="5.0" />
+            <div class="slider-val">5.0%</div>
+          </div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-label">Min Dividend Streak<span class="sub">Niwes default · 5 years</span></div>
+          <div class="slider-wrap">
+            <input type="range" min="1" max="15" step="1" value="5" />
+            <div class="slider-val">5 yrs</div>
+          </div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-label">Max P/E<span class="sub">Niwes default · ≤ 15×</span></div>
+          <div class="slider-wrap">
+            <input type="range" min="5" max="30" step="0.5" value="15" />
+            <div class="slider-val">15.0×</div>
+          </div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-label">Max P/BV<span class="sub">Niwes default · ≤ 1.5×</span></div>
+          <div class="slider-wrap">
+            <input type="range" min="0.3" max="5" step="0.1" value="1.5" />
+            <div class="slider-val">1.5×</div>
+          </div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-label">Min Market Cap<span class="sub">Niwes default · 5B THB</span></div>
+          <div class="slider-wrap">
+            <input type="range" min="1" max="50" step="1" value="5" />
+            <div class="slider-val">5B THB</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- UNIVERSE -->
+    <div class="setting-block">
+      <div>
+        <div class="setting-label">Stock Universe</div>
+        <div class="setting-help">จำนวนหุ้นที่ scan ทุกสัปดาห์ · ยิ่งเยอะยิ่งช้า · แต่ครอบคลุมกว่า</div>
+      </div>
+      <div class="setting-control">
+        <div class="radio-row">
+          <div class="radio-card">
+            <div class="r-title">SET Only</div>
+            <div class="r-sub">704 stocks · faster</div>
+          </div>
+          <div class="radio-card active">
+            <div class="r-title">SET + mai</div>
+            <div class="r-sub">933 stocks · default</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SAVE -->
+    <div class="save-row">
+      <button class="btn primary">Save All Changes</button>
+      <div class="last-saved">All changes captured · next scan uses these values.</div>
+    </div>
+
+  </div>
+</main>
+
+</body>
+</html>

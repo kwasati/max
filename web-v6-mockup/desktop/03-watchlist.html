@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Watchlist · Max Mahon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400;1,700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=IBM+Plex+Serif+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/base.css">
+<style>
+.star {
+  cursor: pointer;
+  font-size: 1.1em;
+  color: var(--ink-dim);
+  width: 24px;
+  display: inline-block;
+  text-align: center;
+  border-bottom: none;
+}
+.star.filled { color: var(--accent); }
+.delta { font-family: var(--font-mono); font-weight: 500; }
+.delta.up { color: var(--ink); }
+.delta.down { color: var(--accent); }
+.notes-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px dotted var(--rule-hair);
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  padding: 2px 0;
+}
+.notes-input:focus {
+  outline: none;
+  border-bottom: 1px solid var(--accent);
+  color: var(--ink);
+}
+.cmp-check {
+  width: 18px; height: 18px;
+  accent-color: var(--accent);
+}
+.foot-action {
+  margin-top: var(--sp-5);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--sp-4) 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 3px double var(--rule);
+}
+.foot-hint {
+  font-family: var(--font-head);
+  font-style: italic;
+  color: var(--ink-dim);
+  font-size: var(--fs-sm);
+}
+
+/* Compare overlay */
+.compare-overlay {
+  display: none;
+  margin: var(--sp-7) 0;
+  border-top: 3px double var(--rule);
+  border-bottom: 3px double var(--rule);
+  padding: var(--sp-6) 0;
+}
+.compare-overlay.active { display: block; }
+.compare-grid {
+  display: grid;
+  grid-template-columns: auto repeat(3, 1fr);
+  gap: 0;
+  margin-top: var(--sp-4);
+}
+.compare-grid > div {
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--rule-hair);
+}
+.compare-grid .row-label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.compare-grid .val {
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  font-weight: 500;
+  text-align: center;
+}
+.compare-grid .sym-head {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: var(--fs-lg);
+  text-align: center;
+  border-bottom: 2px solid var(--rule);
+}
+.compare-grid .val.best { color: var(--accent); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="mast-top">
+    <div class="mast-meta-l">
+      <div>VOL. VI · NO. 17</div>
+      <div><strong>SATURDAY</strong> · APRIL 25, 2026</div>
+    </div>
+    <div class="mast-title">
+      <h1 class="mast-brand">Max Mahon</h1>
+      <div class="mast-sub">· The Dividend Review ·</div>
+    </div>
+    <div class="mast-meta-r">
+      <div>SAVED POSITIONS EDITION</div>
+      <div>EXIT ALERTS · <strong>1 ACTIVE</strong></div>
+    </div>
+  </div>
+  <div class="mast-bottom">
+    <nav class="mast-nav">
+      <a href="01-home.html">Watchlist</a>
+      <a href="02-report.html">Full Report</a>
+      <a href="03-watchlist.html" class="active">Saved</a>
+      <a href="04-portfolio.html">Portfolio</a>
+      <a href="05-simulator.html">Simulator</a>
+      <a href="06-settings.html">Settings</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+
+  <div class="section-num">
+    <span class="no">02 · Watchlist</span>
+    <span>Nine Positions · One Requires Review</span>
+  </div>
+
+  <h2 class="section-title">Saved Positions.</h2>
+  <p class="section-kicker">หุ้นที่คุณกำลังติดตาม — อัปเดตจาก scan ล่าสุดทุกสัปดาห์.</p>
+
+  <!-- Summary -->
+  <section class="summary-strip">
+    <div class="summary-cell"><span class="label">Tracked</span><span class="val mono">9</span></div>
+    <div class="summary-cell"><span class="label">Hold</span><span class="val mono">6</span></div>
+    <div class="summary-cell"><span class="label">Review</span><span class="val mono">2</span></div>
+    <div class="summary-cell"><span class="label">Consider Exit</span><span class="val mono">1</span></div>
+    <div class="summary-cell"><span class="label">Avg Δ Entry</span><span class="val mono">+11</span></div>
+    <div class="summary-cell"><span class="label">Oldest Position</span><span class="val mono">412 d</span></div>
+  </section>
+
+  <!-- WATCHLIST TABLE -->
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="width:34px"></th>
+        <th>Symbol · Name</th>
+        <th class="num">Score</th>
+        <th class="num">Δ Entry</th>
+        <th>Entry</th>
+        <th>Exit Signal</th>
+        <th>Notes</th>
+        <th style="width:40px" class="num">Cmp</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="star filled">★</span></td>
+        <td><span class="sym">BBL</span> <span class="dim italic">· Bangkok Bank</span></td>
+        <td class="num">74</td>
+        <td class="num"><span class="delta up">+14 vs 60</span></td>
+        <td class="mono">Feb 15, 2025</td>
+        <td><span class="sev hold">Hold</span></td>
+        <td><input class="notes-input" value="Core position. Hold through cycle." /></td>
+        <td class="num"><input type="checkbox" class="cmp-check" checked /></td>
+      </tr>
+      <tr>
+        <td><span class="star filled">★</span></td>
+        <td><span class="sym">TCAP</span> <span class="dim italic">· Thanachart Capital</span></td>
+        <td class="num">87</td>
+        <td class="num"><span class="delta up">+22 vs 65</span></td>
+        <td class="mono">Jun 08, 2024</td>
+        <td><span class="sev hold">Hold</span></td>
+        <td><input class="notes-input" value="Hidden value · TCAP holds TMB stake." /></td>
+        <td class="num"><input type="checkbox" class="cmp-check" checked /></td>
+      </tr>
+      <tr>
+        <td><span class="star filled">★</span></td>
+        <td><span class="sym">INTUCH</span> <span class="dim italic">· Intouch Holdings</span></td>
+        <td class="num">79</td>
+        <td class="num"><span class="delta up">+9 vs 70</span></td>
+        <td class="mono">Aug 24, 2024</td>
+        <td><span class="sev hold">Hold</span></td>
+        <td><input class="notes-input" value="ADVANC parent · track discount to NAV." /></td>
+        <td class="num"><input type="checkbox" class="cmp-check" /></td>
+      </tr>
+      <tr>
+        <td><span class="star filled">★</span></td>
+        <td><span class="sym">QH</span> <span class="dim italic">· Quality Houses</span></td>
+        <td class="num">73</td>
+        <td class="num"><span class="delta up">+11 vs 62</span></td>
+        <td class="mono">Jan 11, 2025</td>
+        <td><span class="sev hold">Hold</span></td>
+        <td><input class="notes-input" value="Hidden value via HMPRO stake." /></td>
+        <td class="num"><input type="checkbox" class="cmp-check" /></td>
+      </tr>
+      <tr>
+        <td><span class="star filled">★</span></td>
+        <td><span class="sym">PTT</span> <span class="dim italic">· PTT Public Co.</span></td>
+        <td class="num">65</td>
+        <td class="num"><span class="delta up">+5 vs 60</span></td>
+        <td class="mono">Nov 02, 2024</td>
+        <td><span class="sev hold">Hold</span></td>
+        <td><input class="notes-input" value="Energy cycle exposure · small position." /></td>
+        <td class="num"><input type="checkbox" class="cmp-check" /></td>
+      </tr>
+      <tr>
+        <td><span class="star filled">★</span></td>
+        <td><span class="sym">ADVANC</span> <span class="dim italic">· Advanced Info Service</span></td>
+        <td class="num">69</td>
+        <td class="num"><span class="delta up">+3 vs 66</span></td>
+        <td class="mono">Mar 07, 2025</td>
+        <td><span class="sev hold">Hold</span></td>
+        <td><input class="notes-input" value="Telecoms staple · dividend grower." /></td>
+        <td class="num"><input type="checkbox" class="cmp-check" /></td>
+      </tr>
+      <tr>
+        <td><span class="star filled">★</span></td>
+        <td><span class="sym">MAKRO</span> <span class="dim italic">· Siam Makro</span></td>
+        <td class="num">56</td>
+        <td class="num"><span class="delta down">−4 vs 60</span></td>
+        <td class="mono">Apr 30, 2024</td>
+        <td><span class="sev review">Review</span></td>
+        <td><input class="notes-input" value="Payout creeping up · monitor Q2 2026." /></td>
+        <td class="num"><input type="checkbox" class="cmp-check" /></td>
+      </tr>
+      <tr>
+        <td><span class="star filled">★</span></td>
+        <td><span class="sym">CPALL</span> <span class="dim italic">· CP All Public Co.</span></td>
+        <td class="num">62</td>
+        <td class="num"><span class="delta down">−5 vs 67</span></td>
+        <td class="mono">Sep 12, 2024</td>
+        <td><span class="sev review">Review</span></td>
+        <td><input class="notes-input" value="Score declining · check at next scan." /></td>
+        <td class="num"><input type="checkbox" class="cmp-check" /></td>
+      </tr>
+      <tr>
+        <td><span class="star filled">★</span></td>
+        <td><span class="sym">SCCC</span> <span class="dim italic">· Siam City Cement</span></td>
+        <td class="num">48</td>
+        <td class="num"><span class="delta down">−14 vs 62</span></td>
+        <td class="mono">Jul 20, 2024</td>
+        <td><span class="sev exit">Consider Exit</span></td>
+        <td><input class="notes-input" value="Payout exceeds cash flow · ROE falling 3 yrs." /></td>
+        <td class="num"><input type="checkbox" class="cmp-check" /></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="foot-action">
+    <div class="foot-hint">Select two or three positions to compare side-by-side.</div>
+    <div class="flex gap-3">
+      <button class="btn ghost">+ Add by Symbol</button>
+      <button class="btn primary" onclick="document.querySelector('.compare-overlay').classList.add('active');this.scrollIntoView({behavior:'smooth'})">Compare Selected · 2/3</button>
+    </div>
+  </div>
+
+  <!-- COMPARE OVERLAY -->
+  <section class="compare-overlay active">
+    <div class="section-num" style="margin-top:0">
+      <span class="no">02a · Compare View</span>
+      <span>Side-by-Side · Difference Values Bolded</span>
+    </div>
+    <h3 class="section-title" style="font-size:var(--fs-xl)">BBL vs TCAP</h3>
+    <div class="compare-grid">
+      <div class="row-label"></div>
+      <div class="sym-head">BBL</div>
+      <div class="sym-head">TCAP</div>
+      <div class="sym-head dim" style="font-style:italic;font-family:var(--font-head);font-weight:400">Delta</div>
+
+      <div class="row-label">Score</div>
+      <div class="val">74</div>
+      <div class="val best">87</div>
+      <div class="val dim">+13</div>
+
+      <div class="row-label">Yield</div>
+      <div class="val">9.91%</div>
+      <div class="val">7.20%</div>
+      <div class="val dim">−2.71</div>
+
+      <div class="row-label">P/E</div>
+      <div class="val">6.9×</div>
+      <div class="val best">6.1×</div>
+      <div class="val dim">−0.8</div>
+
+      <div class="row-label">P/BV</div>
+      <div class="val best">0.55×</div>
+      <div class="val">0.68×</div>
+      <div class="val dim">+0.13</div>
+
+      <div class="row-label">Streak</div>
+      <div class="val best">22 y</div>
+      <div class="val">15 y</div>
+      <div class="val dim">−7</div>
+
+      <div class="row-label">Payout</div>
+      <div class="val best">43%</div>
+      <div class="val">52%</div>
+      <div class="val dim">+9%</div>
+
+      <div class="row-label">ROE</div>
+      <div class="val">7.8%</div>
+      <div class="val best">9.2%</div>
+      <div class="val dim">+1.4</div>
+
+      <div class="row-label">Mcap (B THB)</div>
+      <div class="val best">324</div>
+      <div class="val">58</div>
+      <div class="val dim">—</div>
+
+      <div class="row-label">Signals</div>
+      <div class="val" style="font-size:var(--fs-xs)">5555, QD</div>
+      <div class="val" style="font-size:var(--fs-xs)">5555, HV, DV</div>
+      <div class="val"></div>
+    </div>
+    <p class="lede" style="margin-top:var(--sp-6);max-width:60ch">
+      TCAP ชนะด้าน score · P/E · payout discipline · ROE. BBL ชนะด้าน P/BV · streak · ขนาดเชิงโครงสร้าง.
+      ทั้งคู่ผ่าน Niwes · ทั้งคู่ worth holding — เลือกได้ตาม conviction.
+    </p>
+  </section>
+
+  <div class="ornament"></div>
+</main>
+
+</body>
+</html>

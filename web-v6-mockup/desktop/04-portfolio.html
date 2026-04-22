@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Portfolio · Max Mahon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400;1,700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=IBM+Plex+Serif+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/base.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+.portfolio-section {
+  display: grid;
+  grid-template-columns: 40% 60%;
+  gap: var(--sp-6);
+  margin: var(--sp-5) 0 var(--sp-7);
+}
+.pie-wrap {
+  border-right: 1px solid var(--rule-hair);
+  padding-right: var(--sp-6);
+}
+.pie-box { height: 360px; position: relative; }
+.pie-caption {
+  font-family: var(--font-head);
+  font-style: italic;
+  color: var(--ink-dim);
+  text-align: center;
+  margin-top: var(--sp-4);
+  font-size: var(--fs-sm);
+}
+.pie-total {
+  text-align: center;
+  margin-top: var(--sp-5);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--rule);
+}
+.pie-total .lbl {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.pie-total .val {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: var(--fs-2xl);
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+.pie-total .sub {
+  font-family: var(--font-head);
+  font-style: italic;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  margin-top: 4px;
+}
+.divider-block {
+  margin: var(--sp-7) 0;
+  border-top: 3px double var(--rule);
+  border-bottom: 3px double var(--rule);
+  padding: var(--sp-4) 0;
+  text-align: center;
+}
+.divider-title {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: var(--fs-xl);
+  letter-spacing: -0.01em;
+}
+.divider-sub {
+  font-family: var(--font-head);
+  font-style: italic;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  margin-top: 4px;
+}
+.weight-bar {
+  display: inline-block;
+  height: 4px;
+  background: var(--ink);
+  vertical-align: middle;
+  margin-right: 8px;
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="mast-top">
+    <div class="mast-meta-l">
+      <div>VOL. VI · NO. 17</div>
+      <div><strong>SATURDAY</strong> · APRIL 25, 2026</div>
+    </div>
+    <div class="mast-title">
+      <h1 class="mast-brand">Max Mahon</h1>
+      <div class="mast-sub">· The Dividend Review ·</div>
+    </div>
+    <div class="mast-meta-r">
+      <div>PORTFOLIO EDITION</div>
+      <div>AS OF · <strong>APR 25, 09:00 ICT</strong></div>
+    </div>
+  </div>
+  <div class="mast-bottom">
+    <nav class="mast-nav">
+      <a href="01-home.html">Watchlist</a>
+      <a href="02-report.html">Full Report</a>
+      <a href="03-watchlist.html">Saved</a>
+      <a href="04-portfolio.html" class="active">Portfolio</a>
+      <a href="05-simulator.html">Simulator</a>
+      <a href="06-settings.html">Settings</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+
+  <div class="section-num">
+    <span class="no">04 · Portfolio</span>
+    <span>Real Holdings · Simulated Allocation</span>
+  </div>
+
+  <h2 class="section-title">The Book.</h2>
+  <p class="section-kicker">พอร์ตจริงที่ถืออยู่ด้านบน · พอร์ตจำลองที่ตั้งใจจะถือด้านล่าง.</p>
+
+  <!-- ============= REAL HOLDINGS ============= -->
+  <div class="section-num">
+    <span class="no">04a · Real Holdings</span>
+    <span>PORT จริง</span>
+  </div>
+
+  <section class="portfolio-section">
+    <div class="pie-wrap">
+      <div class="pie-box"><canvas id="realPie"></canvas></div>
+      <div class="pie-total">
+        <div class="lbl">Market Value</div>
+        <div class="val">฿ 2,418,750</div>
+        <div class="sub">unrealized gain · <span class="mono" style="font-style:normal">+14.2%</span> · div received ฿ 142,860</div>
+      </div>
+    </div>
+    <div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Position</th>
+            <th class="num">Qty</th>
+            <th class="num">Avg Cost</th>
+            <th class="num">Price</th>
+            <th class="num">Value</th>
+            <th class="num">P&amp;L %</th>
+            <th class="num">Div Rcvd</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="sym">BBL</span> <span class="dim italic">· Bangkok Bank</span></td>
+            <td class="num">3,200</td>
+            <td class="num">142.50</td>
+            <td class="num">159.70</td>
+            <td class="num">511,040</td>
+            <td class="num pos">+12.1%</td>
+            <td class="num">33,600</td>
+          </tr>
+          <tr>
+            <td><span class="sym">TCAP</span> <span class="dim italic">· Thanachart Capital</span></td>
+            <td class="num">12,000</td>
+            <td class="num">38.20</td>
+            <td class="num">51.25</td>
+            <td class="num">615,000</td>
+            <td class="num pos">+34.2%</td>
+            <td class="num">38,400</td>
+          </tr>
+          <tr>
+            <td><span class="sym">INTUCH</span> <span class="dim italic">· Intouch</span></td>
+            <td class="num">4,500</td>
+            <td class="num">64.10</td>
+            <td class="num">71.25</td>
+            <td class="num">320,625</td>
+            <td class="num pos">+11.2%</td>
+            <td class="num">21,870</td>
+          </tr>
+          <tr>
+            <td><span class="sym">ADVANC</span> <span class="dim italic">· AIS</span></td>
+            <td class="num">1,200</td>
+            <td class="num">218.00</td>
+            <td class="num">235.50</td>
+            <td class="num">282,600</td>
+            <td class="num pos">+8.0%</td>
+            <td class="num">14,640</td>
+          </tr>
+          <tr>
+            <td><span class="sym">QH</span> <span class="dim italic">· Quality Houses</span></td>
+            <td class="num">45,000</td>
+            <td class="num">2.08</td>
+            <td class="num">2.34</td>
+            <td class="num">105,300</td>
+            <td class="num pos">+12.5%</td>
+            <td class="num">6,750</td>
+          </tr>
+          <tr>
+            <td><span class="sym">AOT</span> <span class="dim italic">· Airports of TH</span></td>
+            <td class="num">3,600</td>
+            <td class="num">62.40</td>
+            <td class="num">58.75</td>
+            <td class="num">211,500</td>
+            <td class="num neg">−5.8%</td>
+            <td class="num">12,420</td>
+          </tr>
+          <tr>
+            <td><span class="sym">PTT</span> <span class="dim italic">· PTT</span></td>
+            <td class="num">6,800</td>
+            <td class="num">34.85</td>
+            <td class="num">37.20</td>
+            <td class="num">252,960</td>
+            <td class="num pos">+6.7%</td>
+            <td class="num">15,180</td>
+          </tr>
+          <tr>
+            <td><span class="sym">KBANK</span> <span class="dim italic">· Kasikornbank</span></td>
+            <td class="num">900</td>
+            <td class="num">128.00</td>
+            <td class="num">137.50</td>
+            <td class="num">123,750</td>
+            <td class="num pos">+7.4%</td>
+            <td class="num">—</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="flex jb ac mt-5" style="padding-top:var(--sp-4);border-top:1px solid var(--rule)">
+        <div class="micro">Total positions · 8 · cash reserve ฿ 141,400</div>
+        <button class="btn ghost">+ เพิ่ม Transaction</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============= DIVIDER ============= -->
+  <div class="divider-block">
+    <div class="ornament" style="margin:0"></div>
+    <div class="divider-title mt-4">Simulated Allocation Below</div>
+    <div class="divider-sub">Target weights for future capital · not yet deployed.</div>
+  </div>
+
+  <!-- ============= SIMULATED ============= -->
+  <div class="section-num">
+    <span class="no">04b · Simulated</span>
+    <span>PORT จำลอง · Target Weights</span>
+  </div>
+
+  <section class="portfolio-section">
+    <div class="pie-wrap">
+      <div class="pie-box"><canvas id="simPie"></canvas></div>
+      <div class="pie-total">
+        <div class="lbl">Target Allocation</div>
+        <div class="val">100.0%</div>
+        <div class="sub">projected yield-on-cost · <span class="mono" style="font-style:normal">7.3%</span></div>
+      </div>
+    </div>
+    <div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Position</th>
+            <th class="num">Weight</th>
+            <th class="num">Price Now</th>
+            <th class="num">Target Yield</th>
+            <th class="num">Score</th>
+            <th>Signal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="sym">BBL</span> <span class="dim italic">· core defensive</span></td>
+            <td class="num"><span class="weight-bar" style="width:25px"></span>20.0%</td>
+            <td class="num">159.70</td>
+            <td class="num pos">9.91%</td>
+            <td class="num">74</td>
+            <td><span class="tag primary" style="font-size:0.58rem">5555</span></td>
+          </tr>
+          <tr>
+            <td><span class="sym">TCAP</span> <span class="dim italic">· hidden value</span></td>
+            <td class="num"><span class="weight-bar" style="width:20px"></span>15.0%</td>
+            <td class="num">51.25</td>
+            <td class="num pos">7.20%</td>
+            <td class="num">87</td>
+            <td><span class="tag primary" style="font-size:0.58rem">5555</span></td>
+          </tr>
+          <tr>
+            <td><span class="sym">INTUCH</span> <span class="dim italic">· holding co.</span></td>
+            <td class="num"><span class="weight-bar" style="width:18px"></span>13.0%</td>
+            <td class="num">71.25</td>
+            <td class="num pos">6.83%</td>
+            <td class="num">79</td>
+            <td><span class="tag primary" style="font-size:0.58rem">5555</span></td>
+          </tr>
+          <tr>
+            <td><span class="sym">QH</span> <span class="dim italic">· hidden value</span></td>
+            <td class="num"><span class="weight-bar" style="width:14px"></span>10.0%</td>
+            <td class="num">2.34</td>
+            <td class="num">6.40%</td>
+            <td class="num">73</td>
+            <td><span class="tag primary" style="font-size:0.58rem">5555</span></td>
+          </tr>
+          <tr>
+            <td><span class="sym">ADVANC</span> <span class="dim italic">· quality dividend</span></td>
+            <td class="num"><span class="weight-bar" style="width:14px"></span>10.0%</td>
+            <td class="num">235.50</td>
+            <td class="num">5.18%</td>
+            <td class="num">69</td>
+            <td><span class="tag primary" style="font-size:0.58rem">5555</span></td>
+          </tr>
+          <tr>
+            <td><span class="sym">AOT</span> <span class="dim italic">· infrastructure</span></td>
+            <td class="num"><span class="weight-bar" style="width:11px"></span>8.0%</td>
+            <td class="num">58.75</td>
+            <td class="num">5.74%</td>
+            <td class="num">64</td>
+            <td><span class="tag">QD</span></td>
+          </tr>
+          <tr>
+            <td><span class="sym">PTT</span> <span class="dim italic">· energy cyclical</span></td>
+            <td class="num"><span class="weight-bar" style="width:11px"></span>8.0%</td>
+            <td class="num">37.20</td>
+            <td class="num">6.41%</td>
+            <td class="num">65</td>
+            <td><span class="tag primary" style="font-size:0.58rem">5555</span></td>
+          </tr>
+          <tr>
+            <td><span class="sym">KBANK</span> <span class="dim italic">· new entrant</span></td>
+            <td class="num"><span class="weight-bar" style="width:10px"></span>7.0%</td>
+            <td class="num">137.50</td>
+            <td class="num pos">8.12%</td>
+            <td class="num">71</td>
+            <td><span class="tag primary" style="font-size:0.58rem">5555</span></td>
+          </tr>
+          <tr>
+            <td><span class="sym">TOP</span> <span class="dim italic">· deep value</span></td>
+            <td class="num"><span class="weight-bar" style="width:7px"></span>5.0%</td>
+            <td class="num">48.50</td>
+            <td class="num pos">8.64%</td>
+            <td class="num">70</td>
+            <td><span class="tag">DV</span></td>
+          </tr>
+          <tr>
+            <td class="italic dim">Cash reserve</td>
+            <td class="num"><span class="weight-bar" style="width:6px"></span>4.0%</td>
+            <td class="num dim">—</td>
+            <td class="num dim">—</td>
+            <td class="num dim">—</td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="flex jb ac mt-5" style="padding-top:var(--sp-4);border-top:1px solid var(--rule)">
+        <div class="micro">Target 9 positions + cash · 30/30/30/10 concentration · ตาม ดร.นิเวศน์</div>
+        <button class="btn ghost">+ เพิ่มหุ้น</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="ornament"></div>
+
+</main>
+
+<script>
+const textInk = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
+const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+const inkDim = getComputedStyle(document.documentElement).getPropertyValue('--ink-dim').trim();
+const inkSoft = getComputedStyle(document.documentElement).getPropertyValue('--ink-soft').trim();
+
+Chart.defaults.font.family = 'JetBrains Mono, monospace';
+Chart.defaults.color = inkDim;
+
+const greyScale = [
+  textInk,           // darkest
+  '#3A362E',
+  '#4F4A42',
+  '#6A6459',
+  '#857F74',
+  '#A09A8E',
+  '#B7B0A1',
+  '#CEC8B9',
+];
+const realWeights = {
+  labels: ['TCAP 25.4%','BBL 21.1%','INTUCH 13.3%','ADVANC 11.7%','PTT 10.5%','AOT 8.7%','KBANK 5.1%','QH 4.3%'],
+  data: [615000, 511040, 320625, 282600, 252960, 211500, 123750, 105300]
+};
+new Chart(document.getElementById('realPie'), {
+  type: 'doughnut',
+  data: {
+    labels: realWeights.labels,
+    datasets: [{
+      data: realWeights.data,
+      backgroundColor: [accent, ...greyScale.slice(0,7)],
+      borderColor: '#F4EFE6',
+      borderWidth: 2,
+      spacing: 1,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    cutout: '58%',
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: { font: { size: 10 }, boxWidth: 10, padding: 6 }
+      }
+    }
+  }
+});
+
+const simWeights = {
+  labels: ['BBL 20%','TCAP 15%','INTUCH 13%','QH 10%','ADVANC 10%','AOT 8%','PTT 8%','KBANK 7%','TOP 5%','Cash 4%'],
+  data: [20,15,13,10,10,8,8,7,5,4]
+};
+new Chart(document.getElementById('simPie'), {
+  type: 'doughnut',
+  data: {
+    labels: simWeights.labels,
+    datasets: [{
+      data: simWeights.data,
+      backgroundColor: [accent, ...greyScale, 'rgba(26,24,20,0.15)'],
+      borderColor: '#F4EFE6',
+      borderWidth: 2,
+      spacing: 1,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    cutout: '58%',
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: { font: { size: 10 }, boxWidth: 10, padding: 5 }
+      }
+    }
+  }
+});
+</script>
+
+</body>
+</html>
