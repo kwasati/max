@@ -1416,8 +1416,22 @@ USER_DATA_PATH = PROJECT_DIR / "user_data.json"
 
 def load_user_data() -> dict:
     if USER_DATA_PATH.exists():
-        return json.loads(USER_DATA_PATH.read_text(encoding="utf-8"))
-    return {"watchlist": [], "blacklist": [], "notes": {}, "custom_lists": {}, "updated_at": None}
+        data = json.loads(USER_DATA_PATH.read_text(encoding="utf-8"))
+    else:
+        data = {}
+    # v6 Phase 2 — ensure all expected top-level keys are present
+    data.setdefault("watchlist", [])
+    data.setdefault("blacklist", [])
+    data.setdefault("notes", {})
+    data.setdefault("custom_lists", {})
+    data.setdefault("transactions", [])
+    data.setdefault("cash_reserve", 0)
+    data.setdefault(
+        "simulated_portfolio",
+        {"positions": [], "cash_reserve_pct": 0.0, "updated_at": None},
+    )
+    data.setdefault("updated_at", None)
+    return data
 
 
 def save_user_data(data: dict):
