@@ -2765,6 +2765,116 @@ async def watchlist_enriched():
     }
 
 
+@app.get("/api/watchlist/compare")
+async def watchlist_compare(symbols: str):
+    """Compare up to 3 symbols side-by-side. Returns normalized rows.
+
+    symbols=comma-separated list (max 3).
+    """
+    sym_list = [s.strip().upper() for s in symbols.split(",") if s.strip()]
+    if not sym_list:
+        raise HTTPException(400, "symbols query param required")
+    if len(sym_list) > 3:
+        raise HTTPException(400, "max 3 symbols supported")
+
+    try:
+        screener = _latest_screener_file()
+    except HTTPException:
+        raise HTTPException(404, "no screener data found")
+
+    all_entries = (
+        (screener.get("candidates") or [])
+        + (screener.get("review_candidates") or [])
+        + (screener.get("filtered_out_stocks") or [])
+    )
+    by_sym = {e.get("symbol"): e for e in all_entries if e.get("symbol")}
+
+    baselines_file = DATA_DIR / "exit_baselines.json"
+    baselines = (
+        json.loads(baselines_file.read_text(encoding="utf-8"))
+        if baselines_file.exists()
+        else {}
+    )
+
+    def _metric(sym: str, getter) -> Optional[float]:
+        e = by_sym.get(sym)
+        if not e:
+            return None
+        try:
+            return getter(e)
+        except Exception:
+            return None
+
+    def _exit_signal(sym: str) -> str:
+        e = by_sym.get(sym) or {}
+        triggers = e.get("exit_triggers") or []
+        sev_high = sum(1 for t in triggers if t.get("severity") == "high")
+        sev_med = sum(1 for t in triggers if t.get("severity") == "medium")
+        if sev_high > 0:
+            return "CONSIDER_EXIT"
+        if sev_med > 0:
+            return "REVIEW"
+        return "HOLD"
+
+    def _signals(sym: str) -> str:
+        e = by_sym.get(sym) or {}
+        sigs = e.get("signals") or []
+        short = {
+            "NIWES_5555": "5555",
+            "QUALITY_DIVIDEND": "QD",
+            "HIDDEN_VALUE": "HV",
+            "DEEP_VALUE": "DV",
+        }
+        return ", ".join(short.get(s, s) for s in sigs)
+
+    score_vals = [_metric(s, lambda e: e.get("score")) for s in sym_list]
+    yield_vals = [_metric(s, lambda e: (e.get("metrics") or {}).get("dividend_yield")) for s in sym_list]
+    pe_vals = [_metric(s, lambda e: (e.get("metrics") or {}).get("pe")) for s in sym_list]
+    pbv_vals = [_metric(s, lambda e: (e.get("metrics") or {}).get("pb_ratio") or e.get("pb_ratio")) for s in sym_list]
+    streak_vals = [_metric(s, lambda e: (e.get("aggregates") or {}).get("dividend_streak")) for s in sym_list]
+    payout_vals = [_metric(s, lambda e: (e.get("metrics") or {}).get("payout")) for s in sym_list]
+    roe_vals = [_metric(s, lambda e: (e.get("metrics") or {}).get("roe")) for s in sym_list]
+    mcap_vals = [_metric(s, lambda e: (e.get("metrics") or {}).get("mcap")) for s in sym_list]
+    mcap_b = [round(m / 1e9, 1) if m is not None else None for m in mcap_vals]
+    exit_vals = [_exit_signal(s) for s in sym_list]
+    signal_vals = [_signals(s) for s in sym_list]
+
+    def _best_max(vals: list) -> Optional[int]:
+        non_null = [(i, v) for i, v in enumerate(vals) if v is not None]
+        if not non_null:
+            return None
+        return max(non_null, key=lambda x: x[1])[0]
+
+    def _best_min(vals: list) -> Optional[int]:
+        non_null = [(i, v) for i, v in enumerate(vals) if v is not None]
+        if not non_null:
+            return None
+        return min(non_null, key=lambda x: x[1])[0]
+
+    def _delta(vals: list) -> str:
+        non_null = [v for v in vals if v is not None]
+        if len(non_null) < 2:
+            return "-"
+        diff = non_null[-1] - non_null[0]
+        sign = "+" if diff >= 0 else ""
+        return f"{sign}{round(diff, 2)}"
+
+    rows = [
+        {"label": "Score", "values": score_vals, "best_index": _best_max(score_vals), "delta": _delta(score_vals)},
+        {"label": "Yield", "values": yield_vals, "best_index": _best_max(yield_vals), "delta": _delta(yield_vals)},
+        {"label": "P/E", "values": pe_vals, "best_index": _best_min(pe_vals), "delta": _delta(pe_vals)},
+        {"label": "P/BV", "values": pbv_vals, "best_index": _best_min(pbv_vals), "delta": _delta(pbv_vals)},
+        {"label": "Streak", "values": streak_vals, "best_index": _best_max(streak_vals), "delta": _delta(streak_vals)},
+        {"label": "Payout", "values": payout_vals, "best_index": _best_min(payout_vals), "delta": _delta(payout_vals)},
+        {"label": "ROE", "values": roe_vals, "best_index": _best_max(roe_vals), "delta": _delta(roe_vals)},
+        {"label": "Exit Signal", "values": exit_vals, "best_index": None, "delta": "-"},
+        {"label": "Mcap (B THB)", "values": mcap_b, "best_index": None, "delta": "-"},
+        {"label": "Signals", "values": signal_vals, "best_index": None, "delta": "-"},
+    ]
+
+    return {"symbols": sym_list, "rows": rows}
+
+
 class PortfolioBacktestRequest(BaseModel):
     positions: list[dict]
     start_date: str
