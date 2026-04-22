@@ -2662,6 +2662,227 @@ async def simulate_dca_portfolio(req: DcaPortfolioRequest):
     }
 
 
+class PortfolioBacktestRequest(BaseModel):
+    positions: list[dict]
+    start_date: str
+    monthly_amount: float
+    reinvest_dividends: bool = True
+    benchmark: str = "SET"
+
+
+@app.post("/api/simulate/portfolio-backtest")
+async def portfolio_backtest(req: PortfolioBacktestRequest):
+    """DCA backtest with SET benchmark. Cash positions sit idle (MVP).
+
+    TDEX ETF primary benchmark (dividend-reinvested); ^SET fallback.
+    Assumptions documented in response.assumptions.
+    """
+    if not req.positions:
+        raise HTTPException(400, "positions list is empty")
+    # Parse start_date
+    try:
+        start_dt = datetime.strptime(req.start_date, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(400, f"start_date must be YYYY-MM-DD, got '{req.start_date}'")
+
+    total_weight = sum((p.get("weight_pct") or 0) for p in req.positions)
+    if total_weight <= 0:
+        raise HTTPException(400, "weight_pct sum must be > 0")
+
+    # Fetch series per symbol + filter to start_date
+    series_by_sym: dict[str, list[tuple]] = {}
+    cash_positions: list[dict] = []
+    for p in req.positions:
+        sym = (p.get("symbol") or "").strip()
+        if not sym:
+            continue
+        if sym.lower() == "cash":
+            cash_positions.append(p)
+            continue
+        if not sym.endswith(".BK") and "." not in sym:
+            sym = sym + ".BK"
+        rows = _yf_monthly_series(sym)
+        if not rows:
+            raise HTTPException(503, f"no monthly history for {sym}")
+        filtered = [r for r in rows if r[0] >= req.start_date]
+        if not filtered:
+            raise HTTPException(
+                400, f"no history for {sym} after {req.start_date}"
+            )
+        series_by_sym[sym] = filtered
+
+    if not series_by_sym:
+        raise HTTPException(400, "no non-cash positions to simulate")
+
+    # Benchmark — TDEX primary, ^SET fallback
+    bench_rows = _yf_monthly_series("TDEX.BK")
+    proxy_label = "TDEX ETF (Thai dividend, includes reinvest)"
+    if not bench_rows:
+        bench_rows = _yf_monthly_series("^SET")
+        proxy_label = "^SET index (price-only fallback)"
+    if not bench_rows:
+        raise HTTPException(503, "benchmark data unavailable")
+    bench_rows = [r for r in bench_rows if r[0] >= req.start_date]
+
+    # Align to shortest series
+    n_months = min(
+        min(len(v) for v in series_by_sym.values()),
+        len(bench_rows),
+    )
+    if n_months < 1:
+        raise HTTPException(400, "insufficient price history")
+
+    per_pos: dict[str, dict] = {}
+    for p in req.positions:
+        sym = (p.get("symbol") or "").strip()
+        if not sym or sym.lower() == "cash":
+            continue
+        if not sym.endswith(".BK") and "." not in sym:
+            sym = sym + ".BK"
+        per_pos[sym] = {
+            "shares": 0.0,
+            "invested": 0.0,
+            "dividends": 0.0,
+            "weight_pct": float(p.get("weight_pct") or 0),
+        }
+    cash_weight_total = sum(float(p.get("weight_pct") or 0) for p in cash_positions)
+
+    # Benchmark state
+    bench_shares = 0.0
+
+    timeline: list[dict] = []
+    yearly_agg: dict[int, dict] = {}
+    total_invested_cum = 0.0
+    total_dividends_cum = 0.0
+    cash_cum = 0.0
+    portfolio_peak = 0.0
+    max_dd = 0.0
+    max_dd_date = None
+
+    for m in range(n_months):
+        month_date = series_by_sym[list(series_by_sym.keys())[0]][m][0]
+        # Monthly contribution — allocate by weight across non-cash positions + cash
+        for sym, pos in per_pos.items():
+            alloc = req.monthly_amount * (pos["weight_pct"] / total_weight)
+            price = series_by_sym[sym][m][1]
+            if price > 0:
+                pos["shares"] += alloc / price
+                pos["invested"] += alloc
+            # Dividends
+            div_ps = series_by_sym[sym][m][2]
+            if div_ps:
+                div_cash = div_ps * pos["shares"]
+                pos["dividends"] += div_cash
+                total_dividends_cum += div_cash
+                if req.reinvest_dividends and price > 0:
+                    pos["shares"] += div_cash / price
+
+        cash_alloc = req.monthly_amount * (cash_weight_total / total_weight)
+        cash_cum += cash_alloc
+
+        # Benchmark gets full monthly_amount (apples-to-apples DCA)
+        bench_price = bench_rows[m][1]
+        bench_div_ps = bench_rows[m][2]
+        if bench_price > 0:
+            bench_shares += req.monthly_amount / bench_price
+        if bench_div_ps and req.reinvest_dividends and bench_price > 0:
+            bench_shares += (bench_div_ps * bench_shares) / bench_price
+
+        total_invested_cum += req.monthly_amount
+        portfolio_value = cash_cum + sum(
+            pos["shares"] * series_by_sym[sym][m][1]
+            for sym, pos in per_pos.items()
+        )
+        benchmark_value = bench_shares * bench_price
+
+        # Drawdown
+        if portfolio_value > portfolio_peak:
+            portfolio_peak = portfolio_value
+        if portfolio_peak > 0:
+            dd = (portfolio_value - portfolio_peak) / portfolio_peak * 100
+            if dd < max_dd:
+                max_dd = dd
+                max_dd_date = month_date
+
+        timeline.append({
+            "date": month_date,
+            "invested_cumulative": round(total_invested_cum, 2),
+            "portfolio_value": round(portfolio_value, 2),
+            "dividends_cumulative": round(total_dividends_cum, 2),
+            "benchmark_value": round(benchmark_value, 2),
+        })
+
+        # Yearly aggregation
+        year = int(month_date[:4])
+        y = yearly_agg.setdefault(year, {
+            "year": year,
+            "invested_ytd": 0.0,
+            "port_value_ytd": 0.0,
+            "dividends_ytd": 0.0,
+            "benchmark_ytd": 0.0,
+        })
+        y["invested_ytd"] = total_invested_cum
+        y["port_value_ytd"] = portfolio_value
+        y["dividends_ytd"] = total_dividends_cum
+        y["benchmark_ytd"] = benchmark_value
+
+    end_date = timeline[-1]["date"] if timeline else req.start_date
+    final_value = timeline[-1]["portfolio_value"] if timeline else 0
+    final_bench = timeline[-1]["benchmark_value"] if timeline else 0
+
+    total_return_pct = (
+        round((final_value - total_invested_cum) / total_invested_cum * 100, 2)
+        if total_invested_cum else 0
+    )
+    years = n_months / 12
+    cagr_pct = (
+        round(((final_value / total_invested_cum) ** (1 / years) - 1) * 100, 2)
+        if years > 0 and total_invested_cum > 0 and final_value > 0 else 0
+    )
+    bench_return_pct = (
+        round((final_bench - total_invested_cum) / total_invested_cum * 100, 2)
+        if total_invested_cum else 0
+    )
+
+    yearly_breakdown = [
+        {
+            "year": y["year"],
+            "invested_ytd": round(y["invested_ytd"], 2),
+            "port_value_ytd": round(y["port_value_ytd"], 2),
+            "dividends_ytd": round(y["dividends_ytd"], 2),
+            "benchmark_ytd": round(y["benchmark_ytd"], 2),
+        }
+        for y in sorted(yearly_agg.values(), key=lambda x: x["year"])
+    ]
+
+    return {
+        "start_date": req.start_date,
+        "end_date": end_date,
+        "duration_months": n_months,
+        "total_invested": round(total_invested_cum, 2),
+        "portfolio_value_today": round(final_value, 2),
+        "total_return_pct": total_return_pct,
+        "cagr_pct": cagr_pct,
+        "dividends_received_total": round(total_dividends_cum, 2),
+        "max_drawdown_pct": round(max_dd, 2),
+        "max_drawdown_date": max_dd_date,
+        "benchmark": {
+            "symbol": req.benchmark,
+            "ending_value": round(final_bench, 2),
+            "return_pct": bench_return_pct,
+            "delta_vs_portfolio": round(final_value - final_bench, 2),
+        },
+        "timeline": timeline,
+        "yearly_breakdown": yearly_breakdown,
+        "assumptions": {
+            "benchmark_proxy": proxy_label,
+            "transaction_costs_modeled": False,
+            "tax_modeled": False,
+            "cash_return_rate_pct": 0,
+        },
+    }
+
+
 # ---------------------------------------------------------------------------
 # Static files (SPA) — mount last so API routes take priority
 # ---------------------------------------------------------------------------
