@@ -2662,6 +2662,135 @@ async def simulate_dca_portfolio(req: DcaPortfolioRequest):
     }
 
 
+class SimulatedPortfolioBody(BaseModel):
+    positions: list[dict] = []
+    cash_reserve_pct: float = 0.0
+
+
+@app.get("/api/portfolio/simulated")
+async def get_simulated_portfolio():
+    """Target allocation + computed live metrics per position."""
+    user_data = load_user_data()
+    sim = user_data.get("simulated_portfolio") or {"positions": [], "cash_reserve_pct": 0.0}
+    positions_in = sim.get("positions") or []
+    cash_reserve_pct = float(sim.get("cash_reserve_pct") or 0)
+
+    try:
+        screener = _latest_screener_file()
+    except HTTPException:
+        screener = {"candidates": [], "review_candidates": [], "filtered_out_stocks": []}
+    all_entries = (
+        (screener.get("candidates") or [])
+        + (screener.get("review_candidates") or [])
+        + (screener.get("filtered_out_stocks") or [])
+    )
+    by_sym = {e.get("symbol"): e for e in all_entries if e.get("symbol")}
+
+    positions_out = []
+    total_weight = 0.0
+    weighted_yield_sum = 0.0
+    for p in positions_in:
+        sym = p.get("symbol")
+        w = float(p.get("weight_pct") or 0)
+        total_weight += w
+        entry = by_sym.get(sym) or {}
+        name = entry.get("name") or sym
+        if name and "_" in name:
+            parts = name.split("_", 1)
+            name = parts[1] if len(parts) > 1 else name
+        metrics = entry.get("metrics") or {}
+        cur_price = metrics.get("current_price") or metrics.get("price")
+        yield_pct = metrics.get("dividend_yield")
+        score = entry.get("score")
+        signals = entry.get("signals") or []
+        if yield_pct is not None:
+            weighted_yield_sum += yield_pct * w
+        positions_out.append({
+            "symbol": sym,
+            "name": name,
+            "label": p.get("label", ""),
+            "weight_pct": w,
+            "current_price": cur_price,
+            "target_yield_pct": yield_pct,
+            "score": score,
+            "signals": signals,
+        })
+
+    projected_yoc_pct = (
+        round(weighted_yield_sum / total_weight, 2) if total_weight > 0 else 0
+    )
+
+    return {
+        "positions": positions_out,
+        "cash_reserve_pct": cash_reserve_pct,
+        "total_weight_pct": round(total_weight, 2),
+        "projected_yoc_pct": projected_yoc_pct,
+        "concentration_profile": "30/30/30/10",
+    }
+
+
+@app.put("/api/portfolio/simulated")
+async def put_simulated_portfolio(body: SimulatedPortfolioBody):
+    """Replace simulated portfolio. Validates weight_pct sum ≤ 100."""
+    total_w = sum(float(p.get("weight_pct") or 0) for p in body.positions)
+    if total_w + body.cash_reserve_pct > 100.01:
+        raise HTTPException(
+            400,
+            f"total weight ({total_w:.2f}) + cash_reserve_pct ({body.cash_reserve_pct:.2f}) exceeds 100",
+        )
+
+    data = load_user_data()
+    # Sanitize positions — keep {symbol, label, weight_pct}
+    clean_positions = []
+    for p in body.positions:
+        sym = (p.get("symbol") or "").strip()
+        if not sym:
+            continue
+        clean_positions.append({
+            "symbol": sym,
+            "label": str(p.get("label") or ""),
+            "weight_pct": float(p.get("weight_pct") or 0),
+        })
+    data["simulated_portfolio"] = {
+        "positions": clean_positions,
+        "cash_reserve_pct": float(body.cash_reserve_pct),
+        "updated_at": datetime.now().isoformat(timespec="seconds"),
+    }
+    save_user_data(data)
+    return {"status": "ok", "simulated_portfolio": data["simulated_portfolio"]}
+
+
+@app.get("/api/screener/trend")
+async def screener_trend(weeks: int = 12):
+    """Return last N scans from history.json in v6-friendly shape."""
+    weeks = min(max(weeks, 1), 52)
+    _project_root = str(PROJECT_DIR)
+    if _project_root not in sys.path:
+        sys.path.insert(0, _project_root)
+    from scripts.history_manager import load_history as _load_v2_history
+
+    hist = _load_v2_history()
+    scans = (hist.get("scans") or [])[-weeks:]
+    weeks_out = []
+    for s in scans:
+        counts = s.get("counts") or {}
+        top = s.get("top_candidates") or []
+        yields = [c.get("yield") for c in top if c.get("yield") is not None]
+        scan_date = (s.get("date") or "")[:10]
+        num = s.get("num")
+        weeks_out.append({
+            "week_label": f"W{num}" if num else scan_date,
+            "scan_date": scan_date,
+            "passed": counts.get("passed", 0),
+            "review": counts.get("review", 0),
+            "avg_yield": counts.get("avg_yield") if counts.get("avg_yield") is not None
+                else (round(sum(yields) / len(yields), 2) if yields else 0),
+            "top_score": counts.get("top_score") if counts.get("top_score") is not None
+                else max((c.get("score", 0) for c in top), default=0),
+        })
+    return {"weeks": weeks_out}
+
+
 @app.get("/api/watchlist/enriched")
 async def watchlist_enriched():
     """Join watchlist × screener × exit_baselines × notes in one call.
