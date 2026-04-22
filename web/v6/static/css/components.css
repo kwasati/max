@@ -104,3 +104,172 @@
   color: var(--ink-dim);
   font-size: var(--fs-md);
 }
+
+/* ==========================================================
+   WATCHLIST PAGE · shared styling
+   Extracted verbatim from
+   web-v6-mockup/desktop/03-watchlist.html +
+   web-v6-mockup/mobile/03-watchlist.html.
+   ========================================================== */
+
+/* Star toggle (desktop + mobile) */
+.star {
+  cursor: pointer;
+  font-size: 1.1em;
+  color: var(--ink-dim);
+  width: 24px;
+  display: inline-block;
+  text-align: center;
+  border-bottom: none;
+}
+.star.filled { color: var(--accent); }
+
+/* Δ entry delta (desktop table) */
+.delta { font-family: var(--font-mono); font-weight: 500; }
+.delta.up { color: var(--ink); }
+.delta.down { color: var(--accent); }
+
+/* Inline notes input (desktop) */
+.notes-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px dotted var(--rule-hair);
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: var(--fs-sm);
+  color: var(--ink-soft);
+  padding: 2px 0;
+}
+.notes-input:focus {
+  outline: none;
+  border-bottom: 1px solid var(--accent);
+  color: var(--ink);
+}
+
+.cmp-check {
+  width: 18px; height: 18px;
+  accent-color: var(--accent);
+}
+
+/* Footer action row under table */
+.foot-action {
+  margin-top: var(--sp-5);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--sp-4) 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 3px double var(--rule);
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+.foot-hint {
+  font-family: var(--font-head);
+  font-style: italic;
+  color: var(--ink-dim);
+  font-size: var(--fs-sm);
+}
+
+/* Compare grid (inside .modal-sheet) — desktop */
+.compare-grid {
+  display: grid;
+  grid-template-columns: auto repeat(3, 1fr) auto;
+  gap: 0;
+  margin-top: var(--sp-4);
+}
+.compare-grid > div {
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--rule-hair);
+}
+.compare-grid .row-label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.compare-grid .val {
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  font-weight: 500;
+  text-align: center;
+}
+.compare-grid .sym-head {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: var(--fs-lg);
+  text-align: center;
+  border-bottom: 2px solid var(--rule);
+}
+.compare-grid .val.best { color: var(--accent); font-weight: 700; }
+
+/* Watchlist mobile stacked card */
+.wl-card {
+  border-top: 1px solid var(--rule-hair);
+  padding: 16px 0;
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  gap: 10px;
+  align-items: flex-start;
+}
+.wl-card:first-of-type { border-top: 1px solid var(--rule); }
+.wl-card:last-of-type { border-bottom: 1px solid var(--rule); }
+.wl-card .star {
+  color: var(--accent);
+  font-size: 1.2rem;
+  line-height: 1;
+  padding-top: 3px;
+  border-bottom: none;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+.wl-body .sym { font-family: var(--font-head); font-weight: 700; font-size: 1.1rem; }
+.wl-body .name {
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+  margin-bottom: 8px;
+}
+.wl-body .delta-row {
+  display: flex;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.wl-body .note-input-mobile {
+  width: 100%;
+  border: none;
+  border-top: 1px dotted var(--rule-hair);
+  padding-top: 6px;
+  margin-top: 4px;
+  background: transparent;
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  outline: none;
+  min-height: 32px;
+}
+.wl-body .note-input-mobile:focus { color: var(--ink); border-top-color: var(--accent); }
+.wl-right { text-align: right; }
+.wl-right .score {
+  font-family: var(--font-mono);
+  font-size: 1.6rem;
+  font-weight: 500;
+  line-height: 1;
+}
+.wl-right .sig { margin-top: 6px; }
+.wl-card .cmp-check-mobile {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+  margin-top: 10px;
+}
