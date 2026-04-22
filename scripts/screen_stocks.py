@@ -3,7 +3,6 @@
 import json
 import logging
 import sys
-import time
 from datetime import datetime
 from pathlib import Path
 
@@ -16,7 +15,7 @@ WATCHLIST = ROOT / "watchlist.json"
 USER_DATA = ROOT / "user_data.json"
 
 sys.path.insert(0, str(ROOT / "scripts"))
-from fetch_data import fetch_multi_year, fetch_multi_year_safe, normalize_yield, FINANCIAL_SECTORS
+from fetch_data import fetch_multi_year, fetch_multi_year_safe
 from data_adapter import (
     compute_normalized_earnings,
     compute_payout_sustainability,
