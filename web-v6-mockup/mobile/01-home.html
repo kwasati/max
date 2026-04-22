@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Max Mahon · Mobile · Watchlist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400;1,700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=IBM+Plex+Serif+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/base.css">
+<link rel="stylesheet" href="../shared/mobile.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="mast-top">
+    <div class="mast-meta-l">VOL. VI · NO. 17 · SAT APR 25</div>
+    <div class="mast-title">
+      <h1 class="mast-brand">Max Mahon</h1>
+      <div class="mast-sub">· The Dividend Review ·</div>
+    </div>
+    <div class="mast-meta-r">AUTO · NEXT SCAN SAT 09:00</div>
+  </div>
+</header>
+
+<main class="container">
+
+  <div style="padding:14px 0 12px;text-align:center;border-bottom:1px solid var(--rule);margin-top:12px">
+    <div class="micro" style="margin-bottom:6px">Issue Seventeen</div>
+    <h2 class="lede-headline" style="font-family:var(--font-head);font-weight:900;line-height:1.15">
+      54 names cleared 5-5-5-5 this week.
+    </h2>
+    <p class="lede" style="margin:10px 0 0;font-size:0.95rem">
+      Banks led again · avg yield 6.8% · top score 87.
+    </p>
+  </div>
+
+  <section class="summary-strip">
+    <div class="summary-cell"><span class="label">Scanned</span><span class="val mono">933</span></div>
+    <div class="summary-cell"><span class="label">Passed</span><span class="val mono">54</span></div>
+    <div class="summary-cell"><span class="label">Avg Yield</span><span class="val mono">6.8%</span></div>
+    <div class="summary-cell"><span class="label">Top Score</span><span class="val mono">87</span></div>
+  </section>
+
+  <div class="section-num">
+    <span class="no">01 · Watchlist</span>
+    <span>54 names</span>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <span class="lbl">Sort</span>
+      <button class="filter-chip active">Score</button>
+      <button class="filter-chip">Yield</button>
+      <button class="filter-chip">P/E</button>
+      <button class="filter-chip">Δ</button>
+    </div>
+  </div>
+
+  <section class="card-grid">
+
+    <article class="card" onclick="window.location='02-report.html'">
+      <div class="new-ribbon">New</div>
+      <div class="card-head">
+        <div>
+          <div class="card-sym">BBL</div>
+          <div class="card-name">Bangkok Bank</div>
+        </div>
+      </div>
+      <div class="card-tags">
+        <span class="tag primary">Niwes 5-5-5-5</span>
+        <span class="tag">Quality Div</span>
+      </div>
+      <div class="card-score-row">
+        <div><span class="score-big">74</span><span class="score-max">/100</span></div>
+        <div class="score-delta"><span class="arrow">↑</span>65 → 74</div>
+      </div>
+      <div class="card-metrics">
+        <div><span class="lbl">Yld</span><span class="v">9.91%</span></div>
+        <div><span class="lbl">P/E</span><span class="v">6.9</span></div>
+        <div><span class="lbl">P/BV</span><span class="v">0.55</span></div>
+        <div><span class="lbl">Mcap</span><span class="v">324B</span></div>
+      </div>
+    </article>
+
+    <article class="card" onclick="window.location='02-report.html'">
+      <div class="card-head">
+        <div>
+          <div class="card-sym">TCAP</div>
+          <div class="card-name">Thanachart Capital</div>
+        </div>
+      </div>
+      <div class="card-tags">
+        <span class="tag primary">Niwes 5-5-5-5</span>
+        <span class="tag">Hidden Value</span>
+      </div>
+      <div class="card-score-row">
+        <div><span class="score-big">87</span><span class="score-max">/100</span></div>
+        <div class="score-delta"><span class="arrow">↑</span>82 → 87</div>
+      </div>
+      <div class="card-metrics">
+        <div><span class="lbl">Yld</span><span class="v">7.20%</span></div>
+        <div><span class="lbl">P/E</span><span class="v">6.1</span></div>
+        <div><span class="lbl">P/BV</span><span class="v">0.68</span></div>
+        <div><span class="lbl">Mcap</span><span class="v">58B</span></div>
+      </div>
+    </article>
+
+    <article class="card" onclick="window.location='02-report.html'">
+      <div class="card-head">
+        <div>
+          <div class="card-sym">INTUCH</div>
+          <div class="card-name">Intouch Holdings</div>
+        </div>
+      </div>
+      <div class="card-tags">
+        <span class="tag primary">Niwes 5-5-5-5</span>
+        <span class="tag">Hidden Value</span>
+      </div>
+      <div class="card-score-row">
+        <div><span class="score-big">79</span><span class="score-max">/100</span></div>
+        <div class="score-delta"><span class="arrow">↑</span>76 → 79</div>
+      </div>
+      <div class="card-metrics">
+        <div><span class="lbl">Yld</span><span class="v">6.83%</span></div>
+        <div><span class="lbl">P/E</span><span class="v">11.2</span></div>
+        <div><span class="lbl">P/BV</span><span class="v">1.12</span></div>
+        <div><span class="lbl">Mcap</span><span class="v">241B</span></div>
+      </div>
+    </article>
+
+    <article class="card" onclick="window.location='02-report.html'">
+      <div class="new-ribbon">New</div>
+      <div class="card-head">
+        <div>
+          <div class="card-sym">KBANK</div>
+          <div class="card-name">Kasikornbank</div>
+        </div>
+      </div>
+      <div class="card-tags"><span class="tag primary">Niwes 5-5-5-5</span></div>
+      <div class="card-score-row">
+        <div><span class="score-big">71</span><span class="score-max">/100</span></div>
+        <div class="score-delta"><span class="arrow">↑</span>New entry</div>
+      </div>
+      <div class="card-metrics">
+        <div><span class="lbl">Yld</span><span class="v">8.12%</span></div>
+        <div><span class="lbl">P/E</span><span class="v">7.4</span></div>
+        <div><span class="lbl">P/BV</span><span class="v">0.62</span></div>
+        <div><span class="lbl">Mcap</span><span class="v">326B</span></div>
+      </div>
+    </article>
+
+    <article class="card" onclick="window.location='02-report.html'">
+      <div class="card-head">
+        <div>
+          <div class="card-sym">TOP</div>
+          <div class="card-name">Thai Oil</div>
+        </div>
+      </div>
+      <div class="card-tags"><span class="tag primary">Niwes 5-5-5-5</span><span class="tag">Deep Value</span></div>
+      <div class="card-score-row">
+        <div><span class="score-big">70</span><span class="score-max">/100</span></div>
+        <div class="score-delta"><span class="arrow">↑</span>65 → 70</div>
+      </div>
+      <div class="card-metrics">
+        <div><span class="lbl">Yld</span><span class="v">8.64%</span></div>
+        <div><span class="lbl">P/E</span><span class="v">7.1</span></div>
+        <div><span class="lbl">P/BV</span><span class="v">0.72</span></div>
+        <div><span class="lbl">Mcap</span><span class="v">108B</span></div>
+      </div>
+    </article>
+
+    <article class="card" onclick="window.location='02-report.html'">
+      <div class="card-head">
+        <div>
+          <div class="card-sym">ADVANC</div>
+          <div class="card-name">Advanced Info Service</div>
+        </div>
+      </div>
+      <div class="card-tags"><span class="tag primary">Niwes 5-5-5-5</span></div>
+      <div class="card-score-row">
+        <div><span class="score-big">69</span><span class="score-max">/100</span></div>
+        <div class="score-delta"><span class="arrow">↑</span>66 → 69</div>
+      </div>
+      <div class="card-metrics">
+        <div><span class="lbl">Yld</span><span class="v">5.18%</span></div>
+        <div><span class="lbl">P/E</span><span class="v">11.9</span></div>
+        <div><span class="lbl">P/BV</span><span class="v">1.39</span></div>
+        <div><span class="lbl">Mcap</span><span class="v">627B</span></div>
+      </div>
+    </article>
+
+  </section>
+
+  <div class="ornament"></div>
+  <div class="text-c" style="padding:20px 0">
+    <button class="btn ghost">Load 48 more →</button>
+  </div>
+
+</main>
+
+<nav class="mobile-nav">
+  <a href="01-home.html" class="active"><span class="num">01</span>List</a>
+  <a href="03-watchlist.html"><span class="num">02</span>Saved</a>
+  <a href="04-portfolio.html"><span class="num">04</span>Port</a>
+  <a href="05-simulator.html"><span class="num">05</span>Sim</a>
+  <a href="06-settings.html"><span class="num">06</span>Set</a>
+</nav>
+
+</body>
+</html>

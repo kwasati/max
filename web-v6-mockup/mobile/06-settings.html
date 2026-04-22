@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Settings · Max Mahon Mobile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400;1,700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=IBM+Plex+Serif+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/base.css">
+<link rel="stylesheet" href="../shared/mobile.css">
+<style>
+.setting-block {
+  border-bottom: 1px solid var(--rule);
+  padding: 20px 0;
+}
+.setting-label {
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin-bottom: 4px;
+}
+.setting-help {
+  font-family: var(--font-head);
+  font-style: italic;
+  color: var(--ink-dim);
+  font-size: 0.85rem;
+  margin-bottom: 14px;
+}
+.switch {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  min-height: 44px;
+}
+.switch-box {
+  width: 48px;
+  height: 24px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  position: relative;
+  transition: background 120ms ease;
+}
+.switch-box::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 18px; height: 18px;
+  background: var(--ink);
+  transition: left 160ms ease;
+}
+.switch.on .switch-box { background: var(--accent); }
+.switch.on .switch-box::after { left: 26px; background: var(--paper); }
+.switch.on span { color: var(--ink); }
+.slider-row {
+  padding: 12px 0;
+  border-bottom: 1px dotted var(--rule-hair);
+}
+.slider-row .label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+.slider-row .sub {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--ink-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  display: block;
+}
+.slider-val {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 1rem;
+  color: var(--ink);
+}
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--ink);
+  outline: none;
+  margin-top: 10px;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px; height: 22px;
+  background: var(--accent);
+  cursor: pointer;
+  border: 1px solid var(--accent-ink);
+}
+.radio-card {
+  border: 1px solid var(--rule-hair);
+  padding: 16px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  min-height: 44px;
+}
+.radio-card.active {
+  border: 2px solid var(--accent);
+  background: var(--paper-3);
+}
+.radio-card .r-title { font-family: var(--font-head); font-weight: 700; font-size: 1rem; }
+.radio-card .r-sub { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); margin-top: 3px; }
+.radio-card.active .r-sub { color: var(--accent); }
+.day-chips {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.day-chip {
+  flex: 1;
+  min-width: 40px;
+  height: 44px;
+  border: 1px solid var(--rule-hair);
+  background: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.day-chip.active { border-color: var(--accent); background: var(--accent); color: var(--paper); }
+.time-input {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 500;
+  padding: 10px 14px;
+  border: 1px solid var(--rule-hair);
+  background: var(--paper);
+  width: 100%;
+  text-align: center;
+  min-height: 44px;
+}
+.save-row {
+  text-align: center;
+  padding: 28px 0;
+  border-top: 3px double var(--rule);
+  margin-top: 28px;
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="mast-top">
+    <div class="mast-meta-l">VOL. VI · NO. 17 · SAT APR 25</div>
+    <div class="mast-title">
+      <h1 class="mast-brand">Max Mahon</h1>
+      <div class="mast-sub">· Settings ·</div>
+    </div>
+    <div class="mast-meta-r">LAST SAVED · APR 21</div>
+  </div>
+</header>
+
+<main class="container">
+
+  <div class="section-num">
+    <span class="no">06 · Settings</span>
+    <span>Schedule · Filters · Universe</span>
+  </div>
+
+  <!-- AUTO SCAN -->
+  <div class="setting-block">
+    <div class="setting-label">Auto Scan</div>
+    <div class="setting-help">ดึงข้อมูล + scan ทุกสัปดาห์</div>
+    <label class="switch on" style="margin-bottom:14px">
+      <div class="switch-box"></div>
+      <span>Enabled</span>
+    </label>
+    <div class="micro" style="margin-bottom:8px">Scan Day</div>
+    <div class="day-chips">
+      <div class="day-chip">Sun</div>
+      <div class="day-chip">Mon</div>
+      <div class="day-chip">Tue</div>
+      <div class="day-chip">Wed</div>
+      <div class="day-chip">Thu</div>
+      <div class="day-chip">Fri</div>
+      <div class="day-chip active">Sat</div>
+    </div>
+    <div class="micro" style="margin-bottom:6px">Time (ICT)</div>
+    <input class="time-input" value="09:00" />
+    <div class="micro" style="margin-top:10px">Next run · <strong style="color:var(--ink)">May 02, 09:00</strong></div>
+  </div>
+
+  <!-- NIWES THRESHOLDS -->
+  <div class="setting-block">
+    <div class="setting-label">Niwes Filters</div>
+    <div class="setting-help">5-5-5-5 + market cap</div>
+
+    <div class="slider-row">
+      <div class="label-row">
+        <div>Min Yield<span class="sub">Niwes default 5.0%</span></div>
+        <div class="slider-val">5.0%</div>
+      </div>
+      <input type="range" min="1" max="10" step="0.5" value="5.0" />
+    </div>
+
+    <div class="slider-row">
+      <div class="label-row">
+        <div>Min Streak<span class="sub">Niwes default 5 yrs</span></div>
+        <div class="slider-val">5 y</div>
+      </div>
+      <input type="range" min="1" max="15" step="1" value="5" />
+    </div>
+
+    <div class="slider-row">
+      <div class="label-row">
+        <div>Max P/E<span class="sub">Niwes default ≤ 15×</span></div>
+        <div class="slider-val">15×</div>
+      </div>
+      <input type="range" min="5" max="30" step="0.5" value="15" />
+    </div>
+
+    <div class="slider-row">
+      <div class="label-row">
+        <div>Max P/BV<span class="sub">Niwes default ≤ 1.5×</span></div>
+        <div class="slider-val">1.5×</div>
+      </div>
+      <input type="range" min="0.3" max="5" step="0.1" value="1.5" />
+    </div>
+
+    <div class="slider-row">
+      <div class="label-row">
+        <div>Min Market Cap<span class="sub">Niwes default 5B</span></div>
+        <div class="slider-val">5B</div>
+      </div>
+      <input type="range" min="1" max="50" step="1" value="5" />
+    </div>
+  </div>
+
+  <!-- UNIVERSE -->
+  <div class="setting-block">
+    <div class="setting-label">Stock Universe</div>
+    <div class="setting-help">ยิ่งเยอะยิ่งช้า แต่ครอบคลุมกว่า</div>
+    <div class="radio-card">
+      <div class="r-title">SET Only</div>
+      <div class="r-sub">704 stocks · faster</div>
+    </div>
+    <div class="radio-card active">
+      <div class="r-title">SET + mai</div>
+      <div class="r-sub">933 stocks · default</div>
+    </div>
+  </div>
+
+  <div class="save-row">
+    <button class="btn primary" style="padding:14px 40px;letter-spacing:0.2em">Save All Changes</button>
+    <div style="font-family:var(--font-head);font-style:italic;color:var(--ink-dim);font-size:0.85rem;margin-top:14px">
+      All changes captured · next scan uses these values.
+    </div>
+  </div>
+
+</main>
+
+<nav class="mobile-nav">
+  <a href="01-home.html"><span class="num">01</span>List</a>
+  <a href="03-watchlist.html"><span class="num">02</span>Saved</a>
+  <a href="04-portfolio.html"><span class="num">04</span>Port</a>
+  <a href="05-simulator.html"><span class="num">05</span>Sim</a>
+  <a href="06-settings.html" class="active"><span class="num">06</span>Set</a>
+</nav>
+
+</body>
+</html>

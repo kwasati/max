@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Simulator · Max Mahon Mobile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400;1,700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=IBM+Plex+Serif+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/base.css">
+<link rel="stylesheet" href="../shared/mobile.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+.mode-select {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 14px 16px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  margin-bottom: 20px;
+}
+.input-group {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule-hair);
+}
+.input-label { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-dim); margin-bottom: 6px; }
+.input-help { font-family: var(--font-head); font-style: italic; font-size: 0.75rem; color: var(--ink-faint); margin-top: 4px; }
+.input-text, .input-sel {
+  width: 100%;
+  font-family: var(--font-head);
+  font-size: 1rem;
+  padding: 10px 0;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  min-height: 44px;
+}
+.input-number-big {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 1.4rem;
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  padding: 8px 0;
+  background: transparent;
+  color: var(--ink);
+  min-height: 44px;
+}
+.result-head {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  padding: 14px 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  margin-top: 20px;
+  margin-bottom: 18px;
+}
+.result-cell .lbl { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-dim); }
+.result-cell .v { font-family: var(--font-head); font-weight: 900; font-size: 1.2rem; margin-top: 3px; }
+.result-cell .v .mono { font-family: var(--font-mono); font-weight: 500; }
+.result-cell .sub { font-family: var(--font-head); font-style: italic; color: var(--ink-soft); font-size: 0.72rem; margin-top: 2px; }
+.sim-chart-big { height: 280px; }
+.multi-row { display: grid; grid-template-columns: 1fr auto 32px; gap: 8px; padding: 8px 0; border-bottom: 1px dotted var(--rule-hair); align-items: center; }
+.multi-row .sym { font-family: var(--font-head); font-weight: 700; }
+.multi-row .x { color: var(--ink-dim); text-align: center; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="mast-top">
+    <div class="mast-meta-l">VOL. VI · NO. 17 · SAT APR 25</div>
+    <div class="mast-title">
+      <h1 class="mast-brand">Max Mahon</h1>
+      <div class="mast-sub">· Simulator ·</div>
+    </div>
+    <div class="mast-meta-r">DCA · BACKTEST</div>
+  </div>
+</header>
+
+<main class="container">
+
+  <div class="section-num">
+    <span class="no">05 · Simulator</span>
+    <span>3 modes</span>
+  </div>
+
+  <select class="mode-select" onchange="switchMode(this.value)">
+    <option value="single">DCA รายตัว</option>
+    <option value="multi">DCA ทั้งพอร์ต</option>
+    <option value="backtest">Portfolio Backtest</option>
+  </select>
+
+  <!-- SINGLE -->
+  <div id="single" class="mode">
+    <div class="input-group">
+      <div class="input-label">Stock</div>
+      <select class="input-sel">
+        <option>BBL · Bangkok Bank</option>
+        <option>TCAP · Thanachart Capital</option>
+        <option>INTUCH · Intouch Holdings</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <div class="input-label">Monthly Amount</div>
+      <input class="input-number-big" value="฿ 20,000" />
+    </div>
+    <div class="input-group">
+      <div class="input-label">Duration</div>
+      <input class="input-number-big" value="15 years" />
+    </div>
+    <div class="input-group">
+      <div class="input-label">Dividend Reinvest</div>
+      <select class="input-sel">
+        <option>Yes · reinvest</option>
+        <option>No · take cash</option>
+      </select>
+    </div>
+    <div style="margin-top:20px"><button class="btn primary w-full">Run Simulation</button></div>
+
+    <div class="result-head">
+      <div class="result-cell">
+        <span class="lbl">Invested</span>
+        <span class="v">฿ <span class="mono">3.6M</span></span>
+        <span class="sub">฿20k × 180 mo</span>
+      </div>
+      <div class="result-cell">
+        <span class="lbl">Value Today</span>
+        <span class="v">฿ <span class="mono">9.4M</span></span>
+        <span class="sub">+162%</span>
+      </div>
+      <div class="result-cell">
+        <span class="lbl">Shares</span>
+        <span class="v mono">58,940</span>
+        <span class="sub">avg 61.08</span>
+      </div>
+      <div class="result-cell">
+        <span class="lbl">Div Lifetime</span>
+        <span class="v">฿ <span class="mono">1.87M</span></span>
+        <span class="sub">YoC 8.7%</span>
+      </div>
+    </div>
+
+    <div class="sim-chart-big"><canvas id="dcaChart"></canvas></div>
+  </div>
+
+  <!-- MULTI -->
+  <div id="multi" class="mode" style="display:none">
+    <div class="input-group">
+      <div class="input-label">Portfolio Composition</div>
+      <div class="multi-row"><span class="sym">BBL</span><span class="mono">30%</span><span class="x">×</span></div>
+      <div class="multi-row"><span class="sym">TCAP</span><span class="mono">25%</span><span class="x">×</span></div>
+      <div class="multi-row"><span class="sym">INTUCH</span><span class="mono">20%</span><span class="x">×</span></div>
+      <div class="multi-row"><span class="sym">ADVANC</span><span class="mono">15%</span><span class="x">×</span></div>
+      <div class="multi-row"><span class="sym">QH</span><span class="mono">10%</span><span class="x">×</span></div>
+      <button class="btn ghost mt-4 w-full">+ Add Stock</button>
+    </div>
+    <div class="input-group">
+      <div class="input-label">Monthly Total</div>
+      <input class="input-number-big" value="฿ 50,000" />
+    </div>
+    <div class="input-group">
+      <div class="input-label">Duration</div>
+      <input class="input-number-big" value="10 years" />
+    </div>
+    <div style="margin-top:20px"><button class="btn primary w-full">Run Portfolio DCA</button></div>
+
+    <div class="result-head">
+      <div class="result-cell"><span class="lbl">Invested</span><span class="v">฿ <span class="mono">6.0M</span></span></div>
+      <div class="result-cell"><span class="lbl">Ending</span><span class="v">฿ <span class="mono">13.8M</span></span></div>
+      <div class="result-cell"><span class="lbl">CAGR</span><span class="v mono">8.9%</span></div>
+      <div class="result-cell"><span class="lbl">Div Total</span><span class="v">฿ <span class="mono">2.3M</span></span></div>
+    </div>
+    <div class="sim-chart-big"><canvas id="multiChart"></canvas></div>
+  </div>
+
+  <!-- BACKTEST -->
+  <div id="backtest" class="mode" style="display:none">
+    <div class="input-group">
+      <div class="input-label">Portfolio</div>
+      <textarea style="width:100%;min-height:140px;font-family:var(--font-mono);font-size:0.85rem;padding:10px;border:1px solid var(--rule);background:var(--paper-3);resize:vertical">BBL  20
+TCAP 15
+INTUCH 13
+QH 10
+ADVANC 10
+AOT 8
+PTT 8
+KBANK 7
+TOP 5
+Cash 4</textarea>
+      <div class="input-help">Symbol + weight% ต่อบรรทัด</div>
+    </div>
+    <div class="input-group">
+      <div class="input-label">Start Date</div>
+      <input class="input-text" value="2010-01-01" />
+    </div>
+    <div class="input-group">
+      <div class="input-label">End Date</div>
+      <input class="input-text" value="2026-04-25" />
+    </div>
+    <div style="margin-top:20px"><button class="btn primary w-full">Run Backtest</button></div>
+
+    <div class="lede" style="max-width:none;margin-top:24px;margin-bottom:14px;font-size:0.95rem">
+      ถ้าถือพอร์ตนี้ตั้งแต่ <strong>Jan 2010</strong> จนถึงวันนี้ · 16 ปี
+    </div>
+
+    <div class="result-head">
+      <div class="result-cell"><span class="lbl">Total Return</span><span class="v mono">+318%</span></div>
+      <div class="result-cell"><span class="lbl">CAGR</span><span class="v mono">9.1%</span></div>
+      <div class="result-cell"><span class="lbl">Div Received</span><span class="v mono">+142%</span></div>
+      <div class="result-cell"><span class="lbl">Max Drawdown</span><span class="v mono">−34%</span></div>
+    </div>
+    <div class="sim-chart-big"><canvas id="backtestChart"></canvas></div>
+  </div>
+
+  <div class="ornament"></div>
+
+</main>
+
+<nav class="mobile-nav">
+  <a href="01-home.html"><span class="num">01</span>List</a>
+  <a href="03-watchlist.html"><span class="num">02</span>Saved</a>
+  <a href="04-portfolio.html"><span class="num">04</span>Port</a>
+  <a href="05-simulator.html" class="active"><span class="num">05</span>Sim</a>
+  <a href="06-settings.html"><span class="num">06</span>Set</a>
+</nav>
+
+<script>
+function switchMode(m) {
+  ['single','multi','backtest'].forEach(id => {
+    document.getElementById(id).style.display = (id === m ? 'block' : 'none');
+  });
+  setTimeout(() => Object.values(Chart.instances || {}).forEach(c => c.resize()), 50);
+}
+
+const textInk = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
+const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+const inkDim = getComputedStyle(document.documentElement).getPropertyValue('--ink-dim').trim();
+const ruleHair = 'rgba(26,24,20,0.12)';
+Chart.defaults.font.family = 'Lora, serif';
+Chart.defaults.color = inkDim;
+
+const months = Array.from({length:180}, (_,i) => i);
+const invested = months.map(m => 20000*(m+1));
+const accumulated = months.map(m => invested[m] * (1 + 0.62 * Math.pow((m+1)/180, 0.9)));
+
+new Chart(document.getElementById('dcaChart'), {
+  type: 'line',
+  data: {
+    labels: months.map(m => m % 24 === 0 ? `Y${Math.floor(m/12)+1}` : ''),
+    datasets: [
+      { label:'Value', data: accumulated, borderColor: textInk, backgroundColor:'rgba(26,24,20,0.08)', fill:true, tension:0.3, pointRadius:0, borderWidth:2 },
+      { label:'Invested', data: invested, borderColor: accent, borderDash: [4,4], pointRadius:0, fill:false, borderWidth:1.5 }
+    ]
+  },
+  options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{ font:{family:'JetBrains Mono', size:9}, usePointStyle:true } } }, scales:{ x:{ grid:{display:false}, border:{color:ruleHair}, ticks:{font:{size:9}} }, y:{ grid:{color:ruleHair}, border:{display:false}, ticks:{font:{size:9}, callback: v => '฿' + (v/1e6).toFixed(1) + 'M'} } } }
+});
+
+new Chart(document.getElementById('multiChart'), {
+  type: 'line',
+  data: {
+    labels: Array.from({length:120}, (_,i) => i % 24 === 0 ? `Y${Math.floor(i/12)+1}` : ''),
+    datasets: [
+      { label:'Value', data: Array.from({length:120}, (_,i)=>50000*(i+1)+(i**1.7)*280), borderColor: textInk, backgroundColor:'rgba(26,24,20,0.06)', fill:true, tension:0.3, pointRadius:0, borderWidth:2 },
+      { label:'Invested', data: Array.from({length:120}, (_,i)=>50000*(i+1)), borderColor: accent, borderDash:[4,4], pointRadius:0, fill:false, borderWidth:1.5 }
+    ]
+  },
+  options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{ font:{family:'JetBrains Mono', size:9}, usePointStyle:true } } }, scales:{ x:{ grid:{display:false}, border:{color:ruleHair}, ticks:{font:{size:9}} }, y:{ grid:{color:ruleHair}, border:{display:false}, ticks:{font:{size:9}, callback: v => '฿' + (v/1e6).toFixed(1) + 'M'} } } }
+});
+
+const years = Array.from({length:196}, (_,i) => i);
+function simPath(seed) {
+  let v = 1e6; const out = [];
+  for (let i=0; i<196; i++) {
+    let r = 0.007 + 0.005*Math.sin(i/7 + seed);
+    if (i === 122 || i === 123) r = -0.17;
+    if (i === 130) r = 0.12;
+    v *= (1+r); out.push(v);
+  }
+  return out;
+}
+new Chart(document.getElementById('backtestChart'), {
+  type: 'line',
+  data: {
+    labels: years.map(i => i % 24 === 0 ? (2010 + Math.floor(i/12)).toString() : ''),
+    datasets: [
+      { label:'Portfolio', data: simPath(1), borderColor: textInk, backgroundColor:'rgba(26,24,20,0.06)', fill:true, tension:0.25, pointRadius:0, borderWidth:2 },
+      { label:'SET (bench)', data: simPath(2).map(v=>v*0.75), borderColor: accent, borderDash:[3,3], pointRadius:0, fill:false, borderWidth:1.5 }
+    ]
+  },
+  options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{ font:{family:'JetBrains Mono', size:9}, usePointStyle:true } } }, scales:{ x:{ grid:{display:false}, border:{color:ruleHair}, ticks:{font:{size:9}} }, y:{ grid:{color:ruleHair}, border:{display:false}, ticks:{font:{size:9}, callback: v => '฿' + (v/1e6).toFixed(1) + 'M'} } } }
+});
+</script>
+
+</body>
+</html>

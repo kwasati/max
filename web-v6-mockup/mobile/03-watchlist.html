@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Saved · Max Mahon Mobile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400;1,700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=IBM+Plex+Serif+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/base.css">
+<link rel="stylesheet" href="../shared/mobile.css">
+<style>
+.wl-card {
+  border-top: 1px solid var(--rule-hair);
+  padding: 16px 0;
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  gap: 10px;
+  align-items: flex-start;
+}
+.wl-card:first-of-type { border-top: 1px solid var(--rule); }
+.wl-card:last-of-type { border-bottom: 1px solid var(--rule); }
+.wl-card .star { color: var(--accent); font-size: 1.2rem; line-height: 1; padding-top: 3px; border-bottom: none; }
+.wl-body .sym { font-family: var(--font-head); font-weight: 700; font-size: 1.1rem; }
+.wl-body .name { font-family: var(--font-head); font-style: italic; font-size: 0.8rem; color: var(--ink-dim); margin-bottom: 8px; }
+.wl-body .delta-row { display: flex; gap: 10px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-soft); margin-bottom: 6px; }
+.wl-body .note-row {
+  font-family: var(--font-head);
+  font-style: italic;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  border-top: 1px dotted var(--rule-hair);
+  padding-top: 6px;
+  margin-top: 4px;
+}
+.wl-right { text-align: right; }
+.wl-right .score {
+  font-family: var(--font-mono);
+  font-size: 1.6rem;
+  font-weight: 500;
+  line-height: 1;
+}
+.wl-right .sig { margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="mast-top">
+    <div class="mast-meta-l">VOL. VI · NO. 17 · SAT APR 25</div>
+    <div class="mast-title">
+      <h1 class="mast-brand">Max Mahon</h1>
+      <div class="mast-sub">· Saved Positions ·</div>
+    </div>
+    <div class="mast-meta-r">9 TRACKED · 1 EXIT ALERT</div>
+  </div>
+</header>
+
+<main class="container">
+
+  <div class="section-num">
+    <span class="no">02 · Watchlist</span>
+    <span>9 positions</span>
+  </div>
+
+  <section class="summary-strip">
+    <div class="summary-cell"><span class="label">Hold</span><span class="val mono">6</span></div>
+    <div class="summary-cell"><span class="label">Review</span><span class="val mono">2</span></div>
+    <div class="summary-cell"><span class="label">Consider Exit</span><span class="val mono">1</span></div>
+    <div class="summary-cell"><span class="label">Avg Δ</span><span class="val mono">+11</span></div>
+  </section>
+
+  <div class="wl-card">
+    <div class="star">★</div>
+    <div class="wl-body">
+      <div class="sym">BBL</div>
+      <div class="name">Bangkok Bank</div>
+      <div class="delta-row">
+        <span>Entry Feb 15, 25</span><span>·</span>
+        <span style="color:var(--ink)">+14 vs 60</span>
+      </div>
+      <div class="note-row">Core position. Hold through cycle.</div>
+    </div>
+    <div class="wl-right">
+      <div class="score">74</div>
+      <div class="sig"><span class="sev hold">Hold</span></div>
+    </div>
+  </div>
+
+  <div class="wl-card">
+    <div class="star">★</div>
+    <div class="wl-body">
+      <div class="sym">TCAP</div>
+      <div class="name">Thanachart Capital</div>
+      <div class="delta-row"><span>Entry Jun 08, 24</span><span>·</span><span style="color:var(--ink)">+22 vs 65</span></div>
+      <div class="note-row">Hidden value · TCAP holds TMB stake.</div>
+    </div>
+    <div class="wl-right">
+      <div class="score">87</div>
+      <div class="sig"><span class="sev hold">Hold</span></div>
+    </div>
+  </div>
+
+  <div class="wl-card">
+    <div class="star">★</div>
+    <div class="wl-body">
+      <div class="sym">INTUCH</div>
+      <div class="name">Intouch Holdings</div>
+      <div class="delta-row"><span>Entry Aug 24, 24</span><span>·</span><span style="color:var(--ink)">+9 vs 70</span></div>
+      <div class="note-row">ADVANC parent · track discount to NAV.</div>
+    </div>
+    <div class="wl-right">
+      <div class="score">79</div>
+      <div class="sig"><span class="sev hold">Hold</span></div>
+    </div>
+  </div>
+
+  <div class="wl-card">
+    <div class="star">★</div>
+    <div class="wl-body">
+      <div class="sym">QH</div>
+      <div class="name">Quality Houses</div>
+      <div class="delta-row"><span>Entry Jan 11, 25</span><span>·</span><span style="color:var(--ink)">+11 vs 62</span></div>
+      <div class="note-row">Hidden value via HMPRO stake.</div>
+    </div>
+    <div class="wl-right">
+      <div class="score">73</div>
+      <div class="sig"><span class="sev hold">Hold</span></div>
+    </div>
+  </div>
+
+  <div class="wl-card">
+    <div class="star">★</div>
+    <div class="wl-body">
+      <div class="sym">ADVANC</div>
+      <div class="name">Advanced Info Service</div>
+      <div class="delta-row"><span>Entry Mar 07, 25</span><span>·</span><span style="color:var(--ink)">+3 vs 66</span></div>
+      <div class="note-row">Telecoms staple · dividend grower.</div>
+    </div>
+    <div class="wl-right">
+      <div class="score">69</div>
+      <div class="sig"><span class="sev hold">Hold</span></div>
+    </div>
+  </div>
+
+  <div class="wl-card">
+    <div class="star">★</div>
+    <div class="wl-body">
+      <div class="sym">PTT</div>
+      <div class="name">PTT Public Co.</div>
+      <div class="delta-row"><span>Entry Nov 02, 24</span><span>·</span><span style="color:var(--ink)">+5 vs 60</span></div>
+      <div class="note-row">Energy cycle exposure · small position.</div>
+    </div>
+    <div class="wl-right">
+      <div class="score">65</div>
+      <div class="sig"><span class="sev hold">Hold</span></div>
+    </div>
+  </div>
+
+  <div class="wl-card">
+    <div class="star">★</div>
+    <div class="wl-body">
+      <div class="sym">MAKRO</div>
+      <div class="name">Siam Makro</div>
+      <div class="delta-row"><span>Entry Apr 30, 24</span><span>·</span><span style="color:var(--accent)">−4 vs 60</span></div>
+      <div class="note-row">Payout creeping up · monitor Q2 2026.</div>
+    </div>
+    <div class="wl-right">
+      <div class="score">56</div>
+      <div class="sig"><span class="sev review">Review</span></div>
+    </div>
+  </div>
+
+  <div class="wl-card">
+    <div class="star">★</div>
+    <div class="wl-body">
+      <div class="sym">CPALL</div>
+      <div class="name">CP All Public Co.</div>
+      <div class="delta-row"><span>Entry Sep 12, 24</span><span>·</span><span style="color:var(--accent)">−5 vs 67</span></div>
+      <div class="note-row">Score declining · check at next scan.</div>
+    </div>
+    <div class="wl-right">
+      <div class="score">62</div>
+      <div class="sig"><span class="sev review">Review</span></div>
+    </div>
+  </div>
+
+  <div class="wl-card">
+    <div class="star">★</div>
+    <div class="wl-body">
+      <div class="sym">SCCC</div>
+      <div class="name">Siam City Cement</div>
+      <div class="delta-row"><span>Entry Jul 20, 24</span><span>·</span><span style="color:var(--accent)">−14 vs 62</span></div>
+      <div class="note-row">Payout exceeds cash · ROE falling 3 yr.</div>
+    </div>
+    <div class="wl-right">
+      <div class="score">48</div>
+      <div class="sig"><span class="sev exit">Exit</span></div>
+    </div>
+  </div>
+
+  <div style="padding:24px 0;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+    <button class="btn ghost">+ Add Symbol</button>
+    <button class="btn primary">Compare Selected</button>
+  </div>
+
+  <div class="ornament"></div>
+
+</main>
+
+<nav class="mobile-nav">
+  <a href="01-home.html"><span class="num">01</span>List</a>
+  <a href="03-watchlist.html" class="active"><span class="num">02</span>Saved</a>
+  <a href="04-portfolio.html"><span class="num">04</span>Port</a>
+  <a href="05-simulator.html"><span class="num">05</span>Sim</a>
+  <a href="06-settings.html"><span class="num">06</span>Set</a>
+</nav>
+
+</body>
+</html>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Portfolio · Max Mahon Mobile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400;1,700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=IBM+Plex+Serif+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/tokens.css">
+<link rel="stylesheet" href="../shared/base.css">
+<link rel="stylesheet" href="../shared/mobile.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+.pie-box { height: 240px; }
+.pie-total { text-align: center; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--rule); }
+.pie-total .lbl { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-dim); }
+.pie-total .val { font-family: var(--font-head); font-weight: 900; font-size: 1.6rem; line-height: 1; }
+.pie-total .sub { font-family: var(--font-head); font-style: italic; color: var(--ink-soft); font-size: 0.8rem; margin-top: 3px; }
+.stock-row { padding: 12px 0; border-bottom: 1px solid var(--rule-hair); display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+.stock-row:first-child { border-top: 1px solid var(--rule); }
+.stock-row:last-child { border-bottom: 1px solid var(--rule); }
+.stock-row .left .sym { font-family: var(--font-head); font-weight: 700; font-size: 1rem; }
+.stock-row .left .meta { font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-dim); margin-top: 3px; }
+.stock-row .right { text-align: right; }
+.stock-row .right .val { font-family: var(--font-mono); font-size: 1rem; font-weight: 500; }
+.stock-row .right .pl { font-family: var(--font-mono); font-size: 0.75rem; margin-top: 3px; }
+.stock-row .right .pl.pos { color: var(--ink); }
+.stock-row .right .pl.neg { color: var(--accent); }
+.weight-tiny {
+  display: inline-block;
+  height: 3px;
+  background: var(--ink);
+  vertical-align: middle;
+  margin-right: 6px;
+}
+.divider-block {
+  margin: 28px 0;
+  border-top: 3px double var(--rule);
+  border-bottom: 3px double var(--rule);
+  padding: 14px 0;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="mast-top">
+    <div class="mast-meta-l">VOL. VI · NO. 17 · SAT APR 25</div>
+    <div class="mast-title">
+      <h1 class="mast-brand">Max Mahon</h1>
+      <div class="mast-sub">· Portfolio ·</div>
+    </div>
+    <div class="mast-meta-r">AS OF APR 25, 09:00</div>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- REAL -->
+  <div class="section-num">
+    <span class="no">04a · Real Holdings</span>
+    <span>PORT จริง</span>
+  </div>
+
+  <div class="pie-box"><canvas id="realPie"></canvas></div>
+  <div class="pie-total">
+    <div class="lbl">Market Value</div>
+    <div class="val">฿ 2,418,750</div>
+    <div class="sub">+14.2% · div received ฿ 142,860</div>
+  </div>
+
+  <div style="margin-top:20px">
+    <div class="stock-row">
+      <div class="left">
+        <div class="sym">TCAP</div>
+        <div class="meta">12,000 × 51.25 · cost 38.20</div>
+      </div>
+      <div class="right">
+        <div class="val">฿615,000</div>
+        <div class="pl pos">+34.2% · div 38.4k</div>
+      </div>
+    </div>
+    <div class="stock-row">
+      <div class="left">
+        <div class="sym">BBL</div>
+        <div class="meta">3,200 × 159.70 · cost 142.50</div>
+      </div>
+      <div class="right">
+        <div class="val">฿511,040</div>
+        <div class="pl pos">+12.1% · div 33.6k</div>
+      </div>
+    </div>
+    <div class="stock-row">
+      <div class="left">
+        <div class="sym">INTUCH</div>
+        <div class="meta">4,500 × 71.25 · cost 64.10</div>
+      </div>
+      <div class="right">
+        <div class="val">฿320,625</div>
+        <div class="pl pos">+11.2% · div 21.8k</div>
+      </div>
+    </div>
+    <div class="stock-row">
+      <div class="left">
+        <div class="sym">ADVANC</div>
+        <div class="meta">1,200 × 235.50 · cost 218.00</div>
+      </div>
+      <div class="right">
+        <div class="val">฿282,600</div>
+        <div class="pl pos">+8.0% · div 14.6k</div>
+      </div>
+    </div>
+    <div class="stock-row">
+      <div class="left">
+        <div class="sym">PTT</div>
+        <div class="meta">6,800 × 37.20 · cost 34.85</div>
+      </div>
+      <div class="right">
+        <div class="val">฿252,960</div>
+        <div class="pl pos">+6.7% · div 15.2k</div>
+      </div>
+    </div>
+    <div class="stock-row">
+      <div class="left">
+        <div class="sym">AOT</div>
+        <div class="meta">3,600 × 58.75 · cost 62.40</div>
+      </div>
+      <div class="right">
+        <div class="val">฿211,500</div>
+        <div class="pl neg">−5.8% · div 12.4k</div>
+      </div>
+    </div>
+    <div class="stock-row">
+      <div class="left">
+        <div class="sym">KBANK</div>
+        <div class="meta">900 × 137.50 · cost 128.00</div>
+      </div>
+      <div class="right">
+        <div class="val">฿123,750</div>
+        <div class="pl pos">+7.4% · new</div>
+      </div>
+    </div>
+    <div class="stock-row">
+      <div class="left">
+        <div class="sym">QH</div>
+        <div class="meta">45,000 × 2.34 · cost 2.08</div>
+      </div>
+      <div class="right">
+        <div class="val">฿105,300</div>
+        <div class="pl pos">+12.5% · div 6.8k</div>
+      </div>
+    </div>
+  </div>
+  <div style="text-align:center;padding:20px 0">
+    <button class="btn ghost">+ เพิ่ม Transaction</button>
+  </div>
+
+  <!-- DIVIDER -->
+  <div class="divider-block">
+    <div class="ornament" style="margin:0"></div>
+    <div style="font-family:var(--font-head);font-weight:900;font-size:1.2rem;margin-top:10px">Simulated Below</div>
+    <div style="font-family:var(--font-head);font-style:italic;color:var(--ink-soft);font-size:0.85rem;margin-top:3px">Target weights · not yet deployed</div>
+  </div>
+
+  <!-- SIMULATED -->
+  <div class="section-num">
+    <span class="no">04b · Simulated</span>
+    <span>PORT จำลอง</span>
+  </div>
+
+  <div class="pie-box"><canvas id="simPie"></canvas></div>
+  <div class="pie-total">
+    <div class="lbl">Target Allocation</div>
+    <div class="val">100.0%</div>
+    <div class="sub">projected yield-on-cost · 7.3%</div>
+  </div>
+
+  <div style="margin-top:20px">
+    <div class="stock-row">
+      <div class="left">
+        <div class="sym"><span class="weight-tiny" style="width:25px"></span>BBL</div>
+        <div class="meta">20% · core defensive · Y 9.91</div>
+      </div>
+      <div class="right"><div class="val">20%</div><div class="pl">Score 74</div></div>
+    </div>
+    <div class="stock-row">
+      <div class="left">
+        <div class="sym"><span class="weight-tiny" style="width:20px"></span>TCAP</div>
+        <div class="meta">15% · hidden value · Y 7.20</div>
+      </div>
+      <div class="right"><div class="val">15%</div><div class="pl">Score 87</div></div>
+    </div>
+    <div class="stock-row">
+      <div class="left">
+        <div class="sym"><span class="weight-tiny" style="width:18px"></span>INTUCH</div>
+        <div class="meta">13% · holding co · Y 6.83</div>
+      </div>
+      <div class="right"><div class="val">13%</div><div class="pl">Score 79</div></div>
+    </div>
+    <div class="stock-row">
+      <div class="left">
+        <div class="sym"><span class="weight-tiny" style="width:14px"></span>QH</div>
+        <div class="meta">10% · hidden value · Y 6.40</div>
+      </div>
+      <div class="right"><div class="val">10%</div><div class="pl">Score 73</div></div>
+    </div>
+    <div class="stock-row">
+      <div class="left">
+        <div class="sym"><span class="weight-tiny" style="width:14px"></span>ADVANC</div>
+        <div class="meta">10% · quality div · Y 5.18</div>
+      </div>
+      <div class="right"><div class="val">10%</div><div class="pl">Score 69</div></div>
+    </div>
+    <div class="stock-row">
+      <div class="left">
+        <div class="sym"><span class="weight-tiny" style="width:11px"></span>AOT</div>
+        <div class="meta">8% · infrastructure · Y 5.74</div>
+      </div>
+      <div class="right"><div class="val">8%</div><div class="pl">Score 64</div></div>
+    </div>
+    <div class="stock-row">
+      <div class="left">
+        <div class="sym"><span class="weight-tiny" style="width:11px"></span>PTT</div>
+        <div class="meta">8% · energy · Y 6.41</div>
+      </div>
+      <div class="right"><div class="val">8%</div><div class="pl">Score 65</div></div>
+    </div>
+    <div class="stock-row">
+      <div class="left">
+        <div class="sym"><span class="weight-tiny" style="width:10px"></span>KBANK</div>
+        <div class="meta">7% · new entrant · Y 8.12</div>
+      </div>
+      <div class="right"><div class="val">7%</div><div class="pl">Score 71</div></div>
+    </div>
+    <div class="stock-row">
+      <div class="left">
+        <div class="sym"><span class="weight-tiny" style="width:7px"></span>TOP</div>
+        <div class="meta">5% · deep value · Y 8.64</div>
+      </div>
+      <div class="right"><div class="val">5%</div><div class="pl">Score 70</div></div>
+    </div>
+    <div class="stock-row">
+      <div class="left">
+        <div class="sym italic dim"><span class="weight-tiny" style="width:6px"></span>Cash</div>
+        <div class="meta">4% · reserve</div>
+      </div>
+      <div class="right"><div class="val">4%</div><div class="pl">—</div></div>
+    </div>
+  </div>
+  <div style="text-align:center;padding:20px 0">
+    <button class="btn ghost">+ เพิ่มหุ้น</button>
+  </div>
+
+</main>
+
+<nav class="mobile-nav">
+  <a href="01-home.html"><span class="num">01</span>List</a>
+  <a href="03-watchlist.html"><span class="num">02</span>Saved</a>
+  <a href="04-portfolio.html" class="active"><span class="num">04</span>Port</a>
+  <a href="05-simulator.html"><span class="num">05</span>Sim</a>
+  <a href="06-settings.html"><span class="num">06</span>Set</a>
+</nav>
+
+<script>
+const textInk = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
+const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+const inkDim = getComputedStyle(document.documentElement).getPropertyValue('--ink-dim').trim();
+
+Chart.defaults.font.family = 'JetBrains Mono, monospace';
+Chart.defaults.color = inkDim;
+const greys = [textInk, '#3A362E', '#4F4A42', '#6A6459', '#857F74', '#A09A8E', '#B7B0A1', '#CEC8B9'];
+
+new Chart(document.getElementById('realPie'), {
+  type: 'doughnut',
+  data: {
+    labels: ['TCAP','BBL','INTUCH','ADVANC','PTT','AOT','KBANK','QH'],
+    datasets: [{
+      data: [615000, 511040, 320625, 282600, 252960, 211500, 123750, 105300],
+      backgroundColor: [accent, ...greys.slice(0,7)],
+      borderColor: '#F4EFE6', borderWidth: 2,
+    }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, cutout: '55%', plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, boxWidth: 8, padding: 4 } } } }
+});
+
+new Chart(document.getElementById('simPie'), {
+  type: 'doughnut',
+  data: {
+    labels: ['BBL 20','TCAP 15','INTUCH 13','QH 10','ADVANC 10','AOT 8','PTT 8','KBANK 7','TOP 5','Cash 4'],
+    datasets: [{
+      data: [20,15,13,10,10,8,8,7,5,4],
+      backgroundColor: [accent, ...greys, 'rgba(26,24,20,0.15)'],
+      borderColor: '#F4EFE6', borderWidth: 2,
+    }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, cutout: '55%', plugins: { legend: { position: 'bottom', labels: { font: { size: 8 }, boxWidth: 8, padding: 3 } } } }
+});
+</script>
+
+</body>
+</html>
