@@ -182,10 +182,17 @@
     <div class="sim-chart-big"><canvas id="multiChart"></canvas></div>
   </div>
 
-  <!-- BACKTEST -->
+  <!-- BACKTEST · DCA-framed -->
   <div id="backtest" class="mode" style="display:none">
+    <h3 style="font-family:var(--font-head);font-weight:900;font-size:1.5rem;line-height:1.15;margin:10px 0 6px">
+      ถ้า DCA ตั้งแต่<br><span style="font-style:italic;color:var(--accent)">มกราคม 2015</span> จนถึงวันนี้
+    </h3>
+    <p style="font-family:var(--font-head);font-style:italic;color:var(--ink-soft);font-size:0.85rem;margin-bottom:16px">
+      Monthly DCA · dividends reinvested · 11 yr 4 mo
+    </p>
+
     <div class="input-group">
-      <div class="input-label">Portfolio</div>
+      <div class="input-label">Portfolio (Symbol + Weight%)</div>
       <textarea style="width:100%;min-height:140px;font-family:var(--font-mono);font-size:0.85rem;padding:10px;border:1px solid var(--rule);background:var(--paper-3);resize:vertical">BBL  20
 TCAP 15
 INTUCH 13
@@ -196,29 +203,54 @@ PTT 8
 KBANK 7
 TOP 5
 Cash 4</textarea>
-      <div class="input-help">Symbol + weight% ต่อบรรทัด</div>
     </div>
     <div class="input-group">
       <div class="input-label">Start Date</div>
-      <input class="input-text" value="2010-01-01" />
+      <input class="input-text" value="มกราคม 2015" />
     </div>
     <div class="input-group">
-      <div class="input-label">End Date</div>
-      <input class="input-text" value="2026-04-25" />
+      <div class="input-label">Monthly DCA Amount</div>
+      <input class="input-number-big" value="฿ 10,000" />
+      <div class="input-help">จำนวนที่ลงทุกเดือน</div>
     </div>
-    <div style="margin-top:20px"><button class="btn primary w-full">Run Backtest</button></div>
-
-    <div class="lede" style="max-width:none;margin-top:24px;margin-bottom:14px;font-size:0.95rem">
-      ถ้าถือพอร์ตนี้ตั้งแต่ <strong>Jan 2010</strong> จนถึงวันนี้ · 16 ปี
+    <div class="input-group">
+      <div class="input-label">Dividend Reinvestment</div>
+      <select class="input-sel">
+        <option>Yes · reinvest</option>
+        <option>No · take cash</option>
+      </select>
     </div>
+    <div style="margin-top:20px"><button class="btn primary w-full">Run DCA Backtest</button></div>
 
+    <!-- 7 metric cards stacked 2-wide -->
     <div class="result-head">
-      <div class="result-cell"><span class="lbl">Total Return</span><span class="v mono">+318%</span></div>
-      <div class="result-cell"><span class="lbl">CAGR</span><span class="v mono">9.1%</span></div>
-      <div class="result-cell"><span class="lbl">Div Received</span><span class="v mono">+142%</span></div>
-      <div class="result-cell"><span class="lbl">Max Drawdown</span><span class="v mono">−34%</span></div>
+      <div class="result-cell"><span class="lbl">Total Invested</span><span class="v">฿ <span class="mono">1.36M</span></span><span class="sub">฿10k × 136 mo</span></div>
+      <div class="result-cell"><span class="lbl">Port Value Today</span><span class="v">฿ <span class="mono">2.84M</span></span><span class="sub">div reinvested</span></div>
+      <div class="result-cell"><span class="lbl">Total Return</span><span class="v mono">+109%</span><span class="sub">over invested</span></div>
+      <div class="result-cell"><span class="lbl">CAGR</span><span class="v mono">+8.4%</span><span class="sub">annualized</span></div>
+      <div class="result-cell"><span class="lbl">Div Received</span><span class="v">฿ <span class="mono">342k</span></span><span class="sub">cumulative</span></div>
+      <div class="result-cell"><span class="lbl">Max DD</span><span class="v mono">−28%</span><span class="sub">Mar 2020</span></div>
+      <div class="result-cell" style="grid-column:span 2"><span class="lbl">SET Benchmark (same DCA)</span><span class="v mono">+62% · ฿2.20M</span><span class="sub">Δ portfolio beats by ฿640k</span></div>
     </div>
-    <div class="sim-chart-big"><canvas id="backtestChart"></canvas></div>
+
+    <div class="sim-chart-big" style="height:320px"><canvas id="backtestChart"></canvas></div>
+
+    <p style="font-family:var(--font-head);font-style:italic;color:var(--ink-soft);font-size:0.82rem;margin-top:14px;padding-top:10px;border-top:1px solid var(--rule-hair);line-height:1.5">
+      <strong>Assumptions.</strong> Monthly DCA of ฿10,000 from Jan 2015 to today. Dividends reinvested at declaration date.
+      SET benchmark applies same DCA schedule to SET index ETF (proxy). No transaction costs or tax modeled.
+    </p>
+
+    <!-- Yearly breakdown · mobile cards -->
+    <h3 style="font-family:var(--font-head);font-weight:700;font-size:1rem;margin-top:22px;margin-bottom:10px;border-top:3px double var(--rule);padding-top:14px">Yearly Breakdown</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-family:var(--font-mono);font-size:0.72rem">
+      <div style="border-top:1px solid var(--rule-hair);padding-top:6px"><div style="font-family:var(--font-head);font-weight:700;font-size:0.9rem">2015</div><div>inv ฿120k</div><div>port ฿128k</div><div>div ฿3k</div><div style="color:var(--ink-dim)">SET ฿119k</div></div>
+      <div style="border-top:1px solid var(--rule-hair);padding-top:6px"><div style="font-family:var(--font-head);font-weight:700;font-size:0.9rem">2017</div><div>inv ฿360k</div><div>port ฿452k</div><div>div ฿22k</div><div style="color:var(--ink-dim)">SET ฿411k</div></div>
+      <div style="border-top:1px solid var(--rule-hair);padding-top:6px"><div style="font-family:var(--font-head);font-weight:700;font-size:0.9rem">2019</div><div>inv ฿600k</div><div>port ฿729k</div><div>div ฿51k</div><div style="color:var(--ink-dim)">SET ฿650k</div></div>
+      <div style="border-top:1px solid var(--rule-hair);padding-top:6px"><div style="font-family:var(--font-head);font-weight:700;font-size:0.9rem">2020</div><div>inv ฿720k</div><div>port ฿712k</div><div>div ฿64k</div><div style="color:var(--ink-dim)">SET ฿629k</div></div>
+      <div style="border-top:1px solid var(--rule-hair);padding-top:6px"><div style="font-family:var(--font-head);font-weight:700;font-size:0.9rem">2022</div><div>inv ฿960k</div><div>port ฿1.31M</div><div>div ฿133k</div><div style="color:var(--ink-dim)">SET ฿1.08M</div></div>
+      <div style="border-top:1px solid var(--rule-hair);padding-top:6px"><div style="font-family:var(--font-head);font-weight:700;font-size:0.9rem">2024</div><div>inv ฿1.20M</div><div>port ฿2.19M</div><div>div ฿248k</div><div style="color:var(--ink-dim)">SET ฿1.63M</div></div>
+      <div style="border-top:1px solid var(--rule-hair);padding-top:6px;grid-column:span 2"><div style="font-family:var(--font-head);font-weight:700;font-size:0.9rem">2026 YTD <span style="color:var(--accent)">· current</span></div><div>inv ฿1.36M · port ฿2.84M · div ฿342k · SET ฿2.20M</div></div>
+    </div>
   </div>
 
   <div class="ornament"></div>
@@ -276,27 +308,44 @@ new Chart(document.getElementById('multiChart'), {
   options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{ font:{family:'JetBrains Mono', size:9}, usePointStyle:true } } }, scales:{ x:{ grid:{display:false}, border:{color:ruleHair}, ticks:{font:{size:9}} }, y:{ grid:{color:ruleHair}, border:{display:false}, ticks:{font:{size:9}, callback: v => '฿' + (v/1e6).toFixed(1) + 'M'} } } }
 });
 
-const years = Array.from({length:196}, (_,i) => i);
-function simPath(seed) {
-  let v = 1e6; const out = [];
-  for (let i=0; i<196; i++) {
-    let r = 0.007 + 0.005*Math.sin(i/7 + seed);
-    if (i === 122 || i === 123) r = -0.17;
-    if (i === 130) r = 0.12;
-    v *= (1+r); out.push(v);
+// DCA Backtest · 3 lines · Jan 2015 → Apr 2026 · ฿10k/mo
+const btMonths = 136;
+const monthlyBT = 10000;
+const bt_invested = Array.from({length: btMonths}, (_,i) => monthlyBT * (i+1));
+function dcaPath(baseGrowth, volSeed, crashStart, crashEnd) {
+  const out = []; let shares = 0; let price = 100;
+  for (let i=0; i<btMonths; i++) {
+    let r = baseGrowth + 0.012 * Math.sin(i/8 + volSeed);
+    if (i >= crashStart && i <= crashEnd) r = -0.12;
+    if (i === crashEnd+2) r = 0.10;
+    price *= (1 + r);
+    shares += monthlyBT / price;
+    out.push(shares * price);
   }
   return out;
 }
+const bt_portfolio = dcaPath(0.0082, 1.2, 61, 63);
+const bt_set = dcaPath(0.0055, 2.4, 61, 63);
+const btLabels = Array.from({length: btMonths}, (_,i) => i % 24 === 0 ? (2015 + Math.floor(i/12)).toString() : '');
+
 new Chart(document.getElementById('backtestChart'), {
   type: 'line',
   data: {
-    labels: years.map(i => i % 24 === 0 ? (2010 + Math.floor(i/12)).toString() : ''),
+    labels: btLabels,
     datasets: [
-      { label:'Portfolio', data: simPath(1), borderColor: textInk, backgroundColor:'rgba(26,24,20,0.06)', fill:true, tension:0.25, pointRadius:0, borderWidth:2 },
-      { label:'SET (bench)', data: simPath(2).map(v=>v*0.75), borderColor: accent, borderDash:[3,3], pointRadius:0, fill:false, borderWidth:1.5 }
+      { label:'Portfolio (DCA)', data: bt_portfolio, borderColor: accent, backgroundColor:'rgba(122,31,43,0.06)', fill:true, tension:0.25, pointRadius:0, borderWidth:2, order:1 },
+      { label:'SET Benchmark', data: bt_set, borderColor: textInk, borderDash:[4,4], pointRadius:0, fill:false, borderWidth:1.3, order:2 },
+      { label:'Invested', data: bt_invested, borderColor:'rgba(106,100,89,0.7)', pointRadius:0, fill:false, borderWidth:1.3, order:3 }
     ]
   },
-  options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{ font:{family:'JetBrains Mono', size:9}, usePointStyle:true } } }, scales:{ x:{ grid:{display:false}, border:{color:ruleHair}, ticks:{font:{size:9}} }, y:{ grid:{color:ruleHair}, border:{display:false}, ticks:{font:{size:9}, callback: v => '฿' + (v/1e6).toFixed(1) + 'M'} } } }
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ position:'bottom', labels:{ font:{family:'JetBrains Mono', size:8}, usePointStyle:true, padding:8, boxWidth:18 } } },
+    scales:{
+      x:{ grid:{display:false}, border:{color:ruleHair}, ticks:{font:{size:9}} },
+      y:{ grid:{color:ruleHair}, border:{display:false}, ticks:{font:{size:9}, callback: v => '฿' + (v/1e6).toFixed(1) + 'M'} }
+    }
+  }
 });
 </script>
 

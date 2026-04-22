@@ -349,12 +349,22 @@
     </section>
   </div>
 
-  <!-- ============= TAB 3: PORTFOLIO BACKTEST ============= -->
+  <!-- ============= TAB 3: PORTFOLIO BACKTEST (DCA-framed) ============= -->
   <div id="backtest" class="tab-content">
+
+    <div class="section-num" style="border-top:none;margin-top:0">
+      <span class="no">05c · Portfolio Backtest</span>
+      <span>DCA Simulation · Dividends Reinvested</span>
+    </div>
+    <h3 class="section-title" style="font-size:var(--fs-2xl)">ถ้า DCA ตั้งแต่ <span style="font-style:italic;color:var(--accent)">มกราคม 2015</span> จนถึงวันนี้</h3>
+    <p class="section-kicker">
+      Portfolio Backtest · simulated monthly dollar-cost averaging from Jan 2015 through today · 11 years 4 months · dividends reinvested.
+    </p>
+
     <section class="sim-layout">
       <aside class="sim-inputs">
         <div class="input-group">
-          <div class="input-label">Portfolio</div>
+          <div class="input-label">Portfolio (Symbol + Weight%)</div>
           <textarea style="width:100%;min-height:140px;font-family:var(--font-mono);font-size:var(--fs-sm);padding:var(--sp-3);border:1px solid var(--rule);background:var(--paper-3);resize:vertical">BBL  20
 TCAP 15
 INTUCH 13
@@ -369,66 +379,98 @@ Cash 4</textarea>
         </div>
         <div class="input-group">
           <div class="input-label">Start Date</div>
-          <input class="input-text" value="2010-01-01" />
-          <div class="input-help">จุดเริ่มถือพอร์ต</div>
+          <input class="input-text" value="มกราคม 2015" />
+          <div class="input-help">จุดเริ่ม DCA</div>
         </div>
         <div class="input-group">
-          <div class="input-label">End Date</div>
-          <input class="input-text" value="2026-04-25" />
+          <div class="input-label">Monthly DCA Amount</div>
+          <input class="input-number-big" value="฿ 10,000" />
+          <div class="input-help">จำนวนที่ลงสม่ำเสมอทุกเดือน</div>
         </div>
         <div class="input-group">
-          <div class="input-label">Rebalance</div>
+          <div class="input-label">Dividend Reinvestment</div>
           <select class="input-sel">
-            <option>Never · buy & hold</option>
-            <option>Annual</option>
-            <option>Quarterly</option>
+            <option>Yes · reinvest into portfolio</option>
+            <option>No · take as cash</option>
           </select>
         </div>
-        <button class="btn primary w-full">Run Backtest</button>
+        <button class="btn primary w-full">Run DCA Backtest</button>
       </aside>
 
       <div>
-        <div class="lede" style="max-width:64ch;margin-bottom:var(--sp-5)">
-          ถ้าถือพอร์ตนี้ตั้งแต่ <strong>1 มกราคม 2010</strong> จนถึงวันนี้ · 16 ปี 4 เดือน · ไม่ rebalance
-        </div>
-
-        <div class="result-head">
+        <!-- Result cards · 7 metrics -->
+        <div class="result-head" style="grid-template-columns:repeat(4,1fr);">
+          <div class="result-cell">
+            <span class="lbl">Total Invested</span>
+            <span class="v">฿ <span class="mono">1.36M</span></span>
+            <span class="sub">฿10k × 136 months</span>
+          </div>
+          <div class="result-cell">
+            <span class="lbl">Portfolio Value Today</span>
+            <span class="v">฿ <span class="mono">2.84M</span></span>
+            <span class="sub">dividends reinvested</span>
+          </div>
           <div class="result-cell">
             <span class="lbl">Total Return</span>
-            <span class="v mono">+318%</span>
-            <span class="sub">from ฿ 1M → ฿ 4.18M</span>
+            <span class="v mono">+109%</span>
+            <span class="sub">value / invested − 1</span>
           </div>
           <div class="result-cell">
             <span class="lbl">CAGR</span>
-            <span class="v mono">9.1%</span>
-            <span class="sub">annualized · excl. div</span>
+            <span class="v mono">+8.4%</span>
+            <span class="sub">annualized · on DCA schedule</span>
           </div>
+        </div>
+        <div class="result-head" style="grid-template-columns:repeat(3,1fr);margin-top:calc(-1 * var(--sp-5));border-top:none;">
           <div class="result-cell">
-            <span class="lbl">Div Received</span>
-            <span class="v mono">+142%</span>
-            <span class="sub">of initial capital</span>
+            <span class="lbl">Dividends Received</span>
+            <span class="v">฿ <span class="mono">342k</span></span>
+            <span class="sub">cumulative · reinvested</span>
           </div>
           <div class="result-cell">
             <span class="lbl">Max Drawdown</span>
-            <span class="v mono">−34%</span>
+            <span class="v mono">−28%</span>
             <span class="sub">Mar 2020 · COVID</span>
+          </div>
+          <div class="result-cell">
+            <span class="lbl">SET Benchmark (same DCA)</span>
+            <span class="v mono">+62%</span>
+            <span class="sub">฿1.36M → ฿2.20M · Δ +฿640k</span>
           </div>
         </div>
 
-        <div class="sim-chart-big"><canvas id="backtestChart"></canvas></div>
+        <div class="sim-chart-big" style="height:440px"><canvas id="backtestChart"></canvas></div>
 
-        <h3 style="font-family:var(--font-head);font-weight:700;font-size:var(--fs-md);margin-top:var(--sp-6);margin-bottom:var(--sp-3)">Dividend Received · Per Year</h3>
+        <p class="lede" style="margin-top:var(--sp-5);max-width:68ch;text-align:left;font-size:var(--fs-sm);border-top:1px solid var(--rule-hair);padding-top:var(--sp-4)">
+          <strong>Assumptions.</strong> Simulated monthly dollar-cost averaging of ฿10,000 from January 2015 through April 2026.
+          Dividends reinvested into portfolio at declaration date. SET benchmark applies the same ฿10,000/month DCA schedule
+          to SET index ETF (proxy). No transaction costs or tax modeled. Past performance does not predict future returns.
+        </p>
+
+        <h3 style="font-family:var(--font-head);font-weight:700;font-size:var(--fs-md);margin-top:var(--sp-6);margin-bottom:var(--sp-3)">Yearly Breakdown</h3>
         <table class="data-table">
-          <thead><tr><th>Year</th><th class="num">Div</th><th class="num">YoC</th><th>Year</th><th class="num">Div</th><th class="num">YoC</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th class="num">Invested YTD</th>
+              <th class="num">Port Value YTD</th>
+              <th class="num">Dividends YTD</th>
+              <th class="num">SET YTD</th>
+            </tr>
+          </thead>
           <tbody>
-            <tr><td class="sym">2010</td><td class="num">48,200</td><td class="num">4.8%</td><td class="sym">2018</td><td class="num">92,100</td><td class="num">9.2%</td></tr>
-            <tr><td class="sym">2011</td><td class="num">54,100</td><td class="num">5.4%</td><td class="sym">2019</td><td class="num">84,500</td><td class="num">8.4%</td></tr>
-            <tr><td class="sym">2012</td><td class="num">61,300</td><td class="num">6.1%</td><td class="sym">2020</td><td class="num">42,800</td><td class="num">4.3%</td></tr>
-            <tr><td class="sym">2013</td><td class="num">68,700</td><td class="num">6.9%</td><td class="sym">2021</td><td class="num">78,400</td><td class="num">7.8%</td></tr>
-            <tr><td class="sym">2014</td><td class="num">72,500</td><td class="num">7.2%</td><td class="sym">2022</td><td class="num">88,200</td><td class="num">8.8%</td></tr>
-            <tr><td class="sym">2015</td><td class="num">75,800</td><td class="num">7.6%</td><td class="sym">2023</td><td class="num">112,900</td><td class="num">11.3%</td></tr>
-            <tr><td class="sym">2016</td><td class="num">81,400</td><td class="num">8.1%</td><td class="sym">2024</td><td class="num">128,500</td><td class="num">12.9%</td></tr>
-            <tr><td class="sym">2017</td><td class="num">86,900</td><td class="num">8.7%</td><td class="sym">2025</td><td class="num">142,860</td><td class="num pos">14.3%</td></tr>
+            <tr><td class="sym">2015</td><td class="num">120,000</td><td class="num">128,400</td><td class="num">3,200</td><td class="num">118,600</td></tr>
+            <tr><td class="sym">2016</td><td class="num">240,000</td><td class="num">287,500</td><td class="num">11,400</td><td class="num">262,800</td></tr>
+            <tr><td class="sym">2017</td><td class="num">360,000</td><td class="num">451,800</td><td class="num">22,100</td><td class="num">411,200</td></tr>
+            <tr><td class="sym">2018</td><td class="num">480,000</td><td class="num">562,300</td><td class="num">34,800</td><td class="num">508,700</td></tr>
+            <tr><td class="sym">2019</td><td class="num">600,000</td><td class="num">728,900</td><td class="num">51,400</td><td class="num">650,100</td></tr>
+            <tr><td class="sym">2020</td><td class="num">720,000</td><td class="num">712,400</td><td class="num">64,200</td><td class="num">628,500</td></tr>
+            <tr><td class="sym">2021</td><td class="num">840,000</td><td class="num">1,034,800</td><td class="num">93,800</td><td class="num">886,200</td></tr>
+            <tr><td class="sym">2022</td><td class="num">960,000</td><td class="num">1,312,500</td><td class="num">132,600</td><td class="num">1,081,300</td></tr>
+            <tr><td class="sym">2023</td><td class="num">1,080,000</td><td class="num">1,684,200</td><td class="num">184,900</td><td class="num">1,324,700</td></tr>
+            <tr><td class="sym">2024</td><td class="num">1,200,000</td><td class="num">2,186,300</td><td class="num">248,100</td><td class="num">1,628,500</td></tr>
+            <tr><td class="sym">2025</td><td class="num">1,320,000</td><td class="num">2,684,000</td><td class="num">314,800</td><td class="num">2,034,700</td></tr>
+            <tr><td class="sym">2026 YTD</td><td class="num">1,360,000</td><td class="num pos">2,840,000</td><td class="num">342,000</td><td class="num">2,200,000</td></tr>
           </tbody>
         </table>
       </div>
@@ -530,43 +572,89 @@ new Chart(document.getElementById('multiChart'), {
   }
 });
 
-// Backtest line — starting 1M Jan 2010 to 4.18M today
-const years = Array.from({length:196}, (_,i) => i);  // 196 months = ~16.3y
-function simPath(seed) {
-  let v = 1e6; const out = [];
-  for (let i=0; i<196; i++) {
-    let r = 0.007 + 0.005*Math.sin(i/7 + seed);
-    if (i === 122 || i === 123) r = -0.17;  // 2020 covid
-    if (i === 130) r = 0.12;
-    v *= (1+r); out.push(v);
+// DCA Backtest · 3 lines: Cumulative Invested (gray solid) / Portfolio DCA Value (oxblood solid) / SET DCA (ink dashed)
+// Jan 2015 → Apr 2026 · 136 months · ฿10k/mo DCA
+const btMonths = 136;
+const monthly = 10000;
+const bt_invested = Array.from({length: btMonths}, (_,i) => monthly * (i+1));
+
+// Portfolio DCA path — cost basis grows linearly, market value oscillates + compounds
+// Seed the growth so end value ≈ ฿2.84M
+function dcaPath(baseGrowth, volSeed, crashStart, crashEnd) {
+  const out = [];
+  let shares = 0;      // synthetic shares
+  let price = 100;     // synthetic price/share
+  for (let i=0; i<btMonths; i++) {
+    // price trajectory — slow compound growth + cyclical + crash
+    let r = baseGrowth + 0.012 * Math.sin(i/8 + volSeed);
+    if (i >= crashStart && i <= crashEnd) r = -0.12;
+    if (i === crashEnd+2) r = 0.10;
+    price *= (1 + r);
+    // buy this month's ฿10k worth of shares at current price
+    shares += monthly / price;
+    out.push(shares * price);
   }
   return out;
 }
+
+const bt_portfolio = dcaPath(0.0082, 1.2, 61, 63);  // ends ~2.84M
+const bt_set       = dcaPath(0.0055, 2.4, 61, 63);  // ends ~2.20M
+
+const btLabels = Array.from({length: btMonths}, (_,i) => {
+  if (i % 12 === 0) return (2015 + Math.floor(i/12)).toString();
+  return '';
+});
+
 new Chart(document.getElementById('backtestChart'), {
   type: 'line',
   data: {
-    labels: years.map(i => i % 12 === 0 ? (2010 + Math.floor(i/12)).toString() : ''),
+    labels: btLabels,
     datasets: [
       {
-        label: 'Portfolio Value',
-        data: simPath(1),
-        borderColor: textInk,
-        backgroundColor: 'rgba(26,24,20,0.06)',
-        fill: true, tension: 0.25, pointRadius: 0, borderWidth: 2
+        label: 'Portfolio Value (DCA, div reinvested)',
+        data: bt_portfolio,
+        borderColor: accent,
+        backgroundColor: 'rgba(122,31,43,0.06)',
+        fill: true,
+        tension: 0.25,
+        pointRadius: 0,
+        borderWidth: 2.2,
+        order: 1
       },
       {
-        label: 'SET Index (benchmark)',
-        data: simPath(2).map(v => v*0.75),
-        borderColor: accent,
+        label: 'SET Benchmark (same DCA schedule)',
+        data: bt_set,
+        borderColor: textInk,
+        borderWidth: 1.4,
+        borderDash: [4, 4],
+        pointRadius: 0,
+        fill: false,
+        order: 2
+      },
+      {
+        label: 'Cumulative Invested (฿10k/month)',
+        data: bt_invested,
+        borderColor: 'rgba(106,100,89,0.7)',  // gray-500
         borderWidth: 1.5,
-        borderDash: [3,3],
-        pointRadius: 0, fill: false
+        pointRadius: 0,
+        fill: false,
+        order: 3
       }
     ]
   },
   options: {
     responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { labels: { font: { family: 'JetBrains Mono', size: 10 }, usePointStyle: true } } },
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { font: { family: 'JetBrains Mono', size: 10 }, usePointStyle: true, padding: 14, boxWidth: 24 }
+      },
+      tooltip: {
+        callbacks: {
+          label: ctx => ctx.dataset.label + ': ฿' + (ctx.parsed.y/1e6).toFixed(2) + 'M'
+        }
+      }
+    },
     scales: {
       x: { grid: { display: false }, border: { color: ruleHair }, ticks: { font: { size: 9 } } },
       y: { grid: { color: ruleHair }, border: { display: false }, ticks: { font: { size: 10 }, callback: v => '฿' + (v/1e6).toFixed(1) + 'M' } }
