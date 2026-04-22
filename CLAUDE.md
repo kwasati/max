@@ -1,4 +1,4 @@
-# Max Mahon v5 — Claude Instructions
+# Max Mahon v6 — Claude Instructions
 
 ## Architecture
 - **Agent:** Max Mahon — Thai stock analyst, Niwes Dividend-First style
@@ -53,25 +53,37 @@
 
 ### Server
 - **Port:** 50089
-- **URL:** https://max.intensivetrader.com
+- **URL:** https://max.intensivetrader.com (Cloudflare Tunnel → localhost:50089)
 - **Startup:** `max-server.bat` หรือ `py -m uvicorn server.app:app --port 50089`
 - **Auth:** `MAX_TOKEN` ใน `.env` (Bearer token สำหรับ API)
-- **Dashboard:** web/ → serve static ที่ `/`
-- **API:** `/api/watchlist`, `/api/screener`, `/api/stock/{symbol}`, `/api/stock/{symbol}/history`, `/api/scan/trigger`, `/api/history`, `/api/reports`, `/api/reports/scan`, `/api/request`, `/api/search` (POST), `/api/events` (SSE)
-- **Mobile:** `web/mobile.html` — แยก UI สำหรับมือถือ (mockup, ยังไม่ serve)
+- **Frontend:** `web/v6/` → served at `/` (desktop) + `/m` (mobile) — client-side device-detect redirect
+- **Public API:** `/api/screener`, `/api/screener/trend`, `/api/stock/{sym}/*`, `/api/watchlist`, `/api/watchlist/enriched`, `/api/watchlist/compare`, `/api/portfolio/pnl`, `/api/portfolio/simulated`, `/api/portfolio/transactions`, `/api/simulate/dca`, `/api/simulate/dca-portfolio`, `/api/simulate/portfolio-backtest`, `/api/settings`, `/api/user`, `/api/status`, `/api/history/v2`, `/api/search` (POST)
+- **Admin API:** `/api/admin/*` — scan trigger, SSE events, pipeline control, reports listing (same `MAX_TOKEN` auth)
+
+### Frontend Layout (v6)
+- `web/v6/desktop/{index,portfolio,watchlist}.html` — shells (portfolio + watchlist preload Chart.js)
+- `web/v6/mobile/{index,portfolio,watchlist}.html` — mobile shells
+- `web/v6/shared/{tokens,base,mobile}.css` — design tokens + global styles (served at `/static/v6/shared/`)
+- `web/v6/static/css/components.css` — page-level component extensions
+- `web/v6/static/js/{api,components,device,utils}.js` — shared client libs
+- `web/v6/static/js/pages/{home,report,watchlist,portfolio,simulator,settings}.js` — desktop page modules
+- `web/v6/static/js/pages/{home,report,watchlist,portfolio,simulator,settings}.mobile.js` — mobile page modules
+- Shell imports page module dynamically by pathname (`pages/{route}.js` or `pages/{route}.mobile.js`)
+- Device detect: touch UA → `/m`, desktop UA → `/` (one-time redirect on load, no infinite loop)
 
 ## Key Files
-- `user_data.json` — user preferences (watchlist, blacklist, notes, lists)
+- `user_data.json` — user preferences (watchlist, blacklist, notes, lists, transactions, simulated_portfolio)
+- `config.json` — server config (schedule + filters + universe) — edited via `/settings` UI
 - `scripts/data_adapter.py` — thaifin + yfinance adapter
 - `scripts/update_universe.py` — ดึง list หุ้นทั้ง SET/mai
 - `scripts/migrate_watchlist.py` — migration จาก watchlist.json เดิม
 - `scripts/fetch_data.py` — ดึง multi-year financials + dividends + compute yearly metrics + sanity check
 - `scripts/screen_stocks.py` — hard filters + quality score 100 + signal tags
 - `scripts/scan.py` — unified scan (screener + top picks) สร้าง scan_*.md report
-- `server/app.py` — FastAPI server (data API, pipeline control, scheduler, SSE, request analyze)
-- `web/index.html` — dashboard HTML
-- `web/style.css` — SET.or.th inspired theme
-- `web/app.js` — dashboard frontend (stock list, detail panel, pipeline controls)
+- `scripts/report_template.py` — markdown generator (deterministic, no LLM)
+- `scripts/telegram_alert.py` — exit signal alert
+- `server/app.py` — FastAPI server (public API, pipeline, scheduler, SSE)
+- `server/admin.py` — admin namespace router (legacy/debug endpoints)
 - `max-server.bat` — startup script
 - `reports/` — scan reports (scan_*.md)
 - `data/` — snapshots + screener results + history.json (gitignored)

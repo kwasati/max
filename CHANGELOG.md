@@ -1,5 +1,60 @@
 # Max Mahon Changelog
 
+## v6.0.0 — 2026-04-22 · Vintage Newspaper Frontend + Backend Cleanup
+
+**Major redesign** — Legacy SPA frontend (`web/`) ถอดออก แทนด้วย newspaper editorial theme แยก desktop + mobile ชัดเจน (cream paper + ink + oxblood accent). Backend ทำความสะอาด: legacy endpoints ย้ายไป admin namespace, monitor cluster archive, config schema ตรงกับ Niwes 5-5-5-5 ล้วน.
+
+### Breaking
+- Legacy SPA frontend (`web/app.js` / `index.html` / `style.css` / `mobile.html`) ถอดออก — แทนด้วย `web/v6/` vintage newspaper theme
+- Monitor cluster (`scripts/news_monitor.py`, `diff_monitor.py`, `alert_monitor.py`, `backtest_runner.py`) ถอดออก — ไม่ใช้แล้ว
+- `scripts/run_scan.py` ถอด — pipeline ฝังใน server แล้วทุกอย่าง (trigger ผ่าน `/api/admin/scan/trigger` + APScheduler)
+- Config schema ถอด legacy Buffett-era fields (`score_threshold`, `moat_mode` etc.) — เหลือ `schedule` + `filters` (Niwes 5-5-5-5) + `universe`
+- 3 endpoints removed: PUT `/api/user/lists/{name}`, DELETE `/api/user/lists/{name}`, GET `/api/exit_check/{sym}` (exit check merged into screener output)
+- 8 legacy admin/debug endpoints moved to `/api/admin/*` namespace (scan trigger, events, pipeline control, report listing, etc.)
+
+### New — Frontend (vintage newspaper theme)
+- `web/v6/desktop/*.html` + `web/v6/mobile/*.html` — separate shell files, not responsive overflow
+- `web/v6/shared/` — tokens.css / base.css / mobile.css (paper/ink/accent design tokens, Playfair Display + Lora + IBM Plex Serif Thai + JetBrains Mono fonts)
+- `web/v6/static/js/pages/*.js` — 12 page modules (home + report + watchlist + portfolio + simulator + settings × desktop + mobile)
+- 5 pages: Home (masthead + trend + top-3) · Full Report · Watchlist (+ compare up to 3) · Portfolio (real + simulated) · Simulator (3 tabs) · Settings
+- Simulator Tab 3 — Portfolio Backtest + TDEX benchmark overlay (3-line chart)
+- DCA simulator Tab 1 single stock + Tab 2 portfolio basket
+- Compare modal up to 3 stocks (side-by-side metrics)
+- Client-side device detect + redirect (`/static/v6/js/device.js`) — touch UA → `/m`, desktop UA → `/`
+
+### New — Backend (6 endpoints)
+- `GET /api/watchlist/enriched` — server-side join (positions + screener candidates + prices)
+- `GET /api/watchlist/compare?syms=A,B,C` — up to 3 symbols side-by-side
+- `GET /api/portfolio/simulated` + `PUT /api/portfolio/simulated` — simulated portfolio allocation CRUD
+- `POST /api/simulate/dca-portfolio` — basket DCA simulation
+- `POST /api/simulate/portfolio-backtest` — backtest with TDEX benchmark
+- `GET /api/screener/trend?weeks=12` — weekly screener count trend (new vs. carried vs. dropped)
+
+### Modified (additive fields, no breaking changes)
+- `GET /api/screener` — adds `score_delta` + `previous_score` + `score_streak_weeks` per candidate
+- `GET /api/stock/{sym}/exit-status` — adds `narrative` + `trigger_rules[]` + `entry_context`
+- `GET /api/portfolio/pnl` — adds `dividends_paid_total` + `yoc_pct` + `weight_pct` per position + `cash_reserve` in total
+- `GET /api/user` — passes `cash_reserve` + `simulated_portfolio`
+- `GET/POST /api/settings` — adds validation + `next_run_at` (from APScheduler) + `last_saved_at`
+- 4 more minor additive fields (see Plan 02 commits)
+
+### Admin namespace
+- `/api/admin/scan/trigger` · `/api/admin/events` · `/api/admin/pipeline/*` · `/api/admin/reports/*` · `/api/admin/auth`
+- Auth: same `MAX_TOKEN` Bearer, separate router mounted at `/api/admin`
+
+### Framework (unchanged from v5.0.0)
+- Niwes scoring version `niwes-dividend-first-v2` (already shipped in v5)
+- 3-tier PASS/REVIEW/FAIL bucketing
+- Exit baseline + structural risk score
+- 8 case study patterns in `data/case_study_patterns.json`
+
+### Deploy
+- Single FastAPI server on port 50089 (unchanged)
+- Cloudflare Tunnel routes `max.intensivetrader.com` → localhost:50089 (tunnel config server-side at CF dashboard)
+- APScheduler Saturday 09:00 cron (configurable in `/settings`)
+
+---
+
 ## v5.0.0 — 2026-04-21 · Niwes Algo Framework + Data Source Refactor
 
 **Major refactor** — Max เปลี่ยนจาก Claude-in-loop analyst เป็น pure deterministic algo framework. Scan pipeline ไม่พึ่ง LLM ทุกรอบ (reproducible, ถูก, audit ได้). Claude เหลือแค่ on-demand เมื่อกดขอ 'วิเคราะห์เพิ่มเติม' ใน UI.
