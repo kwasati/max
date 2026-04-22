@@ -3069,11 +3069,19 @@ def _render_shell(html_path: Path) -> HTMLResponse:
 
 @app.get("/mobile", response_class=HTMLResponse)
 @app.get("/m", response_class=HTMLResponse)
+@app.get("/m/watchlist", response_class=HTMLResponse)
+@app.get("/m/portfolio", response_class=HTMLResponse)
+@app.get("/m/simulator", response_class=HTMLResponse)
+@app.get("/m/settings", response_class=HTMLResponse)
 async def serve_mobile():
     return _render_shell(_V6_MOBILE)
 
 
 @app.get("/", response_class=HTMLResponse)
+@app.get("/watchlist", response_class=HTMLResponse)
+@app.get("/portfolio", response_class=HTMLResponse)
+@app.get("/simulator", response_class=HTMLResponse)
+@app.get("/settings", response_class=HTMLResponse)
 async def serve_index():
     return _render_shell(_V6_DESKTOP)
 
