@@ -1,7 +1,7 @@
 /* ==========================================================
    MAX MAHON v6 — Simulator (Desktop)
    Plan 07. Vanilla JS + Chart.js (global via shell).
-   Phases 1-2: Tab 1 DCA รายตัว + Tab 2 DCA ทั้งพอร์ต.
+   Phases 1-3: Tab 1 DCA รายตัว + Tab 2 DCA ทั้งพอร์ต + Tab 3 Portfolio Backtest.
    ========================================================== */
 
 export function mount(root) {
@@ -12,6 +12,7 @@ export function mount(root) {
 
   initSingleTab(root);
   initMultiTab(root);
+  initBacktestTab(root);
 
   loadScreenerSymbols(root);
 }
@@ -34,9 +35,7 @@ function renderShell() {
     '</div>' +
     '<div id="tab-single" class="tab-content active">' + renderSingleTabBody() + '</div>' +
     '<div id="tab-multi" class="tab-content">' + renderMultiTabBody() + '</div>' +
-    '<div id="tab-backtest" class="tab-content">' +
-      '<div class="sim-empty">Tab 3 — coming next commit</div>' +
-    '</div>' +
+    '<div id="tab-backtest" class="tab-content">' + renderBacktestTabBody() + '</div>' +
     '<div class="ornament"></div>'
   );
 }
@@ -427,6 +426,309 @@ function drawMultiChart(canvas, timeline) {
       ],
     },
     options: chartOpts(style),
+  });
+}
+
+/* --------------------------------------------------------------
+ * TAB 3 — Portfolio Backtest (CRITICAL per Karl)
+ * ------------------------------------------------------------ */
+
+function renderBacktestTabBody() {
+  var defaultPortfolio =
+    'BBL 20\n' +
+    'TCAP 15\n' +
+    'INTUCH 13\n' +
+    'QH 10\n' +
+    'ADVANC 10\n' +
+    'AOT 8\n' +
+    'PTT 8\n' +
+    'KBANK 7\n' +
+    'TOP 5\n' +
+    'Cash 4';
+
+  return (
+    '<div class="section-num" style="border-top:none;margin-top:0">' +
+      '<span class="no">05c · Portfolio Backtest</span>' +
+      '<span>DCA Simulation · Dividends Reinvested</span>' +
+    '</div>' +
+    '<h3 class="section-title" id="backtest-title" style="font-size:var(--fs-2xl)">ถ้า DCA ตั้งแต่ ' +
+      '<span style="font-style:italic;color:var(--accent)">มกราคม 2015</span> จนถึงวันนี้</h3>' +
+    '<p class="section-kicker" id="backtest-kicker">' +
+      'Portfolio Backtest · simulated monthly dollar-cost averaging · dividends reinvested.' +
+    '</p>' +
+    '<section class="sim-layout">' +
+      '<aside class="sim-inputs">' +
+        '<div class="input-group">' +
+          '<div class="input-label">Portfolio (Symbol + Weight%)</div>' +
+          '<textarea class="input-textarea" id="backtest-portfolio">' + defaultPortfolio + '</textarea>' +
+          '<div class="input-help">Symbol + weight% ต่อบรรทัด (เช่น "BBL 20")</div>' +
+        '</div>' +
+        '<div class="input-group">' +
+          '<div class="input-label">Start Date</div>' +
+          '<input class="input-text" id="backtest-start" value="2015-01-01" />' +
+          '<div class="input-help">รูปแบบ YYYY-MM-DD · default มกราคม 2015</div>' +
+        '</div>' +
+        '<div class="input-group">' +
+          '<div class="input-label">Monthly DCA Amount (฿)</div>' +
+          '<input class="input-number-big" id="backtest-amount" value="10000" />' +
+          '<div class="input-help">จำนวนที่ลงสม่ำเสมอทุกเดือน</div>' +
+        '</div>' +
+        '<div class="input-group">' +
+          '<div class="input-label">Dividend Reinvestment</div>' +
+          '<select class="input-sel" id="backtest-reinvest">' +
+            '<option value="true">Yes · reinvest</option>' +
+            '<option value="false">No · take cash</option>' +
+          '</select>' +
+        '</div>' +
+        '<button class="btn primary w-full" id="backtest-run" type="button">Run DCA Backtest</button>' +
+      '</aside>' +
+      '<div id="backtest-result">' +
+        '<div class="sim-empty">กรอกพอร์ต + start date แล้วกด Run DCA Backtest</div>' +
+      '</div>' +
+    '</section>'
+  );
+}
+
+function initBacktestTab(root) {
+  var btn = root.querySelector('#backtest-run');
+  if (!btn) return;
+  btn.addEventListener('click', function () { runBacktest(root); });
+}
+
+function parsePortfolioText(text) {
+  return String(text || '').split('\n').map(function (line) {
+    return line.trim();
+  }).filter(Boolean).map(function (line) {
+    var parts = line.split(/\s+/);
+    var symbol = parts[0];
+    var weight = parseFloat(parts[1]);
+    if (!symbol || isNaN(weight)) return null;
+    if (symbol.toLowerCase() === 'cash') return { symbol: 'Cash', weight_pct: weight };
+    var sym = symbol.toUpperCase();
+    if (!sym.endsWith('.BK') && sym !== 'CASH') sym = sym + '.BK';
+    return { symbol: sym, weight_pct: weight };
+  }).filter(Boolean);
+}
+
+async function runBacktest(root) {
+  var result = root.querySelector('#backtest-result');
+  if (!result) return;
+
+  var portfolioText = root.querySelector('#backtest-portfolio').value;
+  var positions = parsePortfolioText(portfolioText);
+  if (!positions.length) { MMComponents.showToast('กรุณาใส่พอร์ต', 'warn'); return; }
+
+  var sum = positions.reduce(function (a, p) { return a + p.weight_pct; }, 0);
+  if (Math.abs(sum - 100) > 0.01) {
+    MMComponents.showToast('Weights sum = ' + sum + '% · ต้องรวม 100%', 'warn');
+    return;
+  }
+
+  var startDateRaw = (root.querySelector('#backtest-start').value || '').trim();
+  var startDate = normalizeStartDate(startDateRaw);
+  if (!startDate) { MMComponents.showToast('Start date ต้องเป็น YYYY-MM-DD', 'warn'); return; }
+
+  var amount = parseFloat(root.querySelector('#backtest-amount').value) || 0;
+  var reinvest = root.querySelector('#backtest-reinvest').value === 'true';
+  if (amount <= 0) { MMComponents.showToast('Monthly amount must be > 0', 'warn'); return; }
+
+  MMComponents.renderLoading(result, 'Running portfolio backtest');
+
+  try {
+    var body = {
+      positions: positions,
+      start_date: startDate,
+      monthly_amount: amount,
+      reinvest_dividends: reinvest,
+      benchmark: 'SET',
+    };
+    var data = await MMApi.post('/api/simulate/portfolio-backtest', body);
+    updateBacktestTitle(root, data);
+    renderBacktestResult(result, data, amount);
+  } catch (e) {
+    MMComponents.renderError(result, (e && e.message) || 'Backtest failed', function () { runBacktest(root); });
+  }
+}
+
+function normalizeStartDate(s) {
+  if (!s) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  if (/^\d{4}-\d{2}$/.test(s)) return s + '-01';
+  var thaiMonths = {
+    'มกราคม': '01', 'กุมภาพันธ์': '02', 'มีนาคม': '03', 'เมษายน': '04',
+    'พฤษภาคม': '05', 'มิถุนายน': '06', 'กรกฎาคม': '07', 'สิงหาคม': '08',
+    'กันยายน': '09', 'ตุลาคม': '10', 'พฤศจิกายน': '11', 'ธันวาคม': '12',
+  };
+  var m = s.match(/([\u0E00-\u0E7F]+)\s+(\d{4})/);
+  if (m && thaiMonths[m[1]]) {
+    return m[2] + '-' + thaiMonths[m[1]] + '-01';
+  }
+  var dt = new Date(s);
+  if (!isNaN(dt.getTime())) {
+    var y = dt.getFullYear();
+    var mm = ('0' + (dt.getMonth() + 1)).slice(-2);
+    return y + '-' + mm + '-01';
+  }
+  return null;
+}
+
+function updateBacktestTitle(root, data) {
+  var title = root.querySelector('#backtest-title');
+  if (!title) return;
+  var sd = data.start_date || '';
+  var year = sd.slice(0, 4);
+  var monthIdx = parseInt(sd.slice(5, 7), 10) - 1;
+  var thaiMonths = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+                    'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+  var label = (thaiMonths[monthIdx] || '') + ' ' + year;
+  title.innerHTML = 'ถ้า DCA ตั้งแต่ <span style="font-style:italic;color:var(--accent)">' +
+    MMUtils.escapeHtml(label.trim()) + '</span> จนถึงวันนี้';
+
+  var kicker = root.querySelector('#backtest-kicker');
+  if (kicker) {
+    var months = data.duration_months || 0;
+    var years = Math.floor(months / 12);
+    var rem = months % 12;
+    kicker.textContent = 'Portfolio Backtest · simulated monthly dollar-cost averaging from ' +
+      (data.start_date || '') + ' through ' + (data.end_date || '') +
+      ' · ' + years + ' years ' + rem + ' months · dividends reinvested.';
+  }
+}
+
+function renderBacktestResult(host, data, amountMonthly) {
+  var timeline = data.timeline || [];
+  var yearly = data.yearly_breakdown || [];
+  var bench = data.benchmark || {};
+  var assump = data.assumptions || {};
+  var months = data.duration_months || 0;
+
+  host.innerHTML =
+    // Row 1: 4 cards (Invested / Value Today / Total Return / CAGR)
+    '<div class="result-head" style="grid-template-columns:repeat(4,1fr);">' +
+      cell('Total Invested', MMUtils.fmtCompact(data.total_invested), '฿' + MMUtils.fmtNum(amountMonthly, 0) + ' × ' + months + ' months', true) +
+      cell('Portfolio Value Today', MMUtils.fmtCompact(data.portfolio_value_today), 'dividends reinvested', true) +
+      cell('Total Return', (data.total_return_pct >= 0 ? '+' : '') + MMUtils.fmtNum(data.total_return_pct, 1) + '%', 'value / invested − 1', false, true) +
+      cell('CAGR', (data.cagr_pct >= 0 ? '+' : '') + MMUtils.fmtNum(data.cagr_pct, 1) + '%', 'annualized · on DCA schedule', false, true) +
+    '</div>' +
+    // Row 2: 3 cards (Dividends / Max DD / Benchmark)
+    '<div class="result-head" style="grid-template-columns:repeat(3,1fr);margin-top:calc(-1 * var(--sp-5));border-top:none;">' +
+      cell('Dividends Received', MMUtils.fmtCompact(data.dividends_received_total), 'cumulative · reinvested', true) +
+      cell('Max Drawdown', MMUtils.fmtNum(data.max_drawdown_pct, 1) + '%', (data.max_drawdown_date || '—'), false, true) +
+      cell('SET Benchmark (same DCA)',
+           (bench.return_pct >= 0 ? '+' : '') + MMUtils.fmtNum(bench.return_pct, 1) + '%',
+           '฿' + MMUtils.fmtCompact(data.total_invested) + ' → ฿' + MMUtils.fmtCompact(bench.ending_value) +
+           ' · Δ ' + ((bench.delta_vs_portfolio >= 0) ? '+' : '') + '฿' + MMUtils.fmtCompact(bench.delta_vs_portfolio),
+           false, true) +
+    '</div>' +
+    '<div class="sim-chart-big" style="height:440px"><canvas id="chart-backtest"></canvas></div>' +
+    '<p class="lede" style="margin-top:var(--sp-5);max-width:68ch;text-align:left;font-size:var(--fs-sm);border-top:1px solid var(--rule-hair);padding-top:var(--sp-4)">' +
+      '<strong>Assumptions.</strong> Simulated monthly dollar-cost averaging of ฿' + MMUtils.fmtNum(amountMonthly, 0) +
+      ' from ' + MMUtils.escapeHtml(data.start_date || '—') + ' through ' + MMUtils.escapeHtml(data.end_date || '—') +
+      '. Dividends reinvested at declaration date. Benchmark proxy: ' +
+      MMUtils.escapeHtml(assump.benchmark_proxy || 'TDEX / SET') + '.' +
+      ' Transaction costs ' + (assump.transaction_costs_modeled ? 'modeled' : 'not modeled') + '.' +
+      ' Tax ' + (assump.tax_modeled ? 'modeled' : 'not modeled') + '.' +
+      ' Cash return rate: ' + (assump.cash_return_rate_pct || 0) + '%.' +
+      ' Past performance does not predict future returns.' +
+    '</p>' +
+    '<h3 style="font-family:var(--font-head);font-weight:700;font-size:var(--fs-md);margin-top:var(--sp-6);margin-bottom:var(--sp-3)">Yearly Breakdown</h3>' +
+    renderYearlyTable(yearly);
+
+  drawBacktestChart(host.querySelector('#chart-backtest'), timeline);
+}
+
+function renderYearlyTable(yearly) {
+  if (!yearly.length) return '';
+  var rows = yearly.map(function (y) {
+    return (
+      '<tr>' +
+        '<td class="sym">' + y.year + '</td>' +
+        '<td class="num">' + MMUtils.fmtNum(y.invested_ytd, 0) + '</td>' +
+        '<td class="num">' + MMUtils.fmtNum(y.port_value_ytd, 0) + '</td>' +
+        '<td class="num">' + MMUtils.fmtNum(y.dividends_ytd, 0) + '</td>' +
+        '<td class="num">' + MMUtils.fmtNum(y.benchmark_ytd, 0) + '</td>' +
+      '</tr>'
+    );
+  }).join('');
+  return (
+    '<table class="data-table">' +
+      '<thead>' +
+        '<tr>' +
+          '<th>Year</th>' +
+          '<th class="num">Invested YTD</th>' +
+          '<th class="num">Port Value YTD</th>' +
+          '<th class="num">Dividends YTD</th>' +
+          '<th class="num">SET YTD</th>' +
+        '</tr>' +
+      '</thead>' +
+      '<tbody>' + rows + '</tbody>' +
+    '</table>'
+  );
+}
+
+function drawBacktestChart(canvas, timeline) {
+  if (!canvas || !window.Chart || !timeline.length) return;
+  var labels = timeline.map(function (t, i) {
+    return i % 12 === 0 ? formatMonthLabel(t.date) : '';
+  });
+  var portfolioVals = timeline.map(function (t) { return t.portfolio_value || 0; });
+  var benchVals = timeline.map(function (t) { return t.benchmark_value || 0; });
+  var investedVals = timeline.map(function (t) { return t.invested_cumulative || 0; });
+
+  var style = chartStyle();
+
+  new window.Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Portfolio Value (DCA, div reinvested)',
+          data: portfolioVals,
+          borderColor: 'rgba(122,31,43,1)',
+          backgroundColor: 'rgba(122,31,43,0.15)',
+          fill: true, tension: 0.25, pointRadius: 0, borderWidth: 2.2,
+          order: 1,
+        },
+        {
+          label: 'SET Benchmark (same DCA schedule)',
+          data: benchVals,
+          borderColor: 'rgba(26,24,20,1)',
+          borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0, fill: false,
+          order: 2,
+        },
+        {
+          label: 'Cumulative Invested',
+          data: investedVals,
+          borderColor: 'rgba(26,24,20,0.35)',
+          borderWidth: 1.5, pointRadius: 0, fill: false,
+          order: 3,
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { family: 'JetBrains Mono', size: 10 }, usePointStyle: true, padding: 14, boxWidth: 24 },
+        },
+        tooltip: {
+          callbacks: {
+            label: function (ctx) {
+              return ctx.dataset.label + ': ฿' + (ctx.parsed.y / 1e6).toFixed(2) + 'M';
+            },
+          },
+        },
+      },
+      scales: {
+        x: { grid: { display: false }, border: { color: style.ruleHair },
+             ticks: { font: { size: 9 }, maxRotation: 0 } },
+        y: { grid: { color: style.ruleHair }, border: { display: false },
+             ticks: { font: { size: 10 },
+                      callback: function (v) { return '฿' + (v / 1e6).toFixed(1) + 'M'; } } },
+      },
+    },
   });
 }
 
