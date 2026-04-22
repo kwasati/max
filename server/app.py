@@ -38,6 +38,7 @@ except ImportError:
     logging.warning("anthropic package not installed — /api/stock/{symbol}/analysis disabled")
 
 from server.console import count_request, start_refresh_loop
+from server.admin import router as admin_router, init_admin
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -455,19 +456,6 @@ def _normalize_stock(d: dict):
         d["score_breakdown"] = d["breakdown"]
 
 
-@app.get("/api/history")
-async def get_scan_history():
-    """Return list of all scans (newest first)."""
-    history_file = DATA_DIR / "history.json"
-    if not history_file.exists():
-        return {"scans": [], "total": 0}
-    data = read_json(history_file)
-    scans = data.get("scans", [])
-    # sort newest first by num desc
-    scans_sorted = sorted(scans, key=lambda s: s.get("num", 0), reverse=True)
-    return {"scans": scans_sorted, "total": len(scans_sorted)}
-
-
 @app.get("/api/stock/{symbol}/history")
 async def get_stock_history(symbol: str):
     """Aggregate score + signal changes across all screener files for a symbol.
@@ -659,96 +647,6 @@ def _fetch_one(sym: str):
     return fetch_multi_year(sym)
 
 
-@app.post("/api/request")
-async def request_analyze(body: RequestBody):
-    """Fetch & analyze specific stocks in background."""
-    _cleanup_request_status()
-
-    # Normalize symbols — auto-append .BK if missing
-    symbols = []
-    for s in body.symbols:
-        s = s.strip().upper()
-        if not s:
-            continue
-        if not s.endswith(".BK"):
-            s += ".BK"
-        symbols.append(s)
-
-    if not symbols:
-        raise HTTPException(400, "symbols list is empty")
-
-    now = datetime.now()
-    for s in symbols:
-        request_status[s] = "processing"
-        request_timestamps[s] = now
-
-    async def _run():
-        loop = asyncio.get_event_loop()
-        try:
-            results = []
-            for sym in symbols:
-                try:
-                    data = await loop.run_in_executor(None, _fetch_one, sym)
-                    results.append(data)
-                    request_status[sym] = "done"
-                    request_timestamps[sym] = datetime.now()
-                except Exception as e:
-                    results.append({"symbol": sym, "error": str(e)})
-                    request_status[sym] = "error"
-                    request_timestamps[sym] = datetime.now()
-
-            today = datetime.now().strftime("%Y-%m-%d")
-            joined = "_".join(s.replace(".BK", "") for s in symbols)
-            out_path = DATA_DIR / f"request_{today}_{joined}.json"
-            out_path.write_text(
-                json.dumps(
-                    {
-                        "date": today,
-                        "type": "request",
-                        "symbols": symbols,
-                        "stocks": results,
-                    },
-                    ensure_ascii=False,
-                    indent=2,
-                    default=str,
-                ),
-                encoding="utf-8",
-            )
-        except Exception as e:
-            for sym in symbols:
-                request_status[sym] = "error"
-                request_timestamps[sym] = datetime.now()
-            print(f"[request] error: {e}", file=sys.stderr)
-
-    asyncio.create_task(_run())
-    return {"status": "processing", "symbols": symbols}
-
-
-@app.get("/api/request/status")
-async def get_request_status():
-    """Get processing status for requested symbols."""
-    return request_status
-
-
-@app.get("/api/requests")
-async def list_requests():
-    """List request results with stock data."""
-    results = []
-    for f in sorted(DATA_DIR.glob("request_*.json"), reverse=True):
-        try:
-            data = read_json(f)
-            results.append({
-                "file": f.name,
-                "date": data.get("date"),
-                "symbols": data.get("symbols", []),
-                "stocks": data.get("stocks", []),
-                "count": len(data.get("stocks", [])),
-            })
-        except Exception:
-            pass
-    return {"requests": results}
-
-
 # ---------------------------------------------------------------------------
 # Pipeline Control API
 # ---------------------------------------------------------------------------
@@ -805,95 +703,22 @@ def _execute_sync(scripts: list[str], label: str = "pipeline"):
         pipeline_state["last_run"] = datetime.now().isoformat()
 
 
-@app.post("/api/scan/trigger")
-async def trigger_scan():
-    """Manual trigger unified scan pipeline."""
-    with _pipeline_lock:
-        if pipeline_state["running"]:
-            raise HTTPException(409, f"Pipeline already running: {pipeline_state['current_task']}")
-    scripts = _get_scripts_for_mode("scan")
-    threading.Thread(target=_execute_sync, args=(scripts, "manual scan"), daemon=True).start()
-    return {"status": "started", "mode": "scan", "scripts": scripts}
-
-
-@app.get("/api/events")
-async def sse_events(request: Request):
-    """SSE endpoint streaming pipeline status every 2 seconds."""
-    async def event_generator():
-        while True:
-            if await request.is_disconnected():
-                break
-            data = json.dumps({
-                "pipeline_running": pipeline_state["running"],
-                "current_task": pipeline_state["current_task"],
-                "last_run": pipeline_state["last_run"],
-                "last_result": pipeline_state["last_result"],
-            })
-            yield {"event": "status", "data": data, "retry": 10000}
-            await asyncio.sleep(5)
-
-    return EventSourceResponse(event_generator())
-
-
 # ---------------------------------------------------------------------------
-# Reports API
+# Admin router wiring — shares pipeline_state + helpers with main app
 # ---------------------------------------------------------------------------
-
-@app.get("/api/reports")
-async def list_reports():
-    """List report files (scan + ad-hoc requests)."""
-    scans = list_files(REPORTS_DIR, "scan_*.md")
-    requests = list_files(DATA_DIR, "request_*.json")
-    return {
-        "scans": scans,
-        "requests": requests,
-    }
-
-
-@app.get("/api/reports/scan")
-async def get_scan_report(num: Optional[int] = None):
-    """Return rendered HTML of a scan report. num=latest if not provided."""
-    history_file = DATA_DIR / "history.json"
-    if not history_file.exists():
-        raise HTTPException(404, "No scan history")
-    history = read_json(history_file)
-    scans = history.get("scans", [])
-    if not scans:
-        raise HTTPException(404, "No scans found")
-    if num is None:
-        entry = max(scans, key=lambda s: s.get("num", 0))
-    else:
-        entry = next((s for s in scans if s.get("num") == num), None)
-    if not entry:
-        raise HTTPException(404, f"Scan #{num} not found")
-    report_name = entry.get("report", "")
-    if not report_name:
-        raise HTTPException(404, "Scan entry missing report filename")
-    report_path = REPORTS_DIR / report_name
-    # path safety — must stay under REPORTS_DIR
-    try:
-        if not report_path.resolve().is_relative_to(REPORTS_DIR.resolve()):
-            raise HTTPException(400, "Invalid report path")
-    except AttributeError:
-        # Python <3.9 fallback
-        if REPORTS_DIR.resolve() not in report_path.resolve().parents:
-            raise HTTPException(400, "Invalid report path")
-    if not report_path.exists():
-        raise HTTPException(404, f"Report file {report_name} missing")
-    md_text = report_path.read_text(encoding="utf-8")
-    # strip YAML frontmatter if present
-    if md_text.startswith("---"):
-        end = md_text.find("---", 3)
-        if end != -1:
-            md_text = md_text[end + 3:].lstrip()
-    html = markdown.markdown(md_text, extensions=["tables", "fenced_code"])
-    return {
-        "num": entry.get("num"),
-        "date": entry.get("date"),
-        "counts": entry.get("counts", {}),
-        "summary": entry.get("summary", ""),
-        "html": html,
-    }
+init_admin(
+    data_dir=DATA_DIR,
+    reports_dir=REPORTS_DIR,
+    project_dir=PROJECT_DIR,
+    pipeline_state=pipeline_state,
+    pipeline_lock=_pipeline_lock,
+    request_status=request_status,
+    request_timestamps=request_timestamps,
+    execute_sync=_execute_sync,
+    get_scripts_for_mode=_get_scripts_for_mode,
+    fetch_one=_fetch_one,
+)
+app.include_router(admin_router)
 
 
 # ---------------------------------------------------------------------------
