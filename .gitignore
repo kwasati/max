@@ -5,3 +5,4 @@ data/
 !data/hidden_value_holdings.json
 data/analysis_cache/
 data/price_history/
+_archive/

@@ -3,7 +3,6 @@
 import json
 import logging
 import sys
-import time
 from datetime import datetime
 from pathlib import Path
 
@@ -12,11 +11,10 @@ logger = logging.getLogger(__name__)
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 UNIVERSE = DATA_DIR / "set_universe.json"
-WATCHLIST = ROOT / "watchlist.json"
 USER_DATA = ROOT / "user_data.json"
 
 sys.path.insert(0, str(ROOT / "scripts"))
-from fetch_data import fetch_multi_year, fetch_multi_year_safe, normalize_yield, FINANCIAL_SECTORS
+from fetch_data import fetch_multi_year, fetch_multi_year_safe
 from data_adapter import (
     compute_normalized_earnings,
     compute_payout_sustainability,
@@ -621,15 +619,10 @@ def quality_score(data: dict) -> dict:
 def main():
     universe = json.loads(UNIVERSE.read_text(encoding="utf-8"))
 
-    # Read user data (new format) or fallback to old watchlist.json
-    if USER_DATA.exists():
-        user_data = json.loads(USER_DATA.read_text(encoding="utf-8"))
-        watched = set(user_data.get("watchlist", []))
-        blacklisted = set(user_data.get("blacklist", []))
-    else:
-        watchlist = json.loads(WATCHLIST.read_text(encoding="utf-8"))
-        watched = {s["symbol"] for s in watchlist["stocks"]}
-        blacklisted = set()
+    # Read user data
+    user_data = json.loads(USER_DATA.read_text(encoding="utf-8"))
+    watched = set(user_data.get("watchlist", []))
+    blacklisted = set(user_data.get("blacklist", []))
 
     symbols = universe["symbols"]
     print(f"Max Mahon v5 screening {len(symbols)} stocks (Niwes 5-5-5-5)...")

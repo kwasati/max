@@ -68,7 +68,6 @@
 - `scripts/fetch_data.py` — ดึง multi-year financials + dividends + compute yearly metrics + sanity check
 - `scripts/screen_stocks.py` — hard filters + quality score 100 + signal tags
 - `scripts/scan.py` — unified scan (screener + top picks) สร้าง scan_*.md report
-- `scripts/run_scan.py` — pipeline runner (fetch + universe + screen + scan)
 - `server/app.py` — FastAPI server (data API, pipeline control, scheduler, SSE, request analyze)
 - `web/index.html` — dashboard HTML
 - `web/style.css` — SET.or.th inspired theme

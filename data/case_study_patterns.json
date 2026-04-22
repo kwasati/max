@@ -62,20 +62,6 @@
     "disabled": true,
     "disabled_reason": "data_adapter ยังไม่รองรับ VN data — enable หลังเพิ่ม VN data source"
   },
-  "ENERGY_CYCLICAL_EXIT": {
-    "tag": "ENERGY_CYCLICAL_EXIT",
-    "source": "docs/niwes/09-case-or.md",
-    "rules": {
-      "sector_keywords": [
-        "energy",
-        "petroleum",
-        "oil"
-      ],
-      "structural_disruption": true
-    },
-    "anti_rules": true,
-    "narrative": "Energy/petroleum กำลังถูก disrupt (EV) — ทบทวน thesis (แบบ OR)"
-  },
   "UTILITY_DEFENSIVE": {
     "tag": "UTILITY_DEFENSIVE",
     "source": "docs/niwes/03-philosophy.md",

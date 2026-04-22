@@ -7,7 +7,6 @@ Supplement: yfinance always used for realtime price, 52w range, forward PE, etc.
 
 import json
 import logging
-import math
 import sys
 import time
 from datetime import datetime
@@ -27,7 +26,6 @@ from scripts.data_adapter import fetch_fundamentals as _adapter_fetch
 from scripts.data_adapter import fetch_from_thaifin, fetch_yfinance_supplement
 
 ROOT = Path(__file__).resolve().parent.parent
-WATCHLIST = ROOT / "watchlist.json"
 USER_DATA = ROOT / "user_data.json"
 DATA_DIR = ROOT / "data"
 
@@ -461,13 +459,8 @@ def fetch_multi_year_safe(symbol: str) -> dict:
 
 def main():
     # Read from user_data.json (new format)
-    if USER_DATA.exists():
-        user_data = json.loads(USER_DATA.read_text(encoding="utf-8"))
-        symbols = user_data.get("watchlist", [])
-    else:
-        # Fallback to old watchlist.json
-        watchlist = json.loads(WATCHLIST.read_text(encoding="utf-8"))
-        symbols = [s["symbol"] for s in watchlist["stocks"]]
+    user_data = json.loads(USER_DATA.read_text(encoding="utf-8"))
+    symbols = user_data.get("watchlist", [])
 
     print(f"Max Mahon v4 fetching {len(symbols)} stocks (multi-year)...")
     results = []
