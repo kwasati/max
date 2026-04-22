@@ -2662,6 +2662,109 @@ async def simulate_dca_portfolio(req: DcaPortfolioRequest):
     }
 
 
+@app.get("/api/watchlist/enriched")
+async def watchlist_enriched():
+    """Join watchlist × screener × exit_baselines × notes in one call.
+    Avoids client-side N+1 fetches (one per symbol).
+    """
+    user_data = load_user_data()
+    watchlist = user_data.get("watchlist") or []
+    notes = user_data.get("notes") or {}
+
+    baselines_file = DATA_DIR / "exit_baselines.json"
+    baselines = (
+        json.loads(baselines_file.read_text(encoding="utf-8"))
+        if baselines_file.exists()
+        else {}
+    )
+
+    try:
+        screener = _latest_screener_file()
+    except HTTPException:
+        screener = {"candidates": [], "review_candidates": [], "filtered_out_stocks": []}
+
+    all_entries = (
+        (screener.get("candidates") or [])
+        + (screener.get("review_candidates") or [])
+        + (screener.get("filtered_out_stocks") or [])
+    )
+    by_sym = {
+        e.get("symbol"): e for e in all_entries if e.get("symbol")
+    }
+
+    positions: list[dict] = []
+    hold_count = 0
+    review_count = 0
+    consider_exit_count = 0
+    delta_vals: list[int] = []
+    oldest_days = 0
+
+    for sym in watchlist:
+        entry = by_sym.get(sym) or {}
+        name = entry.get("name") or sym
+        if "_" in name:
+            parts = name.split("_", 1)
+            name = parts[1] if len(parts) > 1 else name
+        current_score = entry.get("score")
+        baseline = baselines.get(sym) or {}
+        entry_score = baseline.get("entry_score")
+        entry_date = baseline.get("date_added")
+        delta_entry = None
+        days_held = None
+        if current_score is not None and entry_score is not None:
+            delta_entry = current_score - entry_score
+            delta_vals.append(delta_entry)
+        if entry_date:
+            try:
+                d = datetime.strptime(entry_date, "%Y-%m-%d")
+                days_held = (datetime.now() - d).days
+                if days_held > oldest_days:
+                    oldest_days = days_held
+            except ValueError:
+                days_held = None
+        # Exit signal
+        triggers = entry.get("exit_triggers") or []
+        sev_high = sum(1 for t in triggers if t.get("severity") == "high")
+        sev_med = sum(1 for t in triggers if t.get("severity") == "medium")
+        if sev_high > 0:
+            exit_signal = "CONSIDER_EXIT"
+            consider_exit_count += 1
+        elif sev_med > 0:
+            exit_signal = "REVIEW"
+            review_count += 1
+        else:
+            exit_signal = "HOLD"
+            hold_count += 1
+
+        positions.append({
+            "symbol": sym,
+            "name": name,
+            "current_score": current_score,
+            "entry_score": entry_score,
+            "delta_entry": delta_entry,
+            "entry_date": entry_date,
+            "days_held": days_held,
+            "exit_signal": exit_signal,
+            "note": notes.get(sym, ""),
+        })
+
+    avg_delta = (
+        round(sum(delta_vals) / len(delta_vals), 1) if delta_vals else 0
+    )
+
+    return {
+        "summary": {
+            "tracked": len(watchlist),
+            "hold": hold_count,
+            "review": review_count,
+            "consider_exit": consider_exit_count,
+            "avg_delta_entry": avg_delta,
+            "oldest_position_days": oldest_days,
+        },
+        "positions": positions,
+    }
+
+
 class PortfolioBacktestRequest(BaseModel):
     positions: list[dict]
     start_date: str
