@@ -2171,13 +2171,18 @@ async def trigger_analysis(symbol: str):
         None,
         lambda: _anthropic_client.messages.create(
             model="claude-opus-4-7",
-            max_tokens=2000,
+            max_tokens=4000,
             messages=[{"role": "user", "content": prompt}],
-            timeout=60.0,
+            timeout=90.0,
         ),
     )
     raw = response.content[0].text.strip()
     parsed = parse_analysis_response(raw)
+    if not any(parsed.values()):
+        logging.warning(
+            "analyze %s: parse produced all empty keys (raw_len=%d, stop_reason=%s) — likely truncated or format mismatch",
+            symbol, len(raw), response.stop_reason
+        )
     payload = {
         "analyzed_at": datetime.now().isoformat(timespec="seconds"),
         "model": "claude-opus-4-7",
