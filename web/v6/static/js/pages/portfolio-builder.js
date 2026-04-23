@@ -105,9 +105,10 @@ function _bindForm(root) {
   });
   // Delegate chip remove
   root.addEventListener('click', function (e) {
-    const x = e.target.closest('.mm-pb-chip .x');
+    const x = e.target.closest('.x');
     if (!x) return;
     const chip = x.closest('.mm-pb-chip');
+    if (!chip) return;
     const kind = chip.getAttribute('data-kind');
     const sym = chip.getAttribute('data-sym');
     if (kind === 'pin') {
