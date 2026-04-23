@@ -35,6 +35,25 @@ def group_by_sector(stocks: list) -> dict:
     return dict(groups)
 
 
+DEFAULT_WEIGHTS = [40, 35, 12, 8, 5]  # 80/20 Niwes pattern
+
+
+def allocate_80_20(picks: list) -> list:
+    """Assign weights from DEFAULT_WEIGHTS pattern to picks sorted by composite.
+    If fewer than 5 picks, rescale proportional to sum 100.
+    """
+    picks = picks[:5]
+    n = len(picks)
+    if n == 0:
+        return []
+    base = DEFAULT_WEIGHTS[:n]
+    total = sum(base)
+    weights = [round(w / total * 100, 1) for w in base]
+    for s, w in zip(picks, weights):
+        s["weight_pct"] = w
+    return picks
+
+
 def top_per_sector(grouped: dict) -> list:
     """Pick top-1 per sector by niwes_composite_score, sort desc by composite."""
     picks = []
