@@ -919,7 +919,7 @@ async def dca_simulate(
     forward_years: projection period
     price_growth/div_growth: override auto-detected rates (as decimal, e.g. 0.08 = 8%)
     """
-    import yfinance as yf
+    from yahooquery import Ticker as YQTicker
     import pandas as pd
     from datetime import date, timedelta
     import math
@@ -928,7 +928,7 @@ async def dca_simulate(
     ticker_symbol = ticker_symbol.upper()
 
     try:
-        ticker = yf.Ticker(ticker_symbol)
+        ticker = YQTicker(ticker_symbol)
     except Exception as e:
         raise HTTPException(400, f"Cannot fetch ticker: {e}")
 
@@ -943,16 +943,35 @@ async def dca_simulate(
 
     # Fetch historical price data (max available)
     try:
-        hist = ticker.history(period="max", auto_adjust=True)
+        hist = ticker.history(period="max", adj_ohlc=True)
     except Exception as e:
         raise HTTPException(500, f"Failed to fetch history: {e}")
 
-    if hist.empty:
+    if not hasattr(hist, 'shape') or hist.empty:
         raise HTTPException(404, f"No price history for {ticker_symbol}")
+
+    # yahooquery returns multi-index (symbol, date) — flatten to DatetimeIndex
+    if hasattr(hist.index, 'get_level_values') and ticker_symbol in hist.index.get_level_values(0):
+        hist = hist.xs(ticker_symbol, level=0)
+    # Normalize column names to Title-case so downstream "Close" access works
+    hist = hist.rename(columns={"close": "Close", "open": "Open", "high": "High", "low": "Low", "volume": "Volume"})
+    if "Close" not in hist.columns:
+        raise HTTPException(500, f"Unexpected history schema — missing Close column (got {list(hist.columns)})")
+    # Ensure DatetimeIndex
+    if not isinstance(hist.index, pd.DatetimeIndex):
+        hist.index = pd.to_datetime(hist.index)
 
     # Fetch dividends
     try:
-        dividends = ticker.dividends
+        divs_df = ticker.dividend_history(start="2000-01-01")
+        if hasattr(divs_df, 'shape') and not divs_df.empty:
+            if hasattr(divs_df.index, 'get_level_values') and ticker_symbol in divs_df.index.get_level_values(0):
+                divs_df = divs_df.xs(ticker_symbol, level=0)
+            dividends = divs_df['dividends'] if 'dividends' in divs_df.columns else divs_df.iloc[:, 0]
+            if not isinstance(dividends.index, pd.DatetimeIndex):
+                dividends.index = pd.to_datetime(dividends.index)
+        else:
+            dividends = None
     except Exception:
         dividends = None
 
@@ -1118,7 +1137,11 @@ async def dca_simulate(
     # Get current dividend yield
     info = {}
     try:
-        info = ticker.info or {}
+        sd = ticker.summary_detail
+        if isinstance(sd, dict):
+            info = sd.get(ticker_symbol) or {}
+            if not isinstance(info, dict):
+                info = {}
     except Exception:
         pass
     current_div_yield = info.get("dividendYield") or info.get("trailingAnnualDividendYield") or 0
