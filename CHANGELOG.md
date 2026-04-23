@@ -1,6 +1,6 @@
 # Max Mahon Changelog
 
-## v5.1.0 — 2026-04-23 · Data Source Refactor — thaifin Hard-Primary + yahooquery Supplement
+## v6.1.0 — 2026-04-23 · Data Source Refactor — thaifin Hard-Primary + yahooquery Supplement
 
 **Refactor ชั้น data layer** — thaifin เป็น single source of truth สำหรับทุกอย่างที่มันมี (fundamentals 10-16 ปี, sector SET official taxonomy, ev_per_ebit_da, cash, roa, yoy growth ครบ) — swap yfinance → yahooquery เฉพาะจุดที่ thaifin ไม่มี (realtime price, raw DPS events, capex/interest_expense per year)
 
