@@ -359,54 +359,126 @@ def _fetch_thaifin(symbol: str) -> dict | None:
         return None
 
 
-def _fetch_yfinance_supplement(symbol: str) -> dict:
-    """Fetch supplementary data from yfinance (price, 52w, forward PE, etc.).
+def _fetch_yahoo_supplement(symbol: str) -> dict:
+    """Fetch supplementary data from yahooquery (price, 52w, forward PE, etc.).
 
     Also fetches: dividends history (DPS by year), capex, operating income,
     interest expense — used to supplement thaifin data.
     """
     try:
-        import yfinance as yf
-        yf_sym = _to_yf_symbol(symbol)
-        tk = yf.Ticker(yf_sym)
-        info = tk.info or {}
+        from yahooquery import Ticker
+        yq_sym = _to_yf_symbol(symbol)
+        tk = Ticker(yq_sym)
 
-        if len(info) < 5:
-            return {"info": info, "divs": None, "error": f"near-empty info ({len(info)} keys)"}
+        # Build info dict from multiple yahooquery endpoints — maintain yfinance-style keys
+        sd = tk.summary_detail.get(yq_sym, {}) if isinstance(tk.summary_detail, dict) else {}
+        px = tk.price.get(yq_sym, {}) if isinstance(tk.price, dict) else {}
+        ks = tk.key_stats.get(yq_sym, {}) if isinstance(tk.key_stats, dict) else {}
+        fd = tk.financial_data.get(yq_sym, {}) if isinstance(tk.financial_data, dict) else {}
 
-        divs = tk.dividends
-        recent_divs = divs.tail(8).tolist() if divs is not None and len(divs) > 0 else []
+        # yahooquery returns strings like "Quote not found" when symbol fails — normalize to dict
+        if not isinstance(sd, dict):
+            sd = {}
+        if not isinstance(px, dict):
+            px = {}
+        if not isinstance(ks, dict):
+            ks = {}
+        if not isinstance(fd, dict):
+            fd = {}
 
-        # DPS by year from dividends history
+        info = {
+            "currentPrice": px.get("regularMarketPrice") or fd.get("currentPrice"),
+            "regularMarketPrice": px.get("regularMarketPrice"),
+            "marketCap": sd.get("marketCap") or px.get("marketCap"),
+            "trailingPE": sd.get("trailingPE"),
+            "forwardPE": sd.get("forwardPE") or ks.get("forwardPE"),
+            "priceToBook": ks.get("priceToBook"),
+            "dividendRate": sd.get("dividendRate"),
+            "trailingAnnualDividendRate": sd.get("trailingAnnualDividendRate"),
+            "payoutRatio": sd.get("payoutRatio"),
+            "fiveYearAvgDividendYield": sd.get("fiveYearAvgDividendYield"),
+            "fiftyTwoWeekHigh": sd.get("fiftyTwoWeekHigh"),
+            "fiftyTwoWeekLow": sd.get("fiftyTwoWeekLow"),
+            "fiftyDayAverage": sd.get("fiftyDayAverage"),
+            "twoHundredDayAverage": sd.get("twoHundredDayAverage"),
+            "freeCashflow": ks.get("freeCashflow") or fd.get("freeCashflow"),
+            "operatingCashflow": fd.get("operatingCashflow"),
+            "trailingEps": ks.get("trailingEps"),
+            "forwardEps": ks.get("forwardEps"),
+            "dividendYield": sd.get("dividendYield"),
+            "revenueGrowth": fd.get("revenueGrowth"),
+            "earningsGrowth": fd.get("earningsGrowth"),
+            "profitMargins": fd.get("profitMargins"),
+            "grossMargins": fd.get("grossMargins"),
+            "operatingMargins": fd.get("operatingMargins"),
+            "returnOnEquity": fd.get("returnOnEquity"),
+            "returnOnAssets": fd.get("returnOnAssets"),
+            "debtToEquity": fd.get("debtToEquity"),
+            "currentRatio": fd.get("currentRatio"),
+            "totalRevenue": fd.get("totalRevenue"),
+            "shortName": px.get("shortName"),
+            "currency": px.get("currency"),
+        }
+
+        if info.get("currentPrice") is None:
+            return {"info": info, "divs": None, "error": "near-empty info (no price)"}
+
+        # Dividends — yahooquery dividend_history returns DataFrame
+        divs = None
+        recent_divs = []
         dps_by_year = {}
-        if divs is not None and len(divs) > 0:
-            for idx, val in divs.items():
-                y = idx.year
-                dps_by_year[y] = dps_by_year.get(y, 0) + round(float(val), 4)
+        try:
+            divs_df = tk.dividend_history(start="2000-01-01")
+            if hasattr(divs_df, 'shape') and not divs_df.empty:
+                # Multi-index (symbol, date) — flatten to date index
+                if hasattr(divs_df.index, 'get_level_values'):
+                    levels = divs_df.index.get_level_values(0)
+                    if yq_sym in levels:
+                        divs_df = divs_df.xs(yq_sym, level=0)
+                # Extract dividends column (named or first col)
+                if 'dividends' in divs_df.columns:
+                    divs = divs_df['dividends']
+                else:
+                    divs = divs_df.iloc[:, 0]
+                recent_divs = divs.tail(8).tolist() if len(divs) > 0 else []
+                for idx, val in divs.items():
+                    try:
+                        y = idx.year if hasattr(idx, 'year') else int(str(idx)[:4])
+                        dps_by_year[y] = dps_by_year.get(y, 0) + round(float(val), 4)
+                    except (ValueError, TypeError):
+                        continue
+        except Exception:
+            pass
 
-        # Capex, operating income, interest expense from statements
+        # Capex + Operating Income + Interest Expense — annual cash_flow + income_statement
         capex_by_year = {}
         operating_income_by_year = {}
         interest_expense_by_year = {}
 
         try:
-            cf = tk.cashflow
-            if cf is not None and not cf.empty and "Capital Expenditure" in cf.index:
-                for col in cf.columns:
-                    y = col.year if hasattr(col, "year") else col.date().year
-                    val = _safe(cf.loc["Capital Expenditure", col])
+            cf = tk.cash_flow(frequency='a')
+            if hasattr(cf, 'shape') and not cf.empty and 'CapitalExpenditure' in cf.columns:
+                for _, row in cf.iterrows():
+                    as_of = row.get('asOfDate')
+                    if as_of is None:
+                        continue
+                    y = as_of.year if hasattr(as_of, 'year') else int(str(as_of)[:4])
+                    val = _safe(row.get('CapitalExpenditure'))
                     if val is not None:
                         capex_by_year[y] = val  # negative = spending
         except Exception:
             pass
 
         try:
-            inc = tk.income_stmt
-            if inc is not None and not inc.empty:
-                for col in inc.columns:
-                    y = col.year if hasattr(col, "year") else col.date().year
-                    oi = _safe(inc.loc["Operating Income", col]) if "Operating Income" in inc.index else None
-                    ie = _safe(inc.loc["Interest Expense", col]) if "Interest Expense" in inc.index else None
+            inc = tk.income_statement(frequency='a')
+            if hasattr(inc, 'shape') and not inc.empty:
+                for _, row in inc.iterrows():
+                    as_of = row.get('asOfDate')
+                    if as_of is None:
+                        continue
+                    y = as_of.year if hasattr(as_of, 'year') else int(str(as_of)[:4])
+                    oi = _safe(row.get('OperatingIncome'))
+                    ie = _safe(row.get('InterestExpense'))
                     if oi is not None:
                         operating_income_by_year[y] = oi
                     if ie is not None:
@@ -425,7 +497,7 @@ def _fetch_yfinance_supplement(symbol: str) -> dict:
         }
 
     except Exception as e:
-        logger.warning("yfinance failed for %s: %s", symbol, e)
+        logger.warning("yahooquery failed for %s: %s", symbol, e)
         return {"info": {}, "divs": None, "recent_dividends": [],
                 "dps_by_year": {}, "capex_by_year": {},
                 "operating_income_by_year": {}, "interest_expense_by_year": {}}
@@ -433,11 +505,13 @@ def _fetch_yfinance_supplement(symbol: str) -> dict:
 
 # Public API aliases
 fetch_from_thaifin = _fetch_thaifin
-fetch_yfinance_supplement = _fetch_yfinance_supplement
+fetch_yahoo_supplement = _fetch_yahoo_supplement
+# Deprecated alias — kept for backward compat with fetch_data.py (removed in Phase 4)
+fetch_yfinance_supplement = _fetch_yahoo_supplement
 
 
 def fetch_fundamentals(symbol: str) -> dict:
-    """Fetch fundamentals using thaifin (primary) + yfinance (supplement).
+    """Fetch fundamentals using thaifin (primary) + yahooquery (supplement).
 
     Returns schema identical to fetch_multi_year() output.
     Falls back to yfinance entirely if thaifin fails.
@@ -447,8 +521,8 @@ def fetch_fundamentals(symbol: str) -> dict:
     # 1. Try thaifin for historical data
     tf_data = _fetch_thaifin(symbol)
 
-    # 2. Always get yfinance supplement for realtime data
-    yf_supp = _fetch_yfinance_supplement(symbol)
+    # 2. Always get yahooquery supplement for realtime data
+    yf_supp = _fetch_yahoo_supplement(symbol)
     yf_info = yf_supp.get("info", {})
 
     # If yfinance also has near-empty info, check thaifin
