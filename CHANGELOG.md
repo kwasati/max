@@ -1,5 +1,69 @@
 # Max Mahon Changelog
 
+## v6.2.0 — 2026-04-23 · Portfolio Builder + UI Modernize (Robinhood Sage) + Stock Detail Polish
+
+**Mega-release วันเดียวจบ ~55 tasks** — feature ใหม่ 'จัดพอร์ตสไตล์แมกซ์' + retire vintage newspaper UI แทนด้วย Robinhood muted sage palette + Claude Opus prompt rewrite + daily price refresh scheduler + UI polish (Δ score + inline analysis + price as-of)
+
+### New — Feature 'จัดพอร์ตสไตล์แมกซ์' (Niwes portfolio builder)
+- `scripts/portfolio_builder.py` — pure functions: `niwes_composite_score()` + `group_by_sector()` + `top_per_sector()` + `allocate_80_20()` + `apply_overrides()` + `build_portfolio()`
+- `POST /api/portfolio/builder` — รับ `capital` + `pins` + `excludes` → return 5-stock portfolio (5 SET sectors, 80/20 weighted 40/35/12/8/5)
+- New page `/portfolio-builder` + `/m/portfolio-builder` — desktop + mobile
+- UI ตาม approved mockups: `mockup/portfolio-builder-robinhood.html` (mobile) + `portfolio-builder-robinhood-desktop.html`
+
+### New — Daily Price Refresh Scheduler
+- `scripts/daily_price_refresh.py` — batch yahooquery fetch สำหรับ watchlist + PASS candidates
+- APScheduler cron 19:00 Asia/Bangkok (หลังตลาดปิด 17:00 + 2h buffer)
+- Writes `data/price_cache/{sym}.json` with `price` + `fetched_at` ISO timestamp
+- Admin endpoint `POST /api/admin/price-refresh/trigger` สำหรับ manual trigger
+
+### Changed — UI redesign (retire vintage newspaper)
+- **Typography swap:** Playfair Display + Lora (serif editorial) → **Inter** (sans-serif modern) ทั้งระบบ
+- **Masthead chrome removed:** 'VOL. VI · NO. 17 / THURSDAY · APRIL 23 / The Dividend Review / BUILDER EDITION' → modern app header (logo mark + brand + nav tabs + settings icon)
+- **Section kickers ทิ้ง:** '№ XX · PAGE NAME' + display headings ขนาด 5.2rem editorial
+- **Color system:** Robinhood muted sage — 2-layer tokens (primitive sage/rose/wheat/lavender/slate-blue + semantic bg/fg/border/accent/rank/shadow) — proper light + dark mode support
+- **Mobile bottom-nav:** 5 tabs (Home/Screen/Portfolio/จัดพอร์ต/Settings)
+- Redesign 6 pages (home/report/watchlist/portfolio/simulator/settings) desktop + mobile
+
+### Changed — Claude Opus analysis prompt (Niwes + Pillar-1 context)
+- Ditch legacy 3-perspective (Buffett/เซียนฮง/Max) → **Niwes 4 neutral analysis + 1 Max-to-Art conversational + verdict BUY/HOLD/SELL**
+- **New JSON schema 6 keys:** `{dividend, hidden, moat, valuation, to_art, verdict}`
+- Max persona injected: AI stock analyst คุยกับ 'อาร์ท' (user) แบบเพื่อน ไม่ formal — ใช้สรรพนาม 'อาร์ท' หรือ 'คุณ' (ห้าม กู/มึง)
+- **Pillar-1 context** ฝังใน prompt: **เสาหลัก 1 พอร์ตปันผล 100M, passive income target 10M/ปี, DCA 10-20y, ดร.นิเวศน์ 5-5-5-5 framework กระจาย 5 sector × 80/20**
+- `to_art` section = 3 ย่อหน้า (scenario ตัวเลขจริง + ตำแหน่งใน pillar 1 + Step ถัดไปสำหรับอาร์ท)
+
+### Changed — Inline analysis UX
+- ปุ่ม 'ขอวิเคราะห์เพิ่มเติม' + ผล = inline ที่เดียวกัน (ไม่ navigate/jump)
+- Click → spinner ที่ตำแหน่งเดิม → POST → render 6 parts (verdict badge + 4 sections + Max-to-Art sage-tint) ที่ตำแหน่งเดียว
+- Cache hit (GET analysis) → auto-render, ไม่ต้องรอกด
+- Verdict badge: BUY=sage / HOLD=dim / SELL=rose
+- Icons: 💵 💎 🏛️ ⚖️ 💬
+
+### Changed — Price + as-of date display
+- Home cards: `฿43.50 · ณ 23 เม.ย. 68` (Thai Buddhist year short date)
+- Report hero: big 36px mono price + `ราคาวันที่ 23 เม.ย. 68`
+- Backend: `price_as_of` field ใน `/api/stock/{sym}` response — priority: price_cache > screener date > now
+
+### Fixed — Δ Score display bug
+- `/api/watchlist/{sym}/exit-status` back-fill `entry_score` จาก latest screener ถ้า baseline เก่าไม่มี field นี้
+- Compute `delta_score = current_score - entry_score` → แสดงใน UI เป็นตัวเลข (ไม่ใช่ '—')
+
+### Fixed — UI latent bugs (production review 2026-04-23)
+- Dividend Streak + EPS Positive 5/5 แสดง '—' — `_normalize_stock()` promote `aggregates.dividend_streak` + EPS positive count → flat fields `dividend_streak_years` + `eps_positive_count` ที่ UI อ่าน
+- Bottom-nav ทับ content — `padding-bottom: calc(88px + env(safe-area-inset-bottom))` ใน 3 CSS files (fix iPhone home indicator 34px inset overlap)
+
+### Fixed — Screener correctness (QC report 2026-04-23)
+- **C1** `compute_payout_sustainability` dead bucket — `dividends_paid` ว่างตลอดจาก thaifin → สูตรใหม่ `payout_ratio = dps/eps` จาก dividend_history + diluted_eps ที่มีอยู่แล้ว (CPALL sustainable years **0 → 11**)
+- **C2** `detect_case_study_tags` ไม่ enforce `country` + `roe_3yr_avg_min` → VIETNAM_GROWTH_EXPOSURE false-positive Thai tech; fix + mark `"disabled": true` ใน JSON
+- **H1** Remove dead `near_miss` parameter จาก `hard_filter` (2-tuple return)
+- **H3** Preserve `debt_to_equity` null semantics (ไม่ coerce null → 0)
+- **M2** Align docstring `compute_score_streak` กับ code (up OR stayed, ไม่ใช่ up only)
+
+### References
+- Research: `docs/research-thai-stock-data-sources.md`
+- Mockups: `mockup/portfolio-builder-robinhood*.html`, `mockup/stock-detail-polish.html`
+
+---
+
 ## v6.1.0 — 2026-04-23 · Data Source Refactor — thaifin Hard-Primary + yahooquery Supplement
 
 **Refactor ชั้น data layer** — thaifin เป็น single source of truth สำหรับทุกอย่างที่มันมี (fundamentals 10-16 ปี, sector SET official taxonomy, ev_per_ebit_da, cash, roa, yoy growth ครบ) — swap yfinance → yahooquery เฉพาะจุดที่ thaifin ไม่มี (realtime price, raw DPS events, capex/interest_expense per year)
