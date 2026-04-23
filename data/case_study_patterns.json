@@ -47,6 +47,7 @@
   "VIETNAM_GROWTH_EXPOSURE": {
     "tag": "VIETNAM_GROWTH_EXPOSURE",
     "source": "docs/niwes/10-case-fpt.md",
+    "disabled": true,
     "rules": {
       "country": "VN",
       "sector_keywords": [
