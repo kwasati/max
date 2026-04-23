@@ -6,7 +6,7 @@ Dashboard at [max.intensivetrader.com](https://max.intensivetrader.com)
 
 ## What It Does
 
-- **Unified scan (weekly, Saturday 09:00):** Fetches multi-year financials via thaifin + yfinance, screens 933-stock universe through Niwes 5-5-5-5 hard filters (Yield ≥5% · Streak ≥5y · EPS positive 5y · PE ≤15 · PBV ≤1.5 · Mcap ≥5B), scores quality out of 100, tags signals (NIWES_5555, HIDDEN_VALUE, QUALITY_DIVIDEND, DEEP_VALUE, etc.)
+- **Unified scan (weekly, Saturday 09:00):** Fetches multi-year financials via thaifin + yahooquery, screens 933-stock universe through Niwes 5-5-5-5 hard filters (Yield ≥5% · Streak ≥5y · EPS positive 5y · PE ≤15 · PBV ≤1.5 · Mcap ≥5B), scores quality out of 100, tags signals (NIWES_5555, HIDDEN_VALUE, QUALITY_DIVIDEND, DEEP_VALUE, etc.)
 - **3-tier bucket:** PASS / REVIEW / FAIL — REVIEW shows edge cases that need manual decision
 - **Exit alerts:** Saves entry baseline on first NIWES_5555 pass; Telegram alert when FILTER_DEGRADATION / VALUATION_BUBBLE / THESIS_CHANGE triggers
 - **Vintage newspaper dashboard:** Separate desktop + mobile frontends, editorial typography (Playfair Display + Lora + IBM Plex Serif Thai), oxblood accent
@@ -14,7 +14,7 @@ Dashboard at [max.intensivetrader.com](https://max.intensivetrader.com)
 
 ## Tech Stack
 
-- Python + thaifin (primary data) + yfinance (price/dividends)
+- Python + thaifin (primary data) + yahooquery (price/dividends)
 - Anthropic SDK (on-demand only)
 - FastAPI + APScheduler (server + weekly cron)
 - Vanilla JS + Chart.js (dashboard, no build step)

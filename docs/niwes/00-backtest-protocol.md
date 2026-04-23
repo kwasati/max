@@ -66,7 +66,7 @@
 
 ## Known Limitations (current dry-run version)
 
-- Capital gain returns are approximated by dividend yield only — full implementation needs yfinance adjusted close prices per year.
+- Capital gain returns are approximated by dividend yield only — full implementation needs yahooquery adjusted close prices per year.
 - INTUCH and other delisted symbols generate fetch errors (logged, skipped).
 - Sharpe ratio uses no risk-free rate — adjust if comparing to industry-standard reports.
 - Portfolio rebalance assumes year-end execution at zero cost — real slippage/commission not modeled.

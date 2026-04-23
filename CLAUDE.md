@@ -2,7 +2,7 @@
 
 ## Architecture
 - **Agent:** Max Mahon — Thai stock analyst, Niwes Dividend-First style
-- **Stack:** Python + thaifin + yfinance (supplement) + Anthropic SDK (claude-opus-4-7)
+- **Stack:** Python + thaifin (primary) + yahooquery (supplement) + Anthropic SDK (claude-opus-4-7)
 - **AI:** On-demand only — **scan pipeline = pure deterministic algo** (Niwes framework แกะเป็น Python rules: case study detectors + moat tags + 3-tier PASS/REVIEW/FAIL + exit baseline + sector spread). Claude SDK ใช้เฉพาะเมื่อ Karl กดขอ 'วิเคราะห์เพิ่มเติม' ใน UI ต่อหุ้น 1 ตัว (POST `/api/stock/{sym}/analyze`) — auth ผ่าน `MAX_ANTHROPIC_API_KEY`, cache TTL 7 วัน
 - **Scoring version:** `niwes-dividend-first-v2` (screener + history v2 schema)
 - **Reference files:** `data/case_study_patterns.json` (8 patterns: RETAIL_DEFENSIVE_MOAT/BANK_VALUE_PBV1/HOLDING_CO_HIDDEN/VIETNAM_GROWTH_EXPOSURE[disabled]/ENERGY_CYCLICAL_EXIT + UTILITY_DEFENSIVE/HOSPITAL_AGING/F&B_CONSUMER_BRAND), `data/exit_baselines.json`, `data/history.json` (v2 schema: top_candidates/watchlist_status/entry_thesis/dividend_paid_since_entry/price_snapshot), `user_data.json` (`transactions[]` portfolio tracking)
@@ -14,8 +14,8 @@
 
 ### Data Sources
 - **Primary:** thaifin — 10-16 ปี financial statements + ratios
-- **Supplement:** yfinance — realtime price, 52w range, forward PE, market cap, DPS, capex, interest_expense
-- **DPS = Source of Truth** — ปันผลต่อหุ้นใช้จาก yfinance dividends history โดยตรง, yield% คำนวณจาก DPS/price
+- **Supplement:** yahooquery — realtime price, 52w range, forward PE, market cap, DPS, capex, interest_expense
+- **DPS = Source of Truth** — ปันผลต่อหุ้นใช้จาก yahooquery dividends history โดยตรง, yield% คำนวณจาก DPS/price
 - **FCF = OCF - capex** — ไม่ใช้ total investing activities
 - **Universe:** 933 stocks (SET 704 + mai 229) via thaifin
 
@@ -23,26 +23,25 @@
 
 **Rule 1 — Historical/yearly data:**
 - ใช้ **thaifin เท่านั้น** สำหรับ field ที่เป็นต่อปี (close, dividend_yield, mkt_cap, bvps, payout_ratio, pe_ratio, pb_ratio, roe, net_margin, revenue, earnings, etc.)
-- yfinance yearly ใช้ได้เฉพาะเป็น **fallback** เมื่อ thaifin fail (ผ่าน `_fetch_yfinance_legacy` path ใน fetch_data.py)
+- thaifin เป็น single source of truth ไม่มี fallback — ถ้า thaifin fail = stock delisted.
 
-**Rule 2 — yfinance ใช้ได้เฉพาะ:**
+**Rule 2 — yahooquery ใช้ได้เฉพาะ:**
 - Realtime price (current close)
-- 52-week range
-- Market cap snapshot (ปัจจุบัน — ใช้ thaifin ถ้ามี historical)
-- Forward PE
-- Raw dividends history (pandas Series of DPS events — สำหรับ DPS = source of truth)
-- DCA simulator (granular monthly price สำหรับ backtest — ผ่าน `/api/stock/{sym}/price-history?granularity=monthly`)
+- 52-week range + 50d/200d moving average
+- Raw dividends history (DPS events timestamp + amount — source of truth สำหรับ DPS)
+- Capex + Operating Income + Interest Expense per year (thaifin ไม่แยกจาก investing_activities / gross-sga)
+- DCA simulator granular monthly price (backtest — ผ่าน `/api/stock/{sym}/price-history?granularity=monthly`)
 
 **Rule 3 — ก่อนเพิ่ม field ใหม่ใน yearly_metrics:**
 - Cross-check `_fetch_thaifin` column list ก่อนเสมอ (data_adapter.py บรรทัด 107-146 reads)
-- ถ้า thaifin มี column นั้น → expose ตรงๆ ใน yearly_metrics dict (build at line 176-203) ห้ามเรียก yfinance
-- ถ้า thaifin ไม่มี → document reason ใน code comment (เช่น `interest_expense` ไม่มีใน thaifin → yfinance supplement)
+- ถ้า thaifin มี column นั้น → expose ตรงๆ ใน yearly_metrics dict (build at line 176-203) ห้ามเรียก yahooquery
+- ถ้า thaifin ไม่มี → document reason ใน code comment (เช่น `interest_expense` ไม่มีใน thaifin → yahooquery supplement)
 
 **ตัวอย่าง:**
-- ❌ เรียก `yf.Ticker(sym).history(period='10y', interval='1mo')` เพื่อ compute `price_avg` — thaifin มี `close` per year อยู่แล้ว
-- ❌ เรียก `yf.Ticker(sym).info.get('marketCap')` เพื่อ historical mcap — thaifin มี `mkt_cap` per year
-- ✅ เรียก `yf.Ticker(sym).history(period='10y', interval='1mo')` เฉพาะ DCA simulator endpoint ที่ต้องการ granular monthly
-- ✅ เรียก `yf.Ticker(sym).info.get('fiftyTwoWeekHigh')` เพราะ thaifin ไม่มี 52w range
+- ❌ เรียก `yahooquery.Ticker(sym).history(period='10y', interval='1mo')` เพื่อ compute `price_avg` — thaifin มี `close` per year อยู่แล้ว
+- ❌ เรียก `yahooquery.Ticker(sym).price[sym]['marketCap']` เพื่อ historical mcap — thaifin มี `mkt_cap` per year
+- ✅ เรียก `yahooquery.Ticker(sym).history(period='10y', interval='1mo')` เฉพาะ DCA simulator endpoint
+- ✅ เรียก `yahooquery.Ticker(sym).summary_detail[sym]['fiftyTwoWeekHigh']` เพราะ thaifin ไม่มี 52w range
 
 ### User Data
 - `user_data.json` — watchlist, blacklist, notes, custom lists (จัดการจาก UI ได้)
@@ -74,7 +73,7 @@
 ## Key Files
 - `user_data.json` — user preferences (watchlist, blacklist, notes, lists, transactions, simulated_portfolio)
 - `config.json` — server config (schedule + filters + universe) — edited via `/settings` UI
-- `scripts/data_adapter.py` — thaifin + yfinance adapter
+- `scripts/data_adapter.py` — thaifin + yahooquery adapter
 - `scripts/update_universe.py` — ดึง list หุ้นทั้ง SET/mai
 - `scripts/migrate_watchlist.py` — migration จาก watchlist.json เดิม
 - `scripts/fetch_data.py` — ดึง multi-year financials + dividends + compute yearly metrics + sanity check

@@ -66,7 +66,7 @@ def normalize_symbol(raw: str) -> tuple[str, str]:
 
 
 def _to_yf_symbol(symbol: str) -> str:
-    """Normalize symbol for yfinance: 'PTT' or 'PTT.BK' → 'PTT.BK'."""
+    """Normalize symbol for Yahoo (.BK suffix): 'PTT' or 'PTT.BK' → 'PTT.BK'."""
     _, yf_sym = normalize_symbol(symbol)
     return yf_sym
 
@@ -297,7 +297,7 @@ def _fetch_thaifin(symbol: str) -> dict | None:
         latest_roe = _safe_pct(latest_row.get("roe")) if latest_year else None
         latest_roa = _safe_pct(latest_row.get("roa")) if latest_year else None
 
-        # D/E from latest — thaifin is ratio, yfinance expects percentage (*100)
+        # D/E from latest — thaifin is ratio, downstream expects percentage (*100)
         latest_de = _safe(latest_row.get("debt_to_equity"))
         de_for_output = latest_de * 100 if latest_de is not None else None
 
@@ -345,7 +345,7 @@ def _fetch_thaifin(symbol: str) -> dict | None:
                 "operating_margins": None,  # not directly available
                 "roe": latest_roe,
                 "roa": latest_roa,
-                "debt_to_equity": de_for_output,  # percentage for yfinance compat
+                "debt_to_equity": de_for_output,  # percentage for downstream schema compat
                 "current_ratio": None,
                 "free_cashflow": latest_fcf,
                 "operating_cashflow": latest_ocf,
@@ -377,7 +377,7 @@ def _fetch_yahoo_supplement(symbol: str) -> dict:
         yq_sym = _to_yf_symbol(symbol)
         tk = Ticker(yq_sym)
 
-        # Build info dict from multiple yahooquery endpoints — maintain yfinance-style keys
+        # Build info dict from multiple yahooquery endpoints — maintain legacy schema keys
         sd = tk.summary_detail.get(yq_sym, {}) if isinstance(tk.summary_detail, dict) else {}
         px = tk.price.get(yq_sym, {}) if isinstance(tk.price, dict) else {}
         ks = tk.key_stats.get(yq_sym, {}) if isinstance(tk.key_stats, dict) else {}
@@ -513,7 +513,7 @@ def _fetch_yahoo_supplement(symbol: str) -> dict:
 # Public API aliases
 fetch_from_thaifin = _fetch_thaifin
 fetch_yahoo_supplement = _fetch_yahoo_supplement
-# Deprecated alias — kept for backward compat with fetch_data.py (removed in Phase 4)
+# DEPRECATED: keep for any external caller — prefer _fetch_yahoo_supplement
 fetch_yfinance_supplement = _fetch_yahoo_supplement
 
 
@@ -521,7 +521,6 @@ def fetch_fundamentals(symbol: str) -> dict:
     """Fetch fundamentals using thaifin (primary) + yahooquery (supplement).
 
     Returns schema identical to fetch_multi_year() output.
-    Falls back to yfinance entirely if thaifin fails.
     """
     yf_sym = _to_yf_symbol(symbol)
 
@@ -532,11 +531,11 @@ def fetch_fundamentals(symbol: str) -> dict:
     yf_supp = _fetch_yahoo_supplement(symbol)
     yf_info = yf_supp.get("info", {})
 
-    # If yfinance also has near-empty info, check thaifin
+    # If Yahoo supplement also empty, check thaifin
     if "error" in yf_supp and tf_data is None:
         return {"symbol": yf_sym, "error": yf_supp["error"]}
 
-    # 3. If thaifin failed → signal for full yfinance fallback
+    # 3. If thaifin failed → return delisted marker (no fallback)
     use_thaifin = tf_data is not None and len(tf_data.get("yearly_metrics", [])) > 0
 
     if use_thaifin:
@@ -544,16 +543,16 @@ def fetch_fundamentals(symbol: str) -> dict:
         tf_snap = tf_data["snapshot"]
         yearly_metrics = tf_data["yearly_metrics"]
 
-        # --- DPS fix: use yfinance dividends as source of truth ---
+        # --- DPS fix: use Yahoo dividends as source of truth ---
         yf_dps_by_year = yf_supp.get("dps_by_year", {})
         yf_capex_by_year = yf_supp.get("capex_by_year", {})
         yf_oi_by_year = yf_supp.get("operating_income_by_year", {})
         yf_ie_by_year = yf_supp.get("interest_expense_by_year", {})
 
-        # Build dividend_history from yfinance DPS (source of truth)
+        # Build dividend_history from Yahoo DPS (source of truth)
         dividend_history = {y: round(dps, 4) for y, dps in yf_dps_by_year.items()}
 
-        # Patch yearly_metrics with capex, operating_income, interest data from yfinance
+        # Patch yearly_metrics with capex, operating_income, interest data from Yahoo
         for m in yearly_metrics:
             y = int(m["year"])
 
@@ -582,22 +581,22 @@ def fetch_fundamentals(symbol: str) -> dict:
                 if da_approx > 0:
                     m["ebitda"] = oi_val + da_approx
 
-        # Merge: thaifin base + yfinance supplement
+        # Merge: thaifin base + Yahoo supplement
         name = tf_info.get("name") or yf_info.get("shortName", yf_sym)
         sector = tf_info.get("sector", "N/A")
         industry = tf_info.get("industry", "N/A")
 
-        # Price fields: always from yfinance (realtime)
+        # Price fields: always from Yahoo (realtime)
         price = yf_info.get("currentPrice") or yf_info.get("regularMarketPrice")
         market_cap = yf_info.get("marketCap") or tf_snap.get("market_cap")
 
-        # PE: prefer yfinance (realtime), fallback thaifin
+        # PE: prefer Yahoo (realtime), fallback thaifin
         pe_ratio = yf_info.get("trailingPE") or tf_snap.get("pe_ratio")
         forward_pe = yf_info.get("forwardPE")
         pb_ratio = yf_info.get("priceToBook") or tf_snap.get("pb_ratio")
 
         # --- Dividend: DPS-first, yield = DPS/price ---
-        # Current DPS from yfinance (dividendRate = annual DPS)
+        # Current DPS from Yahoo (dividendRate = annual DPS)
         dps_current = yf_info.get("dividendRate")
         # Fallback: trailingAnnualDividendRate
         if dps_current is None:
@@ -619,7 +618,7 @@ def fetch_fundamentals(symbol: str) -> dict:
             avg_dps = sum(recent_dps) / len(recent_dps)
             five_year_avg_yield = avg_dps / price * 100
         else:
-            # Fallback: yfinance fiveYearAvgDividendYield (already percentage)
+            # Fallback: Yahoo fiveYearAvgDividendYield (already percentage)
             raw_5y = yf_info.get("fiveYearAvgDividendYield")
             five_year_avg_yield = raw_5y if raw_5y is not None else None
 
@@ -642,21 +641,21 @@ def fetch_fundamentals(symbol: str) -> dict:
         debt_to_equity = tf_snap.get("debt_to_equity") or yf_info.get("debtToEquity")
         current_ratio = tf_snap.get("current_ratio") or yf_info.get("currentRatio")
 
-        # FCF: prefer yfinance (uses proper capex), fallback thaifin
+        # FCF: prefer Yahoo (uses proper capex), fallback thaifin
         free_cashflow = yf_info.get("freeCashflow") or tf_snap.get("free_cashflow")
         operating_cashflow = yf_info.get("operatingCashflow") or tf_snap.get("operating_cashflow")
 
-        # Recent dividends from yfinance
+        # Recent dividends from Yahoo
         recent_divs = yf_supp.get("recent_dividends", [])
 
-        # Price technicals from yfinance
+        # Price technicals from Yahoo
         w52_high = yf_info.get("fiftyTwoWeekHigh")
         w52_low = yf_info.get("fiftyTwoWeekLow")
         d50_avg = yf_info.get("fiftyDayAverage")
         d200_avg = yf_info.get("twoHundredDayAverage")
 
     else:
-        # Full yfinance fallback — return None to signal caller to use old logic
+        # thaifin failed — return None to signal delisted/missing
         return None
 
     return {
