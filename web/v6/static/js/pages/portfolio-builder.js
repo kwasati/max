@@ -1,8 +1,8 @@
 /* ==========================================================
-   MAX MAHON v6 — Portfolio Builder Page (Desktop)
+   MAX MAHON v6 — Portfolio Builder (Desktop)
    จัดพอร์ตสไตล์แมกซ์ — 5 หุ้น 5 sector Niwes 80/20 pattern.
    Fetches from POST /api/portfolio/builder.
-   Uses existing vintage tokens (plan 03 will restyle).
+   Restyled with Robinhood muted-sage tokens (see components.css .mm-pb-*).
    ========================================================== */
 
 let _state = {
@@ -26,33 +26,30 @@ function _renderShell() {
       '<span class="no">05 · Portfolio Builder</span>' +
       '<span>จัดพอร์ตสไตล์แมกซ์ · Niwes 80/20</span>' +
     '</div>' +
-    '<h2 class="section-title">Build the Port.</h2>' +
-    '<p class="section-kicker">5 หุ้น 5 sector — top-1 per sector by Niwes composite · weight 40/35/12/8/5.</p>' +
+
+    '<div class="mm-pb-headline">' +
+      '<h2>Build the Port.</h2>' +
+      '<p>5 หุ้น · 5 sector · น้ำหนัก 40/35/12/8/5 — ตามแนว ดร.นิเวศน์</p>' +
+    '</div>' +
 
     '<section class="portfolio-section" id="pb-form">' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-4);margin-bottom:var(--sp-4)">' +
-        '<label style="display:flex;flex-direction:column;gap:var(--sp-2)">' +
+      '<div class="mm-pb-form-grid">' +
+        '<label class="mm-pb-form-row">' +
           '<span class="micro">ทุน (บาท) — optional</span>' +
-          '<input type="number" id="pb-capital" min="0" step="10000" placeholder="เช่น 1000000" ' +
-            'style="padding:10px 12px;border:1px solid var(--rule);background:var(--paper-3);' +
-            'font-family:var(--font-mono);font-size:var(--fs-md);color:var(--ink);outline:none" />' +
+          '<input class="mm-pb-input" type="number" id="pb-capital" min="0" step="10000" placeholder="เช่น 1000000" />' +
         '</label>' +
-        '<label style="display:flex;flex-direction:column;gap:var(--sp-2)">' +
+        '<label class="mm-pb-form-row">' +
           '<span class="micro">Pin symbols (comma-separated) — e.g. TCAP.BK</span>' +
-          '<input type="text" id="pb-pins" placeholder="TCAP.BK, QH.BK" ' +
-            'style="padding:10px 12px;border:1px solid var(--rule);background:var(--paper-3);' +
-            'font-family:var(--font-mono);font-size:var(--fs-md);color:var(--ink);outline:none" />' +
+          '<input class="mm-pb-input" type="text" id="pb-pins" placeholder="TCAP.BK, QH.BK" />' +
         '</label>' +
       '</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-4);margin-bottom:var(--sp-4)">' +
-        '<label style="display:flex;flex-direction:column;gap:var(--sp-2)">' +
+      '<div class="mm-pb-form-grid">' +
+        '<label class="mm-pb-form-row">' +
           '<span class="micro">Exclude symbols (comma-separated)</span>' +
-          '<input type="text" id="pb-excludes" placeholder="CPALL.BK" ' +
-            'style="padding:10px 12px;border:1px solid var(--rule);background:var(--paper-3);' +
-            'font-family:var(--font-mono);font-size:var(--fs-md);color:var(--ink);outline:none" />' +
+          '<input class="mm-pb-input" type="text" id="pb-excludes" placeholder="CPALL.BK" />' +
         '</label>' +
-        '<div style="display:flex;align-items:flex-end">' +
-          '<button class="btn primary" id="pb-submit" type="button">จัดพอร์ต</button>' +
+        '<div class="mm-pb-actions">' +
+          '<button class="mm-pb-run" id="pb-submit" type="button">จัดพอร์ต</button>' +
         '</div>' +
       '</div>' +
     '</section>' +
@@ -72,6 +69,15 @@ function _bindForm(root) {
       if (e.key === 'Enter') { e.preventDefault(); _submit(root); }
     });
   }
+  // Enter on pin/exclude inputs also submits
+  ['#pb-pins', '#pb-excludes'].forEach(function (sel) {
+    const el = root.querySelector(sel);
+    if (el) {
+      el.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); _submit(root); }
+      });
+    }
+  });
 }
 
 function _parseList(s) {
@@ -102,7 +108,7 @@ async function _submit(root) {
   if (window.MMComponents && window.MMComponents.renderLoading) {
     window.MMComponents.renderLoading(host, 'สร้างพอร์ต…');
   } else {
-    host.innerHTML = '<div class="mm-shell-empty">สร้างพอร์ต…</div>';
+    host.innerHTML = '<div class="mm-pb-empty">สร้างพอร์ต…</div>';
   }
 
   try {
@@ -115,7 +121,7 @@ async function _submit(root) {
     _state.loading = false;
     _state.error = (e && e.message) || String(e);
     host.innerHTML =
-      '<div class="mm-shell-empty">' +
+      '<div class="mm-pb-empty">' +
         'โหลดพอร์ตไม่สำเร็จ: ' +
         (window.MMUtils ? window.MMUtils.escapeHtml(_state.error) : _state.error) +
       '</div>';
@@ -137,6 +143,23 @@ function _fmtNum(n, d) {
   });
 }
 
+/** Map sector name → css class suffix (prop/bank/comm/ict/nrg/other). */
+function _sectorClass(sector) {
+  const s = (sector || '').toLowerCase();
+  if (s.indexOf('property') >= 0 || s.indexOf('real') >= 0) return 'mm-pb-sec-prop';
+  if (s.indexOf('bank') >= 0 || s.indexOf('finance') >= 0) return 'mm-pb-sec-bank';
+  if (s.indexOf('commerce') >= 0 || s.indexOf('retail') >= 0 || s.indexOf('consumer') >= 0) return 'mm-pb-sec-comm';
+  if (s.indexOf('ict') >= 0 || s.indexOf('tech') >= 0 || s.indexOf('telecom') >= 0) return 'mm-pb-sec-ict';
+  if (s.indexOf('energy') >= 0 || s.indexOf('petro') >= 0) return 'mm-pb-sec-nrg';
+  return 'mm-pb-sec-other';
+}
+
+function _rankClass(idx) {
+  if (idx === 0) return 'rank gold';
+  if (idx === 1) return 'rank silver';
+  return 'rank';
+}
+
 function _renderResult(host, data) {
   if (!host) return;
   const port = (data && data.portfolio) || [];
@@ -144,68 +167,185 @@ function _renderResult(host, data) {
   const sectorCount = (data && data.sector_count) || 0;
   const avgScore = (data && data.total_score_avg) || 0;
   const screenerDate = (data && data.screener_date) || '';
+  const capital = _state.capital || 0;
 
   if (port.length === 0) {
     host.innerHTML =
-      '<div class="mm-shell-empty">ไม่มีหุ้นผ่านเกณฑ์ — ' +
+      '<div class="mm-pb-empty">ไม่มีหุ้นผ่านเกณฑ์ — ' +
       _esc(warnings.join(' · ') || 'no candidates') + '</div>';
     return;
   }
 
+  // Yield estimate (weighted by weight_pct)
+  let weightedYield = 0;
+  let totalWeight = 0;
+  port.forEach(function (s) {
+    const dy = Number(s.dividend_yield || 0);
+    const w = Number(s.weight_pct || 0);
+    weightedYield += dy * w;
+    totalWeight += w;
+  });
+  const yieldPct = totalWeight > 0 ? weightedYield / totalWeight : 0;
+
   let html = '';
 
-  // Meta header
-  html +=
-    '<div class="flex jb ac mt-5" style="padding:var(--sp-3) 0;border-bottom:1px solid var(--rule)">' +
-      '<div class="micro">Screener: ' + _esc(screenerDate) +
-      ' · Sectors: ' + sectorCount +
-      ' · Avg score: ' + _fmtNum(avgScore, 1) + '</div>' +
-    '</div>';
+  // CAPITAL CARD
+  html += '<div class="mm-pb-capital">';
+  html +=   '<div class="lbl">เงินลงทุน</div>';
+  html +=   '<div class="amt">' +
+    (capital > 0 ? _fmtNum(capital, 0) : '—') +
+    '<span class="thb">THB</span></div>';
+  html +=   '<div class="meta">';
+  if (yieldPct > 0) {
+    html += '<span class="up">▲ yield ' + _fmtNum(yieldPct, 2) + '%</span>';
+  }
+  html +=     '<span>· ' + sectorCount + ' sector diversified</span>';
+  if (screenerDate) {
+    html +=   '<span>· ' + _esc(screenerDate) + '</span>';
+  }
+  html +=   '</div>';
+  html += '</div>';
 
-  // Warnings
-  if (warnings.length > 0) {
-    html += '<div style="margin:var(--sp-3) 0;padding:var(--sp-3);border:1px dashed var(--rule);font-family:var(--font-mono);font-size:var(--fs-sm);color:var(--ink-soft)">';
-    html += '<strong>⚠ คำเตือน:</strong><ul style="margin:var(--sp-2) 0 0 var(--sp-4)">';
-    warnings.forEach(function (w) {
-      html += '<li>' + _esc(w) + '</li>';
-    });
-    html += '</ul></div>';
+  // Pin / exclude chip readback
+  if ((_state.pins && _state.pins.length) || (_state.excludes && _state.excludes.length)) {
+    if (_state.pins && _state.pins.length) {
+      html += '<div class="mm-pb-chip-section">';
+      html +=   '<div class="mm-pb-chip-title">ปักหมุด</div>';
+      html +=   '<div class="mm-pb-chip-row">';
+      _state.pins.forEach(function (p) {
+        html += '<span class="mm-pb-chip pin">' + _esc(p) + '</span>';
+      });
+      html +=   '</div>';
+      html += '</div>';
+    }
+    if (_state.excludes && _state.excludes.length) {
+      html += '<div class="mm-pb-chip-section">';
+      html +=   '<div class="mm-pb-chip-title">ถอดออก</div>';
+      html +=   '<div class="mm-pb-chip-row">';
+      _state.excludes.forEach(function (x) {
+        html += '<span class="mm-pb-chip exc">' + _esc(x) + '</span>';
+      });
+      html +=   '</div>';
+      html += '</div>';
+    }
   }
 
-  // Result table
-  html += '<table style="width:100%;border-collapse:collapse;margin-top:var(--sp-4);font-family:var(--font-body)">';
-  html += '<thead><tr style="border-bottom:2px solid var(--ink)">';
-  ['#', 'Symbol', 'Sector', 'Score', 'Weight %', 'Amount (฿)', 'Shares', 'Note']
-    .forEach(function (h) {
-      html += '<th style="text-align:left;padding:var(--sp-3) var(--sp-2);font-size:var(--fs-sm);font-weight:700">' +
-        _esc(h) + '</th>';
-    });
-  html += '</tr></thead><tbody>';
-
-  port.forEach(function (s, idx) {
-    const pinned = s._pinned ? ' <span class="micro" style="color:var(--accent)">[PIN]</span>' : '';
-    const reason = [];
-    if ((s.signals || []).indexOf('HIDDEN_VALUE') >= 0) reason.push('Hidden');
-    if (s._pinned) reason.push('Pinned');
-    html += '<tr style="border-bottom:1px solid var(--rule)">';
-    html += '<td style="padding:var(--sp-3) var(--sp-2)">' + (idx + 1) + '</td>';
-    html += '<td style="padding:var(--sp-3) var(--sp-2);font-family:var(--font-mono);font-weight:600">' +
-      _esc(s.symbol) + pinned + '</td>';
-    html += '<td style="padding:var(--sp-3) var(--sp-2)"><span class="micro">' +
-      _esc(s.sector || '—') + '</span></td>';
-    html += '<td style="padding:var(--sp-3) var(--sp-2);font-family:var(--font-mono)">' +
-      _fmtNum(s.score, 0) + '</td>';
-    html += '<td style="padding:var(--sp-3) var(--sp-2);font-family:var(--font-mono)">' +
-      _fmtNum(s.weight_pct, 1) + '%</td>';
-    html += '<td style="padding:var(--sp-3) var(--sp-2);font-family:var(--font-mono)">' +
-      (s.amount_thb != null ? _fmtNum(s.amount_thb, 2) : '—') + '</td>';
-    html += '<td style="padding:var(--sp-3) var(--sp-2);font-family:var(--font-mono)">' +
-      (s.shares != null ? _fmtNum(s.shares, 0) : '—') + '</td>';
-    html += '<td style="padding:var(--sp-3) var(--sp-2)"><span class="micro">' +
-      _esc(reason.join(' · ')) + '</span></td>';
-    html += '</tr>';
+  // WARNINGS
+  warnings.forEach(function (w) {
+    html += '<div class="mm-pb-warn">⚠ ' + _esc(w) + '</div>';
   });
-  html += '</tbody></table>';
+
+  // SUMMARY STRIP
+  html += '<div class="mm-pb-summary">';
+  html +=   '<div class="cell"><div class="v">' + port.length + '</div>' +
+           '<div class="l">หุ้น</div></div>';
+  html +=   '<div class="cell"><div class="v up">' + sectorCount + '/5</div>' +
+           '<div class="l">sector</div></div>';
+  html +=   '<div class="cell"><div class="v">' + _fmtNum(avgScore, 0) + '</div>' +
+           '<div class="l">score avg.</div></div>';
+  html += '</div>';
+
+  // SECTION HEAD
+  const weightHint = port.map(function (p) { return _fmtNum(p.weight_pct, 0); }).join(' · ');
+  html += '<div class="mm-pb-sec-h"><h3>น้ำหนักพอร์ต</h3>' +
+          '<span class="hint">' + weightHint + '</span></div>';
+
+  // POSITION CARDS
+  html += '<div class="mm-pb-pos-list">';
+  const maxWeight = Math.max.apply(null, port.map(function (p) {
+    return Number(p.weight_pct || 0);
+  }));
+  port.forEach(function (s, idx) {
+    const weight = Number(s.weight_pct || 0);
+    const trackPct = maxWeight > 0 ? Math.min(100, (weight / maxWeight) * 100) : 0;
+    const tags = [];
+    if ((s.signals || []).indexOf('NIWES_5555') >= 0) tags.push('<span class="tag pass">PASS</span>');
+    if ((s.signals || []).indexOf('HIDDEN_VALUE') >= 0) tags.push('<span class="tag hidden">Hidden</span>');
+    if (s._pinned) tags.push('<span class="tag pin">Pin</span>');
+
+    const scoreClass = (s.score || 0) >= 70 ? '' : 'b';
+    const reasonParts = [];
+    if (s.dividend_yield) reasonParts.push('yield ' + _fmtNum(s.dividend_yield, 2) + '%');
+    if (s.pe_ratio) reasonParts.push('PE ' + _fmtNum(s.pe_ratio, 1));
+    if (s.pb_ratio) reasonParts.push('PBV ' + _fmtNum(s.pb_ratio, 2));
+    if ((s.signals || []).indexOf('HIDDEN_VALUE') >= 0) reasonParts.push('hidden value in holdings');
+
+    html += '<div class="mm-pb-pos">';
+    html +=   '<div class="' + _rankClass(idx) + '">' + (idx + 1) + '</div>';
+    html +=   '<div class="body">';
+    html +=     '<div class="row1">';
+    html +=       '<span class="sym">' + _esc((s.symbol || '').replace('.BK', '')) + '</span>';
+    if (s.name) html += '<span class="th-name">' + _esc(s.name) + '</span>';
+    html +=     '</div>';
+    html +=     '<span class="sector ' + _sectorClass(s.sector) + '">' + _esc(s.sector || '—') + '</span>';
+    if (tags.length) html += '<div class="tags">' + tags.join('') + '</div>';
+    html +=   '</div>';
+    html +=   '<div class="weight-col">';
+    html +=     '<div class="weight-num' + (idx === 0 ? ' anchor' : '') + '">' +
+                _fmtNum(weight, 0) + '%</div>';
+    if (s.amount_thb != null) {
+      html +=   '<div class="weight-amt">฿' + _fmtNum(s.amount_thb, 0) + '</div>';
+    }
+    html +=   '</div>';
+    html +=   '<div class="w-track"><i style="width:' + trackPct.toFixed(1) + '%"></i></div>';
+    html +=   '<div class="foot">';
+    if (s.shares != null && s.current_price) {
+      html += '<div class="shares">' + _fmtNum(s.shares, 0) + ' หุ้น @ ' +
+              _fmtNum(s.current_price, 2) + '</div>';
+    } else if (s.current_price) {
+      html += '<div class="shares">@ ' + _fmtNum(s.current_price, 2) + '</div>';
+    } else {
+      html += '<div class="shares"></div>';
+    }
+    html +=     '<div class="score"><span class="s-dot ' + scoreClass + '">' +
+                _fmtNum(s.score, 0) + '</span> Niwes</div>';
+    html +=   '</div>';
+    if (reasonParts.length) {
+      html += '<div class="reason">' + _esc(reasonParts.join(' · ')) + '</div>';
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // TOTAL BAR
+  if (capital > 0) {
+    const totalAmount = port.reduce(function (acc, s) {
+      return acc + Number(s.amount_thb || 0);
+    }, 0);
+    html += '<div class="mm-pb-total">' +
+            '<span class="l">รวมทั้งพอร์ต</span>' +
+            '<span class="v">฿' + _fmtNum(totalAmount, 0) + '</span>' +
+            '<span class="v2">/ ' + _fmtNum(capital, 0) + '</span>' +
+            '</div>';
+  }
+
+  // DIVERSIFICATION PANEL
+  const palette = ['var(--c-positive)', 'var(--c-info)', 'var(--c-warn)', 'var(--c-purple)', 'var(--c-negative)'];
+  html += '<div class="mm-pb-diversify">';
+  html +=   '<div class="mm-pb-dv-head">';
+  html +=     '<h4>กระจายตัวรายเซกเตอร์</h4>';
+  html +=     '<span class="badge">' + sectorCount + '/5 sector</span>';
+  html +=   '</div>';
+  html +=   '<div class="mm-pb-seg-bar">';
+  port.forEach(function (s, idx) {
+    const w = Number(s.weight_pct || 0);
+    html += '<div class="mm-pb-seg" style="width:' + w + '%;background:' +
+            palette[idx % palette.length] + '"></div>';
+  });
+  html +=   '</div>';
+  html +=   '<div class="mm-pb-dv-legend">';
+  port.forEach(function (s, idx) {
+    html += '<div class="mm-pb-lg-row">' +
+              '<span class="mm-pb-lg-dot" style="background:' +
+                palette[idx % palette.length] + '"></span>' +
+              '<span class="mm-pb-lg-label">' + _esc(s.sector || '—') +
+                ' <span style="color:var(--fg-dim)">· ' +
+                _esc((s.symbol || '').replace('.BK', '')) + '</span></span>' +
+              '<span class="mm-pb-lg-val">' + _fmtNum(s.weight_pct, 0) + '%</span>' +
+            '</div>';
+  });
+  html +=   '</div>';
+  html += '</div>';
 
   host.innerHTML = html;
 }
