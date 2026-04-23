@@ -549,5 +549,5 @@ button {
 @media (max-width: 900px) {
   .hide-mobile { display: none; }
   .hide-desktop { display: revert; }
-  body { padding-bottom: 72px; }
+  body { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
 }
