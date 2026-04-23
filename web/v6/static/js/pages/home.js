@@ -33,17 +33,7 @@ export async function mount(container) {
 function _updateMasthead(status) {
   var host = document.getElementById('masthead');
   if (!host) return;
-  var date = status && status.last_data_date
-    ? window.MMUtils.fmtDateLong(status.last_data_date).toUpperCase()
-    : window.MMUtils.fmtDateLong(new Date()).toUpperCase();
-  host.innerHTML = window.MMComponents.renderMasthead({
-    vol: 'VI',
-    no: '17',
-    date: date,
-    next_scan: 'SAT 09:00',
-    edition: 'Thai Stock Edition',
-    active: 'home'
-  });
+  host.innerHTML = window.MMComponents.renderMasthead({ active: 'home' });
 }
 
 // ----- Chart.js loader -----
@@ -148,19 +138,16 @@ function _buildLedeAndSummary(screener) {
   var topSymLabel = topSyms.length ? topSyms[0].symbol : '—';
 
   var ledeHtml =
-    '<section class="lede-block" style="padding:var(--sp-5) 0;border-bottom:1px solid var(--rule)">' +
-      '<div class="lede-inner" style="max-width:68ch;margin:0 auto;text-align:center">' +
-        '<div class="kicker" style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:var(--sp-3)">The Weekly Screen</div>' +
-        '<h2 class="lede-headline" style="font-family:var(--font-head);font-weight:900;font-size:var(--fs-2xl);line-height:1.1;letter-spacing:-0.015em;margin-bottom:var(--sp-3)">' +
-          passed + ' names cleared the 5-5-5-5 gate this week.' +
-        '</h2>' +
-        '<p class="lede-sub" style="font-family:var(--font-head);font-style:italic;font-size:var(--fs-md);color:var(--ink-soft);line-height:1.45">' +
-          esc(newEnt) + ' first-time entrants. Average yield held at ' +
-          esc(window.MMUtils.fmtNum(avgYield, 1)) + '%, with top scorer ' +
-          esc(topSymLabel) + ' clearing ' + esc(topScore) + ' on the Niwes Dividend-First scale. ' +
-          'The universe stood at ' + esc(total) + '.' +
-        '</p>' +
-      '</div>' +
+    '<section class="headline" style="padding:var(--sp-6) 0 var(--sp-5)">' +
+      '<h1 style="font-family:var(--font-head);font-weight:800;font-size:var(--fs-2xl);line-height:1.15;letter-spacing:-0.015em;margin-bottom:var(--sp-3);color:var(--fg-primary)">' +
+        passed + ' names cleared the 5-5-5-5 gate this week.' +
+      '</h1>' +
+      '<p style="font-family:var(--font-body);font-size:var(--fs-md);color:var(--fg-secondary);line-height:1.5;max-width:68ch">' +
+        esc(newEnt) + ' first-time entrants. Average yield held at ' +
+        esc(window.MMUtils.fmtNum(avgYield, 1)) + '%, with top scorer ' +
+        esc(topSymLabel) + ' clearing ' + esc(topScore) + ' on the Niwes Dividend-First scale. ' +
+        'The universe stood at ' + esc(total) + '.' +
+      '</p>' +
     '</section>';
 
   var summaryHtml =
@@ -243,16 +230,16 @@ function _buildFilterBar(totalCount) {
 function _buildHomeHtml(screener, trend) {
   var candidates = (screener.candidates || []).slice();
   var sectionHdr =
-    '<div class="section-num">' +
-      '<span class="no">01 · Watchlist</span>' +
-      '<span>' + candidates.length + ' names · Sorted by score · Descending</span>' +
+    '<div class="filter-bar" style="margin-bottom:0">' +
+      '<strong style="font-family:var(--font-head);font-weight:700;font-size:var(--fs-md);color:var(--fg-primary);letter-spacing:normal;text-transform:none">Watchlist</strong>' +
+      '<span style="color:var(--fg-dim)">' + candidates.length + ' names · Sorted by score · Descending</span>' +
     '</div>';
 
   var emptyState = '';
   if (candidates.length === 0) {
     emptyState =
       '<section style="padding:var(--sp-7) 0;text-align:center">' +
-        '<p style="font-family:var(--font-head);font-style:italic;font-size:var(--fs-lg);color:var(--ink-soft)">' +
+        '<p style="font-size:var(--fs-lg);color:var(--fg-secondary)">' +
           'ยังไม่มีหุ้นที่ผ่านเกณฑ์ในรอบนี้' +
         '</p>' +
       '</section>';
@@ -260,11 +247,7 @@ function _buildHomeHtml(screener, trend) {
 
   var gridHtml =
     '<section class="card-grid" id="v6-home-grid"></section>' +
-    '<div class="ornament"></div>' +
-    '<section class="text-c" style="padding:var(--sp-5) 0" id="v6-home-pager"></section>' +
-    '<div class="page-foot" style="padding:var(--sp-6) 0;border-top:3px double var(--rule);margin-top:var(--sp-7);text-align:center;font-family:var(--font-head);font-style:italic;color:var(--ink-dim);font-size:var(--fs-sm)">' +
-      'Max Mahon — The Dividend Review · Published weekly · Algorithmic screen, human discipline.' +
-    '</div>';
+    '<section class="text-c" style="padding:var(--sp-5) 0" id="v6-home-pager"></section>';
 
   return _buildLedeAndSummary(screener) +
          _buildTrendStrip(screener, trend) +
@@ -281,10 +264,10 @@ function _mountTrendChart(trend) {
   var labels = weeks.map(function (w) { return w.week_label || w.scan_date || ''; });
   var data = weeks.map(function (w) { return w.passed || 0; });
   var root = getComputedStyle(document.documentElement);
-  var textInk = root.getPropertyValue('--ink').trim();
-  var inkDim = root.getPropertyValue('--ink-dim').trim();
+  var textInk = root.getPropertyValue('--fg-primary').trim();
+  var inkDim = root.getPropertyValue('--fg-dim').trim();
   var ruleHair = (getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim() || 'rgba(59,64,80,0.15)');
-  window.Chart.defaults.font.family = 'Lora, serif';
+  window.Chart.defaults.font.family = 'Inter, sans-serif';
   window.Chart.defaults.color = inkDim;
   new window.Chart(canvas, {
     type: 'bar',

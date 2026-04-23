@@ -65,65 +65,65 @@ function _ensureStyles() {
   if (document.getElementById('mm-settings-styles')) return;
   var css =
     '.settings-wrap{max-width:820px;margin:0 auto}' +
-    '.setting-block{border-bottom:1px solid var(--rule);padding:var(--sp-6) 0;' +
+    '.setting-block{border-bottom:1px solid var(--border-subtle);padding:var(--sp-6) 0;' +
       'display:grid;grid-template-columns:240px 1fr;gap:var(--sp-6)}' +
     '.setting-label{font-family:var(--font-head);font-weight:700;font-size:var(--fs-md);line-height:1.2}' +
-    '.setting-help{font-family:var(--font-head);font-style:italic;color:var(--ink-dim);' +
+    '.setting-help{font-family:var(--font-head);font-style:italic;color:var(--fg-dim);' +
       'font-size:var(--fs-sm);margin-top:6px}' +
     '.setting-control{display:flex;flex-direction:column;gap:var(--sp-3)}' +
     /* Switch */
     '.switch{display:inline-flex;align-items:center;cursor:pointer;gap:var(--sp-3);' +
       'font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.14em;' +
-      'text-transform:uppercase;color:var(--ink-dim)}' +
-    '.switch-box{width:52px;height:24px;border:1px solid var(--rule);background:var(--paper);' +
+      'text-transform:uppercase;color:var(--fg-dim)}' +
+    '.switch-box{width:52px;height:24px;border:1px solid var(--border-subtle);background:var(--bg-surface);' +
       'position:relative;transition:background 120ms ease}' +
     '.switch-box::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;' +
-      'background:var(--ink);transition:left 160ms ease}' +
+      'background:var(--fg-primary);transition:left 160ms ease}' +
     '.switch input{display:none}' +
-    '.switch.on .switch-box{background:var(--accent)}' +
-    '.switch.on .switch-box::after{left:28px;background:var(--paper)}' +
-    '.switch.on span{color:var(--ink)}' +
+    '.switch.on .switch-box{background:var(--c-positive)}' +
+    '.switch.on .switch-box::after{left:28px;background:var(--bg-surface)}' +
+    '.switch.on span{color:var(--fg-primary)}' +
     /* Slider rows */
     '.slider-row{display:grid;grid-template-columns:1fr auto;gap:var(--sp-4);align-items:center;' +
-      'padding:var(--sp-3) 0;border-bottom:1px dotted var(--rule-hair)}' +
+      'padding:var(--sp-3) 0;border-bottom:1px dotted var(--border-subtle)}' +
     '.slider-label{font-family:var(--font-body);font-size:var(--fs-md)}' +
     '.slider-label .sub{display:block;font-family:var(--font-mono);font-size:var(--fs-xs);' +
-      'color:var(--ink-dim);letter-spacing:0.1em;text-transform:uppercase;margin-top:2px}' +
+      'color:var(--fg-dim);letter-spacing:0.1em;text-transform:uppercase;margin-top:2px}' +
     '.slider-wrap{display:flex;align-items:center;gap:var(--sp-3);min-width:260px}' +
     '.slider-val{font-family:var(--font-mono);font-size:var(--fs-md);font-weight:500;min-width:70px;' +
-      'text-align:right;color:var(--ink);border-bottom:1px solid var(--rule);padding-bottom:2px}' +
-    '.slider-val.error{color:var(--accent);border-bottom-color:var(--accent)}' +
+      'text-align:right;color:var(--fg-primary);border-bottom:1px solid var(--border-subtle);padding-bottom:2px}' +
+    '.slider-val.error{color:var(--c-positive);border-bottom-color:var(--c-positive)}' +
     'input[type="range"]{-webkit-appearance:none;appearance:none;width:180px;height:2px;' +
-      'background:var(--ink);outline:none}' +
+      'background:var(--fg-primary);outline:none}' +
     'input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;' +
-      'background:var(--accent);cursor:pointer;border:1px solid var(--accent-ink)}' +
-    'input[type="range"]::-moz-range-thumb{width:14px;height:14px;background:var(--accent);' +
-      'cursor:pointer;border:1px solid var(--accent-ink)}' +
+      'background:var(--c-positive);cursor:pointer;border:1px solid var(--c-positive)}' +
+    'input[type="range"]::-moz-range-thumb{width:14px;height:14px;background:var(--c-positive);' +
+      'cursor:pointer;border:1px solid var(--c-positive)}' +
     /* Radio card */
     '.radio-row{display:flex;gap:var(--sp-3)}' +
-    '.radio-card{flex:1;border:1px solid var(--rule-hair);padding:var(--sp-4);cursor:pointer;' +
-      'transition:all 120ms ease;background:var(--paper)}' +
-    '.radio-card:hover{border-color:var(--rule)}' +
-    '.radio-card.active{border:2px solid var(--accent);background:var(--paper-3)}' +
+    '.radio-card{flex:1;border:1px solid var(--border-subtle);padding:var(--sp-4);cursor:pointer;' +
+      'transition:all 120ms ease;background:var(--bg-surface)}' +
+    '.radio-card:hover{border-color:var(--border-subtle)}' +
+    '.radio-card.active{border:2px solid var(--c-positive);background:var(--bg-surface)}' +
     '.radio-card .r-title{font-family:var(--font-head);font-weight:700;font-size:var(--fs-md);margin-bottom:4px}' +
     '.radio-card .r-sub{font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.12em;' +
-      'text-transform:uppercase;color:var(--ink-dim)}' +
-    '.radio-card.active .r-sub{color:var(--accent)}' +
+      'text-transform:uppercase;color:var(--fg-dim)}' +
+    '.radio-card.active .r-sub{color:var(--c-positive)}' +
     /* Time row / day chips */
     '.time-row{display:flex;gap:var(--sp-4);align-items:center;flex-wrap:wrap}' +
     '.day-chips{display:flex;gap:2px}' +
-    '.day-chip{width:40px;height:40px;border:1px solid var(--rule-hair);background:var(--paper);' +
+    '.day-chip{width:40px;height:40px;border:1px solid var(--border-subtle);background:var(--bg-surface);' +
       'cursor:pointer;font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;' +
-      'text-transform:uppercase;color:var(--ink-dim);display:flex;align-items:center;justify-content:center}' +
-    '.day-chip.active{border-color:var(--accent);background:var(--accent);color:var(--paper)}' +
+      'text-transform:uppercase;color:var(--fg-dim);display:flex;align-items:center;justify-content:center}' +
+    '.day-chip.active{border-color:var(--c-positive);background:var(--c-positive);color:var(--bg-surface)}' +
     '.time-input{font-family:var(--font-mono);font-size:var(--fs-lg);font-weight:500;' +
-      'padding:var(--sp-2) var(--sp-3);border:1px solid var(--rule-hair);background:var(--paper);width:110px;color:var(--ink)}' +
-    '.time-input:focus{outline:none;border-color:var(--accent)}' +
+      'padding:var(--sp-2) var(--sp-3);border:1px solid var(--border-subtle);background:var(--bg-surface);width:110px;color:var(--fg-primary)}' +
+    '.time-input:focus{outline:none;border-color:var(--c-positive)}' +
     /* Save row */
-    '.save-row{text-align:center;padding:var(--sp-7) 0;border-top:3px double var(--rule);margin-top:var(--sp-7)}' +
+    '.save-row{text-align:center;padding:var(--sp-7) 0;border-top:3px double var(--border-subtle);margin-top:var(--sp-7)}' +
     '.save-row .btn.primary{font-size:var(--fs-sm);padding:var(--sp-4) var(--sp-7);letter-spacing:0.22em}' +
     '.save-row .btn.ghost{margin-left:var(--sp-3);font-size:var(--fs-sm);padding:var(--sp-4) var(--sp-6);letter-spacing:0.18em}' +
-    '.save-row .last-saved{font-family:var(--font-head);font-style:italic;color:var(--ink-dim);' +
+    '.save-row .last-saved{font-family:var(--font-head);font-style:italic;color:var(--fg-dim);' +
       'font-size:var(--fs-sm);margin-top:var(--sp-4)}' +
     '.save-row .btn.primary[disabled]{opacity:0.4;cursor:not-allowed}';
   var el = document.createElement('style');
@@ -152,9 +152,7 @@ function _renderShell(data) {
   var minMcap = filters.min_market_cap != null ? filters.min_market_cap : 5e9;
   var minMcapB = Math.round(minMcap / 1e9);
 
-  var sectionNum = window.MMComponents.renderSectionNum(
-    '06', 'Settings', 'Schedule · Thresholds · Universe'
-  );
+  var sectionNum = window.'<div class="section-title" style="margin:var(--sp-6) 0 var(--sp-4);font-weight:700;font-size:var(--fs-lg);color:var(--fg-primary)">Settings</div>';
 
   var dayChips = '';
   for (var i = 0; i < DAYS.length; i++) {
@@ -182,7 +180,7 @@ function _renderShell(data) {
   return (
     sectionNum +
     '<h2 class="section-title">House Rules.</h2>' +
-    '<p class="section-kicker">ตั้งค่าการ scan + เกณฑ์กรองของ ดร.นิเวศน์. บันทึกเมื่อกด Save ด้านล่าง.</p>' +
+    '<p style="color:var(--fg-dim);font-size:var(--fs-sm);margin-bottom:var(--sp-4)">ตั้งค่าการ scan + เกณฑ์กรองของ ดร.นิเวศน์. บันทึกเมื่อกด Save ด้านล่าง.</p>' +
     '<div class="settings-wrap">' +
       /* AUTO SCAN */
       '<div class="setting-block">' +
@@ -200,7 +198,7 @@ function _renderShell(data) {
             '<div class="day-chips" id="day-chips">' + dayChips + '</div>' +
             '<input class="time-input" id="sched-time" type="time" value="' + timeStr + '">' +
             '<span class="micro">ICT &middot; Next run &middot; ' +
-              '<strong id="next-run" style="color:var(--ink)">&mdash;</strong>' +
+              '<strong id="next-run" style="color:var(--fg-primary)">&mdash;</strong>' +
             '</span>' +
           '</div>' +
         '</div>' +

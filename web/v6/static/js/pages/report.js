@@ -55,14 +55,7 @@ function _updateMasthead(status) {
   var date = status && status.last_data_date
     ? window.MMUtils.fmtDateLong(status.last_data_date).toUpperCase()
     : window.MMUtils.fmtDateLong(new Date()).toUpperCase();
-  host.innerHTML = window.MMComponents.renderMasthead({
-    vol: 'VI',
-    no: '17',
-    date: date,
-    next_scan: 'SAT 09:00',
-    edition: 'Full Report Edition',
-    active: 'report'
-  });
+  host.innerHTML = window.MMComponents.renderMasthead({ active: 'report' });
 }
 
 function _ensureChartJs() {
@@ -98,12 +91,12 @@ function _renderArticleHead(stock, patterns) {
   if (sector) subtitle += ' · SET · ' + sector;
 
   return (
-    '<section class="article-head" style="padding:var(--sp-6) 0 var(--sp-5);border-bottom:3px double var(--rule);text-align:center">' +
-      '<div class="article-kicker" style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:var(--sp-3)">' +
+    '<section class="article-head" style="padding:var(--sp-6) 0 var(--sp-5);border-bottom:3px double var(--border-subtle);text-align:center">' +
+      '<div class="article-kicker" style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-dim);margin-bottom:var(--sp-3)">' +
         'Full Report' + (caseTag ? ' · ' + esc(caseTag) : '') +
       '</div>' +
       '<h1 class="article-sym" style="font-family:var(--font-head);font-weight:900;font-size:var(--fs-3xl);letter-spacing:-0.02em;line-height:0.95;margin-bottom:var(--sp-2)">' + sym + '</h1>' +
-      '<div class="article-name" style="font-family:var(--font-head);font-style:italic;font-weight:400;font-size:var(--fs-md);color:var(--ink-soft);margin-bottom:var(--sp-4)">' + subtitle + '</div>' +
+      '<div class="article-name" style="font-family:var(--font-head);font-style:italic;font-weight:400;font-size:var(--fs-md);color:var(--fg-secondary);margin-bottom:var(--sp-4)">' + subtitle + '</div>' +
       '<div class="article-tags" style="display:flex;justify-content:center;gap:4px;flex-wrap:wrap">' + tags + '</div>' +
     '</section>'
   );
@@ -124,12 +117,12 @@ function _renderTheCase(stock) {
       return '<p' + (cls ? ' class="' + cls + '"' : '') + '>' + esc(p) + '</p>';
     }).join('');
     body =
-      '<div class="case-cols" id="v6-case-cols" style="column-count:2;column-gap:var(--sp-6);column-rule:1px solid var(--rule-hair);text-align:justify;hyphens:auto;font-size:1.02rem;line-height:1.7">' +
+      '<div class="case-cols" id="v6-case-cols" style="column-count:2;column-gap:var(--sp-6);column-rule:1px solid var(--border-subtle);text-align:justify;hyphens:auto;font-size:1.02rem;line-height:1.7">' +
         htmlParas +
       '</div>';
   } else {
     body =
-      '<div id="v6-case-cols" style="text-align:center;padding:var(--sp-6) 0;font-family:var(--font-head);font-style:italic;color:var(--ink-soft);font-size:var(--fs-md);max-width:62ch;margin:0 auto">' +
+      '<div id="v6-case-cols" style="text-align:center;padding:var(--sp-6) 0;font-family:var(--font-head);font-style:italic;color:var(--fg-secondary);font-size:var(--fs-md);max-width:62ch;margin:0 auto">' +
         'The editorial case has not been generated yet. กดปุ่มข้างล่างเพื่อเรียก Max วิเคราะห์เชิงคุณภาพ — Claude Opus จะใช้เวลาประมาณ 45 วินาที.' +
       '</div>';
   }
@@ -161,9 +154,9 @@ function _renderScoreBreakdown(stock) {
     '<div class="section-num"><span class="no">02 · Score Breakdown</span><span>Of One Hundred · Per Niwes Dividend-First Schema</span></div>' +
     '<section class="score-block" style="display:grid;grid-template-columns:1fr 1.4fr;gap:var(--sp-6);padding:var(--sp-6) 0;align-items:center">' +
       '<div class="score-display" style="text-align:center">' +
-        '<div class="huge" style="font-family:var(--font-mono);font-weight:300;font-size:11rem;line-height:0.8;letter-spacing:-0.05em;color:var(--ink)">' + Math.round(score) + '</div>' +
-        '<div class="slash" style="font-family:var(--font-head);font-style:italic;color:var(--ink-dim);font-size:var(--fs-lg);margin-top:var(--sp-3)">of one hundred</div>' +
-        '<div class="scoring-version" style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-faint);margin-top:var(--sp-4)">niwes-dividend-first · v2</div>' +
+        '<div class="huge" style="font-family:var(--font-mono);font-weight:300;font-size:11rem;line-height:0.8;letter-spacing:-0.05em;color:var(--fg-primary)">' + Math.round(score) + '</div>' +
+        '<div class="slash" style="font-family:var(--font-head);font-style:italic;color:var(--fg-dim);font-size:var(--fs-lg);margin-top:var(--sp-3)">of one hundred</div>' +
+        '<div class="scoring-version" style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-mute);margin-top:var(--sp-4)">niwes-dividend-first · v2</div>' +
       '</div>' +
       '<div><div class="score-chart-wrap" style="position:relative;height:320px"><canvas id="v6-score-chart"></canvas></div></div>' +
     '</section>' +
@@ -175,7 +168,7 @@ function _renderScoreBreakdown(stock) {
         _cell('Cash Flow Strength', 15, _val(cf), 'FCF · OCF/NI · Int Coverage') +
         _cell('Hidden Value', 10, _val(hv), breakdown.hidden_value_note || '') +
         '<tr><td class="sym italic">Modifier</td><td class="num">—</td><td class="num pos">' + (mod > 0 ? '+' + mod : mod) + '</td><td class="dim">Valuation grade / signals</td></tr>' +
-        '<tr style="border-top:2px solid var(--rule)"><td class="sym">Total</td><td class="num">100</td><td class="num" style="font-size:1.2em">' + Math.round(score) + '</td><td></td></tr>' +
+        '<tr style="border-top:2px solid var(--border-subtle)"><td class="sym">Total</td><td class="num">100</td><td class="num" style="font-size:1.2em">' + Math.round(score) + '</td><td></td></tr>' +
       '</tbody>' +
     '</table>'
   );
@@ -233,7 +226,7 @@ function _renderReasonsGrid(stock) {
   if (!reasons.length) {
     return (
       '<div class="section-num"><span class="no">04 · Reasons</span><span>Why This Passes</span></div>' +
-      '<p style="text-align:center;padding:var(--sp-5);font-family:var(--font-head);font-style:italic;color:var(--ink-dim)">— no reasons logged —</p>'
+      '<p style="text-align:center;padding:var(--sp-5);font-family:var(--font-head);font-style:italic;color:var(--fg-dim)">— no reasons logged —</p>'
     );
   }
   var items = reasons.map(function (r, i) {
@@ -241,8 +234,8 @@ function _renderReasonsGrid(stock) {
     // Reasons may be strings or {text} objects
     var text = typeof r === 'string' ? r : (r.text || r.reason || JSON.stringify(r));
     return (
-      '<div class="reason-item" style="break-inside:avoid;padding:var(--sp-3) 0;border-bottom:1px solid var(--rule-hair);display:flex;gap:var(--sp-3);align-items:baseline">' +
-        '<span class="reason-num" style="font-family:var(--font-mono);font-size:var(--fs-sm);color:var(--ink-faint);min-width:24px">' + num + '</span>' +
+      '<div class="reason-item" style="break-inside:avoid;padding:var(--sp-3) 0;border-bottom:1px solid var(--border-subtle);display:flex;gap:var(--sp-3);align-items:baseline">' +
+        '<span class="reason-num" style="font-family:var(--font-mono);font-size:var(--fs-sm);color:var(--fg-mute);min-width:24px">' + num + '</span>' +
         '<div class="reason-text" style="font-family:var(--font-body);font-size:var(--fs-sm);line-height:1.5">' + esc(text) + '</div>' +
       '</div>'
     );
@@ -259,20 +252,20 @@ function _renderPatternSection(patterns) {
   if (!matched.length) {
     return (
       '<div class="section-num"><span class="no">05 · Case Study Pattern</span><span>No Matches</span></div>' +
-      '<p style="text-align:center;padding:var(--sp-5);font-family:var(--font-head);font-style:italic;color:var(--ink-dim)">ไม่มี case study pattern ที่ match ในรอบนี้.</p>'
+      '<p style="text-align:center;padding:var(--sp-5);font-family:var(--font-head);font-style:italic;color:var(--fg-dim)">ไม่มี case study pattern ที่ match ในรอบนี้.</p>'
     );
   }
   var blocks = matched.map(function (p) {
     var tag = esc(p.tag || '');
     var nar = esc(p.narrative || '');
-    var src = p.source ? '<div class="dim" style="margin-top:var(--sp-3);font-family:var(--font-mono);font-size:var(--fs-xs);color:var(--ink-faint)">Source: ' + esc(p.source) + '</div>' : '';
+    var src = p.source ? '<div class="dim" style="margin-top:var(--sp-3);font-family:var(--font-mono);font-size:var(--fs-xs);color:var(--fg-mute)">Source: ' + esc(p.source) + '</div>' : '';
     return (
-      '<div class="pattern-block" style="border-top:3px double var(--rule);border-bottom:3px double var(--rule);padding:var(--sp-5);margin:var(--sp-5) 0;display:grid;grid-template-columns:auto 1fr;gap:var(--sp-6)">' +
+      '<div class="pattern-block" style="border-top:3px double var(--border-subtle);border-bottom:3px double var(--border-subtle);padding:var(--sp-5);margin:var(--sp-5) 0;display:grid;grid-template-columns:auto 1fr;gap:var(--sp-6)">' +
         '<div>' +
-          '<div class="pattern-label" style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:var(--sp-2)">Pattern</div>' +
-          '<div class="pattern-name" style="font-family:var(--font-head);font-weight:900;font-size:var(--fs-xl);line-height:1;color:var(--accent);letter-spacing:-0.01em">' + tag + '</div>' +
+          '<div class="pattern-label" style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-dim);margin-bottom:var(--sp-2)">Pattern</div>' +
+          '<div class="pattern-name" style="font-family:var(--font-head);font-weight:900;font-size:var(--fs-xl);line-height:1;color:var(--c-positive);letter-spacing:-0.01em">' + tag + '</div>' +
         '</div>' +
-        '<div class="pattern-body" style="font-family:var(--font-body);font-size:var(--fs-md);line-height:1.65;font-style:italic;color:var(--ink-soft)"><p>' + nar + '</p>' + src + '</div>' +
+        '<div class="pattern-body" style="font-family:var(--font-body);font-size:var(--fs-md);line-height:1.65;font-style:italic;color:var(--fg-secondary)"><p>' + nar + '</p>' + src + '</div>' +
       '</div>'
     );
   }).join('');
@@ -287,7 +280,7 @@ function _renderKeyNumbers(stock) {
   if (!rows.length) {
     return (
       '<div class="section-num"><span class="no">06 · Key Numbers</span><span>Five-Year Financial History</span></div>' +
-      '<p style="text-align:center;padding:var(--sp-4);font-family:var(--font-head);font-style:italic;color:var(--ink-dim)">— no five-year history —</p>'
+      '<p style="text-align:center;padding:var(--sp-4);font-family:var(--font-head);font-style:italic;color:var(--fg-dim)">— no five-year history —</p>'
     );
   }
   // Sort ascending for display
@@ -327,7 +320,7 @@ function _renderDividendHistory(stock) {
   if (!rows.length) {
     return (
       '<div class="section-num"><span class="no">07 · Dividend History</span><span>Ten Years of Distributions</span></div>' +
-      '<p style="text-align:center;padding:var(--sp-4);font-family:var(--font-head);font-style:italic;color:var(--ink-dim)">— no dividend history —</p>'
+      '<p style="text-align:center;padding:var(--sp-4);font-family:var(--font-head);font-style:italic;color:var(--fg-dim)">— no dividend history —</p>'
     );
   }
   var asc = rows.slice().sort(function (a, b) { return (a.year || 0) - (b.year || 0); });
@@ -341,7 +334,7 @@ function _renderDividendHistory(stock) {
     '<div class="chart-pair" style="display:grid;grid-template-columns:1.6fr 1fr;gap:var(--sp-6);margin:var(--sp-5) 0;align-items:flex-start">' +
       '<div>' +
         '<div class="chart-box" style="height:260px"><canvas id="v6-dps-chart"></canvas></div>' +
-        '<div class="chart-caption" style="font-family:var(--font-head);font-style:italic;font-size:var(--fs-sm);color:var(--ink-dim);text-align:center;margin-top:var(--sp-3)">DPS per year · last 10 years</div>' +
+        '<div class="chart-caption" style="font-family:var(--font-head);font-style:italic;font-size:var(--fs-sm);color:var(--fg-dim);text-align:center;margin-top:var(--sp-3)">DPS per year · last 10 years</div>' +
       '</div>' +
       '<div>' +
         '<table class="data-table">' +
@@ -358,14 +351,14 @@ function _renderScoreHistory(history) {
   if (!timeline.length) {
     return (
       '<div class="section-num"><span class="no">08 · Score History</span><span>No history</span></div>' +
-      '<p style="text-align:center;padding:var(--sp-4);font-family:var(--font-head);font-style:italic;color:var(--ink-dim)">— first scan, no prior history —</p>'
+      '<p style="text-align:center;padding:var(--sp-4);font-family:var(--font-head);font-style:italic;color:var(--fg-dim)">— first scan, no prior history —</p>'
     );
   }
   var passedOnly = timeline.filter(function (t) { return t.score != null; });
   if (!passedOnly.length) {
     return (
       '<div class="section-num"><span class="no">08 · Score History</span><span>No pass history</span></div>' +
-      '<p style="text-align:center;padding:var(--sp-4);font-family:var(--font-head);font-style:italic;color:var(--ink-dim)">— not yet passed in any scan —</p>'
+      '<p style="text-align:center;padding:var(--sp-4);font-family:var(--font-head);font-style:italic;color:var(--fg-dim)">— not yet passed in any scan —</p>'
     );
   }
   var rows = '';
@@ -388,7 +381,7 @@ function _renderScoreHistory(history) {
     '<div class="chart-pair" style="display:grid;grid-template-columns:1.6fr 1fr;gap:var(--sp-6);margin:var(--sp-5) 0;align-items:flex-start">' +
       '<div>' +
         '<div class="chart-box" style="height:260px"><canvas id="v6-scorehist-chart"></canvas></div>' +
-        '<div class="chart-caption" style="font-family:var(--font-head);font-style:italic;font-size:var(--fs-sm);color:var(--ink-dim);text-align:center;margin-top:var(--sp-3)">Score trajectory since first appearance</div>' +
+        '<div class="chart-caption" style="font-family:var(--font-head);font-style:italic;font-size:var(--fs-sm);color:var(--fg-dim);text-align:center;margin-top:var(--sp-3)">Score trajectory since first appearance</div>' +
       '</div>' +
       '<div>' +
         '<table class="data-table">' +
@@ -404,7 +397,7 @@ function _renderExitBaseline(exitStatus) {
   if (!exitStatus || !exitStatus.in_watchlist) {
     return (
       '<div class="section-num"><span class="no">09 · Exit Baseline</span><span>Not in Watchlist</span></div>' +
-      '<p style="text-align:center;padding:var(--sp-5);font-family:var(--font-head);font-style:italic;color:var(--ink-dim)">หุ้นนี้ยังไม่ได้เข้า watchlist — ไม่มี baseline ให้ monitor.</p>'
+      '<p style="text-align:center;padding:var(--sp-5);font-family:var(--font-head);font-style:italic;color:var(--fg-dim)">หุ้นนี้ยังไม่ได้เข้า watchlist — ไม่มี baseline ให้ monitor.</p>'
     );
   }
   var esc = window.MMUtils.escapeHtml;
@@ -427,9 +420,9 @@ function _renderExitBaseline(exitStatus) {
   function _cell(lbl, v, sub) {
     return (
       '<div class="exit-cell">' +
-        '<span class="lbl" style="font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-dim)">' + lbl + '</span>' +
+        '<span class="lbl" style="font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-dim)">' + lbl + '</span>' +
         '<span class="v" style="font-family:var(--font-mono);font-size:var(--fs-lg);font-weight:500;display:block;margin-top:4px">' + v + '</span>' +
-        (sub ? '<span class="sub" style="font-family:var(--font-head);font-style:italic;font-size:var(--fs-xs);color:var(--ink-dim);display:block;margin-top:2px">' + esc(sub) + '</span>' : '') +
+        (sub ? '<span class="sub" style="font-family:var(--font-head);font-style:italic;font-size:var(--fs-xs);color:var(--fg-dim);display:block;margin-top:2px">' + esc(sub) + '</span>' : '') +
       '</div>'
     );
   }
@@ -443,10 +436,10 @@ function _renderExitBaseline(exitStatus) {
 
   return (
     '<div class="section-num"><span class="no">09 · Exit Baseline</span><span>Watchlist Position · Monitoring Active</span></div>' +
-    '<div class="exit-panel" style="border:3px double var(--accent);padding:var(--sp-5);margin:var(--sp-5) 0">' +
-      '<div class="head" style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:var(--sp-3)">Current Assessment · ' + sevBadge + '</div>' +
-      '<p class="body" style="font-style:italic;color:var(--ink-soft);margin-bottom:var(--sp-4)">' + esc(exitStatus.narrative || '') + '</p>' +
-      '<div class="exit-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-5);padding:var(--sp-4) 0;border-top:1px solid var(--rule-hair);border-bottom:1px solid var(--rule-hair);margin:var(--sp-4) 0">' +
+    '<div class="exit-panel" style="border:3px double var(--c-positive);padding:var(--sp-5);margin:var(--sp-5) 0">' +
+      '<div class="head" style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.18em;text-transform:uppercase;color:var(--c-positive);margin-bottom:var(--sp-3)">Current Assessment · ' + sevBadge + '</div>' +
+      '<p class="body" style="font-style:italic;color:var(--fg-secondary);margin-bottom:var(--sp-4)">' + esc(exitStatus.narrative || '') + '</p>' +
+      '<div class="exit-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-5);padding:var(--sp-4) 0;border-top:1px solid var(--border-subtle);border-bottom:1px solid var(--border-subtle);margin:var(--sp-4) 0">' +
         _cell('Entry Date', entryDate, weeks) +
         _cell('Entry P/E', entryPE, '') +
         _cell('Entry Yield', entryYld, '') +
@@ -459,12 +452,11 @@ function _renderExitBaseline(exitStatus) {
 
 function _renderDeepAnalyze() {
   return (
-    '<div class="analyze-block" style="text-align:center;padding:var(--sp-7) 0;border-top:3px double var(--rule);margin-top:var(--sp-7)" id="v6-deep-analyze">' +
-      '<div class="kicker" style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:var(--sp-3)">№ 10 · Beyond the Algorithm</div>' +
-      '<h2 style="font-family:var(--font-head);font-weight:900;font-size:var(--fs-2xl);line-height:1.1;margin-bottom:var(--sp-3)">Ask Max to go deeper.</h2>' +
-      '<p class="sub" style="font-family:var(--font-head);font-style:italic;color:var(--ink-dim);max-width:50ch;margin:var(--sp-4) auto;font-size:var(--fs-md)">The algorithm scores what can be measured. For qualitative assessment — competitive moat, management quality, sector structural risk — invoke deep analysis powered by Claude Opus.</p>' +
+    '<div class="analyze-block" style="text-align:center;padding:var(--sp-7) 0;border-top:3px double var(--border-subtle);margin-top:var(--sp-7)" id="v6-deep-analyze">' +
+            '<h2 style="font-family:var(--font-head);font-weight:900;font-size:var(--fs-2xl);line-height:1.1;margin-bottom:var(--sp-3)">Ask Max to go deeper.</h2>' +
+      '<p class="sub" style="font-family:var(--font-head);font-style:italic;color:var(--fg-dim);max-width:50ch;margin:var(--sp-4) auto;font-size:var(--fs-md)">The algorithm scores what can be measured. For qualitative assessment — competitive moat, management quality, sector structural risk — invoke deep analysis powered by Claude Opus.</p>' +
       '<button class="btn primary" id="v6-deep-btn" style="margin-top:var(--sp-4)">ขอ Max วิเคราะห์เพิ่มเติม</button>' +
-      '<div class="analyze-status" id="v6-deep-status" style="margin-top:var(--sp-4);font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-dim)">Cached 7 days · est. 45 seconds</div>' +
+      '<div class="analyze-status" id="v6-deep-status" style="margin-top:var(--sp-4);font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-dim)">Cached 7 days · est. 45 seconds</div>' +
     '</div>'
   );
 }
@@ -474,7 +466,7 @@ function _renderDeepAnalyze() {
 function _buildReportHtml(stock, patterns, history, exitStatus) {
   var esc = window.MMUtils.escapeHtml;
   var foot =
-    '<div class="page-foot" style="padding:var(--sp-6) 0;border-top:3px double var(--rule);margin-top:var(--sp-7);text-align:center;font-family:var(--font-head);font-style:italic;color:var(--ink-dim);font-size:var(--fs-sm)">' +
+    '<div class="page-foot" style="padding:var(--sp-6) 0;border-top:3px double var(--border-subtle);margin-top:var(--sp-7);text-align:center;font-family:var(--font-head);font-style:italic;color:var(--fg-dim);font-size:var(--fs-sm)">' +
       'End of Report · ' + esc(stock.symbol || '') + ' · Max Mahon — The Dividend Review' +
     '</div>';
 
@@ -505,7 +497,7 @@ function _mountCharts(stock, history) {
   var gray300 = root.getPropertyValue('--gray-300').trim() || '#b2b6c0';
   var ruleHair = (getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim() || 'rgba(59,64,80,0.15)');
   if (!window.Chart) return;
-  window.Chart.defaults.font.family = 'Lora, serif';
+  window.Chart.defaults.font.family = 'Inter, sans-serif';
   window.Chart.defaults.color = inkDim;
 
   // Score donut
@@ -657,7 +649,7 @@ function _injectNarrative(text) {
   var esc = window.MMUtils.escapeHtml;
   var paras = String(text).split(/\n\n+/).filter(Boolean);
   host.className = 'case-cols';
-  host.setAttribute('style', 'column-count:2;column-gap:var(--sp-6);column-rule:1px solid var(--rule-hair);text-align:justify;hyphens:auto;font-size:1.02rem;line-height:1.7');
+  host.setAttribute('style', 'column-count:2;column-gap:var(--sp-6);column-rule:1px solid var(--border-subtle);text-align:justify;hyphens:auto;font-size:1.02rem;line-height:1.7');
   host.innerHTML = paras.map(function (p, i) {
     var cls = i === 0 ? 'drop-cap' : '';
     return '<p' + (cls ? ' class="' + cls + '"' : '') + '>' + esc(p) + '</p>';
