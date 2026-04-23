@@ -1551,6 +1551,46 @@ async def get_pnl():
     }
 
 
+class PortfolioBuilderRequest(BaseModel):
+    capital: Optional[float] = None
+    pins: list[str] = []
+    excludes: list[str] = []
+
+
+@app.post("/api/portfolio/builder")
+async def portfolio_builder(req: PortfolioBuilderRequest):
+    """Build Niwes-style 5-sector portfolio from latest screener PASS candidates."""
+    # Lazy import — avoid polluting startup time
+    if str(SCRIPTS_DIR) not in sys.path:
+        sys.path.insert(0, str(SCRIPTS_DIR))
+    from portfolio_builder import build_portfolio
+
+    # Find latest screener JSON (YYYY-MM-DD format, sorted by mtime)
+    files = sorted(
+        [
+            f for f in DATA_DIR.glob("screener_*.json")
+            if re.match(r"^screener_\d{4}-\d{2}-\d{2}\.json$", f.name)
+        ],
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    if not files:
+        raise HTTPException(404, "no screener data — run /api/admin/scan/trigger first")
+    screener = json.loads(files[0].read_text(encoding="utf-8"))
+    candidates = screener.get("candidates", [])
+    # Enrich candidates with current_price from metrics
+    for c in candidates:
+        c["current_price"] = (c.get("metrics") or {}).get("current_price")
+    result = build_portfolio(
+        candidates=candidates,
+        capital=req.capital,
+        pins=req.pins,
+        excludes=req.excludes,
+    )
+    result["screener_date"] = screener.get("date")
+    return result
+
+
 # ---------------------------------------------------------------------------
 # Search API
 # ---------------------------------------------------------------------------
@@ -3155,6 +3195,12 @@ async def serve_desktop_portfolio():
     return _render_shell_path("desktop/portfolio.html", _V6_DESKTOP)
 
 
+@app.get("/portfolio-builder", response_class=HTMLResponse)
+async def serve_desktop_portfolio_builder():
+    """Desktop portfolio builder — Niwes 5-sector 80/20."""
+    return _render_shell_path("desktop/portfolio-builder.html", _V6_DESKTOP)
+
+
 # Mobile SPA routes
 @app.get("/mobile", response_class=HTMLResponse)
 @app.get("/m", response_class=HTMLResponse)
@@ -3175,6 +3221,12 @@ async def serve_mobile_report(symbol: str):
 async def serve_mobile_portfolio():
     """Mobile portfolio — dedicated shell preloads Chart.js."""
     return _render_shell_path("mobile/portfolio.html", _V6_MOBILE)
+
+
+@app.get("/m/portfolio-builder", response_class=HTMLResponse)
+async def serve_mobile_portfolio_builder():
+    """Mobile portfolio builder — Niwes 5-sector 80/20."""
+    return _render_shell_path("mobile/portfolio-builder.html", _V6_MOBILE)
 
 
 _V6_SHARED = _V6_DIR / "shared"
