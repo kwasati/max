@@ -37,10 +37,14 @@ def detect_case_study_tags(stock: dict, patterns: dict) -> list[str]:
     mcap = stock.get("market_cap") or 0
     sector = stock.get("sector", "")
     symbol = stock.get("symbol", "")
+    country = stock.get("country", "TH")  # MaxMahon default — Thai market
+    yearly = stock.get("yearly_metrics", []) or []
     for p in patterns.values():
         if p.get("disabled"):
             continue
         r = p.get("rules", {})
+        if "country" in r and r["country"] != country:
+            continue  # skip patterns for other markets
         if "exclude_symbols" in r and symbol in r["exclude_symbols"]:
             continue
         if "sector_keywords" in r and not _matches_sector(sector, r["sector_keywords"]):
@@ -55,6 +59,14 @@ def detect_case_study_tags(stock: dict, patterns: dict) -> list[str]:
             continue
         if "market_cap_min" in r and mcap < r["market_cap_min"]:
             continue
+        if "roe_3yr_avg_min" in r:
+            # compute avg ROE over last 3 years from yearly_metrics
+            roes = [m.get("roe") for m in yearly[-3:] if m.get("roe") is not None]
+            if not roes:
+                continue  # no data to evaluate
+            avg_roe = sum(roes) / len(roes)
+            if avg_roe < r["roe_3yr_avg_min"]:
+                continue
         if r.get("has_hidden_holdings"):
             hh = stock.get("_hidden_holdings") or []
             if not hh:
