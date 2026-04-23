@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Stock Detail Polish · Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sage-500:#7ba688;  --sage-600:#5d8c69;
+    --rose-500:#c98b85;
+    --wheat-500:#caa673;
+    --lavender-500:#9d90c7;
+    --slate-blue-500:#84a8c9;
+
+    --bg-base:#f5f5f0;
+    --bg-outside:#e8e6dd;
+    --bg-surface:#ffffff;
+    --bg-surface-2:#ebebe4;
+    --bg-elevated-start:#f1eee3;
+    --bg-elevated-end:#e6e2d4;
+    --bg-elevated-border:#d9d4c4;
+
+    --fg-primary:#3b4050;
+    --fg-secondary:#5a6072;
+    --fg-dim:#878d9a;
+    --fg-mute:#b2b6c0;
+
+    --border-subtle:#e6e4db;
+    --border-strong:#d1cec1;
+
+    --c-positive:var(--sage-500);
+    --c-positive-strong:var(--sage-600);
+    --c-positive-soft:#e9f1eb;
+    --c-positive-tint:#f3f8f4;
+    --c-positive-border:rgba(123,166,136,.35);
+
+    --c-negative:var(--rose-500);
+    --c-negative-soft:#f4eae8;
+    --c-negative-border:rgba(201,139,133,.35);
+
+    --c-warn:var(--wheat-500);
+    --c-warn-soft:#f5eed8;
+    --c-warn-fg:#8a6d3a;
+
+    --c-info:var(--slate-blue-500);
+    --c-info-soft:#e6eef5;
+    --c-info-fg:#456a8c;
+
+    --c-purple:var(--lavender-500);
+    --c-purple-soft:#ebe7f4;
+    --c-purple-fg:#6a5c9e;
+
+    --shadow-card:0 2px 10px rgba(60,66,82,.06);
+    --shadow-accent-positive:0 4px 12px rgba(123,166,136,.22);
+
+    --radius:18px;
+    --radius-lg:24px;
+    --font:'Inter','IBM Plex Serif Thai',-apple-system,system-ui,sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg-base:#1c1f25;
+      --bg-outside:#0f1115;
+      --bg-surface:#262a32;
+      --bg-surface-2:#2f343d;
+      --bg-elevated-start:#2a2f38;
+      --bg-elevated-end:#353b45;
+      --bg-elevated-border:#3d434e;
+      --fg-primary:#e4e6eb;
+      --fg-secondary:#b3b7c1;
+      --fg-dim:#838896;
+      --fg-mute:#5b606c;
+      --border-subtle:#373c46;
+      --border-strong:#4b5160;
+      --c-positive-soft:rgba(123,166,136,.14);
+      --c-positive-tint:rgba(123,166,136,.07);
+      --c-positive-border:rgba(123,166,136,.4);
+      --c-negative-soft:rgba(201,139,133,.14);
+      --c-warn-soft:rgba(202,166,115,.16);
+      --c-warn-fg:#d9b87f;
+      --c-info-soft:rgba(132,168,201,.14);
+      --c-info-fg:#a8c2d9;
+      --c-purple-soft:rgba(157,144,199,.14);
+      --c-purple-fg:#c1b6e0;
+      --shadow-card:0 2px 10px rgba(0,0,0,.28);
+      --shadow-accent-positive:0 4px 12px rgba(123,166,136,.28);
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg-outside);color:var(--fg-primary);font-family:var(--font);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+  .frame{max-width:480px;margin:0 auto;padding:40px 20px;background:var(--bg-base);min-height:100vh}
+
+  .section-label{
+    font-family:var(--font-mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--fg-dim);
+    padding:32px 0 10px;font-weight:600;border-top:1px solid var(--border-subtle);margin-top:28px;
+  }
+  .section-label:first-child{border-top:0;margin-top:0;padding-top:0}
+
+  .note{font-size:12px;color:var(--fg-dim);font-style:italic;margin-bottom:14px;line-height:1.45}
+
+  /* ========== STATE 1: Home card with price + as-of ========== */
+  .home-card{
+    background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius);
+    padding:16px 18px;box-shadow:var(--shadow-card);margin-bottom:10px;
+  }
+  .home-card .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .home-card .sym{font-weight:800;font-size:17px;letter-spacing:-.01em}
+  .home-card .sym .th{color:var(--fg-dim);font-weight:500;font-size:12px;margin-left:6px}
+  .home-card .score{font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--c-positive-strong);background:var(--c-positive-soft);padding:3px 8px;border-radius:6px}
+  .home-card .mid{display:flex;gap:18px;margin-top:8px}
+  .home-card .mid .cell{font-size:12px;color:var(--fg-secondary)}
+  .home-card .mid .cell .v{font-family:var(--font-mono);font-weight:600;color:var(--fg-primary)}
+  .home-card .price-row{
+    display:flex;justify-content:space-between;align-items:baseline;margin-top:12px;padding-top:10px;
+    border-top:1px dashed var(--border-subtle);
+  }
+  .home-card .price{font-family:var(--font-mono);font-weight:700;font-size:18px;color:var(--fg-primary)}
+  .home-card .price-date{font-family:var(--font-mono);font-size:11px;color:var(--fg-dim)}
+  .home-card .sector-pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--c-positive-soft);color:var(--c-positive-strong);margin-top:6px}
+  .home-card .sector-pill::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor}
+
+  /* ========== STATE 2: Report header with price prominent ========== */
+  .report-hero{
+    background:linear-gradient(135deg,var(--bg-elevated-start),var(--bg-elevated-end));
+    border:1px solid var(--bg-elevated-border);border-radius:var(--radius-lg);padding:22px;
+    box-shadow:var(--shadow-card);margin-bottom:14px;
+  }
+  .report-hero h1{margin:0;font-size:28px;font-weight:900;letter-spacing:-.02em;line-height:1.1}
+  .report-hero .th-name{color:var(--fg-dim);font-size:13px;margin-top:2px}
+  .report-hero .price-block{margin-top:16px;display:flex;align-items:baseline;gap:10px}
+  .report-hero .price-block .val{font-family:var(--font-mono);font-size:36px;font-weight:900;color:var(--fg-primary);letter-spacing:-.02em}
+  .report-hero .price-block .unit{color:var(--fg-dim);font-size:13px}
+  .report-hero .as-of{font-family:var(--font-mono);font-size:11px;color:var(--fg-dim);margin-top:4px;letter-spacing:.08em;text-transform:uppercase}
+
+  /* ========== STATE 3: Exit Baseline with Δ SCORE filled ========== */
+  .exit-panel{
+    border:1px solid var(--c-positive);padding:16px 18px;border-radius:var(--radius);
+    background:var(--c-positive-tint);margin-bottom:14px;
+  }
+  .exit-panel .head{
+    font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--c-positive-strong);
+    margin-bottom:12px;display:flex;align-items:center;gap:8px;font-weight:700;
+  }
+  .exit-panel .badge{background:var(--c-positive);color:#fff;padding:2px 8px;border-radius:999px;font-size:9px}
+  .exit-panel .narrative{font-size:13px;color:var(--fg-secondary);margin-bottom:14px;font-style:italic;line-height:1.5}
+  .exit-panel .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;border-top:1px solid var(--border-subtle);padding-top:12px}
+  .exit-panel .cell{display:flex;flex-direction:column;gap:3px}
+  .exit-panel .cell .lbl{font-family:var(--font-mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-dim);font-weight:600}
+  .exit-panel .cell .v{font-family:var(--font-mono);font-size:17px;font-weight:600;color:var(--fg-primary)}
+  .exit-panel .cell .v.up{color:var(--c-positive-strong)}
+  .exit-panel .cell .v.down{color:var(--c-negative)}
+
+  /* ========== STATE 4: Analyze button (initial) ========== */
+  .analyze-block{padding:20px 18px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius);text-align:center;margin-bottom:14px}
+  .analyze-block h2{margin:0 0 6px;font-size:17px;font-weight:800;letter-spacing:-.01em}
+  .analyze-block .desc{font-size:13px;color:var(--fg-dim);margin-bottom:14px;line-height:1.45}
+  .analyze-btn{
+    padding:12px 22px;border-radius:999px;background:var(--c-positive);color:#fff;border:0;
+    font-weight:700;font-size:14px;cursor:pointer;box-shadow:var(--shadow-accent-positive);
+    min-height:48px;display:inline-flex;align-items:center;gap:8px;
+  }
+  .analyze-block .hint{font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-mute);margin-top:12px}
+
+  /* ========== STATE 5: Analyze loading ========== */
+  .analyze-loading{padding:28px 18px;text-align:center}
+  .spinner{display:inline-block;width:24px;height:24px;border:3px solid var(--c-positive-soft);border-top-color:var(--c-positive);border-radius:50%;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .analyze-loading .lbl{font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-dim);margin-top:10px}
+
+  /* ========== STATE 6: Analyze result (6 sections + verdict) ========== */
+  .analyze-result{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:20px 18px;margin-bottom:14px}
+  .analyze-result .meta{font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-dim);margin-bottom:14px;display:flex;justify-content:space-between}
+  .analyze-result .verdict{
+    padding:14px 16px;border-radius:12px;background:var(--c-positive-soft);border:1px solid var(--c-positive-border);
+    margin-bottom:16px;display:flex;align-items:center;gap:12px;
+  }
+  .analyze-result .verdict .badge{padding:5px 12px;border-radius:8px;font-weight:800;font-size:13px;letter-spacing:.04em}
+  .analyze-result .verdict.buy .badge{background:var(--c-positive);color:#fff}
+  .analyze-result .verdict.hold .badge{background:var(--fg-dim);color:#fff}
+  .analyze-result .verdict.sell .badge{background:var(--c-negative);color:#fff}
+  .analyze-result .verdict .why{font-size:13px;color:var(--fg-primary);line-height:1.45;flex:1}
+  .analyze-result .sec{padding:14px 0;border-top:1px solid var(--border-subtle)}
+  .analyze-result .sec:first-of-type{border-top:0}
+  .analyze-result .sec h4{margin:0 0 6px;font-size:14px;font-weight:800;color:var(--c-positive-strong);display:flex;align-items:center;gap:8px}
+  .analyze-result .sec h4 .ico{width:22px;height:22px;border-radius:6px;background:var(--c-positive-soft);display:inline-grid;place-items:center;font-size:11px}
+  .analyze-result .sec p{margin:0;font-size:13.5px;color:var(--fg-secondary);line-height:1.6}
+  .analyze-result .sec p + p{margin-top:10px}
+  .analyze-result .sec.art-talk{background:var(--c-positive-tint);margin:14px -18px -2px;padding:16px 18px 18px;border-radius:0 0 var(--radius) var(--radius);border-top:1px solid var(--c-positive-border)}
+  .analyze-result .sec.art-talk h4{color:var(--c-positive-strong);flex-wrap:wrap;gap:10px}
+  .analyze-result .sec.art-talk h4 .ico{background:var(--c-positive);color:#fff}
+  .analyze-result .sec.art-talk .pillar-tag{
+    font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;
+    background:var(--bg-surface);color:var(--fg-secondary);border:1px solid var(--border-subtle);
+    font-family:var(--font-mono);letter-spacing:.05em;text-transform:none;
+  }
+  .analyze-result .sec.art-talk p{color:var(--fg-primary)}
+  .analyze-result .sec.art-talk p strong{color:var(--c-positive-strong)}
+
+  /* Caption at bottom */
+  .caption{font-size:11px;color:var(--fg-mute);text-align:center;font-family:var(--font-mono);letter-spacing:.08em;text-transform:uppercase;margin-top:32px;padding-top:20px;border-top:1px solid var(--border-subtle)}
+</style>
+</head>
+<body>
+
+<div class="frame">
+
+  <!-- STATE 1 -->
+  <div class="section-label">01 · HOME CARD — price + as-of date</div>
+  <div class="note">Screener candidate card บน `/` + `/m/` — เพิ่มราคาปัจจุบัน + วันที่ของราคานั้น (refresh ทุก 19:00 หลังตลาดปิด)</div>
+  <div class="home-card">
+    <div class="top">
+      <div class="sym">BBL<span class="th"> · กรุงเทพ</span></div>
+      <div class="score">88/100</div>
+    </div>
+    <div class="sector-pill">Banking</div>
+    <div class="mid">
+      <div class="cell"><div class="v">9.9%</div>yield</div>
+      <div class="cell"><div class="v">8.8×</div>PE</div>
+      <div class="cell"><div class="v">0.50×</div>PBV</div>
+      <div class="cell"><div class="v">22y</div>streak</div>
+    </div>
+    <div class="price-row">
+      <span class="price">฿43.50</span>
+      <span class="price-date">ณ 23 เม.ย. 68</span>
+    </div>
+  </div>
+
+  <!-- STATE 2 -->
+  <div class="section-label">02 · REPORT HERO — big price + as-of</div>
+  <div class="note">หัว full report `/report/BBL.BK` — ราคาใหญ่ชัดก่อนลงไปดูรายละเอียด hard filters + score breakdown</div>
+  <div class="report-hero">
+    <h1>BBL</h1>
+    <div class="th-name">ธนาคารกรุงเทพ · Banking</div>
+    <div class="price-block">
+      <span class="val">฿43.50</span>
+      <span class="unit">THB</span>
+    </div>
+    <div class="as-of">ราคาวันที่ 23 เม.ย. 68 · 19:02</div>
+  </div>
+
+  <!-- STATE 3 -->
+  <div class="section-label">03 · EXIT BASELINE — Δ SCORE filled</div>
+  <div class="note">Δ Score ต้องมีค่า (ไม่ใช่ "—") — back-fill entry_score จาก latest screener ถ้า baseline เก่าไม่มี</div>
+  <div class="exit-panel">
+    <div class="head">Current <span class="badge">HOLD</span></div>
+    <div class="narrative">เข้า watchlist วันที่ 2026-04-21 · P/E ตอนเข้า 8.8 · Yield ตอนเข้า 9.93% · คะแนนดีขึ้น +5 — ยังไม่มีสัญญาณ exit, hold ต่อ.</div>
+    <div class="grid">
+      <div class="cell"><span class="lbl">Entry Date</span><span class="v">21 Apr 2026</span></div>
+      <div class="cell"><span class="lbl">Entry PE</span><span class="v">8.8×</span></div>
+      <div class="cell"><span class="lbl">Entry Yld</span><span class="v">9.9%</span></div>
+      <div class="cell"><span class="lbl">Δ Score</span><span class="v up">+5</span></div>
+    </div>
+  </div>
+
+  <!-- STATE 4 -->
+  <div class="section-label">04 · ANALYZE — INITIAL (ปุ่มพร้อมกด)</div>
+  <div class="note">ก่อนกดปุ่ม: แสดงคำเชิญ + ปุ่ม + hint cache 7 days</div>
+  <div class="analyze-block" id="state-initial">
+    <h2>ขอวิเคราะห์เจาะลึก</h2>
+    <div class="desc">ให้ Claude Opus วิเคราะห์ตามกรอบ ดร.นิเวศน์ 5 ด้าน + verdict สำหรับ DCA 10-20 ปี เน้นปันผลสะสม</div>
+    <button class="analyze-btn">ขอวิเคราะห์เพิ่มเติม</button>
+    <div class="hint">CACHED 7 DAYS · API MAX_ANTHROPIC_API_KEY</div>
+  </div>
+
+  <!-- STATE 5 -->
+  <div class="section-label">05 · ANALYZE — LOADING (inline ที่เดิม)</div>
+  <div class="note">หลังกด: spinner แทนที่ปุ่มในตำแหน่งเดิม ไม่ navigate</div>
+  <div class="analyze-block">
+    <div class="analyze-loading">
+      <div class="spinner"></div>
+      <div class="lbl">กำลังวิเคราะห์ · Claude Opus</div>
+    </div>
+  </div>
+
+  <!-- STATE 6 -->
+  <div class="section-label">06 · ANALYZE — RESULT (6 sections + verdict badge)</div>
+  <div class="note">ผลลัพธ์ inline expand ที่ตำแหน่งปุ่มเดิม — verdict badge สีชัด (sage=BUY, dim=HOLD, rose=SELL)</div>
+  <div class="analyze-result">
+    <div class="meta">
+      <span>Claude Opus · 23 เม.ย. 68 14:35</span>
+      <span>Cache 7 วัน</span>
+    </div>
+    <div class="verdict buy">
+      <span class="badge">BUY</span>
+      <span class="why">PBV 0.50× + yield 9.9% + streak 22 ปี = deep value + dividend machine ที่ DCA ระยะยาวได้สบาย</span>
+    </div>
+
+    <div class="sec">
+      <h4><span class="ico">💵</span>Dividend Sustainability</h4>
+      <p>จ่ายปันผลต่อเนื่อง 22 ปี payout ratio ~35% ของกำไร FCF บวกตลอด 10 ปี = ปันผลมาจากเงินสดจริงไม่ใช่กู้มาจ่าย แนวโน้ม DPS เพิ่มเฉลี่ย 5% ต่อปี 5 ปีหลัง ถือว่ายั่งยืนมากระดับ blue-chip</p>
+    </div>
+
+    <div class="sec">
+      <h4><span class="ico">💎</span>Hidden Value Audit</h4>
+      <p>BBL ถือครอง BBL Asset Management + BBL Life + ที่ดินใจกลาง CBD สีลม รวมกันประเมินประมาณ 40-50B ที่ตลาดยังไม่ price in ครบ book value 85 บาท/หุ้น ที่ PBV 0.50× = ซื้อ 1 บาท book ด้วย 50 สตางค์</p>
+    </div>
+
+    <div class="sec">
+      <h4><span class="ico">🏛️</span>Business Moat</h4>
+      <p>Top-3 bank ของไทย scale เศรษฐกิจใหญ่สุด relationship corporate mid-large ลึก digital banking ตามหลังกลุ่ม top แต่ไม่แพ้ขาดลอย ธุรกิจหลักเงินฝาก+สินเชื่อเป็น recurring ที่ไม่หวือหวาแต่ stable ผ่านวิกฤติ 2540/2551/2562 มาหมด</p>
+    </div>
+
+    <div class="sec">
+      <h4><span class="ico">⚖️</span>Valuation Discipline</h4>
+      <p>PE 8.8× ต่ำกว่า sector median (~11×) PBV 0.50× ต่ำกว่า 1 ชัดเจน = deep value ตามกรอบ ดร.นิเวศน์ เป้า 5 ปี yield ยังควร ≥5% แม้ EPS โตช้า เพราะ payout ratio มีพื้นที่เพิ่มจาก 35% → 50% ได้</p>
+    </div>
+
+    <div class="sec art-talk">
+      <h4><span class="ico">💬</span>Max คุยกับอาร์ท <span class="pillar-tag">เสาหลัก 1 · พอร์ตปันผล 100M</span></h4>
+      <p>"ตัว BBL เนี่ย เอาเข้าเสาหลัก 1 ได้สบาย — สมมติใส่ 10M ที่ yield 9.9% = ปันผลปีแรก 990k ตรงๆ compound 10 ปีที่ DPS growth ~5% ต่อปี yield-on-cost จะขึ้นไป 14-15% (ปีที่ 10 จ่ายปันผลราว 1.5M จากเงินต้น 10M)</p>
+      <p>ใน Banking sector ถ้าเอา BBL + TCAP รวม ~20% ของพอร์ต = ตรงกรอบ ดร.นิเวศน์ 5 sector กระจาย 80/20 — BBL เหมาะเป็น <strong>supporting 2nd-line</strong> หลัง CPALL/TCAP ที่คุณภาพต่อเนื่องมากกว่า mcap ใหญ่ผ่านวิกฤติมาทุกครั้ง = hard to break</p>
+      <p><strong>Step ถัดไป:</strong> ลอง DCA simulator ดู yield-on-cost trajectory 20 ปี scenarios DPS growth 3% (conservative) + 5% (base) + 7% (optimistic) เทียบเป้า passive income 10M/ปี — BBL ตัวเดียวจะช่วยไปได้แค่ไหนของเสาหลัก 1"</p>
+    </div>
+  </div>
+
+  <div class="caption">mockup · stock-detail-polish · 23 Apr 2026</div>
+</div>
+
+</body>
+</html>
