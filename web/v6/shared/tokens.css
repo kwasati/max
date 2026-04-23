@@ -77,6 +77,9 @@
   --shadow-accent-positive: 0 4px 12px rgba(123,166,136,.22);
   --shadow-toggle:          0 2px 6px rgba(60,66,82,.12);
 
+  /* Modal scrim — dark overlay for both themes (tuned per mode) */
+  --modal-scrim: rgba(15,17,21,0.55);
+
   /* ================== TYPOGRAPHY (unchanged) ================== */
   --font-head:  'Playfair Display', 'IBM Plex Serif Thai', Georgia, serif;
   --font-body:  'Lora', 'IBM Plex Serif Thai', Georgia, serif;
@@ -196,5 +199,8 @@
     --shadow-elevated:        0 8px 24px rgba(0,0,0,.38);
     --shadow-accent-positive: 0 4px 12px rgba(123,166,136,.28);
     --shadow-toggle:          0 2px 6px rgba(0,0,0,.35);
+
+    /* Modal scrim — deeper for dark mode */
+    --modal-scrim: rgba(0,0,0,0.65);
   }
 }
