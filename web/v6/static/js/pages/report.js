@@ -98,6 +98,26 @@ function _renderArticleHead(stock, patterns) {
       '<h1 class="article-sym" style="font-family:var(--font-head);font-weight:900;font-size:var(--fs-3xl);letter-spacing:-0.02em;line-height:0.95;margin-bottom:var(--sp-2)">' + sym + '</h1>' +
       '<div class="article-name" style="font-family:var(--font-head);font-style:italic;font-weight:400;font-size:var(--fs-md);color:var(--fg-secondary);margin-bottom:var(--sp-4)">' + subtitle + '</div>' +
       '<div class="article-tags" style="display:flex;justify-content:center;gap:4px;flex-wrap:wrap">' + tags + '</div>' +
+    '</section>' +
+    _renderPriceHero(stock)
+  );
+}
+
+function _renderPriceHero(stock) {
+  var esc = window.MMUtils.escapeHtml;
+  var metrics = stock.screener_metrics || stock.metrics || {};
+  var price = metrics.current_price != null ? metrics.current_price : stock.price;
+  if (price == null) return '';
+  var asOf = stock.price_as_of ? window.MMUtils.fmtDateThaiShort(stock.price_as_of) : null;
+  var priceStr = '฿' + window.MMUtils.fmtNum(price, 2);
+  var asOfLine = asOf ? 'ราคาวันที่ ' + asOf : '';
+  return (
+    '<section class="report-hero" style="background:linear-gradient(135deg,var(--bg-elevated-start),var(--bg-elevated-end));border:1px solid var(--bg-elevated-border);border-radius:24px;padding:22px;margin:14px 0;box-shadow:var(--shadow-card)">' +
+      '<div class="report-hero-price" style="display:flex;align-items:baseline;gap:10px">' +
+        '<span style="font-family:var(--font-mono);font-size:36px;font-weight:900;color:var(--fg-primary);letter-spacing:-0.02em">' + priceStr + '</span>' +
+        '<span style="color:var(--fg-dim);font-size:13px">THB</span>' +
+      '</div>' +
+      (asOfLine ? '<div class="report-hero-asof" style="font-family:var(--font-mono);font-size:11px;color:var(--fg-dim);margin-top:4px;letter-spacing:0.08em;text-transform:uppercase">' + esc(asOfLine) + '</div>' : '') +
     '</section>'
   );
 }
