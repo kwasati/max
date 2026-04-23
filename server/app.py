@@ -3195,6 +3195,12 @@ async def serve_desktop_portfolio():
     return _render_shell_path("desktop/portfolio.html", _V6_DESKTOP)
 
 
+@app.get("/portfolio-builder", response_class=HTMLResponse)
+async def serve_desktop_portfolio_builder():
+    """Desktop portfolio builder — Niwes 5-sector 80/20."""
+    return _render_shell_path("desktop/portfolio-builder.html", _V6_DESKTOP)
+
+
 # Mobile SPA routes
 @app.get("/mobile", response_class=HTMLResponse)
 @app.get("/m", response_class=HTMLResponse)
@@ -3215,6 +3221,12 @@ async def serve_mobile_report(symbol: str):
 async def serve_mobile_portfolio():
     """Mobile portfolio — dedicated shell preloads Chart.js."""
     return _render_shell_path("mobile/portfolio.html", _V6_MOBILE)
+
+
+@app.get("/m/portfolio-builder", response_class=HTMLResponse)
+async def serve_mobile_portfolio_builder():
+    """Mobile portfolio builder — Niwes 5-sector 80/20."""
+    return _render_shell_path("mobile/portfolio-builder.html", _V6_MOBILE)
 
 
 _V6_SHARED = _V6_DIR / "shared"
