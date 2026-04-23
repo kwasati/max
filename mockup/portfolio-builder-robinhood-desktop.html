@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Max Mahon — Portfolio Builder (Desktop)</title>
+<!--
+  DESKTOP MOCKUP — จัดพอร์ตสไตล์แมกซ์
+  Design decisions (intentional deviations from mobile):
+  1. Top bar split into 3 zones (brand / nav tabs / settings icon) — mobile has brand + hamburger only
+  2. Headline h1 scales 30px → 48px (room to breathe on 1440px)
+  3. 2-column layout (380px left / fluid right) — collapses to 1-column <1100px
+  4. Position cards stay full-width single-column LIST (not grid-3) — financial data density + reason paragraph benefits from horizontal space
+  5. Dropped: bottom nav (desktop uses top nav tabs instead), quick-row toggle (no space economy pressure), warning banner (same hidden default), total-bar + algo blocks (folded into algo-foot under submit button)
+  6. Tokens VERBATIM from mobile — no color drift, light/dark parity preserved
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* === PRIMITIVE (raw swatches — don't use in components) === */
+    --sage-500:#7ba688;  --sage-600:#5d8c69;
+    --rose-500:#c98b85;
+    --wheat-500:#caa673;
+    --lavender-500:#9d90c7;
+    --slate-blue-500:#84a8c9;
+
+    /* === SEMANTIC — LIGHT MODE DEFAULTS === */
+    /* Background */
+    --bg-base:#f5f5f0;
+    --bg-outside:#e8e6dd;
+    --bg-surface:#ffffff;
+    --bg-surface-2:#ebebe4;
+    --bg-elevated-start:#f1eee3;
+    --bg-elevated-end:#e6e2d4;
+    --bg-elevated-border:#d9d4c4;
+    --btn-on-elevated:rgba(255,255,255,.75);
+
+    /* Text */
+    --fg-primary:#3b4050;
+    --fg-secondary:#5a6072;
+    --fg-dim:#878d9a;
+    --fg-mute:#b2b6c0;
+
+    /* Borders */
+    --border-subtle:#e6e4db;
+    --border-strong:#d1cec1;
+
+    /* Accent: positive (sage) */
+    --c-positive:var(--sage-500);
+    --c-positive-strong:var(--sage-600);
+    --c-positive-soft:#e9f1eb;
+    --c-positive-tint:#f3f8f4;
+    --c-positive-border:rgba(123,166,136,.35);
+
+    /* Accent: negative (rose) */
+    --c-negative:var(--rose-500);
+    --c-negative-soft:#f4eae8;
+    --c-negative-border:rgba(201,139,133,.35);
+
+    /* Accent: warn (wheat) */
+    --c-warn:var(--wheat-500);
+    --c-warn-soft:#f5eed8;
+    --c-warn-fg:#8a6d3a;
+    --c-warn-border:rgba(202,166,115,.3);
+
+    /* Accent: info (slate-blue) */
+    --c-info:var(--slate-blue-500);
+    --c-info-soft:#e6eef5;
+    --c-info-fg:#456a8c;
+
+    /* Accent: purple (lavender) */
+    --c-purple:var(--lavender-500);
+    --c-purple-soft:#ebe7f4;
+    --c-purple-fg:#6a5c9e;
+
+    /* Rank medals */
+    --rank-gold-start:#f2e5ba;
+    --rank-gold-end:#d9c08a;
+    --rank-gold-fg:#6d5524;
+    --rank-silver-start:#e7eaf0;
+    --rank-silver-end:#c9cfdb;
+    --rank-silver-fg:#4a5264;
+
+    /* Shadows */
+    --shadow-card:0 2px 10px rgba(60,66,82,.06);
+    --shadow-elevated:0 8px 24px rgba(60,66,82,.08);
+    --shadow-accent-positive:0 4px 12px rgba(123,166,136,.22);
+    --shadow-toggle:0 2px 6px rgba(60,66,82,.12);
+
+    /* Misc */
+    --radius:18px;
+    --radius-lg:24px;
+    --tap:48px;
+    --font:'Inter','SF Pro Display',-apple-system,system-ui,sans-serif;
+
+    /* Legacy aliases (kept for minimal-change rules) */
+    --bg:var(--bg-base);
+    --surface:var(--bg-surface);
+    --surface-2:var(--bg-surface-2);
+    --border:var(--border-subtle);
+    --text:var(--fg-primary);
+    --text-2:var(--fg-secondary);
+    --dim:var(--fg-dim);
+    --mute:var(--fg-mute);
+    --green:var(--c-positive);
+    --green-dark:var(--c-positive-strong);
+    --green-soft:var(--c-positive-soft);
+    --green-tint:var(--c-positive-tint);
+    --red:var(--c-negative);
+    --red-soft:var(--c-negative-soft);
+    --amber:var(--c-warn);
+    --amber-soft:var(--c-warn-soft);
+    --purple:var(--c-purple);
+    --blue:var(--c-info);
+  }
+
+  @media (prefers-color-scheme:dark){
+    :root{
+      /* Background */
+      --bg-base:#1c1f25;
+      --bg-outside:#0f1115;
+      --bg-surface:#262a32;
+      --bg-surface-2:#2f343d;
+      --bg-elevated-start:#2a2f38;
+      --bg-elevated-end:#353b45;
+      --bg-elevated-border:#3d434e;
+      --btn-on-elevated:rgba(255,255,255,.08);
+
+      /* Text */
+      --fg-primary:#e4e6eb;
+      --fg-secondary:#b3b7c1;
+      --fg-dim:#838896;
+      --fg-mute:#5b606c;
+
+      /* Borders */
+      --border-subtle:#373c46;
+      --border-strong:#4b5160;
+
+      /* Accent soft variants — alpha-based for dark */
+      --c-positive-soft:rgba(123,166,136,.14);
+      --c-positive-tint:rgba(123,166,136,.07);
+      --c-positive-border:rgba(123,166,136,.4);
+      --c-negative-soft:rgba(201,139,133,.14);
+      --c-negative-border:rgba(201,139,133,.4);
+      --c-warn-soft:rgba(202,166,115,.16);
+      --c-warn-fg:#d9b87f;
+      --c-warn-border:rgba(202,166,115,.35);
+      --c-info-soft:rgba(132,168,201,.14);
+      --c-info-fg:#a8c2d9;
+      --c-purple-soft:rgba(157,144,199,.14);
+      --c-purple-fg:#c1b6e0;
+
+      /* Rank medals — inverse */
+      --rank-gold-start:#4d421e;
+      --rank-gold-end:#6a5a2e;
+      --rank-gold-fg:#e8d49a;
+      --rank-silver-start:#363c4a;
+      --rank-silver-end:#474e5f;
+      --rank-silver-fg:#c9cfdb;
+
+      /* Shadows — darker env */
+      --shadow-card:0 2px 10px rgba(0,0,0,.28);
+      --shadow-elevated:0 8px 24px rgba(0,0,0,.38);
+      --shadow-accent-positive:0 4px 12px rgba(123,166,136,.28);
+      --shadow-toggle:0 2px 6px rgba(0,0,0,.35);
+    }
+  }
+
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg-base);color:var(--fg-primary);font-family:var(--font);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+  .app-desktop{max-width:1440px;margin:0 auto;padding:0 32px}
+
+  /* === TOP APP HEADER === */
+  .app-header{
+    display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:40px;
+    padding:20px 0 16px;border-bottom:1px solid var(--border-subtle);
+  }
+  .app-header .brand{display:flex;align-items:center;gap:14px}
+  .app-header .mark{
+    width:40px;height:40px;border-radius:12px;
+    background:linear-gradient(135deg,var(--c-positive),var(--c-positive-strong));
+    display:grid;place-items:center;color:#fff;font-weight:900;font-size:18px;
+    box-shadow:var(--shadow-accent-positive);
+  }
+  .app-header .name{font-weight:800;font-size:18px;letter-spacing:-.01em;line-height:1.1}
+  .app-header .sub{font-size:13px;color:var(--fg-dim);margin-top:2px}
+
+  .app-header nav{display:flex;gap:28px;justify-content:center}
+  .app-header nav a{
+    color:var(--fg-secondary);text-decoration:none;font-size:14px;font-weight:600;
+    padding:8px 0;border-bottom:2px solid transparent;letter-spacing:.02em;
+  }
+  .app-header nav a:hover{color:var(--fg-primary)}
+  .app-header nav a.active{color:var(--c-positive-strong);border-bottom-color:var(--c-positive)}
+
+  .app-header .icon-btn{
+    width:40px;height:40px;border-radius:50%;border:0;background:transparent;
+    display:grid;place-items:center;cursor:pointer;color:var(--fg-secondary);
+  }
+  .app-header .icon-btn:hover{background:var(--bg-surface-2)}
+
+  /* === HEADLINE === */
+  .headline{padding:40px 0 28px}
+  .headline h1{margin:0;font-size:48px;font-weight:900;letter-spacing:-.025em;line-height:1.05}
+  .headline p{margin:10px 0 0;color:var(--fg-dim);font-size:16px}
+
+  /* === 2-COLUMN LAYOUT === */
+  .cols{display:grid;grid-template-columns:380px 1fr;gap:32px;padding-bottom:60px}
+  @media (max-width:1100px){.cols{grid-template-columns:1fr}}
+
+  /* ========== LEFT COLUMN ========== */
+  .left-col{display:flex;flex-direction:column;gap:20px}
+
+  /* Capital card */
+  .capital-card{
+    padding:26px;border-radius:var(--radius-lg);
+    background:linear-gradient(135deg,var(--bg-elevated-start) 0%,var(--bg-elevated-end) 100%);
+    color:var(--fg-primary);position:relative;overflow:hidden;
+    box-shadow:var(--shadow-card);
+    border:1px solid var(--bg-elevated-border);
+  }
+  .capital-card::after{
+    content:'';position:absolute;right:-40px;top:-40px;width:200px;height:200px;
+    background:radial-gradient(circle,var(--c-positive-soft) 0%,transparent 70%);filter:blur(4px);
+  }
+  .capital-card .lbl{font-size:12px;color:var(--fg-dim);letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+  .capital-card .amt{
+    font-size:42px;font-weight:900;letter-spacing:-.03em;margin-top:6px;line-height:1;
+    display:flex;align-items:baseline;gap:8px;color:var(--fg-primary);
+  }
+  .capital-card .amt .thb{font-size:14px;color:var(--fg-dim);font-weight:600}
+  .capital-card .meta{margin-top:14px;display:flex;gap:14px;color:var(--fg-secondary);font-size:13px;flex-wrap:wrap}
+  .capital-card .meta .up{color:var(--c-positive-strong);font-weight:700}
+  .capital-card .meta .up::before{content:'▲ ';font-size:9px}
+  .capital-card .edit{
+    position:absolute;top:18px;right:18px;color:var(--fg-secondary);background:var(--btn-on-elevated);
+    border:0;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;
+  }
+
+  /* Chip sections */
+  .chip-section{padding:0}
+  .chip-title{
+    font-size:12px;color:var(--fg-dim);font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;
+  }
+  .chip-row{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-radius:999px;
+    font-size:13px;font-weight:600;background:var(--bg-surface);border:1px solid var(--border-subtle);color:var(--fg-secondary);
+  }
+  .chip .x{color:var(--fg-mute);cursor:pointer;font-weight:700}
+  .chip.pin{background:var(--c-positive-tint);border-color:var(--c-positive-border);color:var(--c-positive-strong)}
+  .chip.pin::before{content:'📌';font-size:12px}
+  .chip.exc{background:var(--c-negative-soft);border-color:var(--c-negative-border);color:var(--c-negative);text-decoration:line-through}
+  .chip.exc::before{content:'✕'}
+  .chip.add{border-style:dashed;color:var(--fg-dim);cursor:pointer;background:transparent}
+
+  /* Submit button */
+  .run-btn{
+    padding:14px 20px;border-radius:999px;background:var(--c-positive);color:#fff;border:0;
+    font-weight:700;font-size:15px;cursor:pointer;min-height:var(--tap);
+    box-shadow:var(--shadow-accent-positive);
+    display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;
+  }
+  .run-btn:hover{background:var(--c-positive-strong)}
+  .run-btn:active{transform:translateY(1px)}
+  .run-btn::before{content:'↻';font-size:18px}
+
+  /* Algo footer (under submit) */
+  .algo-foot{
+    padding:16px 18px;border-radius:var(--radius);
+    background:var(--bg-surface);border:1px solid var(--border-subtle);
+  }
+  .algo-foot h5{margin:0 0 6px;font-size:13px;font-weight:800;color:var(--fg-primary)}
+  .algo-foot p{margin:0;color:var(--fg-dim);font-size:12.5px;line-height:1.55}
+  .algo-foot code{
+    background:var(--bg-surface-2);padding:1px 6px;border-radius:5px;font-size:11.5px;
+    color:var(--c-positive-strong);font-family:'SF Mono',ui-monospace,Consolas,monospace;
+  }
+
+  /* ========== RIGHT COLUMN ========== */
+  .right-col{display:flex;flex-direction:column;gap:20px;min-width:0}
+
+  /* Summary strip */
+  .summary-strip{
+    padding:20px;border-radius:var(--radius);
+    background:var(--bg-surface);border:1px solid var(--border-subtle);
+    display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+    box-shadow:var(--shadow-card);
+  }
+  .summary-cell{text-align:center;padding:4px 0}
+  .summary-cell .v{font-size:26px;font-weight:900;letter-spacing:-.02em;line-height:1}
+  .summary-cell .l{font-size:11px;color:var(--fg-dim);font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-top:8px}
+  .summary-cell .v.up{color:var(--c-positive)}
+
+  /* Section header (for right column inline) */
+  .sec-h{display:flex;align-items:center;justify-content:space-between;padding:8px 0 4px}
+  .sec-h h3{margin:0;font-size:20px;font-weight:800;letter-spacing:-.02em}
+  .sec-h .hint{font-size:13px;color:var(--fg-dim);font-weight:500}
+
+  /* Position cards list */
+  .pos-list{display:flex;flex-direction:column;gap:12px}
+  .pos{
+    background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius);
+    padding:20px 24px;display:grid;
+    grid-template-columns:auto 2fr auto;gap:20px;align-items:start;
+    box-shadow:var(--shadow-card);
+  }
+  .pos:hover{border-color:var(--border-strong)}
+  .pos .rank{
+    width:40px;height:40px;border-radius:10px;background:var(--bg-surface-2);
+    display:grid;place-items:center;font-weight:800;font-size:16px;color:var(--fg-secondary);
+  }
+  .pos .rank.gold{background:linear-gradient(135deg,var(--rank-gold-start),var(--rank-gold-end));color:var(--rank-gold-fg)}
+  .pos .rank.silver{background:linear-gradient(135deg,var(--rank-silver-start),var(--rank-silver-end));color:var(--rank-silver-fg)}
+
+  .pos .body{min-width:0}
+  .pos .row1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .pos .sym{font-weight:800;font-size:20px;letter-spacing:-.01em}
+  .pos .th-name{color:var(--fg-dim);font-size:13px}
+  .pos .sector{
+    display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;
+    padding:3px 9px;border-radius:999px;
+  }
+  .pos .sector::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+  .s-prop{background:var(--c-positive-soft);color:var(--c-positive-strong)}
+  .s-bank{background:var(--c-info-soft);color:var(--c-info-fg)}
+  .s-comm{background:var(--c-warn-soft);color:var(--c-warn-fg)}
+  .s-ict{background:var(--c-purple-soft);color:var(--c-purple-fg)}
+  .s-nrg{background:var(--c-negative-soft);color:var(--c-negative)}
+
+  .pos .tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+  .pos .tag{
+    font-size:10.5px;padding:3px 7px;border-radius:5px;background:var(--bg-surface-2);
+    color:var(--fg-dim);font-weight:700;letter-spacing:.03em;text-transform:uppercase;
+  }
+  .pos .tag.hidden{background:var(--c-purple-soft);color:var(--c-purple-fg)}
+  .pos .tag.pass{background:var(--c-positive-soft);color:var(--c-positive-strong)}
+
+  .pos .reason{
+    grid-column:2/3;font-size:13.5px;color:var(--fg-secondary);
+    margin-top:10px;line-height:1.55;
+  }
+
+  .pos .weight-col{text-align:right;min-width:110px}
+  .pos .weight-num{font-size:32px;font-weight:900;letter-spacing:-.025em;line-height:1}
+  .pos .weight-num.anchor{color:var(--c-positive)}
+  .pos .weight-amt{font-size:13px;color:var(--fg-dim);font-weight:600;margin-top:4px}
+  .pos .shares{font-size:11.5px;color:var(--fg-mute);font-weight:500;margin-top:6px}
+  .pos .score{
+    display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;
+    color:var(--fg-secondary);margin-top:10px;
+  }
+  .pos .score .s-dot{
+    width:24px;height:24px;border-radius:50%;display:inline-grid;place-items:center;
+    color:#fff;font-size:10.5px;font-weight:800;
+  }
+  .pos .score .s-dot.a{background:var(--c-positive)}
+  .pos .score .s-dot.b{background:var(--c-warn)}
+
+  .pos .w-track{
+    grid-column:1/-1;height:6px;background:var(--bg-surface-2);border-radius:999px;
+    overflow:hidden;margin-top:6px;
+  }
+  .pos .w-track > i{
+    display:block;height:100%;border-radius:999px;
+    background:linear-gradient(90deg,var(--c-positive),var(--c-positive-strong));
+  }
+
+  /* Diversification panel */
+  .diversify{
+    padding:24px;background:var(--bg-surface);border:1px solid var(--border-subtle);
+    border-radius:var(--radius-lg);box-shadow:var(--shadow-card);
+  }
+  .dv-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+  .dv-head h4{margin:0;font-size:17px;font-weight:800;letter-spacing:-.01em}
+  .dv-head .badge{
+    font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:999px;
+    background:var(--c-positive-soft);color:var(--c-positive-strong);
+  }
+
+  .seg-bar{
+    display:flex;height:16px;border-radius:8px;overflow:hidden;margin-bottom:20px;
+    box-shadow:inset 0 1px 3px rgba(0,0,0,.08);
+  }
+  .seg{height:100%}
+
+  .dv-legend{display:flex;flex-direction:column;gap:12px}
+  .lg-row{display:flex;align-items:center;gap:12px}
+  .lg-dot{width:12px;height:12px;border-radius:4px;flex:0 0 12px}
+  .lg-label{flex:1;font-size:14px;color:var(--fg-secondary);font-weight:500}
+  .lg-val{font-size:14px;font-weight:800;letter-spacing:-.01em}
+
+  /* Total strip */
+  .total-bar{
+    padding:16px 22px;border-radius:var(--radius);
+    background:var(--bg-surface-2);color:var(--fg-primary);border:1px solid var(--border-subtle);
+    display:flex;align-items:center;justify-content:space-between;font-weight:700;
+  }
+  .total-bar .l{font-size:13px;color:var(--fg-dim);letter-spacing:.06em;text-transform:uppercase}
+  .total-bar .v{font-size:22px;font-weight:900;letter-spacing:-.02em;color:var(--c-positive-strong)}
+  .total-bar .v2{font-size:13px;color:var(--fg-secondary);margin-left:8px}
+
+</style>
+</head>
+<body>
+
+<div class="app-desktop">
+
+  <!-- TOP APP HEADER -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="mark">M</div>
+      <div>
+        <div class="name">Max Mahon</div>
+        <div class="sub">จัดพอร์ตสไตล์ ดร.นิเวศน์</div>
+      </div>
+    </div>
+    <nav>
+      <a href="#">WATCHLIST</a>
+      <a href="#">SAVED</a>
+      <a href="#">PORTFOLIO</a>
+      <a href="#" class="active">จัดพอร์ต</a>
+      <a href="#">SIMULATOR</a>
+      <a href="#">SETTINGS</a>
+    </nav>
+    <button class="icon-btn" aria-label="menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M5 6h14M5 18h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+  </header>
+
+  <!-- HEADLINE -->
+  <section class="headline">
+    <h1>จัดพอร์ตสไตล์แมกซ์</h1>
+    <p>5 หุ้น · 5 sector · น้ำหนัก 80/20 · ตามแนว ดร.นิเวศน์</p>
+  </section>
+
+  <!-- 2-COLUMN LAYOUT -->
+  <div class="cols">
+
+    <!-- ===== LEFT COLUMN ===== -->
+    <aside class="left-col">
+
+      <!-- Capital card -->
+      <div class="capital-card">
+        <div class="lbl">เงินลงทุน</div>
+        <div class="amt">1,000,000<span class="thb">THB</span></div>
+        <div class="meta">
+          <span class="up">yield 5.71%</span>
+          <span>· 5 sector diversified</span>
+        </div>
+        <button class="edit">แก้ไข</button>
+      </div>
+
+      <!-- Pin chips -->
+      <div class="chip-section">
+        <div class="chip-title">ปักหมุด <span style="color:var(--c-positive)">+</span></div>
+        <div class="chip-row">
+          <span class="chip pin">QH <span class="x">×</span></span>
+          <span class="chip add">+ เพิ่ม pin</span>
+        </div>
+      </div>
+
+      <!-- Exclude chips -->
+      <div class="chip-section">
+        <div class="chip-title">ถอดออก <span style="color:var(--c-negative)">+</span></div>
+        <div class="chip-row">
+          <span class="chip exc">BCP <span class="x">×</span></span>
+          <span class="chip exc">HMPRO <span class="x">×</span></span>
+          <span class="chip add">+ exclude</span>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <button class="run-btn">จัดพอร์ต</button>
+
+      <!-- Algo footer -->
+      <div class="algo-foot">
+        <h5>Niwes Composite</h5>
+        <p>คัดด้วย <code>yield + value + hidden + quality</code> · weighting <code>40/35/12/8/5</code> · group top-1 ต่อ sector แล้วถ่วงน้ำหนักตามลำดับ</p>
+      </div>
+
+    </aside>
+
+    <!-- ===== RIGHT COLUMN ===== -->
+    <main class="right-col">
+
+      <!-- Summary strip -->
+      <div class="summary-strip">
+        <div class="summary-cell">
+          <div class="v">5</div>
+          <div class="l">หุ้น</div>
+        </div>
+        <div class="summary-cell">
+          <div class="v up">5/5</div>
+          <div class="l">sector</div>
+        </div>
+        <div class="summary-cell">
+          <div class="v">85</div>
+          <div class="l">score avg.</div>
+        </div>
+      </div>
+
+      <!-- Positions section -->
+      <div class="sec-h">
+        <h3>น้ำหนักพอร์ต</h3>
+        <span class="hint">40 · 35 · 12 · 8 · 5</span>
+      </div>
+
+      <div class="pos-list">
+
+        <!-- QH — rank 1 gold -->
+        <div class="pos">
+          <div class="rank gold">1</div>
+          <div class="body">
+            <div class="row1">
+              <span class="sym">QH</span>
+              <span class="th-name">ควอลิตี้เฮ้าส์</span>
+              <span class="sector s-prop">Property Development</span>
+            </div>
+            <div class="tags">
+              <span class="tag pass">PASS</span>
+              <span class="tag hidden">Hidden HMPRO</span>
+            </div>
+          </div>
+          <div class="weight-col">
+            <div class="weight-num anchor">40%</div>
+            <div class="weight-amt">฿400,000</div>
+            <div class="shares">300,752 หุ้น @ 1.33</div>
+            <div class="score"><span class="s-dot a">92</span> Niwes</div>
+          </div>
+          <div class="reason">
+            hidden HMPRO 19.87% stake ยังไม่สะท้อนในราคา · yield 7.5% ปันผลต่อเนื่อง 12 ปี · PBV 0.85 ต่ำกว่า 1 + มี land bank asset ที่ตลาดยังไม่ price in
+          </div>
+          <div class="w-track"><i style="width:100%"></i></div>
+        </div>
+
+        <!-- TCAP — rank 2 silver -->
+        <div class="pos">
+          <div class="rank silver">2</div>
+          <div class="body">
+            <div class="row1">
+              <span class="sym">TCAP</span>
+              <span class="th-name">ทุนธนชาต</span>
+              <span class="sector s-bank">Banking</span>
+            </div>
+            <div class="tags">
+              <span class="tag pass">PASS</span>
+              <span class="tag hidden">Hidden TMB</span>
+            </div>
+          </div>
+          <div class="weight-col">
+            <div class="weight-num">35%</div>
+            <div class="weight-amt">฿350,000</div>
+            <div class="shares">6,008 หุ้น @ 58.25</div>
+            <div class="score"><span class="s-dot a">88</span> Niwes</div>
+          </div>
+          <div class="reason">
+            PE 8.2 ต่ำมาก · PBV 0.9 ต่ำกว่า 1 · hidden ใน TMB stake ที่ถืออยู่ · yield 5.8% สม่ำเสมอ · holding company structure ที่ตลาด discount
+          </div>
+          <div class="w-track"><i style="width:87.5%"></i></div>
+        </div>
+
+        <!-- MC — rank 3 -->
+        <div class="pos">
+          <div class="rank">3</div>
+          <div class="body">
+            <div class="row1">
+              <span class="sym">MC</span>
+              <span class="th-name">แม็คกรุ๊ป</span>
+              <span class="sector s-comm">Commerce</span>
+            </div>
+            <div class="tags">
+              <span class="tag pass">PASS</span>
+            </div>
+          </div>
+          <div class="weight-col">
+            <div class="weight-num">12%</div>
+            <div class="weight-amt">฿120,000</div>
+            <div class="shares">12,500 หุ้น @ 9.60</div>
+            <div class="score"><span class="s-dot a">85</span> Niwes</div>
+          </div>
+          <div class="reason">
+            yield 9.9% สูงมาก · mid-cap apparel brand Mc Jeans ที่อยู่ในชีวิตประจำวัน · PE 10 · dividend track record ยาว 10+ ปีไม่พลาดปี
+          </div>
+          <div class="w-track"><i style="width:30%"></i></div>
+        </div>
+
+        <!-- INTUCH — rank 4 -->
+        <div class="pos">
+          <div class="rank">4</div>
+          <div class="body">
+            <div class="row1">
+              <span class="sym">INTUCH</span>
+              <span class="th-name">อินทัช</span>
+              <span class="sector s-ict">ICT</span>
+            </div>
+            <div class="tags">
+              <span class="tag pass">PASS</span>
+              <span class="tag hidden">Hidden ADVANC</span>
+            </div>
+          </div>
+          <div class="weight-col">
+            <div class="weight-num">8%</div>
+            <div class="weight-amt">฿80,000</div>
+            <div class="shares">1,231 หุ้น @ 65.00</div>
+            <div class="score"><span class="s-dot a">82</span> Niwes</div>
+          </div>
+          <div class="reason">
+            hidden ADVANC stake 40% · yield 6.2% ต่อเนื่อง · ICT holding company ที่ market ให้ discount ต่อ NAV · ปันผลสม่ำเสมอจาก cash flow ADVANC
+          </div>
+          <div class="w-track"><i style="width:20%"></i></div>
+        </div>
+
+        <!-- PTT — rank 5 -->
+        <div class="pos">
+          <div class="rank">5</div>
+          <div class="body">
+            <div class="row1">
+              <span class="sym">PTT</span>
+              <span class="th-name">ปตท</span>
+              <span class="sector s-nrg">Energy &amp; Utilities</span>
+            </div>
+            <div class="tags">
+              <span class="tag pass">PASS</span>
+            </div>
+          </div>
+          <div class="weight-col">
+            <div class="weight-num">5%</div>
+            <div class="weight-amt">฿50,000</div>
+            <div class="shares">1,562 หุ้น @ 32.00</div>
+            <div class="score"><span class="s-dot b">70</span> Niwes</div>
+          </div>
+          <div class="reason">
+            yield 7% แต่ sector cyclical + pressure จาก energy transition · ระวัง oil macro + regulatory · exit ถ้าโครงสร้างราคาน้ำมันแตก long-term
+          </div>
+          <div class="w-track"><i style="width:12.5%"></i></div>
+        </div>
+
+      </div>
+
+      <!-- Total strip -->
+      <div class="total-bar">
+        <div class="l">Total</div>
+        <div>
+          <span class="v">฿1,000,000</span>
+          <span class="v2">· 100%</span>
+        </div>
+      </div>
+
+      <!-- Diversification -->
+      <div class="sec-h">
+        <h3>การกระจาย sector</h3>
+        <span class="hint">5 sector · 80/20 healthy</span>
+      </div>
+      <div class="diversify">
+        <div class="dv-head">
+          <h4>Sector Split</h4>
+          <span class="badge">● 80/20 healthy</span>
+        </div>
+        <div class="seg-bar">
+          <div class="seg" style="width:40%;background:var(--c-positive)"></div>
+          <div class="seg" style="width:35%;background:var(--c-info)"></div>
+          <div class="seg" style="width:12%;background:var(--c-warn)"></div>
+          <div class="seg" style="width:8%;background:var(--c-purple)"></div>
+          <div class="seg" style="width:5%;background:var(--c-negative)"></div>
+        </div>
+        <div class="dv-legend">
+          <div class="lg-row"><span class="lg-dot" style="background:var(--c-positive)"></span><span class="lg-label">Property Development</span><span class="lg-val">40%</span></div>
+          <div class="lg-row"><span class="lg-dot" style="background:var(--c-info)"></span><span class="lg-label">Banking</span><span class="lg-val">35%</span></div>
+          <div class="lg-row"><span class="lg-dot" style="background:var(--c-warn)"></span><span class="lg-label">Commerce</span><span class="lg-val">12%</span></div>
+          <div class="lg-row"><span class="lg-dot" style="background:var(--c-purple)"></span><span class="lg-label">ICT</span><span class="lg-val">8%</span></div>
+          <div class="lg-row"><span class="lg-dot" style="background:var(--c-negative)"></span><span class="lg-label">Energy &amp; Utilities</span><span class="lg-val">5%</span></div>
+        </div>
+      </div>
+
+    </main>
+
+  </div>
+
+</div>
+
+</body>
+</html>
