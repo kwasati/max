@@ -24,6 +24,18 @@
     return dt.getDate() + ' ' + MONTHS_EN[dt.getMonth()].slice(0,3) + ' ' + dt.getFullYear();
   }
 
+  var MONTHS_TH_SHORT = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.',
+                         'ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+  /** Format as "23 เม.ย. 68" (Thai short, Buddhist year, 2-digit). */
+  function fmtDateThaiShort(d) {
+    var dt = (d instanceof Date) ? d : new Date(d);
+    if (isNaN(dt.getTime())) return '—';
+    var thaiYear = dt.getFullYear() + 543;
+    var yy = String(thaiYear).slice(-2);
+    return dt.getDate() + ' ' + MONTHS_TH_SHORT[dt.getMonth()] + ' ' + yy;
+  }
+
   /** THB currency — "324.5B" / "58.0M" / "1.2K" / raw for small. */
   function fmtCompact(n) {
     if (n === null || n === undefined || isNaN(n)) return '—';
@@ -99,6 +111,7 @@
   window.MMUtils = {
     fmtDateLong: fmtDateLong,
     fmtDateShort: fmtDateShort,
+    fmtDateThaiShort: fmtDateThaiShort,
     fmtCompact: fmtCompact,
     fmtCurrency: fmtCurrency,
     fmtPercent: fmtPercent,
