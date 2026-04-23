@@ -2300,27 +2300,39 @@ async def get_price_history(symbol: str, granularity: str = "yearly"):
             "data": data,
         }
     else:
-        # Monthly granularity — yfinance (for DCA simulator)
+        # Monthly granularity — yahooquery (for DCA simulator)
         try:
-            import yfinance as yf
+            from yahooquery import Ticker as YQTicker
+            import pandas as pd
             loop = asyncio.get_event_loop()
             hist = await loop.run_in_executor(
                 None,
-                lambda: yf.Ticker(symbol).history(
-                    period="10y", interval="1mo", auto_adjust=False
+                lambda: YQTicker(symbol).history(
+                    period="10y", interval="1mo", adj_ohlc=False
                 ),
             )
         except Exception as e:
-            raise HTTPException(503, f"yfinance fetch failed: {e}")
-        if hist.empty:
+            raise HTTPException(503, f"yahooquery fetch failed: {e}")
+        if not hasattr(hist, 'shape') or hist.empty:
             raise HTTPException(404, f"no monthly price history for {symbol}")
-        data = [
-            {"date": idx.strftime("%Y-%m-%d"), "close": float(row["Close"])}
-            for idx, row in hist.iterrows()
-        ]
+        # yahooquery returns multi-index (symbol, date) — flatten
+        if hasattr(hist.index, 'get_level_values') and symbol in hist.index.get_level_values(0):
+            hist = hist.xs(symbol, level=0)
+        close_col = "close" if "close" in hist.columns else ("Close" if "Close" in hist.columns else None)
+        if close_col is None:
+            raise HTTPException(500, f"Unexpected monthly history schema — missing close column (got {list(hist.columns)})")
+        data = []
+        for idx, row in hist.iterrows():
+            close_val = row[close_col]
+            if close_val is None or pd.isna(close_val):
+                continue
+            data.append({
+                "date": idx.strftime("%Y-%m-%d") if hasattr(idx, 'strftime') else str(idx),
+                "close": float(close_val),
+            })
         payload = {
             "symbol": symbol,
-            "source": "yfinance_monthly",
+            "source": "yahooquery_monthly",
             "granularity": "monthly",
             "fetched_at": now.isoformat(timespec="seconds"),
             "data": data,
