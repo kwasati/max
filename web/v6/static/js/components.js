@@ -8,60 +8,57 @@
   'use strict';
 
   /**
-   * Render the newspaper masthead (sticky top).
-   * @param {{vol:string, no:string, date:string, next_scan:string, edition?:string, active?:string}} ctx
-   * @returns {string} HTML string for <header class="masthead">…</header>
+   * Render the modern app header (sticky top).
+   * Backwards-compatible with legacy ctx object — only ctx.active is read;
+   * other editorial fields (vol/no/date/next_scan/edition) are ignored.
+   * @param {{active?:string}} ctx
+   * @returns {string} HTML string for <header class="app-header">…</header>
    */
   function renderMasthead(ctx) {
-    var edition = ctx.edition || 'Thai Stock Edition';
-    var active = ctx.active || 'home';
-    var nav = renderMastNav(active);
-    return (
-      '<header class="masthead">' +
-        '<div class="mast-top">' +
-          '<div class="mast-meta-l">' +
-            '<div>VOL. ' + ctx.vol + ' &middot; NO. ' + ctx.no + '</div>' +
-            '<div><strong>' + ctx.date + '</strong></div>' +
-          '</div>' +
-          '<div class="mast-title">' +
-            '<h1 class="mast-brand">Max Mahon</h1>' +
-            '<div class="mast-sub">&middot; The Dividend Review &middot;</div>' +
-          '</div>' +
-          '<div class="mast-meta-r">' +
-            '<div>' + edition.toUpperCase() + '</div>' +
-            '<div>AUTO &middot; NEXT SCAN <strong>' + ctx.next_scan + '</strong></div>' +
-          '</div>' +
-        '</div>' +
-        '<div class="mast-bottom">' + nav + '</div>' +
-      '</header>'
-    );
+    var active = (ctx && ctx.active) || 'watchlist';
+    return renderMastNav(active);
   }
 
   /**
-   * Top horizontal navigation strip (desktop). Routes map to
-   * SPA-style paths; currently emit anchors so browsers follow
-   * history back/forward.
-   * @param {string} active — one of: home, report, watchlist, portfolio, portfolio-builder, simulator, settings
-   * @returns {string} HTML for <nav class="mast-nav">
+   * Modern app header with brand mark + primary nav + icon button.
+   * Active link detection from the `active` argument; callers can also rely
+   * on the returned <a class="active"> markup.
+   * @param {string|{active?:string}} activeOrCtx — either active key or ctx-like object
+   * @returns {string} HTML for <header class="app-header">
    */
-  function renderMastNav(active) {
+  function renderMastNav(activeOrCtx) {
+    var active = typeof activeOrCtx === 'string'
+      ? activeOrCtx
+      : ((activeOrCtx && activeOrCtx.active) || 'watchlist');
+    // Legacy callers pass 'home'/'report' — treat both as 'watchlist' (default landing)
+    if (active === 'home' || active === 'report') active = 'watchlist';
     var items = [
-      ['home',              '/',                  'Watchlist'],
-      ['watchlist',         '/watchlist',         'Saved'],
-      ['portfolio',         '/portfolio',         'Portfolio'],
+      ['watchlist',         '/',                  'WATCHLIST'],
+      ['portfolio',         '/portfolio',         'PORTFOLIO'],
       ['portfolio-builder', '/portfolio-builder', 'จัดพอร์ต'],
-      ['simulator',         '/simulator',         'Simulator'],
-      ['settings',          '/settings',          'Settings']
+      ['simulator',         '/simulator',         'SIMULATOR'],
+      ['settings',          '/settings',          'SETTINGS']
     ];
-    var html = '<nav class="mast-nav">';
+    var nav = '';
     for (var i = 0; i < items.length; i++) {
       var key = items[i][0];
       var href = items[i][1];
       var label = items[i][2];
-      html += '<a href="' + href + '"' + (key === active ? ' class="active"' : '') + '>' + label + '</a>';
+      nav += '<a href="' + href + '"' + (key === active ? ' class="active"' : '') + '>' + label + '</a>';
     }
-    html += '</nav>';
-    return html;
+    return (
+      '<header class="app-header">' +
+        '<div class="brand">' +
+          '<div class="mark">M</div>' +
+          '<div>' +
+            '<div class="name">Max Mahon</div>' +
+            '<div class="sub">จัดพอร์ตสไตล์ ดร.นิเวศน์</div>' +
+          '</div>' +
+        '</div>' +
+        '<nav>' + nav + '</nav>' +
+        '<button class="icon-btn" type="button" aria-label="menu">⋮</button>' +
+      '</header>'
+    );
   }
 
   /**

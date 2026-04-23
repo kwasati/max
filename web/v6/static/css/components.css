@@ -1238,3 +1238,72 @@
   margin-top: var(--sp-4);
 }
 
+
+
+/* ==========================================================
+   APP HEADER (modern Robinhood-style) — replaces legacy .masthead
+   Port of .app-header block from mockup/portfolio-builder-robinhood-desktop.html
+   ========================================================== */
+.app-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 40px;
+  padding: 20px var(--sp-6) 16px;
+  max-width: var(--col-max);
+  margin: 0 auto;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+}
+.app-header .brand { display: flex; align-items: center; gap: 14px; }
+.app-header .mark {
+  width: 40px; height: 40px; border-radius: 12px;
+  background: linear-gradient(135deg, var(--c-positive), var(--c-positive-strong));
+  display: grid; place-items: center;
+  color: #fff; font-weight: 900; font-size: 18px;
+  box-shadow: var(--shadow-accent-positive);
+  font-family: var(--font-head);
+}
+.app-header .name {
+  font-family: var(--font-head);
+  font-weight: 800; font-size: 18px;
+  letter-spacing: -.01em; line-height: 1.1;
+  color: var(--fg-primary);
+}
+.app-header .sub {
+  font-size: 13px; color: var(--fg-dim);
+  margin-top: 2px;
+  font-family: var(--font-body);
+}
+
+.app-header nav { display: flex; gap: 28px; justify-content: center; }
+.app-header nav a {
+  color: var(--fg-secondary);
+  text-decoration: none;
+  font-size: 14px; font-weight: 600;
+  padding: 8px 0;
+  border-bottom: 2px solid transparent;
+  letter-spacing: .02em;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+.app-header nav a:hover { color: var(--fg-primary); }
+.app-header nav a.active {
+  color: var(--c-positive-strong);
+  border-bottom-color: var(--c-positive);
+}
+
+.app-header .icon-btn {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 0; background: transparent;
+  display: grid; place-items: center;
+  cursor: pointer; color: var(--fg-secondary);
+  font-size: 20px;
+  transition: background 120ms ease;
+}
+.app-header .icon-btn:hover { background: var(--bg-surface-2); }
+
+@media (max-width: 900px) {
+  .app-header { grid-template-columns: auto 1fr auto; gap: 16px; padding: 14px var(--sp-4); }
+  .app-header nav { display: none; }
+  .app-header .sub { display: none; }
+}
