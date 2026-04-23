@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Max Mahon · The Dividend Review</title>
+<title>Max Mahon</title>
 <meta name="description" content="Max Mahon — Thai stock analyst, Niwes Dividend-First style.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,16 +32,8 @@
   // module fails to import. Date values are best-effort until the page
   // fetches real issue metadata and re-renders via MMComponents.renderMasthead.
   function bootMasthead() {
-    var now = new Date();
     var route = (location.pathname.replace(/^\//, '').split('/')[0]) || 'home';
-    var mastCtx = {
-      vol:       'VI',
-      no:        '17',
-      date:      MMUtils.fmtDateLong(now).toUpperCase(),
-      next_scan: 'SAT 09:00',
-      edition:   'Thai Stock Edition',
-      active:    route
-    };
+    var mastCtx = { active: route };
     var host = document.getElementById('masthead');
     if (host) host.innerHTML = MMComponents.renderMasthead(mastCtx);
   }

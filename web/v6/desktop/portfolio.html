@@ -29,16 +29,8 @@
   'use strict';
 
   function bootMasthead() {
-    var now = new Date();
     var route = (location.pathname.replace(/^\//, '').split('/')[0]) || 'home';
-    var mastCtx = {
-      vol:       'VI',
-      no:        '17',
-      date:      MMUtils.fmtDateLong(now).toUpperCase(),
-      next_scan: 'SAT 09:00',
-      edition:   'Portfolio Edition',
-      active:    route
-    };
+    var mastCtx = { active: route };
     var host = document.getElementById('masthead');
     if (host) host.innerHTML = MMComponents.renderMasthead(mastCtx);
   }
