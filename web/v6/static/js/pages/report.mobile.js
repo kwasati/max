@@ -283,11 +283,106 @@ function _renderExitBaseline(exitStatus) {
 
 function _renderDeepAnalyze() {
   return (
-    '<div class="analyze-block" style="text-align:center;padding:28px 0;border-top:3px double var(--border-subtle);margin-top:28px" id="v6-mdeep-analyze">' +
-            '<h2 style="font-family:var(--font-head);font-weight:900;font-size:1.5rem;line-height:1.15;margin:14px 0 10px">Ask Max to go deeper.</h2>' +
-      '<p style="font-family:var(--font-head);font-style:italic;color:var(--fg-dim);font-size:0.95rem;margin-bottom:20px">ให้ Claude Opus วิเคราะห์คุณภาพ management + moat + structural risk</p>' +
-      '<button class="btn primary" id="v6-mdeep-btn">ขอวิเคราะห์เพิ่มเติม</button>' +
-      '<div id="v6-mdeep-status" style="margin-top:14px;font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-dim)">Cached 7 days</div>' +
+    '<div class="analyze-block" id="v6-mdeep-analyze" style="padding:20px 18px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:18px;text-align:center;margin-top:28px;border-top:3px double var(--border-subtle)">' +
+      _renderAnalyzeInitialInner() +
+    '</div>'
+  );
+}
+
+function _renderAnalyzeInitialInner() {
+  return (
+    '<h2 style="font-family:var(--font-head);font-weight:900;font-size:1.5rem;line-height:1.15;margin:6px 0 8px">ขอวิเคราะห์เจาะลึก</h2>' +
+    '<p style="font-family:var(--font-head);font-style:italic;color:var(--fg-dim);font-size:0.95rem;margin-bottom:16px">ให้ Claude Opus วิเคราะห์ตามกรอบ ดร.นิเวศน์ 5 ด้าน + verdict สำหรับ DCA 10-20 ปี เน้นปันผลสะสม</p>' +
+    '<button class="btn primary" id="v6-mdeep-btn" style="padding:12px 22px;border-radius:999px;font-weight:700;min-height:48px">ขอวิเคราะห์เพิ่มเติม</button>' +
+    '<div style="margin-top:12px;font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-mute)">Cached 7 days · API MAX_ANTHROPIC_API_KEY</div>'
+  );
+}
+
+function _renderAnalyzeLoadingInner() {
+  return (
+    '<div style="padding:28px 0;text-align:center">' +
+      '<div style="display:inline-block;width:24px;height:24px;border:3px solid var(--c-positive-soft);border-top-color:var(--c-positive);border-radius:50%;animation:v6spin 1s linear infinite"></div>' +
+      '<style>@keyframes v6spin{to{transform:rotate(360deg)}}</style>' +
+      '<div style="font-family:var(--font-mono);font-size:0.68rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-dim);margin-top:10px">กำลังวิเคราะห์ · Claude Opus</div>' +
+    '</div>'
+  );
+}
+
+function _renderAnalyzeErrorInner(msg) {
+  var esc = window.MMUtils.escapeHtml;
+  return (
+    '<div style="padding:18px 0;text-align:center">' +
+      '<div style="font-family:var(--font-head);font-style:italic;color:var(--c-negative);margin-bottom:14px;font-size:0.95rem">' + esc(msg || 'Timeout · server ไม่ตอบกลับ') + '</div>' +
+      '<button class="btn primary" id="v6-mdeep-btn" style="padding:12px 22px;border-radius:999px;font-weight:700;min-height:48px">ลองอีกครั้ง</button>' +
+    '</div>'
+  );
+}
+
+function _renderAnalyzeResult(data) {
+  var esc = window.MMUtils.escapeHtml;
+  var analyzedAt = data.analyzed_at
+    ? (window.MMUtils.fmtDateThaiShort(data.analyzed_at) + ' · Claude Opus')
+    : 'Claude Opus';
+  var verdictRaw = String(data.verdict || '').trim();
+  var verdictClass = 'hold';
+  var badge = 'HOLD';
+  if (/^\s*BUY\b/i.test(verdictRaw)) { verdictClass = 'buy'; badge = 'BUY'; }
+  else if (/^\s*SELL\b/i.test(verdictRaw)) { verdictClass = 'sell'; badge = 'SELL'; }
+  var verdictWhy = verdictRaw.replace(/^(BUY|HOLD|SELL)\s*[:\-·—]?\s*/i, '');
+  var badgeBg = verdictClass === 'buy'
+    ? 'var(--c-positive)'
+    : (verdictClass === 'sell' ? 'var(--c-negative)' : 'var(--fg-dim)');
+  var verdictCardBg = verdictClass === 'buy'
+    ? 'var(--c-positive-soft)'
+    : (verdictClass === 'sell' ? 'var(--c-negative-soft)' : 'var(--bg-surface-2, #ebebe4)');
+  var verdictBorder = verdictClass === 'buy'
+    ? 'var(--c-positive-border)'
+    : (verdictClass === 'sell' ? 'var(--c-negative-border)' : 'var(--border-subtle)');
+
+  function _section(icon, title, text) {
+    if (!text) return '';
+    return (
+      '<div class="sec" style="padding:14px 0;border-top:1px solid var(--border-subtle)">' +
+        '<h4 style="margin:0 0 6px;font-size:0.95rem;font-weight:800;color:var(--c-positive-strong);display:flex;align-items:center;gap:8px">' +
+          '<span style="width:22px;height:22px;border-radius:6px;background:var(--c-positive-soft);display:inline-grid;place-items:center;font-size:11px">' + icon + '</span>' +
+          title +
+        '</h4>' +
+        '<p style="margin:0;font-size:0.92rem;color:var(--fg-secondary);line-height:1.6">' + esc(text) + '</p>' +
+      '</div>'
+    );
+  }
+
+  var toArtParas = String(data.to_art || '').split(/\n\n+/).filter(Boolean).map(function (p) {
+    return '<p style="margin:0 0 10px;font-size:0.92rem;color:var(--fg-primary);line-height:1.6">' + esc(p) + '</p>';
+  }).join('');
+  var artTalk = data.to_art
+    ? (
+      '<div class="sec art-talk" style="background:var(--c-positive-tint);margin:14px -18px -2px;padding:16px 18px 18px;border-radius:0 0 18px 18px;border-top:1px solid var(--c-positive-border)">' +
+        '<h4 style="margin:0 0 8px;font-size:0.95rem;font-weight:800;color:var(--c-positive-strong);display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+          '<span style="width:22px;height:22px;border-radius:6px;background:var(--c-positive);color:#fff;display:inline-grid;place-items:center;font-size:11px">💬</span>' +
+          'Max คุยกับอาร์ท' +
+          '<span style="font-size:0.58rem;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--bg-surface);color:var(--fg-secondary);border:1px solid var(--border-subtle);font-family:var(--font-mono);letter-spacing:0.05em;text-transform:none">เสาหลัก 1 · พอร์ตปันผล 100M</span>' +
+        '</h4>' +
+        toArtParas +
+      '</div>'
+    )
+    : '';
+
+  return (
+    '<div style="text-align:left">' +
+      '<div style="font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-dim);margin-bottom:14px;display:flex;justify-content:space-between">' +
+        '<span>' + esc(analyzedAt) + '</span>' +
+        '<span>Cache 7 วัน</span>' +
+      '</div>' +
+      '<div class="verdict ' + verdictClass + '" style="padding:14px 16px;border-radius:12px;background:' + verdictCardBg + ';border:1px solid ' + verdictBorder + ';margin-bottom:16px;display:flex;align-items:center;gap:12px">' +
+        '<span style="padding:5px 12px;border-radius:8px;font-weight:800;font-size:0.8rem;letter-spacing:0.04em;background:' + badgeBg + ';color:#fff">' + badge + '</span>' +
+        '<span style="font-size:0.9rem;color:var(--fg-primary);line-height:1.45;flex:1">' + esc(verdictWhy || verdictRaw) + '</span>' +
+      '</div>' +
+      _section('💵', 'Dividend Sustainability', data.dividend) +
+      _section('💎', 'Hidden Value Audit', data.hidden) +
+      _section('🏛️', 'Business Moat', data.moat) +
+      _section('⚖️', 'Valuation Discipline', data.valuation) +
+      artTalk +
     '</div>'
   );
 }
@@ -389,46 +484,70 @@ function _mountCharts(stock, history) {
   }
 }
 
+var _mDeepState = { pollHandle: null };
+
+function _hasAnalysisData(r) {
+  return !!(r && (r.to_art || r.dividend || r.moat || r.hidden || r.valuation || r.verdict));
+}
+
+function _stopPoll() {
+  if (_mDeepState.pollHandle) {
+    clearInterval(_mDeepState.pollHandle);
+    _mDeepState.pollHandle = null;
+  }
+}
+
 function _wireDeepAnalyze(sym) {
-  var btn = document.getElementById('v6-mdeep-btn');
-  var status = document.getElementById('v6-mdeep-status');
-  if (!btn) return;
-  btn.addEventListener('click', function () {
-    btn.disabled = true;
-    btn.textContent = 'Requesting…';
-    if (status) status.textContent = '∙ Pending · est. 45s';
-    window.MMApi.post('/api/stock/' + encodeURIComponent(sym) + '/analyze', {}).catch(function (e) { console.error(e); });
-    var elapsed = 0;
-    var handle = setInterval(async function () {
-      elapsed += 5;
-      try {
-        var r = await window.MMApi.get('/api/stock/' + encodeURIComponent(sym) + '/analysis');
-        var narrative = r && (r.narrative || r.case_text || r.max || r.buffett);
-        if (narrative) {
-          clearInterval(handle);
-          _injectNarrative(narrative);
-          btn.textContent = 'Deep Analyzed ✓';
-          if (status) status.textContent = 'Cached · updated now';
-        }
-      } catch (_) { /* 404 = still pending */ }
-      if (elapsed >= 90) {
-        clearInterval(handle);
-        btn.disabled = false;
-        btn.textContent = 'Retry';
-        if (status) status.textContent = 'Timeout';
-      }
-    }, 5000);
+  var block = document.getElementById('v6-mdeep-analyze');
+  if (!block) return;
+  _stopPoll();
+  // Auto-render if cache hit — skip button
+  window.MMApi.get('/api/stock/' + encodeURIComponent(sym) + '/analysis').then(function (cached) {
+    if (_hasAnalysisData(cached)) {
+      block.innerHTML = _renderAnalyzeResult(cached);
+    } else {
+      _attachClick(sym, block);
+    }
+  }).catch(function () {
+    _attachClick(sym, block);
   });
 }
 
-function _injectNarrative(text) {
-  var host = document.getElementById('v6-mcase-cols');
-  if (!host) return;
-  var esc = window.MMUtils.escapeHtml;
-  var paras = String(text).split(/\n\n+/).filter(Boolean);
-  host.setAttribute('style', 'column-count:1;font-size:0.98rem;line-height:1.65');
-  host.innerHTML = paras.map(function (p, i) {
-    var cls = i === 0 ? 'drop-cap' : '';
-    return '<p' + (cls ? ' class="' + cls + '"' : '') + ' style="margin-bottom:14px">' + esc(p) + '</p>';
-  }).join('');
+function _attachClick(sym, block) {
+  var btn = block.querySelector('#v6-mdeep-btn');
+  if (!btn) return;
+  btn.addEventListener('click', function () {
+    _stopPoll();
+    block.innerHTML = _renderAnalyzeLoadingInner();
+    window.MMApi.post('/api/stock/' + encodeURIComponent(sym) + '/analyze', {}).then(function (payload) {
+      if (_hasAnalysisData(payload)) {
+        block.innerHTML = _renderAnalyzeResult(payload);
+        return;
+      }
+      _pollAnalysis(sym, block);
+    }).catch(function () {
+      _pollAnalysis(sym, block);
+    });
+  });
+}
+
+function _pollAnalysis(sym, block) {
+  _stopPoll();
+  var elapsed = 0;
+  _mDeepState.pollHandle = setInterval(async function () {
+    elapsed += 5;
+    try {
+      var r = await window.MMApi.get('/api/stock/' + encodeURIComponent(sym) + '/analysis');
+      if (_hasAnalysisData(r)) {
+        _stopPoll();
+        block.innerHTML = _renderAnalyzeResult(r);
+        return;
+      }
+    } catch (_) { /* 404 = still pending */ }
+    if (elapsed >= 90) {
+      _stopPoll();
+      block.innerHTML = _renderAnalyzeErrorInner('Timeout · server ไม่ตอบกลับ');
+      _attachClick(sym, block);
+    }
+  }, 5000);
 }
