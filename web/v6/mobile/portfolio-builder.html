@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Portfolio Builder · Max Mahon Mobile</title>
+<title>Max Mahon — Mobile</title>
 <meta name="description" content="Max Mahon — จัดพอร์ตสไตล์แมกซ์ (mobile), Niwes 5-sector 80/20.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,15 +38,7 @@
   }
 
   function bootMasthead() {
-    var now = new Date();
-    var mastCtx = {
-      vol:       'VI',
-      no:        '17',
-      date:      MMUtils.fmtDateLong(now).toUpperCase(),
-      next_scan: 'SAT 09:00',
-      edition:   'Builder Edition',
-      active:    routeFromPath()
-    };
+    var mastCtx = { active: routeFromPath() };
     var host = document.getElementById('masthead');
     if (host) host.innerHTML = MMComponents.renderMasthead(mastCtx);
   }
