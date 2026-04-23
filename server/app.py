@@ -938,11 +938,35 @@ def scheduled_run():
     _execute_sync(scripts, "scheduled scan")
 
 
+def scheduled_price_refresh_job():
+    """Daily 19:00 Asia/Bangkok — refresh current prices for watchlist + candidates.
+
+    Runs after SET close (17:00) + 2h buffer so closing prices are stable. Delegates
+    to ``scripts/daily_price_refresh.refresh_prices``; writes per-symbol JSON into
+    ``data/price_cache/`` for consumption by ``_resolve_price_as_of``.
+    """
+    logging.info("[daily price refresh] START")
+    _scripts_dir = str(PROJECT_DIR / "scripts")
+    if _scripts_dir not in sys.path:
+        sys.path.insert(0, _scripts_dir)
+    try:
+        from daily_price_refresh import refresh_prices
+        result = refresh_prices()
+        logging.info(f"[daily price refresh] DONE ({len(result)} prices)")
+    except Exception as e:
+        logging.error(f"[daily price refresh] FAILED: {e}")
+        raise
+
+
 scheduler = BackgroundScheduler()
 
 
 def apply_schedule(config: dict):
-    """Add or remove scheduler job based on config."""
+    """Add or remove scheduler jobs based on config.
+
+    Always registers the daily 19:00 Asia/Bangkok price refresh (independent of the
+    weekly scan schedule toggle) so ``price_as_of`` stays fresh.
+    """
     sched = config.get("schedule", DEFAULT_CONFIG["schedule"])
     try:
         scheduler.remove_job("max_pipeline")
@@ -961,6 +985,21 @@ def apply_schedule(config: dict):
     else:
         logging.info("[scheduler] disabled by config")
 
+    # Daily price refresh — 19:00 Asia/Bangkok (independent of weekly scan toggle).
+    try:
+        scheduler.remove_job("daily_price_refresh")
+    except Exception:
+        pass
+    scheduler.add_job(
+        scheduled_price_refresh_job,
+        "cron",
+        id="daily_price_refresh",
+        hour=19,
+        minute=0,
+        timezone="Asia/Bangkok",
+    )
+    logging.info("[scheduler] daily_price_refresh scheduled: 19:00 Asia/Bangkok")
+
 
 @app.on_event("startup")
 async def on_startup():
@@ -978,6 +1017,29 @@ async def on_startup():
 @app.on_event("shutdown")
 async def on_shutdown():
     scheduler.shutdown(wait=False)
+
+
+@app.post("/api/admin/price-refresh/trigger")
+async def admin_trigger_price_refresh():
+    """Manually trigger the daily price refresh job (otherwise runs 19:00 Asia/Bangkok).
+
+    Runs the refresh in an executor so the request does not block the event loop,
+    then returns a count of prices written.
+    """
+    loop = asyncio.get_event_loop()
+
+    def _run() -> int:
+        _scripts_dir = str(PROJECT_DIR / "scripts")
+        if _scripts_dir not in sys.path:
+            sys.path.insert(0, _scripts_dir)
+        from daily_price_refresh import refresh_prices
+        return len(refresh_prices())
+
+    try:
+        count = await loop.run_in_executor(None, _run)
+    except Exception as e:
+        raise HTTPException(500, f"price refresh failed: {e}")
+    return {"status": "ok", "refreshed": count}
 
 
 # ---------------------------------------------------------------------------
