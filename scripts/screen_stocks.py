@@ -63,19 +63,18 @@ def hard_filter(data: dict) -> tuple:
     5. P/BV ≤ 1.5 (hard FAIL)
     6. market_cap ≥ 5B THB (hard FAIL, early return)
 
-    Returns (status, reasons, near_miss) where status ∈ {'PASS','REVIEW','FAIL'}.
+    Returns (status, reasons) where status ∈ {'PASS','REVIEW','FAIL'}.
     Rule: any FAIL → 'FAIL'; no FAIL + any REVIEW → 'REVIEW'; else 'PASS'.
     """
     fail_reasons: list[str] = []
     review_reasons: list[str] = []
-    near_miss: list[str] = []
     agg = data.get("aggregates") or {}
     info_mcap = data.get("market_cap") or 0
 
     # 6. Market cap — hard gate with early return (unchanged)
     if info_mcap < HARD_FILTERS["min_market_cap"]:
         fail_reasons.append(f"market cap {info_mcap/1e9:.1f}B < {HARD_FILTERS['min_market_cap']/1e9:.0f}B")
-        return "FAIL", fail_reasons, near_miss
+        return "FAIL", fail_reasons
 
     # 2. Dividend streak — 3-tier
     streak = agg.get("dividend_streak", 0)
@@ -125,10 +124,10 @@ def hard_filter(data: dict) -> tuple:
 
     # Aggregate 3-tier result
     if fail_reasons:
-        return "FAIL", fail_reasons + review_reasons, near_miss
+        return "FAIL", fail_reasons + review_reasons
     if review_reasons:
-        return "REVIEW", review_reasons, near_miss
-    return "PASS", [], near_miss
+        return "REVIEW", review_reasons
+    return "PASS", []
 
 
 def dividend_score(data: dict) -> tuple:
@@ -345,7 +344,7 @@ def detect_exit_signal(symbol: str, current_data: dict, historical_baseline: dic
     # --- Trigger 1: FILTER_DEGRADATION ---
     # If stock previously passed 5-5-5-5 but now fails any Niwes hard filter
     if baseline.get("passed_5555"):
-        status_now, fail_reasons, _ = hard_filter(current_data)
+        status_now, fail_reasons = hard_filter(current_data)
         if status_now != "PASS":
             triggers.append({
                 "type": "FILTER_DEGRADATION",
@@ -716,7 +715,7 @@ def main():
             # Set hidden holdings before hard_filter — available for all buckets (PASS/REVIEW/FAIL)
             data['_hidden_holdings'] = check_hidden_value(sym)
 
-            status, filter_reasons, near_miss = hard_filter(data)
+            status, filter_reasons = hard_filter(data)
             if status == "FAIL":
                 filtered_out += 1
                 filtered_stocks.append({
@@ -762,11 +761,6 @@ def main():
             # status == "PASS"
             result = quality_score(data)
 
-            # Apply near-miss penalty
-            if near_miss:
-                result["score"] = max(0, result["score"] - 5 * len(near_miss))
-                result["signals"].extend([nm.split(":")[0] for nm in near_miss])
-                result["reasons"].extend(near_miss)
             in_watchlist = sym in watched
 
             # Save exit baseline the first time a stock passes 5-5-5-5
