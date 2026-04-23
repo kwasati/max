@@ -296,7 +296,7 @@ function _mountCharts(stock, history) {
   var textInk = root.getPropertyValue('--ink').trim();
   var accent = root.getPropertyValue('--accent').trim();
   var inkDim = root.getPropertyValue('--ink-dim').trim();
-  var ruleHair = 'rgba(26,24,20,0.15)';
+  var ruleHair = (getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim() || 'rgba(59,64,80,0.15)');
   if (!window.Chart) return;
   window.Chart.defaults.font.family = 'Lora, serif';
   window.Chart.defaults.color = inkDim;
@@ -315,8 +315,8 @@ function _mountCharts(stock, history) {
         labels: ['Dividend ' + div, 'Valuation ' + val, 'Cash Flow ' + cf, 'Hidden ' + hv, 'Mod ' + (mod > 0 ? '+' + mod : mod)],
         datasets: [{
           data: [div, val, cf, Math.max(hv, 0.1), Math.abs(mod)],
-          backgroundColor: [accent, textInk, '#6A6459', '#B7B0A1', '#3A362E'],
-          borderColor: '#F4EFE6',
+          backgroundColor: [accent, textInk, '#878d9a', '#b2b6c0', '#5a6072'],
+          borderColor: '#f5f5f0',
           borderWidth: 2,
         }]
       },
@@ -359,7 +359,7 @@ function _mountCharts(stock, history) {
       type: 'line',
       data: {
         labels: timeline.map(function (t) { return t.date ? window.MMUtils.fmtDateShort(t.date).slice(0, 6) : ''; }),
-        datasets: [{ data: timeline.map(function (t) { return t.score; }), borderColor: textInk, backgroundColor: 'rgba(26,24,20,0.06)', borderWidth: 2, pointRadius: 2, fill: true }]
+        datasets: [{ data: timeline.map(function (t) { return t.score; }), borderColor: textInk, backgroundColor: (getComputedStyle(document.documentElement).getPropertyValue('--chart-fill-soft').trim() || 'rgba(59,64,80,0.15)'), borderWidth: 2, pointRadius: 2, fill: true }]
       },
       options: {
         responsive: true, maintainAspectRatio: false,

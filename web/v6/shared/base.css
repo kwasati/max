@@ -25,11 +25,12 @@ body {
   background-image:
     repeating-linear-gradient(
       0deg,
-      rgba(26,24,20,0.015) 0px,
-      rgba(26,24,20,0.015) 1px,
+      var(--border-subtle) 0px,
+      var(--border-subtle) 1px,
       transparent 1px,
       transparent 3px
     );
+  background-blend-mode: multiply;
 }
 
 img { max-width: 100%; display: block; }
@@ -615,7 +616,7 @@ button {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(26, 24, 20, 0.6);
+  background: var(--modal-scrim, rgba(15,17,21,0.55));
   z-index: 80;
   display: none;
   align-items: center;
