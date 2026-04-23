@@ -245,6 +245,10 @@ async def get_screener():
         # score_streak_weeks preserved from scan.py if set; else null
         if "score_streak_weeks" not in c:
             c["score_streak_weeks"] = None
+        # price_as_of — allow home cards to render Thai as-of date per candidate
+        raw_sym = c.get("symbol")
+        if raw_sym:
+            c["price_as_of"] = _resolve_price_as_of(raw_sym)
     for c in data.get("review_candidates", []):
         sym = _norm_sym(c.get("symbol", ""))
         c["in_watchlist"] = bool(sym) and sym in watched
@@ -416,6 +420,40 @@ def _build_dividend_history_10y(stock_data: dict) -> list[dict]:
     return rows[:10]
 
 
+def _resolve_price_as_of(symbol: str) -> str:
+    """Return YYYY-MM-DD string for when the price was last known.
+
+    Priority: price_cache file (from daily scheduler) > latest screener date > today.
+    Falls back to today's date if nothing else is available.
+    """
+    cache_file = DATA_DIR / "price_cache" / f"{symbol}.json"
+    if cache_file.exists():
+        try:
+            cached = json.loads(cache_file.read_text(encoding="utf-8"))
+            fetched_at = cached.get("fetched_at") or ""
+            if fetched_at:
+                return fetched_at.split("T")[0]
+        except (OSError, json.JSONDecodeError):
+            pass
+    # Latest screener date — validate YYYY-MM-DD format before trusting
+    scr_path = find_latest("screener_*.json", DATA_DIR)
+    if scr_path:
+        try:
+            scr = read_json(scr_path)
+            date = scr.get("date")
+            if isinstance(date, str) and re.match(r"^\d{4}-\d{2}-\d{2}", date):
+                return date[:10]
+        except (OSError, json.JSONDecodeError):
+            pass
+        # Fallback: parse from filename screener_YYYY-MM-DD.json
+        stem = scr_path.stem
+        if stem.startswith("screener_"):
+            candidate = stem.replace("screener_", "")[:10]
+            if re.match(r"^\d{4}-\d{2}-\d{2}$", candidate):
+                return candidate
+    return datetime.now().strftime("%Y-%m-%d")
+
+
 def _normalize_stock(d: dict):
     """Ensure consistent field names regardless of data source."""
     # Screener uses 'metrics' sub-dict for price/valuation data
@@ -482,6 +520,11 @@ def _normalize_stock(d: dict):
         d["quality_score"] = d["score"]
     if "breakdown" in d and "score_breakdown" not in d:
         d["score_breakdown"] = d["breakdown"]
+
+    # price_as_of — priority: price_cache > screener date > today
+    sym = d.get("symbol")
+    if sym:
+        d["price_as_of"] = _resolve_price_as_of(sym)
 
 
 @app.get("/api/stock/{symbol}/history")
