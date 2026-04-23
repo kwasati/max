@@ -346,16 +346,27 @@ async def get_stock(symbol: str):
 
 
 def _load_cached_narrative(symbol: str) -> dict:
-    """Return narrative {case_text, lede} from Claude analysis cache if present, else nulls."""
+    """Return narrative {case_text, lede} from Claude analysis cache if present, else nulls.
+
+    New 6-key schema: prefer ``to_art`` (conversational Max-to-อาร์ท dialog) for the
+    editorial case text; fall back to stitching the 4 analysis sections.
+    """
     cache_path = _ANALYSIS_CACHE_DIR / f"{symbol}.json"
     if cache_path.exists():
         try:
             cached = json.loads(cache_path.read_text(encoding="utf-8"))
-            max_text = cached.get("max") or cached.get("buffett") or ""
-            if max_text:
-                # First paragraph becomes lede; full text is case_text
-                lede = max_text.split("\n\n", 1)[0] if "\n\n" in max_text else max_text[:200]
-                return {"case_text": max_text, "lede": lede}
+            text = (cached.get("to_art") or "").strip()
+            if not text:
+                parts = [
+                    cached.get("dividend"),
+                    cached.get("hidden"),
+                    cached.get("moat"),
+                    cached.get("valuation"),
+                ]
+                text = "\n\n".join([p for p in parts if p]).strip()
+            if text:
+                lede = text.split("\n\n", 1)[0] if "\n\n" in text else text[:200]
+                return {"case_text": text, "lede": lede}
         except Exception:
             pass
     return {"case_text": None, "lede": None}
@@ -1971,41 +1982,53 @@ def _build_analysis_prompt(stock: dict) -> str:
     signals_str = ", ".join(signals) if signals else "-"
     reasons_str = ", ".join(reasons) if reasons else "-"
 
-    return f"""คุณคือนักวิเคราะห์หุ้นไทย กำลังวิเคราะห์หุ้น {sym} ({name}) จาก 3 มุมมอง
+    return f"""คุณกำลังสวมบทบาท 'Max' — AI stock analyst ส่วนตัวของ 'อาร์ท' (user) Max = เพื่อนสนิทที่เชี่ยวชาญหุ้นปันผลไทย สไตล์ ดร.นิเวศน์ เหมวชิรวรากร
 
-ข้อมูลหุ้น:
-- คะแนนคุณภาพ: {score}/100 (กำไร {bd.get('profitability', 0)}/25, เติบโต {bd.get('growth', 0)}/20, ปันผล {bd.get('dividend', 0)}/35, แข็งแกร่ง {bd.get('strength', 0)}/20)
-- Sector: {sector}, Market Cap: {mcap_str}
-- ROE เฉลี่ย: {avg_roe_str}%, Gross Margin: {avg_gm_str}%, Net Margin: {avg_nm_str}%
-- D/E: {de_str}, Interest Coverage: {int_cov_str}x, OCF/NI: {ocf_ni_str}x
-- Revenue CAGR: {rev_cagr_str}%, EPS CAGR: {eps_cagr_str}%
-- Dividend Yield: {yield_str}%, Payout: {payout_str}%, จ่ายปันผล {streak} ปีติด
-- FCF บวก {fcf_pos}/{fcf_total} ปี
-- Valuation: ระดับ {grade} ({label}), PEG: {peg_str}
-- ราคาปัจจุบัน: {price_str}, 52w range: {low52}-{high52}
+**เป้าหมายของอาร์ท (context สำคัญ — อ้างอิงใน section Max คุยกับอาร์ท เสมอ):**
+- เสาหลัก 1 = พอร์ตหุ้นปันผลไทย มูลค่าเป้าหมาย 100,000,000 บาท
+- Passive income target = 10,000,000 บาท/ปี จากปันผล
+- Horizon = DCA 10-20 ปี (ไม่ trade สั้น)
+- Framework = ดร.นิเวศน์ 5-5-5-5 → กระจาย 5 sector × 80/20 concentration (anchor 40% + supporting 35% + 3 tails 25%)
+
+**Tone guidance:** Max คุยกับอาร์ทแบบเพื่อน ไม่ formal — ใช้สรรพนาม 'อาร์ท' หรือ 'คุณ' (ห้าม กู/มึง), ใส่ตัวเลขจริง (เงินลงทุน, ปันผลที่จะได้, yield-on-cost projection), ชี้ทิศทางว่าทำยังไงต่อ ไม่ใช่แค่ข้อมูล
+
+**ข้อมูลหุ้น {sym} ({name}):**
+- คะแนน: {score}/100 (ปันผล {bd.get('dividend',0)}/50 + ราคา {bd.get('valuation',0)}/25 + cash flow {bd.get('cash_flow',0)}/15 + hidden {bd.get('hidden_value',0)}/10)
+- Sector: {sector} | Mcap: {mcap_str}
+- Yield: {yield_str}% | Payout: {payout_str}% | streak: {streak}y | FCF+: {fcf_pos}/{fcf_total}
+- Rev CAGR: {rev_cagr_str}% | EPS CAGR: {eps_cagr_str}% | ROE: {avg_roe_str}%
+- D/E: {de_str} | Int Cov: {int_cov_str}x | OCF/NI: {ocf_ni_str}x
+- Valuation: {grade} ({label}) | PEG: {peg_str} | ราคา: {price_str} | 52w: {low52}-{high52}
 - สัญญาณ: {signals_str}
-- เหตุผลคะแนน: {reasons_str}
 
-เขียนวิเคราะห์ 3 มุมมอง เป็นภาษาไทยง่ายๆ เหมือนเพื่อนอธิบายให้ฟัง:
+**งานของคุณ — 4 analysis + 1 dialog + verdict:**
 
-1. **มุมมอง Buffett** — เน้นคุณภาพธุรกิจ moat ความสม่ำเสมอของกำไร margin สูง ความได้เปรียบในการแข่งขัน
-2. **มุมมองเซียนฮง** — เน้น cash flow quality กำไรเป็นเงินสดจริงไหม หนี้เยอะไหม ดอกเบี้ยจ่ายไหวไหม ความสม่ำเสมอของรายได้
-3. **Max Mahon สรุป** — เน้น passive income เหมาะ DCA ระยะยาว 10-20 ปีไหม yield on cost จะเป็นเท่าไหร่ในอนาคต ความเสี่ยงสำหรับนักลงทุนปันผล แผนการลงทุน
+1. **Dividend Sustainability** (neutral analysis, 3-5 ประโยค) — จ่ายกี่ปี? payout ยั่งยืน? FCF รองรับ? DPS growth trajectory?
+2. **Hidden Value Audit** (neutral, 3-5 ประโยค) — cross-holdings / land bank / non-core asset ตลาดไม่ pricing in?
+3. **Business Moat (Thai market)** (neutral, 3-5 ประโยค) — structural ยืนนานไหม? daily-use? เทียบคู่แข่ง sector?
+4. **Valuation Discipline** (neutral, 3-5 ประโยค) — PE vs sector median + self 5y? PBV <1? yield ≥5% ตอนนี้ + 5 ปีหน้า?
 
-แต่ละมุมมอง 3-5 ประโยค กระชับ ตรงประเด็น ไม่ต้องขึ้นต้นด้วย "จากข้อมูล" หรือ "เมื่อดูจาก"
-ถ้าตัวนี้มีจุดอ่อนชัดเจน ต้องพูดตรงๆ ไม่ต้องเกรงใจ
+5. **Max คุยกับอาร์ท** (conversational — Max → อาร์ท, 3 ย่อหน้าสั้น):
+   - ย่อหน้า 1 = scenario ตัวเลขจริง: 'ถ้าอาร์ทใส่ X M ที่ yield Y% = ปันผลปีแรก Z บาท compound 10 ปีที่ DPS growth 5% → yield-on-cost ประมาณ ...' (ใช้เลขจริงจากข้อมูลหุ้น)
+   - ย่อหน้า 2 = ตำแหน่งใน pillar 1: 'ใน sector [X] ถ้าเอาเข้า pillar 1 จะทำหน้าที่ anchor/supporting/tail? concentration กี่ % ของ 100M? กระจายกับหุ้นตัวไหนใน sector เดียวกัน?'
+   - ย่อหน้า 3 = Step ถัดไป: 'อาร์ทลอง [action เฉพาะ — เช่น DCA simulator 20y scenarios, ดู historical dividend, เทียบกับหุ้น sector เดียวกัน]'
 
-ตอบเป็น JSON format:
-{{"buffett": "...", "hong": "...", "max": "..."}}"""
+6. **verdict** — BUY / HOLD / SELL + เหตุผล 1 ประโยค (lens = DCA 10-20y + dividend-first + pillar 1 fit)
+
+**ตอบ JSON (ไม่มี text นอก JSON):**
+{{"dividend":"...", "hidden":"...", "moat":"...", "valuation":"...", "to_art":"ย่อหน้า 1...\\n\\nย่อหน้า 2...\\n\\nย่อหน้า 3...", "verdict":"BUY|HOLD|SELL + reason"}}"""
+
+
+_ANALYSIS_KEYS = ("dividend", "hidden", "moat", "valuation", "to_art", "verdict")
 
 
 def build_analysis_prompt(symbol: str) -> str:
     """Build the Thai Niwes analysis prompt for a symbol from snapshot + screener.
 
-    Extracted from GET /api/stock/{symbol}/analysis handler for reuse in on-demand
-    POST /analyze (plan niwes-algo-03-server). Resolves the stock via
-    ``_find_stock_for_analysis`` then delegates to ``_build_analysis_prompt`` which
-    renders the Buffett / เซียนฮง / Max Mahon prompt.
+    Resolves the stock via ``_find_stock_for_analysis`` then delegates to
+    ``_build_analysis_prompt`` which renders the Max-to-Art persona prompt with
+    pillar-1 context and asks for JSON with 6 keys: dividend, hidden, moat,
+    valuation, to_art, verdict.
 
     Raises HTTPException(404) if the symbol is not found in screener/snapshot.
     """
@@ -2016,31 +2039,31 @@ def build_analysis_prompt(symbol: str) -> str:
 
 
 def parse_analysis_response(raw: str) -> dict:
-    """Extract JSON dict from Claude response text.
+    """Extract JSON dict from Claude response text with 6-key Niwes schema.
 
     Strips markdown code fences (```json ... ```), then tries strict ``json.loads``.
-    Falls back to regex extract of the first ``{...}`` block, and finally returns
-    ``{"buffett": raw, "hong": "", "max": ""}`` so the endpoint can still respond
-    with the raw text if parsing fails.
-
-    Extracted from GET /api/stock/{symbol}/analysis handler for reuse in on-demand
-    POST /analyze (plan niwes-algo-03-server).
+    Falls back to regex extract of the first ``{...}`` block. Always returns a
+    dict with all 6 expected keys — missing keys become empty strings so
+    downstream code never sees KeyError.
     """
     text = (raw or "").strip()
     if text.startswith("```"):
         lines = text.split("\n")
         lines = [l for l in lines if not l.startswith("```")]
         text = "\n".join(lines).strip()
+    data: dict = {}
     try:
-        return json.loads(text)
+        data = json.loads(text)
     except json.JSONDecodeError:
         m = re.search(r"\{.*\}", text, re.DOTALL)
         if m:
             try:
-                return json.loads(m.group(0))
+                data = json.loads(m.group(0))
             except Exception:
-                pass
-        return {"buffett": raw, "hong": "", "max": ""}
+                data = {}
+    if not isinstance(data, dict):
+        data = {}
+    return {k: str(data.get(k, "") or "") for k in _ANALYSIS_KEYS}
 
 
 @app.get("/api/stock/{symbol}/analysis")
@@ -2096,9 +2119,7 @@ async def trigger_analysis(symbol: str):
     payload = {
         "analyzed_at": datetime.now().isoformat(timespec="seconds"),
         "model": "claude-opus-4-7",
-        "buffett": parsed.get("buffett", ""),
-        "hong": parsed.get("hong", ""),
-        "max": parsed.get("max", ""),
+        **parsed,
     }
     (_ANALYSIS_CACHE_DIR / f"{symbol}.json").write_text(
         json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
