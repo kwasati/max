@@ -415,10 +415,10 @@ def load_prior_screener_files() -> list[Path]:
 
 
 def compute_score_streak(symbol: str, current_score: int, prior_files: list[Path]) -> tuple[int, Optional[int]]:
-    """Count consecutive prior scans where score went up for this symbol.
+    """Count consecutive prior scans where score did not drop for this symbol.
 
     Returns (streak_weeks, previous_score). Streak = number of consecutive
-    prior scans where score was <= the one after it (i.e., score moved up or stayed).
+    prior scans where score was <= the one after it (score went up OR stayed equal).
     Stops at first decrease.
     """
     streak = 0
