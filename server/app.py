@@ -2349,27 +2349,46 @@ async def get_price_history(symbol: str, granularity: str = "yearly"):
 # ============================================================================
 
 
-def _yf_monthly_series(ticker_symbol: str) -> Optional[list[tuple]]:
-    """Fetch monthly price + dividend history for a symbol. Returns list of
-    (date, close_price, dividend_on_this_month) tuples. None on failure.
+def _yahoo_monthly_series(ticker_symbol: str) -> Optional[list[tuple]]:
+    """Fetch monthly price + dividend history for a symbol via yahooquery.
+    Returns list of (date, close_price, dividend_on_this_month) tuples. None on failure.
     Cash proxy returns a flat-1.0 series built in caller.
     """
     try:
-        import yfinance as yf
+        from yahooquery import Ticker as YQTicker
         import pandas as pd
     except Exception:
         return None
     try:
-        t = yf.Ticker(ticker_symbol)
-        hist = t.history(period="max", interval="1mo", auto_adjust=False)
-        if hist.empty:
+        t = YQTicker(ticker_symbol)
+        hist = t.history(period="max", interval="1mo", adj_ohlc=False)
+        if not hasattr(hist, 'shape') or hist.empty:
             return None
+        # Flatten multi-index (symbol, date) -> DatetimeIndex
+        if hasattr(hist.index, 'get_level_values') and ticker_symbol in hist.index.get_level_values(0):
+            hist = hist.xs(ticker_symbol, level=0)
+        if not isinstance(hist.index, pd.DatetimeIndex):
+            hist.index = pd.to_datetime(hist.index)
         hist.index = hist.index.tz_localize(None) if hist.index.tz else hist.index
+
+        # Dividends — separate call in yahooquery
+        divs = None
         try:
-            divs = t.dividends
-            divs.index = divs.index.tz_localize(None) if divs.index.tz else divs.index
+            divs_df = t.dividend_history(start="2000-01-01")
+            if hasattr(divs_df, 'shape') and not divs_df.empty:
+                if hasattr(divs_df.index, 'get_level_values') and ticker_symbol in divs_df.index.get_level_values(0):
+                    divs_df = divs_df.xs(ticker_symbol, level=0)
+                divs = divs_df['dividends'] if 'dividends' in divs_df.columns else divs_df.iloc[:, 0]
+                if not isinstance(divs.index, pd.DatetimeIndex):
+                    divs.index = pd.to_datetime(divs.index)
+                divs.index = divs.index.tz_localize(None) if divs.index.tz else divs.index
         except Exception:
             divs = None
+
+        close_col = "close" if "close" in hist.columns else ("Close" if "Close" in hist.columns else None)
+        if close_col is None:
+            return None
+
         rows = []
         for idx, row in hist.iterrows():
             month_start = pd.Timestamp(year=idx.year, month=idx.month, day=1)
@@ -2378,8 +2397,10 @@ def _yf_monthly_series(ticker_symbol: str) -> Optional[list[tuple]]:
             if divs is not None and not divs.empty:
                 mask = (divs.index >= month_start) & (divs.index <= month_end)
                 div_this_month = float(divs[mask].sum()) if mask.any() else 0.0
-            close = float(row.get("Close") or 0)
-            rows.append((month_start.strftime("%Y-%m-%d"), close, div_this_month))
+            close_val = row[close_col]
+            if close_val is None or pd.isna(close_val):
+                continue
+            rows.append((month_start.strftime("%Y-%m-%d"), float(close_val), div_this_month))
         return rows
     except Exception:
         return None
@@ -2413,7 +2434,7 @@ async def simulate_dca_portfolio(req: DcaPortfolioRequest):
             continue
         if not sym.endswith(".BK") and "." not in sym:
             sym = sym + ".BK"
-        rows = _yf_monthly_series(sym)
+        rows = _yahoo_monthly_series(sym)
         if not rows:
             raise HTTPException(503, f"no monthly history for {sym}")
         series_by_sym[sym] = rows[-duration_months:]
@@ -2903,7 +2924,7 @@ async def portfolio_backtest(req: PortfolioBacktestRequest):
             continue
         if not sym.endswith(".BK") and "." not in sym:
             sym = sym + ".BK"
-        rows = _yf_monthly_series(sym)
+        rows = _yahoo_monthly_series(sym)
         if not rows:
             raise HTTPException(503, f"no monthly history for {sym}")
         filtered = [r for r in rows if r[0] >= req.start_date]
@@ -2917,10 +2938,10 @@ async def portfolio_backtest(req: PortfolioBacktestRequest):
         raise HTTPException(400, "no non-cash positions to simulate")
 
     # Benchmark — TDEX primary, ^SET fallback
-    bench_rows = _yf_monthly_series("TDEX.BK")
+    bench_rows = _yahoo_monthly_series("TDEX.BK")
     proxy_label = "TDEX ETF (Thai dividend, includes reinvest)"
     if not bench_rows:
-        bench_rows = _yf_monthly_series("^SET")
+        bench_rows = _yahoo_monthly_series("^SET")
         proxy_label = "^SET index (price-only fallback)"
     if not bench_rows:
         raise HTTPException(503, "benchmark data unavailable")
