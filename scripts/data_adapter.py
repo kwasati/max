@@ -197,6 +197,16 @@ def _fetch_thaifin(symbol: str) -> dict | None:
                 dps_approx = (dy / 100.0) * close  # THB
                 payout_ratio_year = dps_approx / diluted_eps  # decimal (0-1+)
 
+            # Additional thaifin columns exposed (previously unused)
+            cash_val = _safe(df.loc[year].get("cash"))
+            roa_year = _safe_pct(df.loc[year].get("roa"))
+            revenue_yoy = _safe_pct(df.loc[year].get("revenue_yoy"))
+            net_profit_yoy = _safe_pct(df.loc[year].get("net_profit_yoy"))
+            eps_yoy = _safe_pct(df.loc[year].get("earning_per_share_yoy"))
+            cash_cycle = _safe(df.loc[year].get("cash_cycle"))
+            financing_activities = _safe(df.loc[year].get("financing_activities"))
+            ev_per_ebit_da = _safe(df.loc[year].get("ev_per_ebit_da"))
+
             yearly_metrics.append({
                 "year": year_str,
                 "revenue": revenue,
@@ -229,6 +239,14 @@ def _fetch_thaifin(symbol: str) -> dict | None:
                 "mkt_cap": mkt_cap,
                 "bvps": bvps,
                 "payout_ratio": payout_ratio_year,
+                "cash": cash_val,
+                "roa_year": roa_year,
+                "revenue_yoy": revenue_yoy,
+                "net_profit_yoy": net_profit_yoy,
+                "eps_yoy": eps_yoy,
+                "cash_cycle": cash_cycle,
+                "financing_activities": financing_activities,
+                "ev_per_ebit_da": ev_per_ebit_da,
             })
 
         yearly_metrics.sort(key=lambda x: x["year"])
@@ -292,6 +310,16 @@ def _fetch_thaifin(symbol: str) -> dict | None:
         revenue_growth = _safe_pct(latest_row.get("revenue_yoy")) if latest_year else None
         earnings_growth = _safe_pct(latest_row.get("net_profit_yoy")) if latest_year else None
 
+        # Additional latest-year values (mirroring new yearly_metrics fields)
+        latest_cash = _safe(latest_row.get("cash")) if latest_year else None
+        latest_roa_year = _safe_pct(latest_row.get("roa")) if latest_year else None
+        latest_revenue_yoy = _safe_pct(latest_row.get("revenue_yoy")) if latest_year else None
+        latest_net_profit_yoy = _safe_pct(latest_row.get("net_profit_yoy")) if latest_year else None
+        latest_eps_yoy = _safe_pct(latest_row.get("earning_per_share_yoy")) if latest_year else None
+        latest_cash_cycle = _safe(latest_row.get("cash_cycle")) if latest_year else None
+        latest_financing_activities = _safe(latest_row.get("financing_activities")) if latest_year else None
+        latest_ev_per_ebit_da = _safe(latest_row.get("ev_per_ebit_da")) if latest_year else None
+
         return {
             "info": info,
             "yearly_metrics": yearly_metrics,
@@ -315,6 +343,14 @@ def _fetch_thaifin(symbol: str) -> dict | None:
                 "free_cashflow": latest_fcf,
                 "operating_cashflow": latest_ocf,
                 "market_cap": latest_mkt_cap,
+                "cash": latest_cash,
+                "roa_year": latest_roa_year,
+                "revenue_yoy": latest_revenue_yoy,
+                "net_profit_yoy": latest_net_profit_yoy,
+                "eps_yoy": latest_eps_yoy,
+                "cash_cycle": latest_cash_cycle,
+                "financing_activities": latest_financing_activities,
+                "ev_per_ebit_da": latest_ev_per_ebit_da,
             },
         }
 
