@@ -577,8 +577,8 @@ def fetch_fundamentals(symbol: str) -> dict:
 
         # Merge: thaifin base + yfinance supplement
         name = tf_info.get("name") or yf_info.get("shortName", yf_sym)
-        sector = tf_info.get("sector") or yf_info.get("sector", "N/A")
-        industry = tf_info.get("industry") or yf_info.get("industry", "N/A")
+        sector = tf_info.get("sector", "N/A")
+        industry = tf_info.get("industry", "N/A")
 
         # Price fields: always from yfinance (realtime)
         price = yf_info.get("currentPrice") or yf_info.get("regularMarketPrice")
