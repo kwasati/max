@@ -62,28 +62,27 @@
   }
 
   /**
-   * Mobile sticky bottom nav — 5 touch targets, text labels
-   * (no emoji / flat icons per brand rule).
-   * @param {string} active — one of: home, saved, portfolio, builder, simulator, settings
-   * @returns {string} HTML for <nav class="mobile-nav">
+   * Mobile sticky bottom nav — 5 touch targets with monochrome icon glyphs
+   * + label (Robinhood-style). Active tab uses --c-positive.
+   * @param {string} active — one of: home, saved, portfolio, builder, settings
+   * @returns {string} HTML for <nav class="bottom-nav">
    */
   function renderMobileNav(active) {
     var items = [
-      ['home',      '/m',                   '01', 'List'],
-      ['saved',     '/m/watchlist',         '02', 'Saved'],
-      ['portfolio', '/m/portfolio',         '04', 'Port'],
-      ['builder',   '/m/portfolio-builder', '05', 'Build'],
-      ['simulator', '/m/simulator',         '06', 'Sim'],
-      ['settings',  '/m/settings',          '07', 'Set']
+      ['home',      '/m',                   '⌂', 'Home'],
+      ['saved',     '/m/watchlist',         '⌕', 'Screen'],
+      ['portfolio', '/m/portfolio',         '◈', 'Portfolio'],
+      ['builder',   '/m/portfolio-builder', '◎', 'จัดพอร์ต'],
+      ['settings',  '/m/settings',          '⚙', 'Settings']
     ];
-    var html = '<nav class="mobile-nav">';
+    var html = '<nav class="bottom-nav" role="navigation">';
     for (var i = 0; i < items.length; i++) {
       var key = items[i][0];
       var href = items[i][1];
-      var num = items[i][2];
+      var icon = items[i][2];
       var label = items[i][3];
-      html += '<a href="' + href + '"' + (key === active ? ' class="active"' : '') + '>' +
-                '<span class="num">' + num + '</span>' + label +
+      html += '<a class="bn-item' + (key === active ? ' active' : '') + '" href="' + href + '">' +
+                '<span class="ic" aria-hidden="true">' + icon + '</span>' + label +
               '</a>';
     }
     html += '</nav>';
