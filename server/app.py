@@ -443,6 +443,34 @@ def _normalize_stock(d: dict):
         if d.get(key) is None and fallback is not None:
             d[key] = fallback
 
+    # Aggregates → flat fields used by report UI
+    # (UI reads stock.dividend_streak_years / stock.eps_positive_count directly)
+    agg = d.get("aggregates") or {}
+    if d.get("dividend_streak_years") is None and agg.get("dividend_streak") is not None:
+        d["dividend_streak_years"] = agg.get("dividend_streak")
+    if d.get("eps_positive_count") is None:
+        # UI expects 0-5 range (label "EPS Positive 5/5", last 5 yrs).
+        # Prefer counting from yearly_metrics (last 5); else fall back to
+        # aggregates.eps_positive_years (capped at 5).
+        yearly = d.get("yearly_metrics") or []
+        eps_count = None
+        if yearly:
+            sorted_yr = sorted(yearly, key=lambda y: y.get("year", 0))[-5:]
+            eps_vals = [
+                y.get("diluted_eps") if y.get("diluted_eps") is not None else y.get("eps")
+                for y in sorted_yr
+            ]
+            eps_vals = [e for e in eps_vals if e is not None]
+            if eps_vals:
+                eps_count = sum(1 for e in eps_vals if e > 0)
+        if eps_count is None and agg.get("eps_positive_years") is not None:
+            try:
+                eps_count = min(5, int(agg.get("eps_positive_years")))
+            except (TypeError, ValueError):
+                eps_count = None
+        if eps_count is not None:
+            d["eps_positive_count"] = eps_count
+
     # Normalize name (remove "SYMBOL_" prefix from screener format)
     name = d.get("name", "")
     if "_" in name:

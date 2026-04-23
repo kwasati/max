@@ -1356,9 +1356,10 @@
   .bottom-nav { display: none; }
 }
 
-/* Body padding so mobile content is not hidden behind bottom nav */
+/* Body padding so mobile content is not hidden behind bottom nav.
+   Nav height = .bn-item 56px + top/bottom 8px padding + safe-area inset. */
 @media (max-width: 900px) {
-  body { padding-bottom: 72px; }
+  body { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
 }
 
 

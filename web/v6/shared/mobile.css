@@ -6,7 +6,9 @@
    ========================================================== */
 
 body {
-  padding-bottom: 78px;
+  /* Bottom nav = .bn-item 56px + .bottom-nav padding 8+8 + safe-area = 72px + inset.
+     Add 16px breathing room so italic/tall descenders don't bleed under the nav. */
+  padding-bottom: calc(88px + env(safe-area-inset-bottom));
   font-size: 15px;
 }
 
