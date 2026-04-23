@@ -41,16 +41,17 @@
    * Top horizontal navigation strip (desktop). Routes map to
    * SPA-style paths; currently emit anchors so browsers follow
    * history back/forward.
-   * @param {string} active — one of: home, report, watchlist, portfolio, simulator, settings
+   * @param {string} active — one of: home, report, watchlist, portfolio, portfolio-builder, simulator, settings
    * @returns {string} HTML for <nav class="mast-nav">
    */
   function renderMastNav(active) {
     var items = [
-      ['home',       '/',          'Watchlist'],
-      ['watchlist',  '/watchlist', 'Saved'],
-      ['portfolio',  '/portfolio', 'Portfolio'],
-      ['simulator',  '/simulator', 'Simulator'],
-      ['settings',   '/settings',  'Settings']
+      ['home',              '/',                  'Watchlist'],
+      ['watchlist',         '/watchlist',         'Saved'],
+      ['portfolio',         '/portfolio',         'Portfolio'],
+      ['portfolio-builder', '/portfolio-builder', 'จัดพอร์ต'],
+      ['simulator',         '/simulator',         'Simulator'],
+      ['settings',          '/settings',          'Settings']
     ];
     var html = '<nav class="mast-nav">';
     for (var i = 0; i < items.length; i++) {
@@ -66,16 +67,17 @@
   /**
    * Mobile sticky bottom nav — 5 touch targets, text labels
    * (no emoji / flat icons per brand rule).
-   * @param {string} active — one of: home, saved, portfolio, simulator, settings
+   * @param {string} active — one of: home, saved, portfolio, builder, simulator, settings
    * @returns {string} HTML for <nav class="mobile-nav">
    */
   function renderMobileNav(active) {
     var items = [
-      ['home',      '/m',           '01', 'List'],
-      ['saved',     '/m/watchlist', '02', 'Saved'],
-      ['portfolio', '/m/portfolio', '04', 'Port'],
-      ['simulator', '/m/simulator', '05', 'Sim'],
-      ['settings',  '/m/settings',  '06', 'Set']
+      ['home',      '/m',                   '01', 'List'],
+      ['saved',     '/m/watchlist',         '02', 'Saved'],
+      ['portfolio', '/m/portfolio',         '04', 'Port'],
+      ['builder',   '/m/portfolio-builder', '05', 'Build'],
+      ['simulator', '/m/simulator',         '06', 'Sim'],
+      ['settings',  '/m/settings',          '07', 'Set']
     ];
     var html = '<nav class="mobile-nav">';
     for (var i = 0; i < items.length; i++) {
