@@ -1,13 +1,13 @@
-"""Data adapter — thaifin (primary) + yfinance (supplement).
+"""Data adapter — thaifin (primary) + yahooquery (supplement).
 
 thaifin provides 10+ years of Thai stock financials.
-yfinance supplements with realtime price, 52w range, forward PE, payout ratio, etc.
+yahooquery supplements with realtime price, 52w range, forward PE, payout ratio, etc.
 
 Public API:
     normalize_symbol(raw) → (tf_sym, yf_sym)
     fetch_from_thaifin(symbol) → dict | None
-    fetch_yfinance_supplement(symbol) → dict
-    fetch_fundamentals(symbol) → dict | None  (combined thaifin + yfinance)
+    fetch_yahoo_supplement(symbol) → dict
+    fetch_fundamentals(symbol) → dict | None  (combined thaifin + yahooquery)
 """
 
 import logging
@@ -39,13 +39,20 @@ def _holding_mcap(sym: str) -> "int | None":
                 v = int(latest_mkt_cap)
     except Exception:
         pass
-    # Fallback to yfinance (for non-Thai holdings or when thaifin fails)
+    # Fallback to yahooquery (for non-Thai holdings or when thaifin fails)
     if v is None:
         try:
-            import yfinance as yf
-            yf_v = yf.Ticker(sym).info.get("marketCap")
-            if yf_v:
-                v = int(yf_v)
+            from yahooquery import Ticker
+            tk = Ticker(sym)
+            px = tk.price.get(sym, {}) if isinstance(tk.price, dict) else {}
+            sd = tk.summary_detail.get(sym, {}) if isinstance(tk.summary_detail, dict) else {}
+            yq_v = None
+            if isinstance(sd, dict):
+                yq_v = sd.get("marketCap")
+            if yq_v is None and isinstance(px, dict):
+                yq_v = px.get("marketCap")
+            if yq_v:
+                v = int(yq_v)
         except Exception:
             pass
     _HOLDING_MCAP_CACHE[sym] = v
