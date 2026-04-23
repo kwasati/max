@@ -1,12 +1,13 @@
 /* ==========================================================
    MAX MAHON v6 — Portfolio Builder (Desktop)
-   จัดพอร์ตสไตล์แมกซ์ — 5 หุ้น 5 sector Niwes 80/20 pattern.
-   Fetches from POST /api/portfolio/builder.
-   Restyled with Robinhood muted-sage tokens (see components.css .mm-pb-*).
+   Restyled to match mockup/portfolio-builder-robinhood-desktop.html
+   — 2-column layout (380px left + fluid right)
+   — Capital input + chip rows show by default (no submit required)
+   — Result section shows empty state first, populates after API call
    ========================================================== */
 
 let _state = {
-  capital: null,
+  capital: 1000000,
   pins: [],
   excludes: [],
   loading: false,
@@ -14,97 +15,140 @@ let _state = {
   error: null,
 };
 
-/** Entry point called by the shell bootstrap. */
 export function mount(root) {
   root.innerHTML = _renderShell();
   _bindForm(root);
+  // initial empty state in result host
+  _renderEmptyResult(root.querySelector('#pb-result'));
 }
 
 function _renderShell() {
   return (
-    '<div class="section-num">' +
-      '<span class="no">05 · Portfolio Builder</span>' +
-      '<span>จัดพอร์ตสไตล์แมกซ์ · Niwes 80/20</span>' +
-    '</div>' +
-
-    '<div class="mm-pb-headline">' +
-      '<h2>Build the Port.</h2>' +
-      '<p>5 หุ้น · 5 sector · น้ำหนัก 40/35/12/8/5 — ตามแนว ดร.นิเวศน์</p>' +
-    '</div>' +
-
-    '<section class="portfolio-section" id="pb-form">' +
-      '<div class="mm-pb-form-grid">' +
-        '<label class="mm-pb-form-row">' +
-          '<span class="micro">ทุน (บาท) — optional</span>' +
-          '<input class="mm-pb-input" type="number" id="pb-capital" min="0" step="10000" placeholder="เช่น 1000000" />' +
-        '</label>' +
-        '<label class="mm-pb-form-row">' +
-          '<span class="micro">Pin symbols (comma-separated) — e.g. TCAP.BK</span>' +
-          '<input class="mm-pb-input" type="text" id="pb-pins" placeholder="TCAP.BK, QH.BK" />' +
-        '</label>' +
-      '</div>' +
-      '<div class="mm-pb-form-grid">' +
-        '<label class="mm-pb-form-row">' +
-          '<span class="micro">Exclude symbols (comma-separated)</span>' +
-          '<input class="mm-pb-input" type="text" id="pb-excludes" placeholder="CPALL.BK" />' +
-        '</label>' +
-        '<div class="mm-pb-actions">' +
-          '<button class="mm-pb-run" id="pb-submit" type="button">จัดพอร์ต</button>' +
-        '</div>' +
-      '</div>' +
+    '<section class="headline" style="padding:var(--sp-6) 0 var(--sp-5)">' +
+      '<h1 style="font-family:var(--font-head);font-weight:800;font-size:var(--fs-2xl);line-height:1.15;letter-spacing:-0.015em;margin:0 0 var(--sp-3);color:var(--fg-primary)">จัดพอร์ตสไตล์แมกซ์</h1>' +
+      '<p style="color:var(--fg-dim);font-size:var(--fs-md);margin:0">5 หุ้น · 5 sector · น้ำหนัก 80/20 · ตามแนว ดร.นิเวศน์</p>' +
     '</section>' +
 
-    '<div id="pb-result"></div>' +
-    '<div class="ornament"></div>'
+    '<div class="mm-pb-cols">' +
+      '<aside class="mm-pb-left-col">' +
+        _renderCapitalCard() +
+        _renderChipSection('ปักหมุด', 'pb-pins-row', 'pin') +
+        _renderChipSection('ถอดออก', 'pb-excludes-row', 'exc') +
+        '<button class="mm-pb-run" id="pb-submit" type="button">จัดพอร์ต</button>' +
+        '<div class="mm-pb-algo-foot">' +
+          '<h5>Niwes Composite</h5>' +
+          '<p>คัดด้วย <code>yield + value + hidden + quality</code> · weighting ' +
+          '<code>40/35/12/8/5</code> · group top-1 ต่อ sector แล้วถ่วงน้ำหนักตามลำดับ</p>' +
+        '</div>' +
+      '</aside>' +
+
+      '<main class="mm-pb-right-col">' +
+        '<div id="pb-result"></div>' +
+      '</main>' +
+    '</div>'
+  );
+}
+
+function _renderCapitalCard() {
+  return (
+    '<div class="mm-pb-capital">' +
+      '<div class="lbl">เงินลงทุน (บาท)</div>' +
+      '<div class="amt">' +
+        '<input class="mm-pb-input" type="number" id="pb-capital" min="0" step="10000" ' +
+               'value="1000000" ' +
+               'style="font-size:42px;font-weight:900;letter-spacing:-0.03em;line-height:1;border:0;background:transparent;padding:0;color:var(--fg-primary);width:100%;font-family:var(--font-head)" />' +
+        '<span class="thb">THB</span>' +
+      '</div>' +
+      '<div class="meta"><span>· จัดพอร์ตตามเงินต้นที่ระบุ · กด <strong>จัดพอร์ต</strong> เพื่อคำนวณ</span></div>' +
+    '</div>'
+  );
+}
+
+function _renderChipSection(title, rowId, kind) {
+  const placeholder = kind === 'pin' ? '+ เพิ่ม pin' : '+ exclude';
+  const color = kind === 'pin' ? 'var(--c-positive)' : 'var(--c-negative)';
+  return (
+    '<div class="mm-pb-chip-section">' +
+      '<div class="mm-pb-chip-title">' + title +
+        ' <button class="mm-pb-chip add" data-kind="' + kind + '" data-action="add-chip" ' +
+                 'style="color:' + color + ';border-color:' + color + '">' + placeholder + '</button>' +
+      '</div>' +
+      '<div class="mm-pb-chip-row" id="' + rowId + '"></div>' +
+    '</div>'
   );
 }
 
 function _bindForm(root) {
   const btn = root.querySelector('#pb-submit');
-  if (!btn) return;
-  btn.addEventListener('click', function () { _submit(root); });
+  if (btn) btn.addEventListener('click', function () { _submit(root); });
   const capInput = root.querySelector('#pb-capital');
   if (capInput) {
     capInput.addEventListener('keydown', function (e) {
       if (e.key === 'Enter') { e.preventDefault(); _submit(root); }
     });
   }
-  // Enter on pin/exclude inputs also submits
-  ['#pb-pins', '#pb-excludes'].forEach(function (sel) {
-    const el = root.querySelector(sel);
-    if (el) {
-      el.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') { e.preventDefault(); _submit(root); }
-      });
+  // Delegate add-chip click
+  root.addEventListener('click', function (e) {
+    const target = e.target.closest('[data-action="add-chip"]');
+    if (!target) return;
+    const kind = target.getAttribute('data-kind');
+    const label = kind === 'pin' ? 'Pin symbol (เช่น TCAP)' : 'Exclude symbol';
+    const sym = (window.prompt(label) || '').trim().toUpperCase();
+    if (!sym) return;
+    if (kind === 'pin') {
+      if (_state.pins.indexOf(sym) < 0) _state.pins.push(sym);
+      _renderChipRow(root, 'pb-pins-row', _state.pins, 'pin');
+    } else {
+      if (_state.excludes.indexOf(sym) < 0) _state.excludes.push(sym);
+      _renderChipRow(root, 'pb-excludes-row', _state.excludes, 'exc');
+    }
+  });
+  // Delegate chip remove
+  root.addEventListener('click', function (e) {
+    const x = e.target.closest('.mm-pb-chip .x');
+    if (!x) return;
+    const chip = x.closest('.mm-pb-chip');
+    const kind = chip.getAttribute('data-kind');
+    const sym = chip.getAttribute('data-sym');
+    if (kind === 'pin') {
+      _state.pins = _state.pins.filter(function (s) { return s !== sym; });
+      _renderChipRow(root, 'pb-pins-row', _state.pins, 'pin');
+    } else if (kind === 'exc') {
+      _state.excludes = _state.excludes.filter(function (s) { return s !== sym; });
+      _renderChipRow(root, 'pb-excludes-row', _state.excludes, 'exc');
     }
   });
 }
 
-function _parseList(s) {
-  return (s || '')
-    .split(',')
-    .map(function (x) { return x.trim().toUpperCase(); })
-    .filter(function (x) { return x.length > 0; });
+function _renderChipRow(root, rowId, list, kind) {
+  const row = root.querySelector('#' + rowId);
+  if (!row) return;
+  row.innerHTML = list.map(function (s) {
+    return '<span class="mm-pb-chip ' + kind + '" data-kind="' + kind + '" data-sym="' + _esc(s) + '">' +
+             _esc(s) + ' <span class="x">×</span>' +
+           '</span>';
+  }).join('');
+}
+
+function _renderEmptyResult(host) {
+  if (!host) return;
+  host.innerHTML =
+    '<div class="mm-pb-empty" style="padding:var(--sp-7) var(--sp-5);text-align:center;color:var(--fg-dim);' +
+    'background:var(--bg-surface);border:1px dashed var(--border-subtle);border-radius:var(--r-4)">' +
+      'กดจัดพอร์ตเพื่อดูผล' +
+    '</div>';
 }
 
 async function _submit(root) {
   if (_state.loading) return;
   const capRaw = (root.querySelector('#pb-capital') || {}).value || '';
-  const pinsRaw = (root.querySelector('#pb-pins') || {}).value || '';
-  const excRaw = (root.querySelector('#pb-excludes') || {}).value || '';
   const capital = capRaw ? Number(capRaw) : null;
-  const pins = _parseList(pinsRaw);
-  const excludes = _parseList(excRaw);
-  _state = Object.assign({}, _state, {
-    capital: capital, pins: pins, excludes: excludes,
-    loading: true, error: null,
-  });
+  _state.capital = capital;
+  _state.loading = true;
+  _state.error = null;
 
   const host = root.querySelector('#pb-result');
-  if (!host) {
-    _state.loading = false;
-    return;
-  }
+  if (!host) { _state.loading = false; return; }
   if (window.MMComponents && window.MMComponents.renderLoading) {
     window.MMComponents.renderLoading(host, 'สร้างพอร์ต…');
   } else {
@@ -112,7 +156,11 @@ async function _submit(root) {
   }
 
   try {
-    const body = { capital: capital, pins: pins, excludes: excludes };
+    const body = {
+      capital: capital,
+      pins: _state.pins.slice(),
+      excludes: _state.excludes.slice()
+    };
     const data = await window.MMApi.post('/api/portfolio/builder', body);
     _state.loading = false;
     _state.result = data;
@@ -121,9 +169,8 @@ async function _submit(root) {
     _state.loading = false;
     _state.error = (e && e.message) || String(e);
     host.innerHTML =
-      '<div class="mm-pb-empty">' +
-        'โหลดพอร์ตไม่สำเร็จ: ' +
-        (window.MMUtils ? window.MMUtils.escapeHtml(_state.error) : _state.error) +
+      '<div class="mm-pb-empty" style="color:var(--c-negative)">' +
+        'โหลดพอร์ตไม่สำเร็จ: ' + _esc(_state.error) +
       '</div>';
   }
 }
@@ -143,7 +190,6 @@ function _fmtNum(n, d) {
   });
 }
 
-/** Map sector name → css class suffix (prop/bank/comm/ict/nrg/other). */
 function _sectorClass(sector) {
   const s = (sector || '').toLowerCase();
   if (s.indexOf('property') >= 0 || s.indexOf('real') >= 0) return 'mm-pb-sec-prop';
@@ -166,7 +212,6 @@ function _renderResult(host, data) {
   const warnings = (data && data.warnings) || [];
   const sectorCount = (data && data.sector_count) || 0;
   const avgScore = (data && data.total_score_avg) || 0;
-  const screenerDate = (data && data.screener_date) || '';
   const capital = _state.capital || 0;
 
   if (port.length === 0) {
@@ -176,66 +221,9 @@ function _renderResult(host, data) {
     return;
   }
 
-  // Yield estimate (weighted by weight_pct)
-  let weightedYield = 0;
-  let totalWeight = 0;
-  port.forEach(function (s) {
-    const dy = Number(s.dividend_yield || 0);
-    const w = Number(s.weight_pct || 0);
-    weightedYield += dy * w;
-    totalWeight += w;
-  });
-  const yieldPct = totalWeight > 0 ? weightedYield / totalWeight : 0;
-
   let html = '';
 
-  // CAPITAL CARD
-  html += '<div class="mm-pb-capital">';
-  html +=   '<div class="lbl">เงินลงทุน</div>';
-  html +=   '<div class="amt">' +
-    (capital > 0 ? _fmtNum(capital, 0) : '—') +
-    '<span class="thb">THB</span></div>';
-  html +=   '<div class="meta">';
-  if (yieldPct > 0) {
-    html += '<span class="up">▲ yield ' + _fmtNum(yieldPct, 2) + '%</span>';
-  }
-  html +=     '<span>· ' + sectorCount + ' sector diversified</span>';
-  if (screenerDate) {
-    html +=   '<span>· ' + _esc(screenerDate) + '</span>';
-  }
-  html +=   '</div>';
-  html += '</div>';
-
-  // Pin / exclude chip readback
-  if ((_state.pins && _state.pins.length) || (_state.excludes && _state.excludes.length)) {
-    if (_state.pins && _state.pins.length) {
-      html += '<div class="mm-pb-chip-section">';
-      html +=   '<div class="mm-pb-chip-title">ปักหมุด</div>';
-      html +=   '<div class="mm-pb-chip-row">';
-      _state.pins.forEach(function (p) {
-        html += '<span class="mm-pb-chip pin">' + _esc(p) + '</span>';
-      });
-      html +=   '</div>';
-      html += '</div>';
-    }
-    if (_state.excludes && _state.excludes.length) {
-      html += '<div class="mm-pb-chip-section">';
-      html +=   '<div class="mm-pb-chip-title">ถอดออก</div>';
-      html +=   '<div class="mm-pb-chip-row">';
-      _state.excludes.forEach(function (x) {
-        html += '<span class="mm-pb-chip exc">' + _esc(x) + '</span>';
-      });
-      html +=   '</div>';
-      html += '</div>';
-    }
-  }
-
-  // WARNINGS
-  warnings.forEach(function (w) {
-    html += '<div class="mm-pb-warn">⚠ ' + _esc(w) + '</div>';
-  });
-
-  // SUMMARY STRIP
+  // SUMMARY STRIP (3 cells)
   html += '<div class="mm-pb-summary">';
   html +=   '<div class="cell"><div class="v">' + port.length + '</div>' +
            '<div class="l">หุ้น</div></div>';
@@ -245,16 +233,19 @@ function _renderResult(host, data) {
            '<div class="l">score avg.</div></div>';
   html += '</div>';
 
-  // SECTION HEAD
+  // Warnings
+  warnings.forEach(function (w) {
+    html += '<div class="mm-pb-warn">⚠ ' + _esc(w) + '</div>';
+  });
+
+  // SECTION HEAD — positions
   const weightHint = port.map(function (p) { return _fmtNum(p.weight_pct, 0); }).join(' · ');
   html += '<div class="mm-pb-sec-h"><h3>น้ำหนักพอร์ต</h3>' +
           '<span class="hint">' + weightHint + '</span></div>';
 
-  // POSITION CARDS
+  // POSITIONS LIST
   html += '<div class="mm-pb-pos-list">';
-  const maxWeight = Math.max.apply(null, port.map(function (p) {
-    return Number(p.weight_pct || 0);
-  }));
+  const maxWeight = Math.max.apply(null, port.map(function (p) { return Number(p.weight_pct || 0); }));
   port.forEach(function (s, idx) {
     const weight = Number(s.weight_pct || 0);
     const trackPct = maxWeight > 0 ? Math.min(100, (weight / maxWeight) * 100) : 0;
@@ -262,8 +253,8 @@ function _renderResult(host, data) {
     if ((s.signals || []).indexOf('NIWES_5555') >= 0) tags.push('<span class="tag pass">PASS</span>');
     if ((s.signals || []).indexOf('HIDDEN_VALUE') >= 0) tags.push('<span class="tag hidden">Hidden</span>');
     if (s._pinned) tags.push('<span class="tag pin">Pin</span>');
+    const scoreClass = (s.score || 0) >= 70 ? 'a' : 'b';
 
-    const scoreClass = (s.score || 0) >= 70 ? '' : 'b';
     const reasonParts = [];
     if (s.dividend_yield) reasonParts.push('yield ' + _fmtNum(s.dividend_yield, 2) + '%');
     if (s.pe_ratio) reasonParts.push('PE ' + _fmtNum(s.pe_ratio, 1));
@@ -276,50 +267,39 @@ function _renderResult(host, data) {
     html +=     '<div class="row1">';
     html +=       '<span class="sym">' + _esc((s.symbol || '').replace('.BK', '')) + '</span>';
     if (s.name) html += '<span class="th-name">' + _esc(s.name) + '</span>';
+    html +=       '<span class="sector ' + _sectorClass(s.sector) + '">' + _esc(s.sector || '—') + '</span>';
     html +=     '</div>';
-    html +=     '<span class="sector ' + _sectorClass(s.sector) + '">' + _esc(s.sector || '—') + '</span>';
     if (tags.length) html += '<div class="tags">' + tags.join('') + '</div>';
     html +=   '</div>';
     html +=   '<div class="weight-col">';
-    html +=     '<div class="weight-num' + (idx === 0 ? ' anchor' : '') + '">' +
-                _fmtNum(weight, 0) + '%</div>';
+    html +=     '<div class="weight-num' + (idx === 0 ? ' anchor' : '') + '">' + _fmtNum(weight, 0) + '%</div>';
     if (s.amount_thb != null) {
       html +=   '<div class="weight-amt">฿' + _fmtNum(s.amount_thb, 0) + '</div>';
     }
-    html +=   '</div>';
-    html +=   '<div class="w-track"><i style="width:' + trackPct.toFixed(1) + '%"></i></div>';
-    html +=   '<div class="foot">';
     if (s.shares != null && s.current_price) {
-      html += '<div class="shares">' + _fmtNum(s.shares, 0) + ' หุ้น @ ' +
-              _fmtNum(s.current_price, 2) + '</div>';
-    } else if (s.current_price) {
-      html += '<div class="shares">@ ' + _fmtNum(s.current_price, 2) + '</div>';
-    } else {
-      html += '<div class="shares"></div>';
+      html +=   '<div class="shares">' + _fmtNum(s.shares, 0) + ' หุ้น @ ' + _fmtNum(s.current_price, 2) + '</div>';
     }
-    html +=     '<div class="score"><span class="s-dot ' + scoreClass + '">' +
-                _fmtNum(s.score, 0) + '</span> Niwes</div>';
+    html +=     '<div class="score"><span class="s-dot ' + scoreClass + '">' + _fmtNum(s.score, 0) + '</span> Niwes</div>';
     html +=   '</div>';
     if (reasonParts.length) {
       html += '<div class="reason">' + _esc(reasonParts.join(' · ')) + '</div>';
     }
+    html +=   '<div class="w-track"><i style="width:' + trackPct.toFixed(1) + '%"></i></div>';
     html += '</div>';
   });
   html += '</div>';
 
-  // TOTAL BAR
+  // TOTAL
   if (capital > 0) {
-    const totalAmount = port.reduce(function (acc, s) {
-      return acc + Number(s.amount_thb || 0);
-    }, 0);
+    const totalAmount = port.reduce(function (acc, s) { return acc + Number(s.amount_thb || 0); }, 0);
     html += '<div class="mm-pb-total">' +
-            '<span class="l">รวมทั้งพอร์ต</span>' +
-            '<span class="v">฿' + _fmtNum(totalAmount, 0) + '</span>' +
-            '<span class="v2">/ ' + _fmtNum(capital, 0) + '</span>' +
+              '<span class="l">รวมทั้งพอร์ต</span>' +
+              '<span class="v">฿' + _fmtNum(totalAmount, 0) + '</span>' +
+              '<span class="v2">/ ' + _fmtNum(capital, 0) + '</span>' +
             '</div>';
   }
 
-  // DIVERSIFICATION PANEL
+  // DIVERSIFICATION
   const palette = ['var(--c-positive)', 'var(--c-info)', 'var(--c-warn)', 'var(--c-purple)', 'var(--c-negative)'];
   html += '<div class="mm-pb-diversify">';
   html +=   '<div class="mm-pb-dv-head">';
@@ -329,18 +309,15 @@ function _renderResult(host, data) {
   html +=   '<div class="mm-pb-seg-bar">';
   port.forEach(function (s, idx) {
     const w = Number(s.weight_pct || 0);
-    html += '<div class="mm-pb-seg" style="width:' + w + '%;background:' +
-            palette[idx % palette.length] + '"></div>';
+    html += '<div class="mm-pb-seg" style="width:' + w + '%;background:' + palette[idx % palette.length] + '"></div>';
   });
   html +=   '</div>';
   html +=   '<div class="mm-pb-dv-legend">';
   port.forEach(function (s, idx) {
     html += '<div class="mm-pb-lg-row">' +
-              '<span class="mm-pb-lg-dot" style="background:' +
-                palette[idx % palette.length] + '"></span>' +
+              '<span class="mm-pb-lg-dot" style="background:' + palette[idx % palette.length] + '"></span>' +
               '<span class="mm-pb-lg-label">' + _esc(s.sector || '—') +
-                ' <span style="color:var(--fg-dim)">· ' +
-                _esc((s.symbol || '').replace('.BK', '')) + '</span></span>' +
+                ' <span style="color:var(--fg-dim)">· ' + _esc((s.symbol || '').replace('.BK', '')) + '</span></span>' +
               '<span class="mm-pb-lg-val">' + _fmtNum(s.weight_pct, 0) + '%</span>' +
             '</div>';
   });

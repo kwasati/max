@@ -1360,3 +1360,45 @@
 @media (max-width: 900px) {
   body { padding-bottom: 72px; }
 }
+
+
+/* ==========================================================
+   PORTFOLIO-BUILDER — DESKTOP 2-COLUMN LAYOUT
+   Port from mockup/portfolio-builder-robinhood-desktop.html
+   ========================================================== */
+.mm-pb-cols {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 32px;
+  padding-bottom: 60px;
+}
+@media (max-width: 1100px) {
+  .mm-pb-cols { grid-template-columns: 1fr; }
+}
+.mm-pb-left-col { display: flex; flex-direction: column; gap: 20px; }
+.mm-pb-right-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+.mm-pb-algo-foot {
+  padding: 16px 18px; border-radius: var(--r-4);
+  background: var(--bg-surface); border: 1px solid var(--border-subtle);
+}
+.mm-pb-algo-foot h5 {
+  margin: 0 0 6px; font-size: 13px; font-weight: 800;
+  color: var(--fg-primary); font-family: var(--font-head);
+}
+.mm-pb-algo-foot p {
+  margin: 0; color: var(--fg-dim); font-size: 12.5px; line-height: 1.55;
+}
+.mm-pb-algo-foot code {
+  background: var(--bg-surface-2); padding: 1px 6px; border-radius: 5px;
+  font-size: 11.5px; color: var(--c-positive-strong);
+  font-family: var(--font-mono);
+}
+
+/* Dashed "+add" chip variant */
+.mm-pb-chip.add {
+  border-style: dashed;
+  color: var(--fg-dim);
+  cursor: pointer;
+  background: transparent;
+}
