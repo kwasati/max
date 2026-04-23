@@ -501,9 +501,9 @@ function _mountCharts(stock, history) {
   var textInk = root.getPropertyValue('--ink').trim();
   var accent = root.getPropertyValue('--accent').trim();
   var inkDim = root.getPropertyValue('--ink-dim').trim();
-  var gray500 = root.getPropertyValue('--gray-500').trim() || '#6A6459';
-  var gray300 = root.getPropertyValue('--gray-300').trim() || '#B7B0A1';
-  var ruleHair = 'rgba(26,24,20,0.15)';
+  var gray500 = root.getPropertyValue('--gray-500').trim() || '#878d9a';
+  var gray300 = root.getPropertyValue('--gray-300').trim() || '#b2b6c0';
+  var ruleHair = (getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim() || 'rgba(59,64,80,0.15)');
   if (!window.Chart) return;
   window.Chart.defaults.font.family = 'Lora, serif';
   window.Chart.defaults.color = inkDim;
@@ -532,8 +532,8 @@ function _mountCharts(stock, history) {
         ],
         datasets: [{
           data: [div, val, cf, Math.max(hv, 0.1), Math.abs(mod), remaining],
-          backgroundColor: [accent, textInk, gray500, gray300, '#4A3F3A', 'rgba(26,24,20,0.08)'],
-          borderColor: '#F4EFE6',
+          backgroundColor: [accent, textInk, gray500, gray300, '#5a6072', (getComputedStyle(document.documentElement).getPropertyValue('--chart-fill-soft').trim() || 'rgba(59,64,80,0.15)')],
+          borderColor: '#f5f5f0',
           borderWidth: 2,
           spacing: 2,
         }]
@@ -591,7 +591,7 @@ function _mountCharts(stock, history) {
         datasets: [{
           data: timeline.map(function (t) { return t.score; }),
           borderColor: textInk,
-          backgroundColor: 'rgba(26,24,20,0.04)',
+          backgroundColor: (getComputedStyle(document.documentElement).getPropertyValue('--chart-fill-soft').trim() || 'rgba(59,64,80,0.15)'),
           borderWidth: 2,
           pointRadius: 3,
           pointBackgroundColor: textInk,

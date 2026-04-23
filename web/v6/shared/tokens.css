@@ -80,6 +80,12 @@
   /* Modal scrim — dark overlay for both themes (tuned per mode) */
   --modal-scrim: rgba(15,17,21,0.55);
 
+  /* Chart grid + fills — used by Chart.js color pulls */
+  --chart-grid:         rgba(59,64,80,0.15);
+  --chart-grid-strong:  rgba(59,64,80,0.22);
+  --chart-fill-soft:    rgba(59,64,80,0.06);
+  --chart-fill-medium:  rgba(59,64,80,0.08);
+
   /* ================== TYPOGRAPHY (unchanged) ================== */
   --font-head:  'Playfair Display', 'IBM Plex Serif Thai', Georgia, serif;
   --font-body:  'Lora', 'IBM Plex Serif Thai', Georgia, serif;
@@ -202,5 +208,11 @@
 
     /* Modal scrim — deeper for dark mode */
     --modal-scrim: rgba(0,0,0,0.65);
+
+    /* Chart grid + fills — lighter alpha for dark backgrounds */
+    --chart-grid:         rgba(228,230,235,0.14);
+    --chart-grid-strong:  rgba(228,230,235,0.22);
+    --chart-fill-soft:    rgba(228,230,235,0.05);
+    --chart-fill-medium:  rgba(228,230,235,0.08);
   }
 }

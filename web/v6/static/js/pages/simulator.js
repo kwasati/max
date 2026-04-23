@@ -205,7 +205,7 @@ function drawSingleChart(canvas, yearly) {
           label: 'Accumulated Value',
           data: value,
           borderColor: style.ink,
-          backgroundColor: 'rgba(26,24,20,0.08)',
+          backgroundColor: (getComputedStyle(document.documentElement).getPropertyValue('--chart-fill-soft').trim() || 'rgba(59,64,80,0.15)'),
           fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2,
         },
         {
@@ -419,7 +419,7 @@ function drawMultiChart(canvas, timeline) {
       labels: labels,
       datasets: [
         { label: 'Portfolio Value', data: value, borderColor: style.ink,
-          backgroundColor: 'rgba(26,24,20,0.06)', fill: true, tension: 0.3,
+          backgroundColor: (getComputedStyle(document.documentElement).getPropertyValue('--chart-fill-soft').trim() || 'rgba(59,64,80,0.15)'), fill: true, tension: 0.3,
           pointRadius: 0, borderWidth: 2 },
         { label: 'Invested', data: invested, borderColor: style.accent,
           borderDash: [4, 4], borderWidth: 1.5, pointRadius: 0, fill: false },
@@ -685,22 +685,22 @@ function drawBacktestChart(canvas, timeline) {
         {
           label: 'Portfolio Value (DCA, div reinvested)',
           data: portfolioVals,
-          borderColor: 'rgba(122,31,43,1)',
-          backgroundColor: 'rgba(122,31,43,0.15)',
+          borderColor: 'rgba(93,140,105,1)',
+          backgroundColor: 'rgba(93,140,105,0.15)',
           fill: true, tension: 0.25, pointRadius: 0, borderWidth: 2.2,
           order: 1,
         },
         {
           label: 'SET Benchmark (same DCA schedule)',
           data: benchVals,
-          borderColor: 'rgba(26,24,20,1)',
+          borderColor: (getComputedStyle(document.documentElement).getPropertyValue('--fg-primary').trim() || '#3b4050'),
           borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0, fill: false,
           order: 2,
         },
         {
           label: 'Cumulative Invested',
           data: investedVals,
-          borderColor: 'rgba(26,24,20,0.35)',
+          borderColor: (getComputedStyle(document.documentElement).getPropertyValue('--chart-grid-strong').trim() || 'rgba(59,64,80,0.15)'),
           borderWidth: 1.5, pointRadius: 0, fill: false,
           order: 3,
         },
@@ -774,10 +774,10 @@ function formatMonthLabel(dateStr) {
 function chartStyle() {
   var cs = getComputedStyle(document.documentElement);
   return {
-    ink: (cs.getPropertyValue('--ink') || '#1a1814').trim() || '#1a1814',
-    accent: (cs.getPropertyValue('--accent') || '#7a1f2b').trim() || '#7a1f2b',
-    inkDim: (cs.getPropertyValue('--ink-dim') || '#6a6459').trim() || '#6a6459',
-    ruleHair: 'rgba(26,24,20,0.12)',
+    ink: (cs.getPropertyValue('--ink') || '#3b4050').trim() || '#3b4050',
+    accent: (cs.getPropertyValue('--accent') || '#5d8c69').trim() || '#5d8c69',
+    inkDim: (cs.getPropertyValue('--ink-dim') || '#878d9a').trim() || '#878d9a',
+    ruleHair: (getComputedStyle(document.documentElement).getPropertyValue('--chart-fill-medium').trim() || 'rgba(59,64,80,0.15)'),
   };
 }
 
