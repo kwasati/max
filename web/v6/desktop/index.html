@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Max Mahon · The Dividend Review</title>
+<title>Max Mahon</title>
 <meta name="description" content="Max Mahon — Thai stock analyst, Niwes Dividend-First style.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400;1,700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=IBM+Plex+Serif+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Serif+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/v6/shared/tokens.css?v={{CACHEBUST}}">
 <link rel="stylesheet" href="/static/v6/shared/base.css?v={{CACHEBUST}}">
 <link rel="stylesheet" href="/static/v6/css/components.css?v={{CACHEBUST}}">
@@ -32,16 +32,8 @@
   // module fails to import. Date values are best-effort until the page
   // fetches real issue metadata and re-renders via MMComponents.renderMasthead.
   function bootMasthead() {
-    var now = new Date();
     var route = (location.pathname.replace(/^\//, '').split('/')[0]) || 'home';
-    var mastCtx = {
-      vol:       'VI',
-      no:        '17',
-      date:      MMUtils.fmtDateLong(now).toUpperCase(),
-      next_scan: 'SAT 09:00',
-      edition:   'Thai Stock Edition',
-      active:    route
-    };
+    var mastCtx = { active: route };
     var host = document.getElementById('masthead');
     if (host) host.innerHTML = MMComponents.renderMasthead(mastCtx);
   }

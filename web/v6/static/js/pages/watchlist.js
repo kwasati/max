@@ -27,7 +27,7 @@ function _renderShell() {
       '<span id="wl-sectaside"></span>' +
     '</div>' +
     '<h2 class="section-title">Saved Positions.</h2>' +
-    '<p class="section-kicker">หุ้นที่คุณกำลังติดตาม — อัปเดตจาก scan ล่าสุดทุกสัปดาห์.</p>' +
+    '<p style="color:var(--fg-dim);font-size:var(--fs-sm);margin-bottom:var(--sp-4)">หุ้นที่คุณกำลังติดตาม — อัปเดตจาก scan ล่าสุดทุกสัปดาห์.</p>' +
     '<section class="summary-strip" id="wl-summary"></section>' +
     '<div id="wl-table-host">' +
       '<table class="data-table">' +
@@ -126,7 +126,7 @@ function _renderTable(tbody) {
   if (!_positions.length) {
     tbody.innerHTML =
       '<tr><td colspan="8" style="text-align:center;padding:var(--sp-7) 0;' +
-      'font-family:var(--font-head);font-style:italic;color:var(--ink-dim)">' +
+      'font-family:var(--font-head);font-style:italic;color:var(--fg-dim)">' +
         'ยังไม่มีหุ้นใน watchlist.' +
       '</td></tr>';
     return;
@@ -202,15 +202,15 @@ function _bindFooter(root) {
 
 function _openAddModal(root) {
   const html =
-    '<p style="font-family:var(--font-body);color:var(--ink-soft);margin-bottom:var(--sp-4)">' +
+    '<p style="font-family:var(--font-body);color:var(--fg-secondary);margin-bottom:var(--sp-4)">' +
       'กรอก symbol (เช่น "CPALL" หรือ "CPALL.BK") — ถ้าไม่ใส่ <code>.BK</code> ระบบจะเติมให้อัตโนมัติ.' +
     '</p>' +
     '<input type="text" id="wl-add-input" ' +
-      'style="width:100%;padding:10px 12px;border:1px solid var(--rule);' +
-      'background:var(--paper-3);font-family:var(--font-mono);font-size:var(--fs-md);' +
-      'color:var(--ink);outline:none;margin-bottom:var(--sp-4);text-transform:uppercase" ' +
+      'style="width:100%;padding:10px 12px;border:1px solid var(--border-subtle);' +
+      'background:var(--bg-surface);font-family:var(--font-mono);font-size:var(--fs-md);' +
+      'color:var(--fg-primary);outline:none;margin-bottom:var(--sp-4);text-transform:uppercase" ' +
       'placeholder="BBL" autocomplete="off" />' +
-    '<div id="wl-add-err" style="display:none;color:var(--accent);font-family:var(--font-body);' +
+    '<div id="wl-add-err" style="display:none;color:var(--c-positive);font-family:var(--font-body);' +
       'font-size:var(--fs-sm);margin-bottom:var(--sp-3)"></div>' +
     '<div style="display:flex;justify-content:flex-end;gap:var(--sp-3)">' +
       '<button type="button" class="btn ghost" id="wl-add-cancel">Cancel</button>' +
@@ -268,8 +268,7 @@ async function _openCompare(root) {
   window.MMComponents.openModal(
     '<div id="wl-cmp-body"></div>',
     {
-      kicker: 'Supplementary Sheet · № 02a · Side-by-Side',
-      headline: 'COMPARISON · ' + syms.length + ' STOCKS',
+            headline: 'COMPARISON · ' + syms.length + ' STOCKS',
       dek: syms.join(' · ') + ' — best values bolded in oxblood'
     }
   );

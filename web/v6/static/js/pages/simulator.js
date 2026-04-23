@@ -23,9 +23,9 @@ export function mount(root) {
 
 function renderShell() {
   return (
-    MMComponents.renderSectionNum('05', 'Simulator', 'Three Modes · Retrospective + Accumulation') +
+    '<div class="section-title" style="margin:var(--sp-6) 0 var(--sp-4);font-weight:700;font-size:var(--fs-lg);color:var(--fg-primary)">Simulator</div>' +
     '<h2 class="section-title">What-If.</h2>' +
-    '<p class="section-kicker">' +
+    '<p style="color:var(--fg-dim);font-size:var(--fs-sm);margin-bottom:var(--sp-4)">' +
       'วิเคราะห์ย้อนหลัง — ถ้าทยอยเก็บรายเดือน · ทยอยเก็บทั้งพอร์ต · หรือถือพอร์ตตั้งแต่ปีนู้น — วันนี้จะเป็นยังไง' +
     '</p>' +
     '<div class="tab-bar" role="tablist">' +
@@ -452,8 +452,8 @@ function renderBacktestTabBody() {
       '<span>DCA Simulation · Dividends Reinvested</span>' +
     '</div>' +
     '<h3 class="section-title" id="backtest-title" style="font-size:var(--fs-2xl)">ถ้า DCA ตั้งแต่ ' +
-      '<span style="font-style:italic;color:var(--accent)">มกราคม 2015</span> จนถึงวันนี้</h3>' +
-    '<p class="section-kicker" id="backtest-kicker">' +
+      '<span style="font-style:italic;color:var(--c-positive)">มกราคม 2015</span> จนถึงวันนี้</h3>' +
+    '<p id="backtest-kicker" style="color:var(--fg-dim);font-size:var(--fs-sm);margin-bottom:var(--sp-4)">' +
       'Portfolio Backtest · simulated monthly dollar-cost averaging · dividends reinvested.' +
     '</p>' +
     '<section class="sim-layout">' +
@@ -581,7 +581,7 @@ function updateBacktestTitle(root, data) {
   var thaiMonths = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
                     'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
   var label = (thaiMonths[monthIdx] || '') + ' ' + year;
-  title.innerHTML = 'ถ้า DCA ตั้งแต่ <span style="font-style:italic;color:var(--accent)">' +
+  title.innerHTML = 'ถ้า DCA ตั้งแต่ <span style="font-style:italic;color:var(--c-positive)">' +
     MMUtils.escapeHtml(label.trim()) + '</span> จนถึงวันนี้';
 
   var kicker = root.querySelector('#backtest-kicker');
@@ -621,7 +621,7 @@ function renderBacktestResult(host, data, amountMonthly) {
            false, true) +
     '</div>' +
     '<div class="sim-chart-big" style="height:440px"><canvas id="chart-backtest"></canvas></div>' +
-    '<p class="lede" style="margin-top:var(--sp-5);max-width:68ch;text-align:left;font-size:var(--fs-sm);border-top:1px solid var(--rule-hair);padding-top:var(--sp-4)">' +
+    '<p class="lede" style="margin-top:var(--sp-5);max-width:68ch;text-align:left;font-size:var(--fs-sm);border-top:1px solid var(--border-subtle);padding-top:var(--sp-4)">' +
       '<strong>Assumptions.</strong> Simulated monthly dollar-cost averaging of ฿' + MMUtils.fmtNum(amountMonthly, 0) +
       ' from ' + MMUtils.escapeHtml(data.start_date || '—') + ' through ' + MMUtils.escapeHtml(data.end_date || '—') +
       '. Dividends reinvested at declaration date. Benchmark proxy: ' +
@@ -774,9 +774,9 @@ function formatMonthLabel(dateStr) {
 function chartStyle() {
   var cs = getComputedStyle(document.documentElement);
   return {
-    ink: (cs.getPropertyValue('--ink') || '#3b4050').trim() || '#3b4050',
-    accent: (cs.getPropertyValue('--accent') || '#5d8c69').trim() || '#5d8c69',
-    inkDim: (cs.getPropertyValue('--ink-dim') || '#878d9a').trim() || '#878d9a',
+    ink: (cs.getPropertyValue('--fg-primary') || '#3b4050').trim() || '#3b4050',
+    accent: (cs.getPropertyValue('--c-positive-strong') || '#5d8c69').trim() || '#5d8c69',
+    inkDim: (cs.getPropertyValue('--fg-dim') || '#878d9a').trim() || '#878d9a',
     ruleHair: (getComputedStyle(document.documentElement).getPropertyValue('--chart-fill-medium').trim() || 'rgba(59,64,80,0.15)'),
   };
 }

@@ -95,7 +95,7 @@ function _renderList(host) {
   if (!_positions.length) {
     host.innerHTML =
       '<div style="padding:32px 0;text-align:center;font-family:var(--font-head);' +
-      'font-style:italic;color:var(--ink-dim)">ยังไม่มีหุ้นใน watchlist.</div>';
+      'font-style:italic;color:var(--fg-dim)">ยังไม่มีหุ้นใน watchlist.</div>';
     return;
   }
   const esc = window.MMUtils.escapeHtml;
@@ -148,7 +148,7 @@ function _formatDeltaCell(p) {
   if (d === null || d === undefined || entry === null || entry === undefined) return '—';
   const sign = d > 0 ? '+' : (d < 0 ? '−' : '');
   const abs = Math.abs(d);
-  const color = d >= 0 ? 'var(--ink)' : 'var(--accent)';
+  const color = d >= 0 ? 'var(--fg-primary)' : 'var(--c-positive)';
   return '<span style="color:' + color + '">' + sign + abs + ' vs ' + entry + '</span>';
 }
 
@@ -241,8 +241,7 @@ async function _openCompare(root) {
   window.MMComponents.openModal(
     '<div id="wl-cmp-body"></div>',
     {
-      kicker: 'Supplementary · № 02a · Side-by-Side',
-      headline: 'COMPARISON · ' + syms.length + ' STOCKS',
+            headline: 'COMPARISON · ' + syms.length + ' STOCKS',
       dek: syms.join(' · ') + ' — best values bolded in oxblood'
     }
   );
@@ -323,15 +322,15 @@ function _fmtCompareCell(label, v) {
 
 function _openAddModal(root) {
   const html =
-    '<p style="font-family:var(--font-body);color:var(--ink-soft);margin-bottom:var(--sp-4)">' +
+    '<p style="font-family:var(--font-body);color:var(--fg-secondary);margin-bottom:var(--sp-4)">' +
       'กรอก symbol — ระบบจะเติม <code>.BK</code> ให้อัตโนมัติถ้าจำเป็น.' +
     '</p>' +
     '<input type="text" id="wl-add-input" ' +
-      'style="width:100%;padding:14px 12px;border:1px solid var(--rule);' +
-      'background:var(--paper-3);font-family:var(--font-mono);font-size:1.05rem;' +
-      'color:var(--ink);outline:none;margin-bottom:var(--sp-4);text-transform:uppercase" ' +
+      'style="width:100%;padding:14px 12px;border:1px solid var(--border-subtle);' +
+      'background:var(--bg-surface);font-family:var(--font-mono);font-size:1.05rem;' +
+      'color:var(--fg-primary);outline:none;margin-bottom:var(--sp-4);text-transform:uppercase" ' +
       'placeholder="BBL" autocomplete="off" />' +
-    '<div id="wl-add-err" style="display:none;color:var(--accent);font-family:var(--font-body);' +
+    '<div id="wl-add-err" style="display:none;color:var(--c-positive);font-family:var(--font-body);' +
       'font-size:var(--fs-sm);margin-bottom:var(--sp-3)"></div>' +
     '<div style="display:flex;justify-content:flex-end;gap:var(--sp-3);flex-wrap:wrap">' +
       '<button type="button" class="btn ghost" id="wl-add-cancel">Cancel</button>' +

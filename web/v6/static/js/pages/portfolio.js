@@ -26,7 +26,7 @@ function _renderShell() {
       '<span>Real Holdings · Simulated Allocation</span>' +
     '</div>' +
     '<h2 class="section-title">The Book.</h2>' +
-    '<p class="section-kicker">พอร์ตจริงที่ถืออยู่ด้านบน · พอร์ตจำลองที่ตั้งใจจะถือด้านล่าง.</p>' +
+    '<p style="color:var(--fg-dim);font-size:var(--fs-sm);margin-bottom:var(--sp-4)">พอร์ตจริงที่ถืออยู่ด้านบน · พอร์ตจำลองที่ตั้งใจจะถือด้านล่าง.</p>' +
 
     // 04a REAL
     '<div class="section-num">' +
@@ -44,7 +44,7 @@ function _renderShell() {
       '</div>' +
       '<div id="real-right">' +
         '<div id="real-table-host"></div>' +
-        '<div class="flex jb ac mt-5" style="padding-top:var(--sp-4);border-top:1px solid var(--rule)">' +
+        '<div class="flex jb ac mt-5" style="padding-top:var(--sp-4);border-top:1px solid var(--border-subtle)">' +
           '<div class="micro" id="real-footmeta">&nbsp;</div>' +
           '<button class="btn ghost" id="real-add-btn" type="button">+ เพิ่ม Transaction</button>' +
         '</div>' +
@@ -74,7 +74,7 @@ function _renderShell() {
       '</div>' +
       '<div id="sim-right">' +
         '<div id="sim-table-host"></div>' +
-        '<div class="flex jb ac mt-5" style="padding-top:var(--sp-4);border-top:1px solid var(--rule)">' +
+        '<div class="flex jb ac mt-5" style="padding-top:var(--sp-4);border-top:1px solid var(--border-subtle)">' +
           '<div class="micro" id="sim-footmeta">&nbsp;</div>' +
           '<button class="btn ghost" id="sim-add-btn" type="button">+ เพิ่มหุ้น</button>' +
         '</div>' +
@@ -88,8 +88,8 @@ function _renderShell() {
 // ---- Chart color palette ---------------------------------------------------
 function _pieColors(n) {
   const style = getComputedStyle(document.documentElement);
-  const ink    = style.getPropertyValue('--ink').trim()    || '#3b4050';
-  const accent = style.getPropertyValue('--accent').trim() || '#5d8c69';
+  const ink    = style.getPropertyValue('--fg-primary').trim()    || '#3b4050';
+  const accent = style.getPropertyValue('--c-positive-strong').trim() || '#5d8c69';
   // oxblood reserved for largest slice, grayscale for the rest
   const greys = [ink, '#5a6072', '#5a6072', '#878d9a', '#878d9a', '#b2b6c0', '#b2b6c0', '#d1cec1'];
   const out = [accent];
@@ -101,7 +101,7 @@ function _pieColors(n) {
 
 function _pieBorder() {
   const style = getComputedStyle(document.documentElement);
-  return style.getPropertyValue('--paper').trim() || '#f5f5f0';
+  return style.getPropertyValue('--bg-base').trim() || '#f5f5f0';
 }
 
 // ---- P&L sign rendering (NO color — use arrows + italic) -------------------
@@ -273,26 +273,26 @@ function _openAddTxModal(root) {
   const today = new Date().toISOString().slice(0, 10);
   const html =
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-4)">' +
-      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim)">Symbol' +
-        '<input type="text" id="tx-symbol" placeholder="BBL" style="margin-top:4px;width:100%;padding:8px;border:1px solid var(--rule);background:var(--paper-3);font-family:var(--font-mono);color:var(--ink)">' +
+      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-dim)">Symbol' +
+        '<input type="text" id="tx-symbol" placeholder="BBL" style="margin-top:4px;width:100%;padding:8px;border:1px solid var(--border-subtle);background:var(--bg-surface);font-family:var(--font-mono);color:var(--fg-primary)">' +
       '</label>' +
-      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim)">Date' +
-        '<input type="date" id="tx-date" value="' + today + '" style="margin-top:4px;width:100%;padding:8px;border:1px solid var(--rule);background:var(--paper-3);font-family:var(--font-mono);color:var(--ink)">' +
+      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-dim)">Date' +
+        '<input type="date" id="tx-date" value="' + today + '" style="margin-top:4px;width:100%;padding:8px;border:1px solid var(--border-subtle);background:var(--bg-surface);font-family:var(--font-mono);color:var(--fg-primary)">' +
       '</label>' +
-      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim);grid-column:1/-1">Type' +
+      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-dim);grid-column:1/-1">Type' +
         '<div style="margin-top:6px;display:flex;gap:var(--sp-4)">' +
-          '<label style="font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:var(--fs-sm);color:var(--ink)"><input type="radio" name="tx-type" value="BUY" checked> BUY</label>' +
-          '<label style="font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:var(--fs-sm);color:var(--ink)"><input type="radio" name="tx-type" value="SELL"> SELL</label>' +
+          '<label style="font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:var(--fs-sm);color:var(--fg-primary)"><input type="radio" name="tx-type" value="BUY" checked> BUY</label>' +
+          '<label style="font-family:var(--font-body);text-transform:none;letter-spacing:0;font-size:var(--fs-sm);color:var(--fg-primary)"><input type="radio" name="tx-type" value="SELL"> SELL</label>' +
         '</div>' +
       '</label>' +
-      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim)">Price' +
-        '<input type="number" id="tx-price" step="0.01" min="0" placeholder="150.00" style="margin-top:4px;width:100%;padding:8px;border:1px solid var(--rule);background:var(--paper-3);font-family:var(--font-mono);color:var(--ink)">' +
+      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-dim)">Price' +
+        '<input type="number" id="tx-price" step="0.01" min="0" placeholder="150.00" style="margin-top:4px;width:100%;padding:8px;border:1px solid var(--border-subtle);background:var(--bg-surface);font-family:var(--font-mono);color:var(--fg-primary)">' +
       '</label>' +
-      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim)">Qty' +
-        '<input type="number" id="tx-qty" step="1" min="0" placeholder="100" style="margin-top:4px;width:100%;padding:8px;border:1px solid var(--rule);background:var(--paper-3);font-family:var(--font-mono);color:var(--ink)">' +
+      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-dim)">Qty' +
+        '<input type="number" id="tx-qty" step="1" min="0" placeholder="100" style="margin-top:4px;width:100%;padding:8px;border:1px solid var(--border-subtle);background:var(--bg-surface);font-family:var(--font-mono);color:var(--fg-primary)">' +
       '</label>' +
-      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim);grid-column:1/-1">Note' +
-        '<input type="text" id="tx-note" placeholder="(optional)" style="margin-top:4px;width:100%;padding:8px;border:1px solid var(--rule);background:var(--paper-3);font-family:var(--font-mono);color:var(--ink)">' +
+      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-dim);grid-column:1/-1">Note' +
+        '<input type="text" id="tx-note" placeholder="(optional)" style="margin-top:4px;width:100%;padding:8px;border:1px solid var(--border-subtle);background:var(--bg-surface);font-family:var(--font-mono);color:var(--fg-primary)">' +
       '</label>' +
     '</div>' +
     '<div style="display:flex;justify-content:flex-end;gap:var(--sp-3);margin-top:var(--sp-5)">' +
@@ -351,7 +351,7 @@ async function _openDeleteTxModal(root, symbol) {
     let rows = '';
     txs.forEach(function (t) {
       rows +=
-        '<div class="flex jb ac" style="padding:10px 0;border-bottom:1px solid var(--rule-hair)">' +
+        '<div class="flex jb ac" style="padding:10px 0;border-bottom:1px solid var(--border-subtle)">' +
           '<div>' +
             '<span class="mono" style="font-size:var(--fs-sm)">' + E(t.date) + ' · ' + E(t.type) + '</span>' +
             ' <span class="dim italic">' + E(String(t.qty)) + ' × ' + E(String(t.price)) + '</span>' +
@@ -450,7 +450,7 @@ function _renderSimulated(root) {
     rows += '<tr data-sim-idx="' + i + '">' +
       '<td>' +
         '<span class="sym">' + E(p.symbol) + '</span> ' +
-        '<input type="text" class="dim italic" data-sim-label="' + i + '" value="' + E(p.label || '') + '" placeholder="label..." style="background:transparent;border:none;border-bottom:1px dashed var(--rule-hair);color:var(--ink-dim);font-family:var(--font-head);font-style:italic;font-size:var(--fs-sm);width:150px;padding:2px 4px">' +
+        '<input type="text" class="dim italic" data-sim-label="' + i + '" value="' + E(p.label || '') + '" placeholder="label..." style="background:transparent;border:none;border-bottom:1px dashed var(--border-subtle);color:var(--fg-dim);font-family:var(--font-head);font-style:italic;font-size:var(--fs-sm);width:150px;padding:2px 4px">' +
       '</td>' +
       '<td class="num">' +
         '<span class="weight-bar" style="width:' + wVisual + 'px"></span>' +
@@ -631,14 +631,14 @@ async function _persistSim(root) {
 function _openAddSimModal(root) {
   const html =
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-4)">' +
-      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim)">Symbol' +
-        '<input type="text" id="sim-add-symbol" placeholder="BBL" style="margin-top:4px;width:100%;padding:8px;border:1px solid var(--rule);background:var(--paper-3);font-family:var(--font-mono);color:var(--ink)">' +
+      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-dim)">Symbol' +
+        '<input type="text" id="sim-add-symbol" placeholder="BBL" style="margin-top:4px;width:100%;padding:8px;border:1px solid var(--border-subtle);background:var(--bg-surface);font-family:var(--font-mono);color:var(--fg-primary)">' +
       '</label>' +
-      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim)">Weight %' +
-        '<input type="number" id="sim-add-weight" step="0.5" min="0" max="100" placeholder="10" style="margin-top:4px;width:100%;padding:8px;border:1px solid var(--rule);background:var(--paper-3);font-family:var(--font-mono);color:var(--ink)">' +
+      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-dim)">Weight %' +
+        '<input type="number" id="sim-add-weight" step="0.5" min="0" max="100" placeholder="10" style="margin-top:4px;width:100%;padding:8px;border:1px solid var(--border-subtle);background:var(--bg-surface);font-family:var(--font-mono);color:var(--fg-primary)">' +
       '</label>' +
-      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim);grid-column:1/-1">Label' +
-        '<input type="text" id="sim-add-label" placeholder="core defensive / hidden value / ..." style="margin-top:4px;width:100%;padding:8px;border:1px solid var(--rule);background:var(--paper-3);font-family:var(--font-mono);color:var(--ink)">' +
+      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-dim);grid-column:1/-1">Label' +
+        '<input type="text" id="sim-add-label" placeholder="core defensive / hidden value / ..." style="margin-top:4px;width:100%;padding:8px;border:1px solid var(--border-subtle);background:var(--bg-surface);font-family:var(--font-mono);color:var(--fg-primary)">' +
       '</label>' +
     '</div>' +
     '<div style="display:flex;justify-content:flex-end;gap:var(--sp-3);margin-top:var(--sp-5)">' +

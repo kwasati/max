@@ -86,9 +86,9 @@
   --chart-fill-soft:    rgba(59,64,80,0.06);
   --chart-fill-medium:  rgba(59,64,80,0.08);
 
-  /* ================== TYPOGRAPHY (unchanged) ================== */
-  --font-head:  'Playfair Display', 'IBM Plex Serif Thai', Georgia, serif;
-  --font-body:  'Lora', 'IBM Plex Serif Thai', Georgia, serif;
+  /* ================== TYPOGRAPHY ================== */
+  --font-head:  'Inter', 'IBM Plex Serif Thai', -apple-system, system-ui, sans-serif;
+  --font-body:  'Inter', 'IBM Plex Serif Thai', -apple-system, system-ui, sans-serif;
   --font-mono:  'JetBrains Mono', ui-monospace, 'Courier New', monospace;
   --font-micro: 'JetBrains Mono', 'IBM Plex Serif Thai', monospace;
 
@@ -101,7 +101,6 @@
   --fs-xl:   1.85rem;
   --fs-2xl:  2.6rem;
   --fs-3xl:  3.8rem;
-  --fs-disp: 5.2rem;
 
   /* Rhythm */
   --sp-1: 0.25rem;

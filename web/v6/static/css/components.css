@@ -1238,3 +1238,167 @@
   margin-top: var(--sp-4);
 }
 
+
+
+/* ==========================================================
+   APP HEADER (modern Robinhood-style) — replaces legacy .masthead
+   Port of .app-header block from mockup/portfolio-builder-robinhood-desktop.html
+   ========================================================== */
+.app-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 40px;
+  padding: 20px var(--sp-6) 16px;
+  max-width: var(--col-max);
+  margin: 0 auto;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+}
+.app-header .brand { display: flex; align-items: center; gap: 14px; }
+.app-header .mark {
+  width: 40px; height: 40px; border-radius: 12px;
+  background: linear-gradient(135deg, var(--c-positive), var(--c-positive-strong));
+  display: grid; place-items: center;
+  color: #fff; font-weight: 900; font-size: 18px;
+  box-shadow: var(--shadow-accent-positive);
+  font-family: var(--font-head);
+}
+.app-header .name {
+  font-family: var(--font-head);
+  font-weight: 800; font-size: 18px;
+  letter-spacing: -.01em; line-height: 1.1;
+  color: var(--fg-primary);
+}
+.app-header .sub {
+  font-size: 13px; color: var(--fg-dim);
+  margin-top: 2px;
+  font-family: var(--font-body);
+}
+
+.app-header nav { display: flex; gap: 28px; justify-content: center; }
+.app-header nav a {
+  color: var(--fg-secondary);
+  text-decoration: none;
+  font-size: 14px; font-weight: 600;
+  padding: 8px 0;
+  border-bottom: 2px solid transparent;
+  letter-spacing: .02em;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+.app-header nav a:hover { color: var(--fg-primary); }
+.app-header nav a.active {
+  color: var(--c-positive-strong);
+  border-bottom-color: var(--c-positive);
+}
+
+.app-header .icon-btn {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 0; background: transparent;
+  display: grid; place-items: center;
+  cursor: pointer; color: var(--fg-secondary);
+  font-size: 20px;
+  transition: background 120ms ease;
+}
+.app-header .icon-btn:hover { background: var(--bg-surface-2); }
+
+@media (max-width: 900px) {
+  .app-header { grid-template-columns: auto 1fr auto; gap: 16px; padding: 14px var(--sp-4); }
+  .app-header nav { display: none; }
+  .app-header .sub { display: none; }
+}
+
+
+/* ==========================================================
+   MOBILE BOTTOM NAV — Robinhood-style tab bar
+   Port of .bottom-nav block from mockup/portfolio-builder-robinhood.html
+   ========================================================== */
+.bottom-nav {
+  position: fixed;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-subtle);
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  z-index: 60;
+}
+.bottom-nav .bn-item {
+  background: none;
+  border: 0;
+  text-decoration: none;
+  height: 56px;
+  display: flex; flex-direction: column;
+  gap: 2px; align-items: center; justify-content: center;
+  color: var(--fg-mute);
+  font-size: 11px; font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  border-radius: 12px;
+  transition: color 120ms ease, background 120ms ease;
+}
+.bottom-nav .bn-item .ic {
+  font-size: 20px; line-height: 1;
+}
+.bottom-nav .bn-item.active {
+  color: var(--c-positive);
+}
+.bottom-nav .bn-item:hover {
+  background: var(--bg-surface-2);
+}
+
+/* Only show on mobile viewports. Desktop continues to use app-header. */
+@media (min-width: 901px) {
+  .bottom-nav { display: none; }
+}
+
+/* Body padding so mobile content is not hidden behind bottom nav */
+@media (max-width: 900px) {
+  body { padding-bottom: 72px; }
+}
+
+
+/* ==========================================================
+   PORTFOLIO-BUILDER — DESKTOP 2-COLUMN LAYOUT
+   Port from mockup/portfolio-builder-robinhood-desktop.html
+   ========================================================== */
+.mm-pb-cols {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 32px;
+  padding-bottom: 60px;
+}
+@media (max-width: 1100px) {
+  .mm-pb-cols { grid-template-columns: 1fr; }
+}
+.mm-pb-left-col { display: flex; flex-direction: column; gap: 20px; }
+.mm-pb-right-col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+.mm-pb-algo-foot {
+  padding: 16px 18px; border-radius: var(--r-4);
+  background: var(--bg-surface); border: 1px solid var(--border-subtle);
+}
+.mm-pb-algo-foot h5 {
+  margin: 0 0 6px; font-size: 13px; font-weight: 800;
+  color: var(--fg-primary); font-family: var(--font-head);
+}
+.mm-pb-algo-foot p {
+  margin: 0; color: var(--fg-dim); font-size: 12.5px; line-height: 1.55;
+}
+.mm-pb-algo-foot code {
+  background: var(--bg-surface-2); padding: 1px 6px; border-radius: 5px;
+  font-size: 11.5px; color: var(--c-positive-strong);
+  font-family: var(--font-mono);
+}
+
+/* Dashed "+add" chip variant */
+.mm-pb-chip.add {
+  border-style: dashed;
+  color: var(--fg-dim);
+  cursor: pointer;
+  background: transparent;
+}

@@ -53,10 +53,7 @@ function _updateMasthead(status) {
   var date = status && status.last_data_date
     ? window.MMUtils.fmtDateLong(status.last_data_date).toUpperCase()
     : window.MMUtils.fmtDateLong(new Date()).toUpperCase();
-  host.innerHTML = window.MMComponents.renderMasthead({
-    vol: 'VI', no: '17', date: date, next_scan: 'SAT 09:00',
-    edition: 'Full Report', active: 'home'
-  });
+  host.innerHTML = window.MMComponents.renderMasthead({ active: 'home' });
   var navHost = document.getElementById('mobile-nav-host');
   if (navHost) navHost.innerHTML = window.MMComponents.renderMobileNav('home');
 }
@@ -85,10 +82,10 @@ function _renderArticleHead(stock, patterns) {
   if (signals.indexOf('HIDDEN_VALUE') !== -1) tags += '<span class="tag">Hidden Value</span>';
   var caseTag = patterns && (patterns.case_study_tags || [])[0];
   return (
-    '<section class="article-head" style="padding:20px 0 16px;text-align:center;border-bottom:3px double var(--rule)">' +
-      '<div class="article-kicker" style="font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:8px">Full Report' + (caseTag ? ' · ' + esc(caseTag) : '') + '</div>' +
+    '<section class="article-head" style="padding:20px 0 16px;text-align:center;border-bottom:3px double var(--border-subtle)">' +
+      '<div class="article-kicker" style="font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-dim);margin-bottom:8px">Full Report' + (caseTag ? ' · ' + esc(caseTag) : '') + '</div>' +
       '<h1 class="article-sym" style="font-family:var(--font-head);font-weight:900;font-size:2.8rem;line-height:0.95;letter-spacing:-0.02em">' + sym + '</h1>' +
-      '<div class="article-name" style="font-family:var(--font-head);font-style:italic;font-size:0.95rem;color:var(--ink-soft);margin:6px 0 12px">' + name + '</div>' +
+      '<div class="article-name" style="font-family:var(--font-head);font-style:italic;font-size:0.95rem;color:var(--fg-secondary);margin:6px 0 12px">' + name + '</div>' +
       '<div class="article-tags" style="display:flex;justify-content:center;gap:4px;flex-wrap:wrap">' + tags + '</div>' +
     '</section>'
   );
@@ -97,7 +94,7 @@ function _renderArticleHead(stock, patterns) {
 function _renderTheCase(stock) {
   var esc = window.MMUtils.escapeHtml;
   var caseText = (stock.narrative || {}).case_text;
-  var byline = '<div class="byline" style="text-align:center;margin-bottom:16px;font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-dim)">By <strong style="color:var(--ink);font-weight:500">Max Mahon</strong> · Staff Analyst</div>';
+  var byline = '<div class="byline" style="text-align:center;margin-bottom:16px;font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-dim)">By <strong style="color:var(--fg-primary);font-weight:500">Max Mahon</strong> · Staff Analyst</div>';
   var body;
   if (caseText) {
     var paras = String(caseText).split(/\n\n+/).filter(Boolean);
@@ -108,7 +105,7 @@ function _renderTheCase(stock) {
       }).join('') +
       '</div>';
   } else {
-    body = '<div id="v6-mcase-cols" style="text-align:center;padding:16px 0;font-family:var(--font-head);font-style:italic;color:var(--ink-soft);font-size:0.95rem">บทวิเคราะห์ยังไม่ได้ generate — กดปุ่มด้านล่างเพื่อเรียก Max.</div>';
+    body = '<div id="v6-mcase-cols" style="text-align:center;padding:16px 0;font-family:var(--font-head);font-style:italic;color:var(--fg-secondary);font-size:0.95rem">บทวิเคราะห์ยังไม่ได้ generate — กดปุ่มด้านล่างเพื่อเรียก Max.</div>';
   }
   return (
     '<div class="section-num"><span class="no">01 · The Case</span><span>Editorial</span></div>' +
@@ -121,8 +118,8 @@ function _renderScore(stock) {
   return (
     '<div class="section-num"><span class="no">02 · Score</span><span>Of 100</span></div>' +
     '<div class="score-display" style="text-align:center">' +
-      '<div class="huge" style="font-family:var(--font-mono);font-weight:300;font-size:7rem;line-height:0.85;color:var(--ink)">' + Math.round(score) + '</div>' +
-      '<div class="slash" style="font-family:var(--font-head);font-style:italic;color:var(--ink-dim);margin-top:10px">of one hundred</div>' +
+      '<div class="huge" style="font-family:var(--font-mono);font-weight:300;font-size:7rem;line-height:0.85;color:var(--fg-primary)">' + Math.round(score) + '</div>' +
+      '<div class="slash" style="font-family:var(--font-head);font-style:italic;color:var(--fg-dim);margin-top:10px">of one hundred</div>' +
     '</div>' +
     '<div class="score-chart-wrap" style="height:260px;margin-top:16px"><canvas id="v6-mscore-chart"></canvas></div>'
   );
@@ -141,11 +138,11 @@ function _renderChecklist(stock) {
   function item(label, actual, threshold, pass) {
     var mark = pass ? '<div class="check-mark pass">✓</div>' : '<div class="check-mark fail">✗</div>';
     return (
-      '<div class="checklist-item" style="display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:12px 0;border-bottom:1px solid var(--rule-hair);align-items:baseline">' +
+      '<div class="checklist-item" style="display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:12px 0;border-bottom:1px solid var(--border-subtle);align-items:baseline">' +
         '<div class="check-label" style="font-family:var(--font-head);font-size:1rem;font-weight:500">' + label + '</div>' +
         '<div class="check-actual" style="font-family:var(--font-mono);font-weight:500;font-size:1rem">' + actual + '</div>' +
         mark +
-        '<div class="check-threshold" style="font-family:var(--font-mono);font-size:0.7rem;color:var(--ink-dim);grid-column:1/-1;text-align:right;margin-top:-4px">' + threshold + '</div>' +
+        '<div class="check-threshold" style="font-family:var(--font-mono);font-size:0.7rem;color:var(--fg-dim);grid-column:1/-1;text-align:right;margin-top:-4px">' + threshold + '</div>' +
       '</div>'
     );
   }
@@ -168,15 +165,15 @@ function _renderPattern(patterns) {
   if (!matched.length) {
     return (
       '<div class="section-num"><span class="no">04 · Pattern</span><span>No Match</span></div>' +
-      '<p style="text-align:center;padding:16px;font-family:var(--font-head);font-style:italic;color:var(--ink-dim);font-size:0.9rem">— ไม่มี case study pattern —</p>'
+      '<p style="text-align:center;padding:16px;font-family:var(--font-head);font-style:italic;color:var(--fg-dim);font-size:0.9rem">— ไม่มี case study pattern —</p>'
     );
   }
   var body = matched.map(function (p) {
     return (
-      '<div class="pattern-block" style="border-top:3px double var(--rule);border-bottom:3px double var(--rule);padding:20px 0;margin:20px 0">' +
-        '<div class="pattern-label" style="font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:8px">Matched Pattern</div>' +
-        '<div class="pattern-name" style="font-family:var(--font-head);font-weight:900;font-size:1.3rem;line-height:1;color:var(--accent);margin-bottom:14px">' + esc(p.tag || '') + '</div>' +
-        '<div class="pattern-body" style="font-family:var(--font-body);font-size:0.95rem;line-height:1.65;font-style:italic;color:var(--ink-soft)"><p>' + esc(p.narrative || '') + '</p></div>' +
+      '<div class="pattern-block" style="border-top:3px double var(--border-subtle);border-bottom:3px double var(--border-subtle);padding:20px 0;margin:20px 0">' +
+        '<div class="pattern-label" style="font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-dim);margin-bottom:8px">Matched Pattern</div>' +
+        '<div class="pattern-name" style="font-family:var(--font-head);font-weight:900;font-size:1.3rem;line-height:1;color:var(--c-positive);margin-bottom:14px">' + esc(p.tag || '') + '</div>' +
+        '<div class="pattern-body" style="font-family:var(--font-body);font-size:0.95rem;line-height:1.65;font-style:italic;color:var(--fg-secondary)"><p>' + esc(p.narrative || '') + '</p></div>' +
       '</div>'
     );
   }).join('');
@@ -251,14 +248,14 @@ function _renderExitBaseline(exitStatus) {
 
   return (
     '<div class="section-num"><span class="no">08 · Exit Baseline</span><span>Watchlist</span></div>' +
-    '<div class="exit-panel" style="border:3px double var(--accent);padding:18px;margin:20px 0">' +
-      '<div class="head" style="font-family:var(--font-mono);font-size:0.7rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:12px">Current · ' + sevBadge + '</div>' +
-      '<p style="font-style:italic;color:var(--ink-soft);margin-bottom:14px;font-size:0.9rem">' + esc(exitStatus.narrative || '') + '</p>' +
-      '<div class="exit-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px 0;border-top:1px solid var(--rule-hair);border-bottom:1px solid var(--rule-hair);margin:14px 0">' +
-        '<div class="exit-cell"><span class="lbl" style="font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-dim)">Entry Date</span><span class="v" style="font-family:var(--font-mono);font-size:1.1rem;font-weight:500;display:block;margin-top:3px">' + entryDate + '</span></div>' +
-        '<div class="exit-cell"><span class="lbl" style="font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-dim)">Entry PE</span><span class="v" style="font-family:var(--font-mono);font-size:1.1rem;font-weight:500;display:block;margin-top:3px">' + entryPE + '</span></div>' +
-        '<div class="exit-cell"><span class="lbl" style="font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-dim)">Entry Yld</span><span class="v" style="font-family:var(--font-mono);font-size:1.1rem;font-weight:500;display:block;margin-top:3px">' + entryYld + '</span></div>' +
-        '<div class="exit-cell"><span class="lbl" style="font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-dim)">Δ Score</span><span class="v" style="font-family:var(--font-mono);font-size:1.1rem;font-weight:500;display:block;margin-top:3px">' + dStr + '</span></div>' +
+    '<div class="exit-panel" style="border:3px double var(--c-positive);padding:18px;margin:20px 0">' +
+      '<div class="head" style="font-family:var(--font-mono);font-size:0.7rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--c-positive);margin-bottom:12px">Current · ' + sevBadge + '</div>' +
+      '<p style="font-style:italic;color:var(--fg-secondary);margin-bottom:14px;font-size:0.9rem">' + esc(exitStatus.narrative || '') + '</p>' +
+      '<div class="exit-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px 0;border-top:1px solid var(--border-subtle);border-bottom:1px solid var(--border-subtle);margin:14px 0">' +
+        '<div class="exit-cell"><span class="lbl" style="font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-dim)">Entry Date</span><span class="v" style="font-family:var(--font-mono);font-size:1.1rem;font-weight:500;display:block;margin-top:3px">' + entryDate + '</span></div>' +
+        '<div class="exit-cell"><span class="lbl" style="font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-dim)">Entry PE</span><span class="v" style="font-family:var(--font-mono);font-size:1.1rem;font-weight:500;display:block;margin-top:3px">' + entryPE + '</span></div>' +
+        '<div class="exit-cell"><span class="lbl" style="font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-dim)">Entry Yld</span><span class="v" style="font-family:var(--font-mono);font-size:1.1rem;font-weight:500;display:block;margin-top:3px">' + entryYld + '</span></div>' +
+        '<div class="exit-cell"><span class="lbl" style="font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-dim)">Δ Score</span><span class="v" style="font-family:var(--font-mono);font-size:1.1rem;font-weight:500;display:block;margin-top:3px">' + dStr + '</span></div>' +
       '</div>' +
     '</div>'
   );
@@ -266,12 +263,11 @@ function _renderExitBaseline(exitStatus) {
 
 function _renderDeepAnalyze() {
   return (
-    '<div class="analyze-block" style="text-align:center;padding:28px 0;border-top:3px double var(--rule);margin-top:28px" id="v6-mdeep-analyze">' +
-      '<div class="micro">№ 09 · Beyond the Algorithm</div>' +
-      '<h2 style="font-family:var(--font-head);font-weight:900;font-size:1.5rem;line-height:1.15;margin:14px 0 10px">Ask Max to go deeper.</h2>' +
-      '<p style="font-family:var(--font-head);font-style:italic;color:var(--ink-dim);font-size:0.95rem;margin-bottom:20px">ให้ Claude Opus วิเคราะห์คุณภาพ management + moat + structural risk</p>' +
+    '<div class="analyze-block" style="text-align:center;padding:28px 0;border-top:3px double var(--border-subtle);margin-top:28px" id="v6-mdeep-analyze">' +
+            '<h2 style="font-family:var(--font-head);font-weight:900;font-size:1.5rem;line-height:1.15;margin:14px 0 10px">Ask Max to go deeper.</h2>' +
+      '<p style="font-family:var(--font-head);font-style:italic;color:var(--fg-dim);font-size:0.95rem;margin-bottom:20px">ให้ Claude Opus วิเคราะห์คุณภาพ management + moat + structural risk</p>' +
       '<button class="btn primary" id="v6-mdeep-btn">ขอวิเคราะห์เพิ่มเติม</button>' +
-      '<div id="v6-mdeep-status" style="margin-top:14px;font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-dim)">Cached 7 days</div>' +
+      '<div id="v6-mdeep-status" style="margin-top:14px;font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-dim)">Cached 7 days</div>' +
     '</div>'
   );
 }
@@ -293,12 +289,12 @@ function _buildMobileReportHtml(stock, patterns, history, exitStatus) {
 
 function _mountCharts(stock, history) {
   var root = getComputedStyle(document.documentElement);
-  var textInk = root.getPropertyValue('--ink').trim();
-  var accent = root.getPropertyValue('--accent').trim();
-  var inkDim = root.getPropertyValue('--ink-dim').trim();
+  var textInk = root.getPropertyValue('--fg-primary').trim();
+  var accent = root.getPropertyValue('--c-positive-strong').trim();
+  var inkDim = root.getPropertyValue('--fg-dim').trim();
   var ruleHair = (getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim() || 'rgba(59,64,80,0.15)');
   if (!window.Chart) return;
-  window.Chart.defaults.font.family = 'Lora, serif';
+  window.Chart.defaults.font.family = 'Inter, sans-serif';
   window.Chart.defaults.color = inkDim;
 
   var scoreCanvas = document.getElementById('v6-mscore-chart');

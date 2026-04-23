@@ -33,10 +33,7 @@ function _updateMasthead(status) {
   var date = status && status.last_data_date
     ? window.MMUtils.fmtDateLong(status.last_data_date).toUpperCase()
     : window.MMUtils.fmtDateLong(new Date()).toUpperCase();
-  host.innerHTML = window.MMComponents.renderMasthead({
-    vol: 'VI', no: '17', date: date, next_scan: 'SAT 09:00',
-    edition: 'Thai Stock Edition', active: 'home'
-  });
+  host.innerHTML = window.MMComponents.renderMasthead({ active: 'home' });
   // Mobile masthead has no top nav — keep shell's bottom nav active
   var navHost = document.getElementById('mobile-nav-host');
   if (navHost) navHost.innerHTML = window.MMComponents.renderMobileNav('home');
@@ -73,7 +70,7 @@ function _renderCard(stock) {
   var scoreCurr = stock.score == null ? 0 : Math.round(stock.score);
   var prevScore = stock.previous_score;
   var delta = window.MMUtils.fmtScoreDelta(prevScore, scoreCurr);
-  var deltaArrowStyle = (prevScore != null && scoreCurr < prevScore) ? ' style="color:var(--ink-dim)"' : '';
+  var deltaArrowStyle = (prevScore != null && scoreCurr < prevScore) ? ' style="color:var(--fg-dim)"' : '';
   var ribbon = stock.is_new_this_week ? '<div class="new-ribbon">New</div>' : '';
 
   var yieldStr = yieldPct == null ? '—' : window.MMUtils.fmtPercent(yieldPct);
@@ -113,7 +110,7 @@ function _buildMobileHomeHtml(screener) {
   var candidates = screener.candidates || [];
 
   var lede =
-    '<div style="padding:14px 0 12px;text-align:center;border-bottom:1px solid var(--rule);margin-top:12px">' +
+    '<div style="padding:14px 0 12px;text-align:center;border-bottom:1px solid var(--border-subtle);margin-top:12px">' +
       '<div class="micro" style="margin-bottom:6px">Latest Issue</div>' +
       '<h2 style="font-family:var(--font-head);font-weight:900;line-height:1.15;font-size:1.45rem">' +
         passed + ' names cleared 5-5-5-5 this week.' +
@@ -131,7 +128,7 @@ function _buildMobileHomeHtml(screener) {
     '</section>';
 
   var trendBox =
-    '<div style="padding:12px 0;border-bottom:1px solid var(--rule)">' +
+    '<div style="padding:12px 0;border-bottom:1px solid var(--border-subtle)">' +
       '<div class="micro" style="margin-bottom:6px">Pass Count · Trailing 12 Weeks</div>' +
       '<div style="height:120px"><canvas id="v6-mhome-trend"></canvas></div>' +
     '</div>';
@@ -154,7 +151,7 @@ function _buildMobileHomeHtml(screener) {
   if (!candidates.length) {
     emptyState =
       '<section style="padding:40px 0;text-align:center">' +
-        '<p style="font-family:var(--font-head);font-style:italic;color:var(--ink-soft)">ยังไม่มีหุ้นที่ผ่านเกณฑ์ในรอบนี้</p>' +
+        '<p style="font-family:var(--font-head);font-style:italic;color:var(--fg-secondary)">ยังไม่มีหุ้นที่ผ่านเกณฑ์ในรอบนี้</p>' +
       '</section>';
   }
 
@@ -174,7 +171,7 @@ function _mountTrendChart(trend) {
   var textInk = root.getPropertyValue('--ink').trim();
   var inkDim = root.getPropertyValue('--ink-dim').trim();
   var ruleHair = (getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim() || 'rgba(59,64,80,0.15)');
-  window.Chart.defaults.font.family = 'Lora, serif';
+  window.Chart.defaults.font.family = 'Inter, sans-serif';
   window.Chart.defaults.color = inkDim;
   new window.Chart(canvas, {
     type: 'bar',
