@@ -2234,6 +2234,21 @@ async def get_exit_status(symbol: str):
         except ValueError:
             weeks_held = None
 
+    # Back-fill entry_score for baselines created before entry_score was recorded.
+    # Strategy: pull score from latest screener candidate as best-available proxy,
+    # persist back to baseline file so subsequent reads are stable.
+    if entry_score is None and baseline and current_score is not None:
+        baseline["entry_score"] = current_score
+        baselines[symbol] = baseline
+        try:
+            baselines_file.write_text(
+                json.dumps(baselines, indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            entry_score = current_score
+        except OSError as e:
+            logging.warning(f"[exit-status] failed to persist backfilled entry_score for {symbol}: {e}")
+
     delta_score = None
     if current_score is not None and entry_score is not None:
         delta_score = current_score - entry_score
