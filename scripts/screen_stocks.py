@@ -231,13 +231,11 @@ def valuation_score(data: dict) -> tuple:
         elif pbv <= 2.0:
             score += 1
 
-    # EV/EBITDA proxy (5 pts) — use mcap/ebitda if available, else fallback
+    # EV/EBITDA (5 pts) — use thaifin ev_per_ebit_da from latest yearly_metrics
     yearly = data.get("yearly_metrics", [])
     latest = yearly[-1] if yearly else {}
-    ebitda = latest.get("ebitda")
-    mcap = data.get("market_cap")
-    if ebitda and mcap and ebitda > 0:
-        ev_ebitda = mcap / ebitda
+    ev_ebitda = latest.get("ev_per_ebit_da")
+    if ev_ebitda is not None and ev_ebitda > 0:
         if ev_ebitda <= 6:
             score += 5
             reasons.append(f"EV/EBITDA {ev_ebitda:.1f}x ถูก")
