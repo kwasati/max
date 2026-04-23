@@ -67,3 +67,23 @@ def top_per_sector(grouped: dict) -> list:
         picks.append(top)
     picks.sort(key=lambda x: x["_composite"], reverse=True)
     return picks
+
+
+def apply_overrides(candidates: list, pins: list, excludes: list) -> tuple:
+    """Filter candidates by user pins + excludes.
+
+    Returns (filtered_stocks, warnings). Pins validated against candidates;
+    unknown pin symbols surface as warnings.
+    """
+    warnings = []
+    symbols_available = {s.get("symbol") for s in candidates}
+    for pin in pins:
+        if pin not in symbols_available:
+            warnings.append(f"pin symbol not in PASS list: {pin}")
+    excludes_set = set(excludes)
+    filtered = [s for s in candidates if s.get("symbol") not in excludes_set]
+    # Mark pins so downstream can prioritize within sector
+    pins_set = set(pins)
+    for s in filtered:
+        s["_pinned"] = s.get("symbol") in pins_set
+    return filtered, warnings
