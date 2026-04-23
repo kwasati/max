@@ -289,9 +289,9 @@ function _buildMobileReportHtml(stock, patterns, history, exitStatus) {
 
 function _mountCharts(stock, history) {
   var root = getComputedStyle(document.documentElement);
-  var textInk = root.getPropertyValue('--ink').trim();
-  var accent = root.getPropertyValue('--accent').trim();
-  var inkDim = root.getPropertyValue('--ink-dim').trim();
+  var textInk = root.getPropertyValue('--fg-primary').trim();
+  var accent = root.getPropertyValue('--c-positive-strong').trim();
+  var inkDim = root.getPropertyValue('--fg-dim').trim();
   var ruleHair = (getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim() || 'rgba(59,64,80,0.15)');
   if (!window.Chart) return;
   window.Chart.defaults.font.family = 'Inter, sans-serif';

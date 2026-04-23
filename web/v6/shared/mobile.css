@@ -1,8 +1,8 @@
 /* ==========================================================
    MOBILE-SPECIFIC OVERRIDES
    Applied via <link> on mobile pages only.
-   Philosophy: newspaper identity preserved, but compact.
-   Bottom nav · stacked layout · touch targets ≥44px
+   Philosophy: modern mobile-first, compact, touch targets ≥44px
+   Bottom nav styling lives in components.css (.bottom-nav)
    ========================================================== */
 
 body {
@@ -10,38 +10,9 @@ body {
   font-size: 15px;
 }
 
-.masthead {
-  padding: 0;
-}
-.mast-top {
-  padding: 10px 16px 6px;
-  grid-template-columns: 1fr;
-  gap: 4px;
-  text-align: center;
-}
-.mast-meta-l, .mast-meta-r {
-  font-size: 0.58rem;
-  text-align: center;
-  line-height: 1.4;
-}
-.mast-brand {
-  font-size: 1.6rem;
-}
-.mast-sub { font-size: 0.8rem; margin-top: 0; }
-.mast-bottom { display: none; }  /* hide desktop nav, use bottom nav */
-
 .container { padding: 0 16px; }
-.section-num {
-  font-size: 0.62rem;
-  letter-spacing: 0.16em;
-  padding: 10px 0;
-  margin: 18px 0 12px;
-  flex-wrap: wrap;
-  gap: 4px;
-}
+
 .section-title { font-size: 1.6rem; }
-.section-kicker { font-size: 0.9rem; }
-.lede-headline { font-size: 1.4rem !important; }
 
 /* SUMMARY STRIP — 2 cols */
 .summary-strip {
@@ -77,7 +48,7 @@ body {
 .data-table-wrap {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  border: 1px solid var(--rule-hair);
+  border: 1px solid var(--border-subtle);
 }
 .data-table { min-width: 560px; }
 .data-table th, .data-table td { padding: 10px 10px; font-size: 0.85rem; }
@@ -90,8 +61,6 @@ body {
   font-size: 0.98rem !important;
   line-height: 1.65 !important;
 }
-.pull-quote { font-size: 1.2rem; max-width: 100%; }
-.drop-cap::first-letter { font-size: 3.6em; }
 
 .score-block {
   grid-template-columns: 1fr !important;
@@ -121,7 +90,7 @@ body {
   grid-template-columns: 1fr !important;
   gap: 20px !important;
 }
-.pie-wrap { border-right: none; padding-right: 0; border-bottom: 1px solid var(--rule-hair); padding-bottom: 20px; }
+.pie-wrap { border-right: none; padding-right: 0; border-bottom: 1px solid var(--border-subtle); padding-bottom: 20px; }
 .pie-box { height: 260px !important; }
 .pie-total .val { font-size: 1.6rem; }
 
@@ -132,7 +101,7 @@ body {
 }
 .sim-inputs {
   border-right: none !important;
-  border-bottom: 1px solid var(--rule);
+  border-bottom: 1px solid var(--border-subtle);
   padding-right: 0 !important;
   padding-bottom: 16px;
 }
@@ -172,13 +141,6 @@ input[type="range"] { width: 100% !important; }
 .day-chips { flex-wrap: wrap; gap: 4px; }
 
 /* Bottom nav */
-.mobile-nav {
-  display: flex !important;
-}
-.mobile-nav a {
-  min-width: 0;
-  padding: 8px 2px 6px;
-}
 
 /* Touch targets */
 .btn { min-height: 44px; padding: 12px 20px; }
@@ -198,5 +160,5 @@ input[type="range"] { width: 100% !important; }
   grid-template-columns: 1fr !important;
   gap: 20px !important;
 }
-.strip-right { border-left: none; padding-left: 0; border-top: 1px solid var(--rule-hair); padding-top: 16px; }
+.strip-right { border-left: none; padding-left: 0; border-top: 1px solid var(--border-subtle); padding-top: 16px; }
 .mini-chart-box { height: 160px !important; }

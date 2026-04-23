@@ -673,9 +673,9 @@ function formatMonthLabel(dateStr) {
 function chartStyle() {
   var cs = getComputedStyle(document.documentElement);
   return {
-    ink: (cs.getPropertyValue('--ink') || '#3b4050').trim() || '#3b4050',
-    accent: (cs.getPropertyValue('--accent') || '#5d8c69').trim() || '#5d8c69',
-    inkDim: (cs.getPropertyValue('--ink-dim') || '#878d9a').trim() || '#878d9a',
+    ink: (cs.getPropertyValue('--fg-primary') || '#3b4050').trim() || '#3b4050',
+    accent: (cs.getPropertyValue('--c-positive-strong') || '#5d8c69').trim() || '#5d8c69',
+    inkDim: (cs.getPropertyValue('--fg-dim') || '#878d9a').trim() || '#878d9a',
     ruleHair: (getComputedStyle(document.documentElement).getPropertyValue('--chart-fill-medium').trim() || 'rgba(59,64,80,0.15)'),
   };
 }

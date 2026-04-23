@@ -65,15 +65,15 @@ function _renderShell() {
 // ---- Shared chart helpers --------------------------------------------------
 function _pieColors(n) {
   const style = getComputedStyle(document.documentElement);
-  const ink    = style.getPropertyValue('--ink').trim()    || '#3b4050';
-  const accent = style.getPropertyValue('--accent').trim() || '#5d8c69';
+  const ink    = style.getPropertyValue('--fg-primary').trim()    || '#3b4050';
+  const accent = style.getPropertyValue('--c-positive-strong').trim() || '#5d8c69';
   const greys = [ink, '#5a6072', '#5a6072', '#878d9a', '#878d9a', '#b2b6c0', '#b2b6c0', '#d1cec1'];
   const out = [accent];
   for (let i = 0; i < n - 1; i++) out.push(greys[i % greys.length]);
   return out;
 }
 function _pieBorder() {
-  return getComputedStyle(document.documentElement).getPropertyValue('--paper').trim() || '#f5f5f0';
+  return getComputedStyle(document.documentElement).getPropertyValue('--bg-base').trim() || '#f5f5f0';
 }
 
 function _renderPct(p) {

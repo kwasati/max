@@ -88,8 +88,8 @@ function _renderShell() {
 // ---- Chart color palette ---------------------------------------------------
 function _pieColors(n) {
   const style = getComputedStyle(document.documentElement);
-  const ink    = style.getPropertyValue('--ink').trim()    || '#3b4050';
-  const accent = style.getPropertyValue('--accent').trim() || '#5d8c69';
+  const ink    = style.getPropertyValue('--fg-primary').trim()    || '#3b4050';
+  const accent = style.getPropertyValue('--c-positive-strong').trim() || '#5d8c69';
   // oxblood reserved for largest slice, grayscale for the rest
   const greys = [ink, '#5a6072', '#5a6072', '#878d9a', '#878d9a', '#b2b6c0', '#b2b6c0', '#d1cec1'];
   const out = [accent];
@@ -101,7 +101,7 @@ function _pieColors(n) {
 
 function _pieBorder() {
   const style = getComputedStyle(document.documentElement);
-  return style.getPropertyValue('--paper').trim() || '#f5f5f0';
+  return style.getPropertyValue('--bg-base').trim() || '#f5f5f0';
 }
 
 // ---- P&L sign rendering (NO color — use arrows + italic) -------------------
