@@ -919,7 +919,7 @@ async def dca_simulate(
     forward_years: projection period
     price_growth/div_growth: override auto-detected rates (as decimal, e.g. 0.08 = 8%)
     """
-    import yfinance as yf
+    from yahooquery import Ticker as YQTicker
     import pandas as pd
     from datetime import date, timedelta
     import math
@@ -928,7 +928,7 @@ async def dca_simulate(
     ticker_symbol = ticker_symbol.upper()
 
     try:
-        ticker = yf.Ticker(ticker_symbol)
+        ticker = YQTicker(ticker_symbol)
     except Exception as e:
         raise HTTPException(400, f"Cannot fetch ticker: {e}")
 
@@ -943,16 +943,35 @@ async def dca_simulate(
 
     # Fetch historical price data (max available)
     try:
-        hist = ticker.history(period="max", auto_adjust=True)
+        hist = ticker.history(period="max", adj_ohlc=True)
     except Exception as e:
         raise HTTPException(500, f"Failed to fetch history: {e}")
 
-    if hist.empty:
+    if not hasattr(hist, 'shape') or hist.empty:
         raise HTTPException(404, f"No price history for {ticker_symbol}")
+
+    # yahooquery returns multi-index (symbol, date) — flatten to DatetimeIndex
+    if hasattr(hist.index, 'get_level_values') and ticker_symbol in hist.index.get_level_values(0):
+        hist = hist.xs(ticker_symbol, level=0)
+    # Normalize column names to Title-case so downstream "Close" access works
+    hist = hist.rename(columns={"close": "Close", "open": "Open", "high": "High", "low": "Low", "volume": "Volume"})
+    if "Close" not in hist.columns:
+        raise HTTPException(500, f"Unexpected history schema — missing Close column (got {list(hist.columns)})")
+    # Ensure DatetimeIndex
+    if not isinstance(hist.index, pd.DatetimeIndex):
+        hist.index = pd.to_datetime(hist.index)
 
     # Fetch dividends
     try:
-        dividends = ticker.dividends
+        divs_df = ticker.dividend_history(start="2000-01-01")
+        if hasattr(divs_df, 'shape') and not divs_df.empty:
+            if hasattr(divs_df.index, 'get_level_values') and ticker_symbol in divs_df.index.get_level_values(0):
+                divs_df = divs_df.xs(ticker_symbol, level=0)
+            dividends = divs_df['dividends'] if 'dividends' in divs_df.columns else divs_df.iloc[:, 0]
+            if not isinstance(dividends.index, pd.DatetimeIndex):
+                dividends.index = pd.to_datetime(dividends.index)
+        else:
+            dividends = None
     except Exception:
         dividends = None
 
@@ -1118,7 +1137,11 @@ async def dca_simulate(
     # Get current dividend yield
     info = {}
     try:
-        info = ticker.info or {}
+        sd = ticker.summary_detail
+        if isinstance(sd, dict):
+            info = sd.get(ticker_symbol) or {}
+            if not isinstance(info, dict):
+                info = {}
     except Exception:
         pass
     current_div_yield = info.get("dividendYield") or info.get("trailingAnnualDividendYield") or 0
@@ -2235,7 +2258,7 @@ _PRICE_HIST_TTL_HOURS = 24
 
 @app.get("/api/stock/{symbol}/price-history")
 async def get_price_history(symbol: str, granularity: str = "yearly"):
-    """Price history — thaifin yearly (primary) or yfinance monthly (for DCA)."""
+    """Price history — thaifin yearly (primary) or yahooquery monthly (for DCA)."""
     if granularity not in ("yearly", "monthly"):
         raise HTTPException(400, f"granularity must be 'yearly' or 'monthly', got '{granularity}'")
 
@@ -2277,27 +2300,39 @@ async def get_price_history(symbol: str, granularity: str = "yearly"):
             "data": data,
         }
     else:
-        # Monthly granularity — yfinance (for DCA simulator)
+        # Monthly granularity — yahooquery (for DCA simulator)
         try:
-            import yfinance as yf
+            from yahooquery import Ticker as YQTicker
+            import pandas as pd
             loop = asyncio.get_event_loop()
             hist = await loop.run_in_executor(
                 None,
-                lambda: yf.Ticker(symbol).history(
-                    period="10y", interval="1mo", auto_adjust=False
+                lambda: YQTicker(symbol).history(
+                    period="10y", interval="1mo", adj_ohlc=False
                 ),
             )
         except Exception as e:
-            raise HTTPException(503, f"yfinance fetch failed: {e}")
-        if hist.empty:
+            raise HTTPException(503, f"yahooquery fetch failed: {e}")
+        if not hasattr(hist, 'shape') or hist.empty:
             raise HTTPException(404, f"no monthly price history for {symbol}")
-        data = [
-            {"date": idx.strftime("%Y-%m-%d"), "close": float(row["Close"])}
-            for idx, row in hist.iterrows()
-        ]
+        # yahooquery returns multi-index (symbol, date) — flatten
+        if hasattr(hist.index, 'get_level_values') and symbol in hist.index.get_level_values(0):
+            hist = hist.xs(symbol, level=0)
+        close_col = "close" if "close" in hist.columns else ("Close" if "Close" in hist.columns else None)
+        if close_col is None:
+            raise HTTPException(500, f"Unexpected monthly history schema — missing close column (got {list(hist.columns)})")
+        data = []
+        for idx, row in hist.iterrows():
+            close_val = row[close_col]
+            if close_val is None or pd.isna(close_val):
+                continue
+            data.append({
+                "date": idx.strftime("%Y-%m-%d") if hasattr(idx, 'strftime') else str(idx),
+                "close": float(close_val),
+            })
         payload = {
             "symbol": symbol,
-            "source": "yfinance_monthly",
+            "source": "yahooquery_monthly",
             "granularity": "monthly",
             "fetched_at": now.isoformat(timespec="seconds"),
             "data": data,
@@ -2314,27 +2349,46 @@ async def get_price_history(symbol: str, granularity: str = "yearly"):
 # ============================================================================
 
 
-def _yf_monthly_series(ticker_symbol: str) -> Optional[list[tuple]]:
-    """Fetch monthly price + dividend history for a symbol. Returns list of
-    (date, close_price, dividend_on_this_month) tuples. None on failure.
+def _yahoo_monthly_series(ticker_symbol: str) -> Optional[list[tuple]]:
+    """Fetch monthly price + dividend history for a symbol via yahooquery.
+    Returns list of (date, close_price, dividend_on_this_month) tuples. None on failure.
     Cash proxy returns a flat-1.0 series built in caller.
     """
     try:
-        import yfinance as yf
+        from yahooquery import Ticker as YQTicker
         import pandas as pd
     except Exception:
         return None
     try:
-        t = yf.Ticker(ticker_symbol)
-        hist = t.history(period="max", interval="1mo", auto_adjust=False)
-        if hist.empty:
+        t = YQTicker(ticker_symbol)
+        hist = t.history(period="max", interval="1mo", adj_ohlc=False)
+        if not hasattr(hist, 'shape') or hist.empty:
             return None
+        # Flatten multi-index (symbol, date) -> DatetimeIndex
+        if hasattr(hist.index, 'get_level_values') and ticker_symbol in hist.index.get_level_values(0):
+            hist = hist.xs(ticker_symbol, level=0)
+        if not isinstance(hist.index, pd.DatetimeIndex):
+            hist.index = pd.to_datetime(hist.index)
         hist.index = hist.index.tz_localize(None) if hist.index.tz else hist.index
+
+        # Dividends — separate call in yahooquery
+        divs = None
         try:
-            divs = t.dividends
-            divs.index = divs.index.tz_localize(None) if divs.index.tz else divs.index
+            divs_df = t.dividend_history(start="2000-01-01")
+            if hasattr(divs_df, 'shape') and not divs_df.empty:
+                if hasattr(divs_df.index, 'get_level_values') and ticker_symbol in divs_df.index.get_level_values(0):
+                    divs_df = divs_df.xs(ticker_symbol, level=0)
+                divs = divs_df['dividends'] if 'dividends' in divs_df.columns else divs_df.iloc[:, 0]
+                if not isinstance(divs.index, pd.DatetimeIndex):
+                    divs.index = pd.to_datetime(divs.index)
+                divs.index = divs.index.tz_localize(None) if divs.index.tz else divs.index
         except Exception:
             divs = None
+
+        close_col = "close" if "close" in hist.columns else ("Close" if "Close" in hist.columns else None)
+        if close_col is None:
+            return None
+
         rows = []
         for idx, row in hist.iterrows():
             month_start = pd.Timestamp(year=idx.year, month=idx.month, day=1)
@@ -2343,8 +2397,10 @@ def _yf_monthly_series(ticker_symbol: str) -> Optional[list[tuple]]:
             if divs is not None and not divs.empty:
                 mask = (divs.index >= month_start) & (divs.index <= month_end)
                 div_this_month = float(divs[mask].sum()) if mask.any() else 0.0
-            close = float(row.get("Close") or 0)
-            rows.append((month_start.strftime("%Y-%m-%d"), close, div_this_month))
+            close_val = row[close_col]
+            if close_val is None or pd.isna(close_val):
+                continue
+            rows.append((month_start.strftime("%Y-%m-%d"), float(close_val), div_this_month))
         return rows
     except Exception:
         return None
@@ -2361,7 +2417,7 @@ class DcaPortfolioRequest(BaseModel):
 async def simulate_dca_portfolio(req: DcaPortfolioRequest):
     """Multi-stock DCA with weighted allocation. No benchmark.
 
-    Loops per-position using monthly yfinance series; sums by month.
+    Loops per-position using monthly yahooquery series; sums by month.
     """
     if not req.positions:
         raise HTTPException(400, "positions list is empty")
@@ -2378,7 +2434,7 @@ async def simulate_dca_portfolio(req: DcaPortfolioRequest):
             continue
         if not sym.endswith(".BK") and "." not in sym:
             sym = sym + ".BK"
-        rows = _yf_monthly_series(sym)
+        rows = _yahoo_monthly_series(sym)
         if not rows:
             raise HTTPException(503, f"no monthly history for {sym}")
         series_by_sym[sym] = rows[-duration_months:]
@@ -2868,7 +2924,7 @@ async def portfolio_backtest(req: PortfolioBacktestRequest):
             continue
         if not sym.endswith(".BK") and "." not in sym:
             sym = sym + ".BK"
-        rows = _yf_monthly_series(sym)
+        rows = _yahoo_monthly_series(sym)
         if not rows:
             raise HTTPException(503, f"no monthly history for {sym}")
         filtered = [r for r in rows if r[0] >= req.start_date]
@@ -2882,10 +2938,10 @@ async def portfolio_backtest(req: PortfolioBacktestRequest):
         raise HTTPException(400, "no non-cash positions to simulate")
 
     # Benchmark — TDEX primary, ^SET fallback
-    bench_rows = _yf_monthly_series("TDEX.BK")
+    bench_rows = _yahoo_monthly_series("TDEX.BK")
     proxy_label = "TDEX ETF (Thai dividend, includes reinvest)"
     if not bench_rows:
-        bench_rows = _yf_monthly_series("^SET")
+        bench_rows = _yahoo_monthly_series("^SET")
         proxy_label = "^SET index (price-only fallback)"
     if not bench_rows:
         raise HTTPException(503, "benchmark data unavailable")

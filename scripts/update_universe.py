@@ -14,7 +14,7 @@ def update_universe():
     set_stocks = ss.filter_by_market("SET")
     mai_stocks = ss.filter_by_market("mai")
 
-    # Combine, add .BK suffix for yfinance compatibility
+    # Combine, add .BK suffix for Yahoo (yahooquery) compatibility
     all_symbols = sorted(
         set([s + ".BK" for s in set_stocks] + [s + ".BK" for s in mai_stocks])
     )

@@ -1,8 +1,8 @@
 """Max Mahon v4 — fetch multi-year Thai stock fundamentals.
 
 Primary: thaifin (10+ years Thai financials)
-Fallback: yfinance (4-5 years statements + realtime price)
-Supplement: yfinance always used for realtime price, 52w range, forward PE, etc.
+Supplement: yahooquery (realtime price, DPS events, capex + interest_expense per year)
+No fallback: if thaifin fails the stock is treated as delisted/missing.
 """
 
 import json
@@ -12,7 +12,6 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-import yfinance as yf
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -23,7 +22,7 @@ if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
 from scripts.data_adapter import fetch_fundamentals as _adapter_fetch
-from scripts.data_adapter import fetch_from_thaifin, fetch_yfinance_supplement
+from scripts.data_adapter import fetch_from_thaifin
 
 ROOT = Path(__file__).resolve().parent.parent
 USER_DATA = ROOT / "user_data.json"
@@ -195,214 +194,11 @@ def _build_aggregates(yearly_metrics, dps_by_year):
     }
 
 
-def _fetch_yfinance_legacy(symbol: str) -> dict:
-    """Legacy yfinance-only fetch (fallback when thaifin fails)."""
-    tk = yf.Ticker(symbol)
-    info = tk.info or {}
-
-    if len(info) < 5:
-        return {"symbol": symbol, "error": f"near-empty info ({len(info)} keys)"}
-
-    sector = info.get("sector", "N/A")
-    is_financial = sector in FINANCIAL_SECTORS
-
-    inc = tk.income_stmt
-    bs = tk.balance_sheet
-    cf = tk.cashflow
-    divs = tk.dividends
-
-    yearly_metrics = []
-
-    if inc is not None and len(inc.columns) > 0:
-        for col in inc.columns:
-            year = col.year if hasattr(col, 'year') else col.date().year
-            year_str = str(year)
-
-            revenue = safe_get(inc, "Total Revenue", col)
-            gross_profit = safe_get(inc, "Gross Profit", col)
-            operating_income = safe_get(inc, "Operating Income", col)
-            net_income = safe_get(inc, "Net Income", col)
-            ebitda = safe_get(inc, "EBITDA", col)
-            interest_expense = safe_get(inc, "Interest Expense", col)
-            diluted_eps = safe_get(inc, "Diluted EPS", col)
-
-            if net_income is None:
-                net_income = safe_get(inc, "Net Income Common Stockholders", col)
-            if revenue is None:
-                revenue = safe_get(inc, "Operating Revenue", col)
-            if revenue is None and is_financial:
-                revenue = safe_get(inc, "Net Interest Income", col)
-
-            equity = None
-            total_debt = None
-            total_assets = None
-            current_assets = None
-            current_liab = None
-            if bs is not None and len(bs.columns) > 0:
-                for bs_col in bs.columns:
-                    bs_year = bs_col.year if hasattr(bs_col, 'year') else bs_col.date().year
-                    if bs_year == year:
-                        equity = safe_get(bs, "Stockholders Equity", bs_col)
-                        if equity is None:
-                            equity = safe_get(bs, "Common Stock Equity", bs_col)
-                        total_debt = safe_get(bs, "Total Debt", bs_col)
-                        total_assets = safe_get(bs, "Total Assets", bs_col)
-                        current_assets = safe_get(bs, "Current Assets", bs_col)
-                        current_liab = safe_get(bs, "Current Liabilities", bs_col)
-                        break
-
-            ocf = None
-            fcf = None
-            capex = None
-            div_paid = None
-            if cf is not None:
-                for cf_col in cf.columns:
-                    cf_year = cf_col.year if hasattr(cf_col, 'year') else cf_col.date().year
-                    if cf_year == year:
-                        ocf = safe_get(cf, "Operating Cash Flow", cf_col)
-                        fcf = safe_get(cf, "Free Cash Flow", cf_col)
-                        capex = safe_get(cf, "Capital Expenditure", cf_col)
-                        div_paid = safe_get(cf, "Cash Dividends Paid", cf_col)
-                        break
-
-            if revenue is None and net_income is None and diluted_eps is None:
-                continue
-
-            sga = safe_get(inc, "Selling General And Administration", col)
-
-            roe = safe_div(net_income, equity)
-            gross_margin = safe_div(gross_profit, revenue) if not is_financial else None
-            net_margin = safe_div(net_income, revenue)
-            operating_margin = safe_div(operating_income, revenue)
-            de_ratio = safe_div(total_debt, equity)
-            current_ratio = safe_div(current_assets, current_liab)
-            interest_coverage = safe_div(ebitda, abs(interest_expense)) if interest_expense and interest_expense != 0 else None
-            if interest_coverage is not None and interest_coverage > 200:
-                interest_coverage = None
-            ocf_ni_ratio = safe_div(ocf, net_income) if net_income and net_income > 0 else None
-            capital_intensity = safe_div(abs(capex) if capex else None, ocf) if ocf and ocf > 0 else None
-            sga_ratio = safe_div(sga, revenue)
-
-            # Schema parity with thaifin path (datasource-stability Phase 2 task 3)
-            bvps_legacy = safe_div(equity, info.get("sharesOutstanding")) if equity and info.get("sharesOutstanding") else None
-            payout_ratio_legacy = safe_div(div_paid, net_income) if net_income and net_income > 0 else None
-
-            yearly_metrics.append({
-                "year": year_str,
-                "revenue": revenue,
-                "gross_profit": gross_profit,
-                "operating_income": operating_income,
-                "net_income": net_income,
-                "ebitda": ebitda,
-                "interest_expense": interest_expense,
-                "diluted_eps": diluted_eps,
-                "sga": sga,
-                "equity": equity,
-                "total_debt": total_debt,
-                "total_assets": total_assets,
-                "ocf": ocf,
-                "fcf": fcf,
-                "capex": capex,
-                "dividends_paid": div_paid,
-                "roe": roe,
-                "gross_margin": gross_margin,
-                "net_margin": net_margin,
-                "operating_margin": operating_margin,
-                "sga_ratio": sga_ratio,
-                "de_ratio": de_ratio,
-                "current_ratio": current_ratio,
-                "interest_coverage": interest_coverage,
-                "ocf_ni_ratio": ocf_ni_ratio,
-                "capital_intensity": capital_intensity,
-                "close": None,             # legacy yfinance doesn't track per-year close
-                "dividend_yield": None,    # yfinance yearly doesn't provide dy per year
-                "mkt_cap": None,           # historical mcap not fetched in legacy
-                "bvps": bvps_legacy,
-                "payout_ratio": payout_ratio_legacy,
-            })
-
-    yearly_metrics.sort(key=lambda x: x["year"])
-
-    dps_by_year = {}
-    if divs is not None and len(divs) > 0:
-        for idx, val in divs.items():
-            y = idx.year
-            dps_by_year[y] = dps_by_year.get(y, 0) + val
-
-    aggregates = _build_aggregates(yearly_metrics, dps_by_year)
-    warnings = validate_metrics(info, yearly_metrics)
-
-    recent_divs = divs.tail(8).tolist() if divs is not None and len(divs) > 0 else []
-
-    # DPS as source of truth
-    dps_current = info.get("dividendRate") or info.get("trailingAnnualDividendRate")
-    price = info.get("currentPrice") or info.get("regularMarketPrice")
-
-    # dividend_yield = DPS / price * 100 (percentage)
-    if dps_current is not None and price is not None and price > 0:
-        dy = dps_current / price * 100
-    else:
-        raw_dy = info.get("dividendYield")
-        dy = normalize_yield(raw_dy)
-
-    # five_year_avg_yield = avg DPS last 5 years / current price * 100
-    current_year = datetime.now().year
-    recent_dps_vals = [dps_by_year[y] for y in dps_by_year
-                       if y >= current_year - 5 and y < current_year
-                       and dps_by_year[y] is not None]
-    if recent_dps_vals and price is not None and price > 0:
-        avg_dps_5y = sum(recent_dps_vals) / len(recent_dps_vals)
-        five_year_avg_yield = avg_dps_5y / price * 100
-    else:
-        raw_5y = info.get("fiveYearAvgDividendYield")
-        five_year_avg_yield = normalize_yield(raw_5y)
-
-    return {
-        "symbol": symbol,
-        "name": info.get("shortName", symbol),
-        "sector": sector,
-        "industry": info.get("industry", "N/A"),
-        "currency": info.get("currency", "THB"),
-        "price": price,
-        "market_cap": info.get("marketCap"),
-        "pe_ratio": info.get("trailingPE"),
-        "forward_pe": info.get("forwardPE"),
-        "pb_ratio": info.get("priceToBook"),
-        "dividend_yield": dy,  # percentage (e.g. 4.5 = 4.5%)
-        "dps": dps_current,  # actual dividend per share amount
-        "dividend_rate": info.get("dividendRate"),
-        "payout_ratio": info.get("payoutRatio"),
-        "five_year_avg_yield": five_year_avg_yield,  # percentage
-        "eps_trailing": info.get("trailingEps"),
-        "eps_forward": info.get("forwardEps"),
-        "revenue": info.get("totalRevenue"),
-        "revenue_growth": info.get("revenueGrowth"),
-        "earnings_growth": info.get("earningsGrowth"),
-        "profit_margin": info.get("profitMargins"),
-        "gross_margins": info.get("grossMargins"),
-        "operating_margins": info.get("operatingMargins"),
-        "roe": info.get("returnOnEquity"),
-        "roa": info.get("returnOnAssets"),
-        "debt_to_equity": info.get("debtToEquity"),
-        "current_ratio": info.get("currentRatio"),
-        "free_cashflow": info.get("freeCashflow"),
-        "operating_cashflow": info.get("operatingCashflow"),
-        "recent_dividends": recent_divs,
-        "52w_high": info.get("fiftyTwoWeekHigh"),
-        "52w_low": info.get("fiftyTwoWeekLow"),
-        "50d_avg": info.get("fiftyDayAverage"),
-        "200d_avg": info.get("twoHundredDayAverage"),
-        "yearly_metrics": yearly_metrics,
-        "dividend_history": dps_by_year,
-        "aggregates": aggregates,
-        "warnings": warnings,
-        "fetched_at": datetime.now().isoformat(),
-    }
 
 
 def fetch_multi_year(symbol: str) -> dict:
-    """Fetch multi-year fundamentals. thaifin primary, yfinance fallback."""
-    # Try thaifin + yfinance supplement via adapter
+    """Fetch multi-year fundamentals. thaifin primary, yahooquery supplement, no fallback."""
+    # Try thaifin + yahooquery supplement via adapter
     adapter_result = _adapter_fetch(symbol)
 
     if adapter_result is not None and "error" not in adapter_result:
@@ -429,8 +225,8 @@ def fetch_multi_year(symbol: str) -> dict:
     if adapter_result is not None and "error" in adapter_result:
         return adapter_result
 
-    # Fallback: full yfinance legacy
-    return _fetch_yfinance_legacy(symbol)
+    # No legacy fallback — thaifin is single source of truth for fundamentals
+    return {"symbol": symbol, "delisted": True, "error": "thaifin fetch returned no data"}
 
 
 def fetch_multi_year_safe(symbol: str) -> dict:
