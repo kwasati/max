@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Max Mahon — Portfolio Builder (Linear)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fafafa;
+    --surface:#ffffff;
+    --surface-2:#f4f5f8;
+    --border:#e7e8ee;
+    --border-strong:#d6d8e0;
+    --text:#11121a;
+    --text-2:#3d3f50;
+    --dim:#6b6d80;
+    --mute:#9a9cae;
+    --accent:#6366f1;
+    --accent-2:#8287ff;
+    --accent-soft:#eef0ff;
+    --green:#10b981;
+    --green-soft:#ecfdf5;
+    --amber:#f59e0b;
+    --amber-soft:#fffbeb;
+    --red:#ef4444;
+    --red-soft:#fef2f2;
+    --radius:12px;
+    --radius-lg:16px;
+    --shadow-sm:0 1px 2px rgba(17,18,26,.04),0 1px 1px rgba(17,18,26,.02);
+    --shadow-md:0 4px 12px rgba(17,18,26,.06),0 2px 4px rgba(17,18,26,.03);
+    --shadow-lg:0 10px 30px rgba(17,18,26,.08);
+    --sans:'Inter',system-ui,-apple-system,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+
+  /* NAV */
+  .nav{
+    background:var(--surface);border-bottom:1px solid var(--border);padding:12px 28px;
+    display:flex;align-items:center;gap:18px;position:sticky;top:0;z-index:10;backdrop-filter:blur(8px);
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;letter-spacing:-.01em}
+  .brand-icon{
+    width:26px;height:26px;border-radius:7px;
+    background:linear-gradient(135deg,var(--accent) 0%,var(--accent-2) 100%);
+    display:grid;place-items:center;color:#fff;font-weight:800;font-size:13px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.25);
+  }
+  .brand .sub{color:var(--dim);font-weight:500;font-size:13px;margin-left:4px}
+  .nav-trail{margin-left:8px;color:var(--mute);font-size:13px}
+  .nav-trail b{color:var(--text-2);font-weight:500}
+  .nav-spacer{flex:1}
+  .avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#ef4444);display:grid;place-items:center;color:#fff;font-weight:600;font-size:12px}
+
+  /* PAGE */
+  .page{max-width:1240px;margin:0 auto;padding:32px 28px 64px}
+  .page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:28px}
+  .page-head h1{font-size:26px;font-weight:700;letter-spacing:-.02em;margin:0 0 4px}
+  .page-head .sub{color:var(--dim);font-size:14px;margin:0}
+  .page-head .badge{
+    display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;
+    background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:600;
+  }
+  .page-head .badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent)}
+
+  /* CONTROL CARD */
+  .card{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-sm);padding:22px;
+  }
+  .card + .card{margin-top:16px}
+  .card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .card-head h2{font-size:15px;font-weight:600;margin:0;letter-spacing:-.01em}
+  .card-head .meta{color:var(--mute);font-size:12px}
+
+  .control-grid{
+    display:grid;grid-template-columns:1fr 1fr auto;gap:16px;align-items:end;
+  }
+  .field label{display:block;font-size:12px;color:var(--dim);margin-bottom:6px;font-weight:500}
+  .input-wrap{position:relative}
+  .input{
+    width:100%;padding:10px 12px;border:1px solid var(--border-strong);border-radius:10px;
+    font-family:var(--sans);font-size:15px;background:var(--surface);color:var(--text);
+    outline:none;transition:all .15s;
+  }
+  .input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+  .suffix{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--mute);font-size:12px;font-weight:500}
+
+  .switch{display:inline-flex;align-items:center;gap:10px;cursor:pointer;user-select:none;font-size:13px;color:var(--text-2);padding:8px 0}
+  .switch .track{width:34px;height:20px;background:var(--border-strong);border-radius:999px;position:relative;transition:background .15s}
+  .switch .thumb{position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;box-shadow:var(--shadow-sm);transition:left .15s}
+  .switch input{display:none}
+  .switch input:checked + .track{background:var(--accent)}
+  .switch input:checked + .track .thumb{left:16px}
+
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:10px;
+    font-family:var(--sans);font-weight:600;font-size:14px;cursor:pointer;transition:all .15s;
+    border:1px solid transparent;
+  }
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn.primary:hover{background:#4f52db}
+  .btn.ghost{background:transparent;color:var(--text-2);border-color:var(--border)}
+  .btn.ghost:hover{border-color:var(--border-strong);background:var(--surface-2)}
+
+  /* CHIP BAR */
+  .chip-card{margin-top:16px}
+  .chip-rows{display:grid;gap:10px}
+  .chip-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .chip-label{font-size:12px;color:var(--dim);font-weight:500;min-width:82px}
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;
+    font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--surface);color:var(--text-2)
+  }
+  .chip .x{color:var(--mute);cursor:pointer;line-height:1}
+  .chip.pin{background:var(--accent-soft);border-color:#d3d6ff;color:var(--accent)}
+  .chip.exc{background:var(--red-soft);border-color:#f8d0d0;color:var(--red);text-decoration:line-through}
+  .chip.add{border-style:dashed;color:var(--dim);cursor:pointer;background:transparent}
+  .chip.add:hover{background:var(--surface-2)}
+
+  /* WARNING (hidden in default) */
+  .warn{
+    margin-top:16px;display:none;align-items:flex-start;gap:10px;padding:12px 14px;
+    background:var(--amber-soft);border:1px solid #fde68a;border-radius:var(--radius);color:#92400e;font-size:13px;
+  }
+
+  /* KPI */
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:24px}
+  .kpi{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px 18px;box-shadow:var(--shadow-sm);
+  }
+  .kpi .lbl{font-size:12px;color:var(--dim);font-weight:500}
+  .kpi .val{font-size:24px;font-weight:700;letter-spacing:-.02em;margin-top:4px}
+  .kpi .val .unit{font-size:13px;color:var(--mute);font-weight:500;margin-left:4px}
+  .kpi .chip-status{display:inline-flex;align-items:center;gap:5px;background:var(--green-soft);color:var(--green);font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;margin-top:8px}
+  .kpi .chip-status::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--green)}
+
+  /* TABLE CARD */
+  .alloc-card{margin-top:24px}
+  .alloc-head{display:flex;justify-content:space-between;align-items:center;padding:20px 22px 0}
+  .alloc-head h2{margin:0;font-size:17px;font-weight:700;letter-spacing:-.02em}
+  .alloc-head .sub{color:var(--dim);font-size:13px;margin-top:2px}
+  .tbl{width:100%;border-collapse:separate;border-spacing:0;margin-top:16px}
+  .tbl thead th{
+    text-align:left;font-size:11px;font-weight:600;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;
+    padding:12px 18px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--surface-2);
+  }
+  .tbl thead th.num{text-align:right}
+  .tbl tbody td{padding:18px;border-bottom:1px solid var(--border);vertical-align:top}
+  .tbl tbody td.num{text-align:right}
+  .tbl tbody tr:last-child td{border-bottom:0}
+
+  .rank-bubble{
+    display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;
+    background:var(--surface-2);color:var(--text-2);font-weight:700;font-size:13px;font-family:var(--mono);
+  }
+  .rank-bubble.gold{background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e}
+  .rank-bubble.silver{background:linear-gradient(135deg,#e0e7ff,#c7d2fe);color:#3730a3}
+
+  .stock{display:flex;align-items:center;gap:12px}
+  .stock-avatar{
+    width:36px;height:36px;border-radius:10px;display:grid;place-items:center;
+    font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;flex:0 0 36px;
+  }
+  .av-qh{background:linear-gradient(135deg,#10b981,#059669)}
+  .av-tcap{background:linear-gradient(135deg,#6366f1,#4f46e5)}
+  .av-mc{background:linear-gradient(135deg,#f59e0b,#d97706)}
+  .av-intuch{background:linear-gradient(135deg,#8b5cf6,#7c3aed)}
+  .av-ptt{background:linear-gradient(135deg,#ef4444,#dc2626)}
+
+  .stock-body .sym{font-weight:700;font-size:15px;letter-spacing:-.01em}
+  .stock-body .name{font-size:12px;color:var(--dim);margin-top:2px}
+
+  .sector-pill{
+    display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;
+    font-size:12px;font-weight:600;border:1px solid transparent;white-space:nowrap;
+  }
+  .sp-prop{background:#ecfdf5;border-color:#bbf7d0;color:#059669}
+  .sp-bank{background:#eef2ff;border-color:#c7d2fe;color:#4f46e5}
+  .sp-comm{background:#fff7ed;border-color:#fed7aa;color:#c2410c}
+  .sp-ict{background:#faf5ff;border-color:#e9d5ff;color:#7c3aed}
+  .sp-nrg{background:#fef2f2;border-color:#fecaca;color:#dc2626}
+  .sector-pill::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.9}
+
+  .weight-wrap{min-width:140px}
+  .weight-num{font-size:20px;font-weight:700;letter-spacing:-.02em}
+  .weight-bar{height:6px;background:var(--surface-2);border-radius:999px;overflow:hidden;margin-top:6px}
+  .weight-bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:999px}
+
+  .amt{font-weight:600;font-size:14px;font-family:var(--mono)}
+  .shares{font-size:12px;color:var(--dim);margin-top:3px;font-family:var(--mono)}
+
+  .score-wrap{min-width:100px}
+  .score-num{font-weight:700;font-size:14px}
+  .score-num .max{color:var(--mute);font-weight:500;font-size:11px}
+  .score-bar{height:4px;background:var(--surface-2);border-radius:999px;margin-top:5px;overflow:hidden}
+  .score-bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:999px}
+
+  .tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+  .tag{font-size:10px;padding:2px 7px;border-radius:6px;background:var(--surface-2);color:var(--dim);font-weight:600;letter-spacing:.02em;text-transform:uppercase}
+  .tag.hidden{background:var(--accent-soft);color:var(--accent)}
+  .tag.pass{background:var(--green-soft);color:var(--green)}
+
+  .reason{font-size:13px;color:var(--text-2);max-width:320px;line-height:1.55}
+
+  .tbl tfoot td{
+    padding:16px 18px;background:var(--surface-2);font-weight:700;
+    border-top:1px solid var(--border);font-size:14px;
+  }
+  .tbl tfoot td.num{text-align:right}
+
+  /* FOOT GRID */
+  .foot-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px}
+  .pie{display:flex;align-items:center;justify-content:center;padding:8px 0 16px}
+  .pie svg{width:180px;height:180px;transform:rotate(-90deg)}
+  .legend{display:grid;gap:8px;margin-top:8px}
+  .leg-row{display:flex;align-items:center;gap:10px;font-size:13px}
+  .leg-dot{width:10px;height:10px;border-radius:3px}
+  .leg-label{flex:1;color:var(--text-2)}
+  .leg-val{font-family:var(--mono);font-weight:600}
+
+  .algo-panel{display:flex;gap:14px;align-items:flex-start}
+  .algo-icon{
+    width:40px;height:40px;border-radius:10px;background:var(--accent-soft);color:var(--accent);
+    display:grid;place-items:center;flex:0 0 40px;font-size:20px;
+  }
+  .algo-body h3{margin:0 0 4px;font-size:14px}
+  .algo-body p{margin:0;color:var(--dim);font-size:13px;line-height:1.6}
+  .algo-body code{background:var(--surface-2);padding:1px 6px;border-radius:6px;font-family:var(--mono);font-size:12px;color:var(--accent)}
+
+  .footer-note{margin-top:28px;text-align:center;color:var(--mute);font-size:12px}
+
+  @media (max-width:920px){
+    .control-grid{grid-template-columns:1fr}
+    .kpi-row{grid-template-columns:repeat(2,1fr)}
+    .foot-grid{grid-template-columns:1fr}
+    .tbl thead{display:none}
+    .tbl, .tbl tbody, .tbl tr, .tbl td{display:block;width:100%}
+    .tbl tbody tr{padding:10px 0;border-bottom:1px solid var(--border)}
+    .tbl tbody td{padding:8px 18px;border:0}
+    .tbl tbody td.num{text-align:left}
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<div class="nav">
+  <div class="brand">
+    <div class="brand-icon">M</div>
+    Max Mahon
+    <span class="sub">/ จัดพอร์ตสไตล์ ดร.นิเวศน์</span>
+  </div>
+  <div class="nav-trail">Screener <b>›</b> <b>Portfolio Builder</b></div>
+  <div class="nav-spacer"></div>
+  <button class="btn ghost" style="padding:7px 12px;font-size:13px">ส่งออก CSV</button>
+  <div class="avatar">อ</div>
+</div>
+
+<!-- PAGE -->
+<main class="page">
+
+  <div class="page-head">
+    <div>
+      <h1>จัดพอร์ตสไตล์แมกซ์</h1>
+      <p class="sub">คัดหุ้น PASS ตามกรอบ ดร.นิเวศน์ 5-5-5-5 · 5 หุ้น 5 sector · น้ำหนัก 80/20</p>
+    </div>
+    <span class="badge">v5.0 · Niwes Composite</span>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="card">
+    <div class="card-head">
+      <h2>Inputs</h2>
+      <div class="meta">แก้ไขเงินลงทุน / กำหนดหุ้นที่อยากปัก หรือถอด</div>
+    </div>
+    <div class="control-grid">
+      <div class="field">
+        <label>เงินลงทุน (THB)</label>
+        <div class="input-wrap">
+          <input class="input" type="text" value="1,000,000">
+          <span class="suffix">บาท</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Universe</label>
+        <div class="input-wrap">
+          <input class="input" type="text" value="10 PASS · 2 excluded" readonly>
+        </div>
+      </div>
+      <div class="field">
+        <button class="btn primary" style="width:100%;justify-content:center;padding:11px 20px">
+          <span>↻</span> จัดพอร์ต
+        </button>
+      </div>
+    </div>
+    <label class="switch" style="margin-top:12px">
+      <input type="checkbox">
+      <span class="track"><span class="thumb"></span></span>
+      แสดงเป็น % อย่างเดียว (ซ่อนจำนวนเงิน)
+    </label>
+  </div>
+
+  <!-- CHIPS -->
+  <div class="card chip-card">
+    <div class="chip-rows">
+      <div class="chip-row">
+        <div class="chip-label">ปักหมุด</div>
+        <span class="chip pin">QH <span class="x">×</span></span>
+        <span class="chip add">+ เพิ่ม pin</span>
+      </div>
+      <div class="chip-row">
+        <div class="chip-label">ถอดออก</div>
+        <span class="chip exc">BCP <span class="x">×</span></span>
+        <span class="chip exc">HMPRO <span class="x">×</span></span>
+        <span class="chip add">+ เพิ่ม exclude</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="lbl">จำนวนหุ้น</div>
+      <div class="val">5<span class="unit">ตัว</span></div>
+      <span class="chip-status">ครบตามเป้า</span>
+    </div>
+    <div class="kpi">
+      <div class="lbl">Sector</div>
+      <div class="val">5 / 5</div>
+      <span class="chip-status">diversified</span>
+    </div>
+    <div class="kpi">
+      <div class="lbl">Yield เฉลี่ย (ถ่วงน้ำหนัก)</div>
+      <div class="val">5.71<span class="unit">%</span></div>
+      <span class="chip-status">เกิน 5% (Niwes)</span>
+    </div>
+    <div class="kpi">
+      <div class="lbl">Niwes Score เฉลี่ย</div>
+      <div class="val">85.4</div>
+      <span class="chip-status">tier A</span>
+    </div>
+  </div>
+
+  <!-- ALLOC TABLE -->
+  <div class="card alloc-card" style="padding:0;overflow:hidden">
+    <div class="alloc-head" style="padding:22px 22px 6px">
+      <div>
+        <h2>Portfolio Allocation</h2>
+        <div class="sub">เรียงตาม Niwes composite score · น้ำหนัก 40 / 35 / 12 / 8 / 5</div>
+      </div>
+      <div class="meta" style="font-size:12px;color:var(--mute)">อัพเดตเมื่อครู่</div>
+    </div>
+
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th style="width:60px">#</th>
+          <th>หุ้น</th>
+          <th>Sector</th>
+          <th class="num">น้ำหนัก</th>
+          <th class="num">เงิน / จำนวนหุ้น</th>
+          <th>Niwes Score</th>
+          <th>เหตุผล</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="rank-bubble gold">1</span></td>
+          <td>
+            <div class="stock">
+              <div class="stock-avatar av-qh">QH</div>
+              <div class="stock-body">
+                <div class="sym">QH</div>
+                <div class="name">ควอลิตี้เฮ้าส์</div>
+                <div class="tags"><span class="tag pass">PASS</span><span class="tag hidden">hidden HMPRO</span></div>
+              </div>
+            </div>
+          </td>
+          <td><span class="sector-pill sp-prop">Property Development</span></td>
+          <td class="num">
+            <div class="weight-wrap">
+              <div class="weight-num">40%</div>
+              <div class="weight-bar"><i style="width:100%"></i></div>
+            </div>
+          </td>
+          <td class="num">
+            <div class="amt">฿400,000</div>
+            <div class="shares">300,752 หุ้น · 1.33</div>
+          </td>
+          <td>
+            <div class="score-wrap">
+              <div class="score-num">92 <span class="max">/100</span></div>
+              <div class="score-bar"><i style="width:92%"></i></div>
+            </div>
+          </td>
+          <td><div class="reason">hidden HMPRO 19.87% ยังไม่สะท้อนในราคา · yield 7.5% · PBV ต่ำกว่า 1</div></td>
+        </tr>
+        <tr>
+          <td><span class="rank-bubble silver">2</span></td>
+          <td>
+            <div class="stock">
+              <div class="stock-avatar av-tcap">TCP</div>
+              <div class="stock-body">
+                <div class="sym">TCAP</div>
+                <div class="name">ทุนธนชาต</div>
+                <div class="tags"><span class="tag pass">PASS</span><span class="tag hidden">hidden TMB</span></div>
+              </div>
+            </div>
+          </td>
+          <td><span class="sector-pill sp-bank">Banking</span></td>
+          <td class="num">
+            <div class="weight-wrap">
+              <div class="weight-num">35%</div>
+              <div class="weight-bar"><i style="width:87.5%"></i></div>
+            </div>
+          </td>
+          <td class="num">
+            <div class="amt">฿350,000</div>
+            <div class="shares">6,008 หุ้น · 58.25</div>
+          </td>
+          <td>
+            <div class="score-wrap">
+              <div class="score-num">88 <span class="max">/100</span></div>
+              <div class="score-bar"><i style="width:88%"></i></div>
+            </div>
+          </td>
+          <td><div class="reason">PE 8.2 ต่ำ PBV 0.9 · hidden ใน TMB stake · yield 5.8%</div></td>
+        </tr>
+        <tr>
+          <td><span class="rank-bubble">3</span></td>
+          <td>
+            <div class="stock">
+              <div class="stock-avatar av-mc">MC</div>
+              <div class="stock-body">
+                <div class="sym">MC</div>
+                <div class="name">แม็คกรุ๊ป</div>
+                <div class="tags"><span class="tag pass">PASS</span></div>
+              </div>
+            </div>
+          </td>
+          <td><span class="sector-pill sp-comm">Commerce</span></td>
+          <td class="num">
+            <div class="weight-wrap">
+              <div class="weight-num">12%</div>
+              <div class="weight-bar"><i style="width:30%"></i></div>
+            </div>
+          </td>
+          <td class="num">
+            <div class="amt">฿120,000</div>
+            <div class="shares">12,500 หุ้น · 9.60</div>
+          </td>
+          <td>
+            <div class="score-wrap">
+              <div class="score-num">85 <span class="max">/100</span></div>
+              <div class="score-bar"><i style="width:85%"></i></div>
+            </div>
+          </td>
+          <td><div class="reason">yield 9.9% สูงมาก · mid-cap apparel · PE 10 · dividend track record ยาว</div></td>
+        </tr>
+        <tr>
+          <td><span class="rank-bubble">4</span></td>
+          <td>
+            <div class="stock">
+              <div class="stock-avatar av-intuch">INT</div>
+              <div class="stock-body">
+                <div class="sym">INTUCH</div>
+                <div class="name">อินทัช</div>
+                <div class="tags"><span class="tag pass">PASS</span><span class="tag hidden">hidden ADVANC</span></div>
+              </div>
+            </div>
+          </td>
+          <td><span class="sector-pill sp-ict">Information &amp; Communication</span></td>
+          <td class="num">
+            <div class="weight-wrap">
+              <div class="weight-num">8%</div>
+              <div class="weight-bar"><i style="width:20%"></i></div>
+            </div>
+          </td>
+          <td class="num">
+            <div class="amt">฿80,000</div>
+            <div class="shares">1,231 หุ้น · 65.00</div>
+          </td>
+          <td>
+            <div class="score-wrap">
+              <div class="score-num">82 <span class="max">/100</span></div>
+              <div class="score-bar"><i style="width:82%"></i></div>
+            </div>
+          </td>
+          <td><div class="reason">hidden ADVANC stake · yield 6.2% · ICT holding company</div></td>
+        </tr>
+        <tr>
+          <td><span class="rank-bubble">5</span></td>
+          <td>
+            <div class="stock">
+              <div class="stock-avatar av-ptt">PTT</div>
+              <div class="stock-body">
+                <div class="sym">PTT</div>
+                <div class="name">ปตท</div>
+                <div class="tags"><span class="tag pass">PASS</span></div>
+              </div>
+            </div>
+          </td>
+          <td><span class="sector-pill sp-nrg">Energy &amp; Utilities</span></td>
+          <td class="num">
+            <div class="weight-wrap">
+              <div class="weight-num">5%</div>
+              <div class="weight-bar"><i style="width:12.5%"></i></div>
+            </div>
+          </td>
+          <td class="num">
+            <div class="amt">฿50,000</div>
+            <div class="shares">1,562 หุ้น · 32.00</div>
+          </td>
+          <td>
+            <div class="score-wrap">
+              <div class="score-num">70 <span class="max">/100</span></div>
+              <div class="score-bar"><i style="width:70%"></i></div>
+            </div>
+          </td>
+          <td><div class="reason">yield 7% แต่ cyclical · ระวัง oil macro · exit ถ้าโครงสร้างราคาแตก</div></td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3">Total</td>
+          <td class="num">100%</td>
+          <td class="num">฿1,000,000</td>
+          <td colspan="2"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- DIVERSIFICATION -->
+  <div class="foot-grid">
+    <div class="card">
+      <div class="card-head">
+        <h2>Sector Diversification</h2>
+        <div class="meta">5 sectors · 80/20 concentration</div>
+      </div>
+      <div class="pie">
+        <svg viewBox="0 0 42 42">
+          <circle cx="21" cy="21" r="15.915" fill="#fff" stroke="#f4f5f8" stroke-width="6"/>
+          <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#10b981" stroke-width="6" stroke-dasharray="40 60" stroke-dashoffset="0"/>
+          <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#6366f1" stroke-width="6" stroke-dasharray="35 65" stroke-dashoffset="-40"/>
+          <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#f59e0b" stroke-width="6" stroke-dasharray="12 88" stroke-dashoffset="-75"/>
+          <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#8b5cf6" stroke-width="6" stroke-dasharray="8 92" stroke-dashoffset="-87"/>
+          <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="#ef4444" stroke-width="6" stroke-dasharray="5 95" stroke-dashoffset="-95"/>
+        </svg>
+      </div>
+      <div class="legend">
+        <div class="leg-row"><span class="leg-dot" style="background:#10b981"></span><span class="leg-label">Property Development</span><span class="leg-val">40%</span></div>
+        <div class="leg-row"><span class="leg-dot" style="background:#6366f1"></span><span class="leg-label">Banking</span><span class="leg-val">35%</span></div>
+        <div class="leg-row"><span class="leg-dot" style="background:#f59e0b"></span><span class="leg-label">Commerce</span><span class="leg-val">12%</span></div>
+        <div class="leg-row"><span class="leg-dot" style="background:#8b5cf6"></span><span class="leg-label">ICT</span><span class="leg-val">8%</span></div>
+        <div class="leg-row"><span class="leg-dot" style="background:#ef4444"></span><span class="leg-label">Energy &amp; Utilities</span><span class="leg-val">5%</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Algorithm</h2>
+        <div class="meta">Niwes 5-5-5-5</div>
+      </div>
+      <div class="algo-panel">
+        <div class="algo-icon">⚡</div>
+        <div class="algo-body">
+          <h3>Niwes Composite Picker</h3>
+          <p>กรอง PASS stocks ผ่าน <code>5-5-5-5</code> → group by SET sector → rank ด้วย <code>yield + value + hidden + quality</code> → pick top-1 ต่อ sector → น้ำหนัก <code>40 / 35 / 12 / 8 / 5</code></p>
+        </div>
+      </div>
+      <div class="algo-panel" style="margin-top:16px">
+        <div class="algo-icon" style="background:var(--green-soft);color:var(--green)">✓</div>
+        <div class="algo-body">
+          <h3>Constraints</h3>
+          <p>5 sectors ต่างกันบังคับ · pin override ได้ · excluded ลบจาก universe · top-2 = 75% (anchor + supporting)</p>
+        </div>
+      </div>
+      <div class="algo-panel" style="margin-top:16px">
+        <div class="algo-icon" style="background:var(--amber-soft);color:var(--amber)">ⓘ</div>
+        <div class="algo-body">
+          <h3>Fallback</h3>
+          <p>ถ้า PASS ไม่ครบ 5 sector → แสดง banner เตือน + จัดเท่าที่มี แล้ว warn ว่า diversification ไม่ถึงเป้า</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">Max Mahon v5 · จัดพอร์ตสไตล์แมกซ์ · algorithm แค่คัด ไม่ได้ตัดสินใจแทน</div>
+
+</main>
+
+</body>
+</html>
