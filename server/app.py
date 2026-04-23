@@ -2258,7 +2258,7 @@ _PRICE_HIST_TTL_HOURS = 24
 
 @app.get("/api/stock/{symbol}/price-history")
 async def get_price_history(symbol: str, granularity: str = "yearly"):
-    """Price history — thaifin yearly (primary) or yfinance monthly (for DCA)."""
+    """Price history — thaifin yearly (primary) or yahooquery monthly (for DCA)."""
     if granularity not in ("yearly", "monthly"):
         raise HTTPException(400, f"granularity must be 'yearly' or 'monthly', got '{granularity}'")
 
@@ -2417,7 +2417,7 @@ class DcaPortfolioRequest(BaseModel):
 async def simulate_dca_portfolio(req: DcaPortfolioRequest):
     """Multi-stock DCA with weighted allocation. No benchmark.
 
-    Loops per-position using monthly yfinance series; sums by month.
+    Loops per-position using monthly yahooquery series; sums by month.
     """
     if not req.positions:
         raise HTTPException(400, "positions list is empty")
