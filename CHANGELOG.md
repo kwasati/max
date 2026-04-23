@@ -1,5 +1,19 @@
 # Max Mahon Changelog
 
+## v5.1.0 — 2026-04-23 · Data Source Refactor — thaifin Hard-Primary + yahooquery Supplement
+
+**Refactor ชั้น data layer** — thaifin เป็น single source of truth สำหรับทุกอย่างที่มันมี (fundamentals 10-16 ปี, sector SET official taxonomy, ev_per_ebit_da, cash, roa, yoy growth ครบ) — swap yfinance → yahooquery เฉพาะจุดที่ thaifin ไม่มี (realtime price, raw DPS events, capex/interest_expense per year)
+
+- ตัด yfinance ออกจาก code ทั้งหมด (scripts + server) — ไม่มี `import yfinance` เหลือเลย
+- swap supplement เป็น yahooquery (API เสถียรกว่า, IS 13-15 rows vs yfinance 4-5 ปี)
+- sector ใช้ thaifin SET official taxonomy เท่านั้น (Commerce, Banking, Property Development, Energy & Utilities, ICT ฯลฯ) — ไม่ใช่ GICS ของฝรั่ง
+- expose thaifin columns ใหม่ 8 ตัว: `cash`, `roa_year`, `revenue_yoy`, `net_profit_yoy`, `eps_yoy`, `cash_cycle`, `financing_activities`, `ev_per_ebit_da`
+- ใช้ thaifin `ev_per_ebit_da` ตรงๆ ใน quality_score แทน compute เอง
+- ลบ `_fetch_yfinance_legacy` fallback — thaifin = single source of truth ถ้า fail = delisted (คืน `{delisted: True}`)
+- Reference: `docs/research-thai-stock-data-sources.md`
+
+---
+
 ## v6.0.0 — 2026-04-22 · Vintage Newspaper Frontend + Backend Cleanup
 
 **Major redesign** — Legacy SPA frontend (`web/`) ถอดออก แทนด้วย newspaper editorial theme แยก desktop + mobile ชัดเจน (cream paper + ink + oxblood accent). Backend ทำความสะอาด: legacy endpoints ย้ายไป admin namespace, monitor cluster archive, config schema ตรงกับ Niwes 5-5-5-5 ล้วน.
