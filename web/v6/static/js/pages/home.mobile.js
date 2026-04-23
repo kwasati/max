@@ -173,7 +173,7 @@ function _mountTrendChart(trend) {
   var root = getComputedStyle(document.documentElement);
   var textInk = root.getPropertyValue('--ink').trim();
   var inkDim = root.getPropertyValue('--ink-dim').trim();
-  var ruleHair = 'rgba(26,24,20,0.18)';
+  var ruleHair = (getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim() || 'rgba(59,64,80,0.15)');
   window.Chart.defaults.font.family = 'Lora, serif';
   window.Chart.defaults.color = inkDim;
   new window.Chart(canvas, {
