@@ -6,10 +6,10 @@ cd /d "C:\WORKSPACE\projects\MaxMahon"
 set PYTHONUTF8=1
 
 :: Check dependencies
-py -c "import fastapi, uvicorn, sse_starlette, apscheduler, markdown" 2>nul
+py -c "import fastapi, uvicorn, sse_starlette, apscheduler, markdown, yahooquery" 2>nul
 if errorlevel 1 (
     echo Installing dependencies...
-    pip install fastapi uvicorn sse-starlette apscheduler python-markdown python-dotenv pydantic yfinance
+    pip install fastapi uvicorn sse-starlette apscheduler python-markdown python-dotenv pydantic yahooquery
 )
 
 echo.

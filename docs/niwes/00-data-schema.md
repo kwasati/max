@@ -1,6 +1,6 @@
 # Data Adapter Schema — Niwes Readiness Audit
 
-> Source: `scripts/data_adapter.py` (thaifin + yfinance) + `scripts/fetch_data.py` (multi-year aggregator).
+> Source: `scripts/data_adapter.py` (thaifin + yahooquery) + `scripts/fetch_data.py` (multi-year aggregator).
 > Public entry point: `fetch_fundamentals(symbol)` in data_adapter (NOT `fetch_stock_data` — name in plan reference is outdated).
 > Multi-year orchestrator: `fetch_multi_year(symbol)` in fetch_data — calls adapter then enriches with `aggregates` + `warnings` + `fetched_at`.
 
@@ -9,41 +9,41 @@
 | Field | Source | Unit | Year Coverage | Notes |
 |---|---|---|---|---|
 | `symbol` | derived | string | n/a | `XXX.BK` form |
-| `name` | thaifin > yfinance | string | n/a | Company name |
-| `sector` | thaifin > yfinance | string | n/a | |
-| `industry` | thaifin > yfinance | string | n/a | |
-| `currency` | yfinance | string | n/a | THB default |
-| `price` | yfinance | THB | realtime | `currentPrice` or `regularMarketPrice` |
-| `market_cap` | yfinance > thaifin | THB | latest | |
-| `pe_ratio` | yfinance > thaifin | ratio | trailing | |
-| `forward_pe` | yfinance | ratio | forward | |
-| `pb_ratio` | yfinance > thaifin | ratio | latest | |
+| `name` | thaifin > yahooquery | string | n/a | Company name |
+| `sector` | thaifin > yahooquery | string | n/a | |
+| `industry` | thaifin > yahooquery | string | n/a | |
+| `currency` | yahooquery | string | n/a | THB default |
+| `price` | yahooquery | THB | realtime | `currentPrice` or `regularMarketPrice` |
+| `market_cap` | yahooquery > thaifin | THB | latest | |
+| `pe_ratio` | yahooquery > thaifin | ratio | trailing | |
+| `forward_pe` | yahooquery | ratio | forward | |
+| `pb_ratio` | yahooquery > thaifin | ratio | latest | |
 | `dividend_yield` | computed: DPS/price\*100 | % (e.g. 4.5 = 4.5%) | trailing | DPS-first |
-| `dps` | yfinance `dividendRate` | THB/share | annual | |
-| `dividend_rate` | yfinance | THB/share | annual | duplicate of dps |
-| `payout_ratio` | yfinance | decimal (0-1+) | trailing | |
+| `dps` | yahooquery `dividendRate` | THB/share | annual | |
+| `dividend_rate` | yahooquery | THB/share | annual | duplicate of dps |
+| `payout_ratio` | yahooquery | decimal (0-1+) | trailing | |
 | `five_year_avg_yield` | computed: avg(DPS 5yr)/price\*100 | % | 5y average | |
-| `eps_trailing` | thaifin > yfinance | THB/share | latest | |
-| `eps_forward` | yfinance | THB/share | forward | |
-| `revenue` | thaifin > yfinance | THB | latest | |
-| `revenue_growth` | thaifin > yfinance | decimal | YoY | |
-| `earnings_growth` | thaifin > yfinance | decimal | YoY | |
-| `profit_margin` | thaifin > yfinance | decimal | latest | net margin |
-| `gross_margins` | thaifin > yfinance | decimal | latest | |
-| `operating_margins` | yfinance | decimal | latest | thaifin doesn't have direct |
-| `roe` | thaifin > yfinance | decimal | latest | |
-| `roa` | thaifin > yfinance | decimal | latest | |
-| `debt_to_equity` | thaifin (\*100) > yfinance | percentage form | latest | yfinance compat: thaifin ratio multiplied by 100 |
-| `current_ratio` | yfinance | ratio | latest | thaifin doesn't expose |
-| `free_cashflow` | yfinance > thaifin | THB | latest | yfinance preferred (real capex) |
-| `operating_cashflow` | yfinance > thaifin | THB | latest | |
-| `recent_dividends` | yfinance | list[float] | last 8 | |
-| `52w_high` | yfinance | THB | 52w | |
-| `52w_low` | yfinance | THB | 52w | |
-| `50d_avg` | yfinance | THB | 50d | |
-| `200d_avg` | yfinance | THB | 200d | |
-| `yearly_metrics` | thaifin (patched by yfinance) | list[dict] | 10-16 yr | see below |
-| `dividend_history` | yfinance dividends | dict {year: DPS} | 10+ yr | **source of truth for streak** |
+| `eps_trailing` | thaifin > yahooquery | THB/share | latest | |
+| `eps_forward` | yahooquery | THB/share | forward | |
+| `revenue` | thaifin > yahooquery | THB | latest | |
+| `revenue_growth` | thaifin > yahooquery | decimal | YoY | |
+| `earnings_growth` | thaifin > yahooquery | decimal | YoY | |
+| `profit_margin` | thaifin > yahooquery | decimal | latest | net margin |
+| `gross_margins` | thaifin > yahooquery | decimal | latest | |
+| `operating_margins` | yahooquery | decimal | latest | thaifin doesn't have direct |
+| `roe` | thaifin > yahooquery | decimal | latest | |
+| `roa` | thaifin > yahooquery | decimal | latest | |
+| `debt_to_equity` | thaifin (\*100) > yahooquery | percentage form | latest | yahooquery compat: thaifin ratio multiplied by 100 |
+| `current_ratio` | yahooquery | ratio | latest | thaifin doesn't expose |
+| `free_cashflow` | yahooquery > thaifin | THB | latest | yahooquery preferred (real capex) |
+| `operating_cashflow` | yahooquery > thaifin | THB | latest | |
+| `recent_dividends` | yahooquery | list[float] | last 8 | |
+| `52w_high` | yahooquery | THB | 52w | |
+| `52w_low` | yahooquery | THB | 52w | |
+| `50d_avg` | yahooquery | THB | 50d | |
+| `200d_avg` | yahooquery | THB | 200d | |
+| `yearly_metrics` | thaifin (patched by yahooquery) | list[dict] | 10-16 yr | see below |
+| `dividend_history` | yahooquery dividends | dict {year: DPS} | 10+ yr | **source of truth for streak** |
 | `aggregates` | computed | dict | derived | added by `fetch_multi_year` |
 | `warnings` | computed | list[str] | derived | added by `fetch_multi_year` |
 | `fetched_at` | runtime | iso datetime | n/a | |
@@ -55,27 +55,27 @@
 | `year` | thaifin index | string | e.g. "2566" |
 | `revenue` | thaifin | THB | |
 | `gross_profit` | thaifin | THB | |
-| `operating_income` | yfinance > thaifin computed | THB | yfinance patched if available |
+| `operating_income` | yahooquery > thaifin computed | THB | yahooquery patched if available |
 | `net_income` | thaifin `net_profit` | THB | |
-| `ebitda` | thaifin (net_income + DA) > yfinance OI+DA | THB | approximation |
-| `interest_expense` | yfinance income_stmt | THB | None if not in yfinance |
+| `ebitda` | thaifin (net_income + DA) > yahooquery OI+DA | THB | approximation |
+| `interest_expense` | yahooquery income_stmt | THB | None if not in yahooquery |
 | `diluted_eps` | thaifin `earning_per_share` | THB/share | |
 | `sga` | thaifin | THB | |
 | `equity` | thaifin | THB | |
 | `total_debt` | thaifin | THB | |
 | `total_assets` | thaifin `asset` | THB | |
 | `ocf` | thaifin `operating_activities` | THB | |
-| `fcf` | yfinance: ocf - abs(capex). thaifin fallback: ocf + investing | THB | yfinance preferred |
-| `capex` | yfinance Capital Expenditure (negative) | THB | thaifin uses investing_activities as proxy |
-| `dividends_paid` | yfinance cashflow | THB | None from thaifin |
+| `fcf` | yahooquery: ocf - abs(capex). thaifin fallback: ocf + investing | THB | yahooquery preferred |
+| `capex` | yahooquery Capital Expenditure (negative) | THB | thaifin uses investing_activities as proxy |
+| `dividends_paid` | yahooquery cashflow | THB | None from thaifin |
 | `roe` | thaifin (decimal) | decimal | |
 | `gross_margin` | thaifin | decimal | |
 | `net_margin` | thaifin | decimal | |
-| `operating_margin` | yfinance OI/revenue > thaifin computed | decimal | |
+| `operating_margin` | yahooquery OI/revenue > thaifin computed | decimal | |
 | `sga_ratio` | thaifin | decimal | |
 | `de_ratio` | thaifin | ratio | |
 | `current_ratio` | n/a | n/a | always None — thaifin yearly missing |
-| `interest_coverage` | yfinance OI/IE | ratio | capped at 200 |
+| `interest_coverage` | yahooquery OI/IE | ratio | capped at 200 |
 | `ocf_ni_ratio` | computed | ratio | None if NI <= 0 |
 | `capital_intensity` | computed | ratio | abs(capex)/ocf |
 
@@ -113,7 +113,7 @@
 - Stops at first zero/missing year
 - Returns int (0 if no data)
 
-`dividend_history` is a `dict {int year: float DPS}` — yfinance dividends grouped by calendar year.
+`dividend_history` is a `dict {int year: float DPS}` — yahooquery dividends grouped by calendar year.
 
 ## Niwes Requirement Gaps (what's MISSING for 5-5-5-5 framework)
 
@@ -155,5 +155,5 @@ py -c "from scripts.data_adapter import fetch_fundamentals; from scripts.fetch_d
 
 - 4 of 5 symbols pass Niwes streak threshold (≥ 5 yrs): CPALL, TCAP, PTT, KBANK — strong long-term dividend payers, all 20+ year streaks.
 - **FLAG: SCB.BK = 4 yrs** — fails Niwes 5-year minimum. Likely cause: dividend cut/suspension during a recent year (COVID era 2020 or banking sector restructuring) broke the streak. Need to inspect `dividend_history` for SCB to confirm which year(s) had zero DPS before applying screener at production scale.
-- Function works correctly on real data; coverage is sufficient (10+ years of history available via thaifin + yfinance).
+- Function works correctly on real data; coverage is sufficient (10+ years of history available via thaifin + yahooquery).
 - No data fetch failures — verification complete.
