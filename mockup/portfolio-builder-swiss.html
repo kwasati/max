@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Max Mahon — Portfolio Builder (Swiss Editorial)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff;
+    --ink:#0a0a0a;
+    --ink-2:#2a2a2a;
+    --muted:#6b6b6b;
+    --rule:#111111;
+    --rule-soft:#d9d9d9;
+    --paper:#f6f4ef;
+    --accent:#0033cc;
+    --accent-ink:#001f7a;
+    --red:#dc143c;
+    --serif-d:'Playfair Display',serif;
+    --serif:'IBM Plex Serif',serif;
+    --mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;
+    --sans:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--serif);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+
+  /* MASTHEAD */
+  .masthead{border-bottom:3px solid var(--rule);padding:18px 40px 14px;display:flex;align-items:baseline;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  .masthead .logo{font-family:var(--serif-d);font-weight:900;font-size:32px;letter-spacing:-.02em;line-height:1}
+  .masthead .logo em{color:var(--accent);font-style:normal}
+  .masthead .edition{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase}
+  .masthead .edition b{color:var(--ink)}
+  .sub-rule{border-bottom:1px solid var(--rule);padding:6px 40px;display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase}
+
+  /* HERO */
+  .hero{padding:56px 40px 40px;max-width:1240px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:40px;border-bottom:1px solid var(--rule)}
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.3em;color:var(--accent);text-transform:uppercase;margin:0 0 14px}
+  .hero h1{font-family:var(--serif-d);font-weight:900;font-size:68px;letter-spacing:-.035em;line-height:.95;margin:0}
+  .hero h1 em{font-style:italic;font-weight:400;color:var(--accent)}
+  .hero .lede{font-family:var(--serif);font-style:italic;color:var(--ink-2);font-size:18px;line-height:1.55;margin-top:22px;max-width:44ch}
+  .dek{
+    border-top:1px solid var(--rule);padding-top:18px;display:grid;grid-template-columns:max-content 1fr;
+    column-gap:28px;row-gap:10px;align-content:start;font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)
+  }
+  .dek b{color:var(--ink);font-weight:500}
+  .dek .big{font-family:var(--serif-d);font-size:42px;font-weight:900;letter-spacing:-.02em;color:var(--ink);grid-column:1/-1;text-transform:none;line-height:1}
+  .dek .big em{color:var(--accent);font-style:normal}
+
+  /* CONTROL BAR */
+  .controls{max-width:1240px;margin:28px auto 0;padding:0 40px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+  .controls-inner{display:grid;grid-template-columns:1.6fr 1fr 1fr auto;gap:0;align-items:stretch}
+  .controls .cell{padding:18px 22px;border-right:1px solid var(--rule-soft)}
+  .controls .cell:last-child{border-right:0}
+  .controls label{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .controls .val{font-family:var(--serif-d);font-size:28px;font-weight:700;letter-spacing:-.02em}
+  .controls input.val{border:0;outline:none;background:transparent;width:100%;padding:0;font-family:var(--serif-d);font-size:28px;font-weight:700}
+  .controls .val sup{font-family:var(--mono);font-size:11px;font-weight:400;color:var(--muted);letter-spacing:.1em;vertical-align:super;margin-left:4px}
+  .btn-run{
+    background:var(--ink);color:#fff;border:0;padding:0 28px;font-family:var(--mono);font-size:12px;letter-spacing:.2em;
+    text-transform:uppercase;cursor:pointer;min-width:180px;display:flex;align-items:center;justify-content:center;gap:10px;
+  }
+  .btn-run:hover{background:var(--accent)}
+  .btn-run::after{content:'→';font-size:20px;line-height:0}
+
+  .toggle-row{padding:10px 40px;border-bottom:1px solid var(--rule);display:flex;gap:24px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+  .toggle-row label{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+  .toggle-row input{accent-color:var(--accent)}
+
+  /* OVERRIDE BAR */
+  .overrides{max-width:1240px;margin:0 auto;padding:20px 40px;border-bottom:1px solid var(--rule);display:grid;grid-template-columns:max-content 1fr max-content 1fr;gap:16px;align-items:center}
+  .over-label{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+  .chip{
+    display:inline-block;font-family:var(--mono);font-size:11px;padding:3px 10px;border:1px solid var(--rule);
+    margin-right:4px;letter-spacing:.06em;text-transform:uppercase;
+  }
+  .chip.pin{background:var(--ink);color:#fff}
+  .chip.pin::before{content:'◆ ';font-size:9px}
+  .chip.exc{color:var(--red);border-color:var(--red);text-decoration:line-through}
+  .chip.exc::before{content:'✕ '}
+  .chip.add{border-style:dashed;color:var(--muted);cursor:pointer}
+  .chip.add::before{content:'+ '}
+
+  /* MAIN GRID */
+  .section{max-width:1240px;margin:0 auto;padding:40px;border-bottom:1px solid var(--rule)}
+  .section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:26px;padding-bottom:10px;border-bottom:2px solid var(--rule)}
+  .section-head h2{font-family:var(--serif-d);font-weight:900;font-size:28px;letter-spacing:-.02em;margin:0}
+  .section-head .tag{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+
+  /* KPI strip */
+  .kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--rule);margin-bottom:40px}
+  .kpi-strip .k{padding:18px 20px;border-right:1px solid var(--rule-soft)}
+  .kpi-strip .k:last-child{border-right:0}
+  .kpi-strip .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .kpi-strip .v{font-family:var(--serif-d);font-size:38px;font-weight:900;letter-spacing:-.03em;line-height:1}
+  .kpi-strip .v em{color:var(--accent);font-style:normal}
+  .kpi-strip .foot{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px;letter-spacing:.08em;text-transform:uppercase}
+
+  /* TABLE */
+  .article-table{width:100%;border-collapse:collapse}
+  .article-table thead th{
+    text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--muted);font-weight:500;padding:12px 12px;border-bottom:2px solid var(--rule);
+  }
+  .article-table thead th.num{text-align:right}
+  .article-table tbody tr{border-bottom:1px solid var(--rule-soft)}
+  .article-table tbody tr:last-child{border-bottom:2px solid var(--rule)}
+  .article-table tbody td{padding:22px 12px;vertical-align:top}
+  .article-table tbody td.num{text-align:right}
+
+  .rank-num{font-family:var(--serif-d);font-weight:900;font-size:48px;line-height:.9;letter-spacing:-.04em;color:var(--ink)}
+  .rank-num.one{color:var(--accent)}
+
+  .sym-cell .sym{font-family:var(--serif-d);font-weight:700;font-size:24px;letter-spacing:-.01em;line-height:1.05}
+  .sym-cell .sym em{color:var(--accent);font-style:normal}
+  .sym-cell .th{font-family:var(--serif);font-style:italic;color:var(--muted);font-size:14px;margin-top:4px}
+  .sym-cell .tags{margin-top:8px;display:flex;flex-wrap:wrap;gap:4px}
+  .sym-cell .tags .tag{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:2px 6px;border:1px solid var(--rule)}
+  .sym-cell .tags .tag.acc{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .sym-cell .tags .tag.pass{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  .sector-label{font-family:var(--serif);font-size:14px;line-height:1.4}
+  .sector-label .cat{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:2px}
+  .sector-label b{font-weight:600}
+
+  .weight-display{font-family:var(--serif-d);font-weight:900;font-size:42px;letter-spacing:-.03em;line-height:1}
+  .weight-display.anchor{color:var(--accent)}
+  .weight-display sup{font-size:14px;font-weight:400;letter-spacing:0;vertical-align:super;color:var(--muted);margin-left:2px}
+  .weight-tick{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+
+  .amt-display{font-family:var(--mono);font-size:16px;font-weight:500}
+  .shares-display{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:.06em}
+
+  .score-cell{min-width:110px}
+  .score-big{font-family:var(--serif-d);font-weight:700;font-size:24px;line-height:1}
+  .score-rule{height:1px;background:var(--rule-soft);margin:8px 0 4px;position:relative}
+  .score-rule::before{content:'';position:absolute;top:-1px;left:0;height:3px;background:var(--ink)}
+  .score-rule[data-val="92"]::before{width:92%}
+  .score-rule[data-val="88"]::before{width:88%;background:var(--ink)}
+  .score-rule[data-val="85"]::before{width:85%;background:var(--ink)}
+  .score-rule[data-val="82"]::before{width:82%;background:var(--ink)}
+  .score-rule[data-val="70"]::before{width:70%;background:var(--ink)}
+  .score-foot{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase}
+
+  .reason-col{max-width:300px;font-family:var(--serif);font-size:14px;line-height:1.55;color:var(--ink-2)}
+  .reason-col em{color:var(--accent);font-style:normal;font-weight:600}
+
+  tfoot td{padding:18px 12px;font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);border-bottom:0}
+  tfoot td.num{text-align:right;font-family:var(--serif-d);font-weight:900;font-size:24px;letter-spacing:-.02em;color:var(--ink);text-transform:none}
+
+  /* PULL QUOTE */
+  .pullquote{
+    grid-column:1/-1;margin:40px 0;padding:28px 0;border-top:2px solid var(--rule);border-bottom:2px solid var(--rule);
+    font-family:var(--serif-d);font-style:italic;font-weight:400;font-size:28px;line-height:1.35;color:var(--ink);letter-spacing:-.01em;max-width:820px;
+  }
+  .pullquote cite{display:block;margin-top:14px;font-family:var(--mono);font-style:normal;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+  .pullquote em{color:var(--accent);font-style:italic}
+
+  /* DIVERSIFICATION */
+  .div-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;padding-top:10px}
+  .bars-list{display:flex;flex-direction:column;gap:16px}
+  .bar-row{}
+  .bar-row .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+  .bar-row .top .label{font-family:var(--serif);font-size:16px}
+  .bar-row .top .pct{font-family:var(--serif-d);font-size:22px;font-weight:700;letter-spacing:-.02em}
+  .bar-row .top.accent .pct{color:var(--accent)}
+  .bar-rule{height:4px;background:var(--rule-soft);position:relative}
+  .bar-rule > i{display:block;height:100%;background:var(--ink)}
+  .bar-rule.accent > i{background:var(--accent)}
+
+  .fact-panel{border:1px solid var(--rule);padding:26px}
+  .fact-panel h3{margin:0 0 6px;font-family:var(--serif-d);font-weight:700;font-size:22px;letter-spacing:-.01em}
+  .fact-panel .kicker{margin-bottom:14px}
+  .fact-panel p{margin:0 0 12px;font-family:var(--serif);font-size:15px;color:var(--ink-2);line-height:1.6}
+  .fact-panel .big-number{font-family:var(--serif-d);font-weight:900;font-size:96px;letter-spacing:-.05em;line-height:.85;color:var(--accent);margin-bottom:8px}
+  .fact-panel dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 18px;margin:14px 0 0;font-family:var(--mono);font-size:12px}
+  .fact-panel dt{color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-size:10px}
+  .fact-panel dd{margin:0}
+
+  /* COLOPHON / FOOTER */
+  .colophon{max-width:1240px;margin:0 auto;padding:30px 40px 60px;display:grid;grid-template-columns:2fr 1fr 1fr;gap:40px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+  .colophon h4{margin:0 0 8px;font-family:var(--serif-d);font-weight:700;font-size:14px;color:var(--ink);letter-spacing:0;text-transform:none}
+  .colophon p{margin:0;font-family:var(--serif);font-size:13px;letter-spacing:0;text-transform:none;color:var(--ink-2);line-height:1.6}
+
+  @media (max-width:960px){
+    .hero{grid-template-columns:1fr;padding:40px 24px 28px}
+    .hero h1{font-size:52px}
+    .masthead,.sub-rule{padding-left:24px;padding-right:24px}
+    .section{padding:28px 24px}
+    .controls{padding:0 24px}
+    .controls-inner{grid-template-columns:1fr}
+    .controls .cell{border-right:0;border-bottom:1px solid var(--rule-soft)}
+    .overrides{grid-template-columns:1fr;padding:20px 24px}
+    .kpi-strip{grid-template-columns:1fr 1fr}
+    .kpi-strip .k{border-right:0;border-bottom:1px solid var(--rule-soft)}
+    .div-grid{grid-template-columns:1fr}
+    .colophon{grid-template-columns:1fr;padding:30px 24px 40px}
+    .article-table thead{display:none}
+    .article-table tbody td{display:block;padding:8px 0;border:0}
+    .article-table tbody tr{display:block;padding:16px 0;border-bottom:1px solid var(--rule-soft)}
+    .article-table tbody td.num{text-align:left}
+  }
+</style>
+</head>
+<body>
+
+<!-- MASTHEAD -->
+<header class="masthead">
+  <div class="logo">MAX MAHON <em>·</em> Quarterly</div>
+  <div class="edition">Vol. V, No. 1 · 23 เมษายน 2569 · <b>ฉบับพิเศษ</b></div>
+</header>
+<div class="sub-rule">
+  <span>Portfolio Construction</span>
+  <span>Niwes Composite · 40 / 35 / 12 / 8 / 5</span>
+  <span>5 หุ้น · 5 sector</span>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div>
+    <p class="kicker">Feature · Portfolio Builder</p>
+    <h1>จัดพอร์ตสไตล์<br><em>แมกซ์</em>.</h1>
+    <p class="lede">คัดหุ้นที่ผ่าน 5-5-5-5 มาสร้างพอร์ต 5 ตัว 5 sector ตามแนว ดร.นิเวศน์ — ให้น้ำหนัก 80/20 เพื่อเลียนแบบพอร์ตจริง CPALL 42 · TCAP 38 · QH 12 · BCP 6 · MC 2</p>
+  </div>
+  <div class="dek">
+    <div class="big">1,000,000 <em>บาท</em></div>
+    <span>Universe</span><b>10 PASS · 2 excluded · 1 pinned</b>
+    <span>ผลลัพธ์</span><b>5 หุ้น · 5 sector · 80/20 split</b>
+    <span>อัลกอริทึม</span><b>Yield + Value + Hidden + Quality</b>
+    <span>Anchor</span><b style="color:var(--accent)">QH @ 40%</b>
+  </div>
+</section>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <div class="controls-inner">
+    <div class="cell">
+      <label>เงินลงทุน (THB)</label>
+      <input class="val" type="text" value="1,000,000">
+    </div>
+    <div class="cell">
+      <label>หุ้น PASS ใน universe</label>
+      <div class="val">10<sup>ตัว</sup></div>
+    </div>
+    <div class="cell">
+      <label>Sector ที่กระจาย</label>
+      <div class="val">5<sup>/ 5</sup></div>
+    </div>
+    <button class="btn-run">Run Builder</button>
+  </div>
+</div>
+<div class="toggle-row">
+  <label><input type="checkbox"> แสดงเป็น % อย่างเดียว</label>
+  <label><input type="checkbox" checked> บังคับ 5 sector ต่างกัน</label>
+  <label><input type="checkbox"> แสดง sparkline</label>
+</div>
+
+<!-- OVERRIDES -->
+<div class="overrides">
+  <div class="over-label">ปักหมุด</div>
+  <div>
+    <span class="chip pin">QH</span>
+    <span class="chip add">เพิ่ม</span>
+  </div>
+  <div class="over-label">ถอดออก</div>
+  <div>
+    <span class="chip exc">BCP</span>
+    <span class="chip exc">HMPRO</span>
+    <span class="chip add">เพิ่ม</span>
+  </div>
+</div>
+
+<!-- KPI -->
+<section class="section">
+  <div class="section-head">
+    <h2>ภาพรวมพอร์ต</h2>
+    <span class="tag">At a glance</span>
+  </div>
+
+  <div class="kpi-strip">
+    <div class="k">
+      <div class="lbl">จำนวนหุ้น</div>
+      <div class="v">05</div>
+      <div class="foot">PASS Niwes 5-5-5-5</div>
+    </div>
+    <div class="k">
+      <div class="lbl">Sector</div>
+      <div class="v">05 <em>/5</em></div>
+      <div class="foot">fully diversified</div>
+    </div>
+    <div class="k">
+      <div class="lbl">Yield (weighted)</div>
+      <div class="v">5.71<em>%</em></div>
+      <div class="foot">above Niwes benchmark</div>
+    </div>
+    <div class="k">
+      <div class="lbl">Niwes score avg.</div>
+      <div class="v">85.4</div>
+      <div class="foot">tier · A</div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <table class="article-table">
+    <thead>
+      <tr>
+        <th style="width:60px">ลำดับ</th>
+        <th>หุ้น</th>
+        <th>Sector</th>
+        <th class="num">น้ำหนัก</th>
+        <th class="num">เงิน / จำนวนหุ้น</th>
+        <th>Score</th>
+        <th>เหตุผล</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><div class="rank-num one">01</div></td>
+        <td class="sym-cell">
+          <div class="sym"><em>QH</em></div>
+          <div class="th">ควอลิตี้เฮ้าส์</div>
+          <div class="tags"><span class="tag acc">Anchor</span><span class="tag pass">PASS</span><span class="tag">Hidden HMPRO</span></div>
+        </td>
+        <td>
+          <div class="sector-label">
+            <span class="cat">Property Development</span>
+            <b>Property &amp; Construction</b>
+          </div>
+        </td>
+        <td class="num">
+          <div class="weight-display anchor">40<sup>%</sup></div>
+          <div class="weight-tick">anchor · 80/20</div>
+        </td>
+        <td class="num">
+          <div class="amt-display">฿ 400,000.00</div>
+          <div class="shares-display">300,752 หุ้น @ 1.33</div>
+        </td>
+        <td>
+          <div class="score-cell">
+            <div class="score-big">92</div>
+            <div class="score-rule" data-val="92"></div>
+            <div class="score-foot">composite</div>
+          </div>
+        </td>
+        <td><div class="reason-col"><em>hidden value</em> ใน HMPRO 19.87% ที่ยังไม่สะท้อนในราคา · yield 7.5% · PBV ต่ำกว่า 1 · ตรงแนวถือยาว ดร.นิเวศน์</div></td>
+      </tr>
+      <tr>
+        <td><div class="rank-num">02</div></td>
+        <td class="sym-cell">
+          <div class="sym">TCAP</div>
+          <div class="th">ทุนธนชาต</div>
+          <div class="tags"><span class="tag pass">PASS</span><span class="tag">Hidden TMB</span></div>
+        </td>
+        <td>
+          <div class="sector-label">
+            <span class="cat">Banking</span>
+            <b>Financials</b>
+          </div>
+        </td>
+        <td class="num">
+          <div class="weight-display">35<sup>%</sup></div>
+          <div class="weight-tick">supporting</div>
+        </td>
+        <td class="num">
+          <div class="amt-display">฿ 350,000.00</div>
+          <div class="shares-display">6,008 หุ้น @ 58.25</div>
+        </td>
+        <td>
+          <div class="score-cell">
+            <div class="score-big">88</div>
+            <div class="score-rule" data-val="88"></div>
+            <div class="score-foot">composite</div>
+          </div>
+        </td>
+        <td><div class="reason-col">PE 8.2 ต่ำมาก · PBV 0.9 · hidden ใน TMB stake · yield 5.8% · balance sheet แข็ง</div></td>
+      </tr>
+      <tr>
+        <td><div class="rank-num">03</div></td>
+        <td class="sym-cell">
+          <div class="sym">MC</div>
+          <div class="th">แม็คกรุ๊ป</div>
+          <div class="tags"><span class="tag pass">PASS</span></div>
+        </td>
+        <td>
+          <div class="sector-label">
+            <span class="cat">Commerce</span>
+            <b>Services</b>
+          </div>
+        </td>
+        <td class="num">
+          <div class="weight-display">12<sup>%</sup></div>
+          <div class="weight-tick">tail</div>
+        </td>
+        <td class="num">
+          <div class="amt-display">฿ 120,000.00</div>
+          <div class="shares-display">12,500 หุ้น @ 9.60</div>
+        </td>
+        <td>
+          <div class="score-cell">
+            <div class="score-big">85</div>
+            <div class="score-rule" data-val="85"></div>
+            <div class="score-foot">composite</div>
+          </div>
+        </td>
+        <td><div class="reason-col">yield <em>9.9%</em> สูง · mid-cap apparel · PE 10 · dividend track record ยาว</div></td>
+      </tr>
+      <tr>
+        <td><div class="rank-num">04</div></td>
+        <td class="sym-cell">
+          <div class="sym">INTUCH</div>
+          <div class="th">อินทัช</div>
+          <div class="tags"><span class="tag pass">PASS</span><span class="tag">Hidden ADVANC</span></div>
+        </td>
+        <td>
+          <div class="sector-label">
+            <span class="cat">Information &amp; Communication</span>
+            <b>Technology</b>
+          </div>
+        </td>
+        <td class="num">
+          <div class="weight-display">8<sup>%</sup></div>
+          <div class="weight-tick">tail</div>
+        </td>
+        <td class="num">
+          <div class="amt-display">฿ 80,000.00</div>
+          <div class="shares-display">1,231 หุ้น @ 65.00</div>
+        </td>
+        <td>
+          <div class="score-cell">
+            <div class="score-big">82</div>
+            <div class="score-rule" data-val="82"></div>
+            <div class="score-foot">composite</div>
+          </div>
+        </td>
+        <td><div class="reason-col">hidden ADVANC stake · yield 6.2% · ICT holding · dividend durable</div></td>
+      </tr>
+      <tr>
+        <td><div class="rank-num">05</div></td>
+        <td class="sym-cell">
+          <div class="sym">PTT</div>
+          <div class="th">ปตท</div>
+          <div class="tags"><span class="tag pass">PASS</span></div>
+        </td>
+        <td>
+          <div class="sector-label">
+            <span class="cat">Energy &amp; Utilities</span>
+            <b>Resources</b>
+          </div>
+        </td>
+        <td class="num">
+          <div class="weight-display">5<sup>%</sup></div>
+          <div class="weight-tick">tail</div>
+        </td>
+        <td class="num">
+          <div class="amt-display">฿ 50,000.00</div>
+          <div class="shares-display">1,562 หุ้น @ 32.00</div>
+        </td>
+        <td>
+          <div class="score-cell">
+            <div class="score-big">70</div>
+            <div class="score-rule" data-val="70"></div>
+            <div class="score-foot">composite</div>
+          </div>
+        </td>
+        <td><div class="reason-col">yield 7% แต่ cyclical · ระวัง oil macro · <em>exit</em> เมื่อโครงสร้างราคาแตก</div></td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3">Total</td>
+        <td class="num">100%</td>
+        <td class="num">฿ 1,000,000</td>
+        <td colspan="2"></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <blockquote class="pullquote">
+    "ถือหุ้นที่ยังมี <em>hidden value</em> ที่ตลาดยังไม่เห็น — แล้ว 5-5-5-5 จะคอยจ่ายปันผลให้เรารอจนตลาดรู้ทัน"
+    <cite>— แนวคิด ดร.นิเวศน์ เหมวชิรวรากร · ปรับใช้กับระบบคัดกรองของ Max Mahon</cite>
+  </blockquote>
+</section>
+
+<!-- DIVERSIFICATION -->
+<section class="section">
+  <div class="section-head">
+    <h2>การกระจาย Sector</h2>
+    <span class="tag">Concentration · 80/20</span>
+  </div>
+
+  <div class="div-grid">
+    <div>
+      <div class="bars-list">
+        <div class="bar-row">
+          <div class="top accent"><span class="label">Property Development</span><span class="pct">40%</span></div>
+          <div class="bar-rule accent"><i style="width:100%"></i></div>
+        </div>
+        <div class="bar-row">
+          <div class="top"><span class="label">Banking</span><span class="pct">35%</span></div>
+          <div class="bar-rule"><i style="width:87.5%"></i></div>
+        </div>
+        <div class="bar-row">
+          <div class="top"><span class="label">Commerce</span><span class="pct">12%</span></div>
+          <div class="bar-rule"><i style="width:30%"></i></div>
+        </div>
+        <div class="bar-row">
+          <div class="top"><span class="label">Information &amp; Communication</span><span class="pct">8%</span></div>
+          <div class="bar-rule"><i style="width:20%"></i></div>
+        </div>
+        <div class="bar-row">
+          <div class="top"><span class="label">Energy &amp; Utilities</span><span class="pct">5%</span></div>
+          <div class="bar-rule"><i style="width:12.5%"></i></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fact-panel">
+      <p class="kicker">Concentration Fact</p>
+      <div class="big-number">75%</div>
+      <h3>น้ำหนักของ 2 หุ้นแรก</h3>
+      <p><em>anchor</em> + supporting กินสัดส่วน 75% ของพอร์ต — นี่คือหัวใจของแนว 80/20 ของ ดร.นิเวศน์ ที่ตั้งใจให้พอร์ตมีตัวนำเพียงไม่กี่ตัว แต่ยังกระจาย sector</p>
+      <dl>
+        <dt>Anchor</dt><dd>QH · 40%</dd>
+        <dt>Supporting</dt><dd>TCAP · 35%</dd>
+        <dt>Tail</dt><dd>MC · INTUCH · PTT</dd>
+        <dt>Sectors</dt><dd>5 · เต็มเป้า</dd>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<!-- COLOPHON -->
+<section class="section" style="border-bottom:3px solid var(--rule);padding-bottom:28px">
+  <div class="section-head">
+    <h2>กลไก</h2>
+    <span class="tag">Colophon · How it works</span>
+  </div>
+  <div class="colophon" style="padding:0">
+    <div>
+      <h4>Niwes Composite Picker</h4>
+      <p>ระบบคัดหุ้น PASS ผ่าน 5-5-5-5 มาจัดกลุ่มตาม sector ของ SET — แล้วเรียงคะแนนรวม (yield + value + hidden + quality) เลือกเบอร์ 1 ของแต่ละ sector รวม 5 ตัว</p>
+    </div>
+    <div>
+      <h4>Weighting</h4>
+      <p>40 · 35 · 12 · 8 · 5 — เลียนพอร์ต ดร.นิเวศน์ 2568 (CPALL 42 · TCAP 38 · QH 12 · BCP 6 · MC 2)</p>
+    </div>
+    <div>
+      <h4>Override</h4>
+      <p>ผู้ใช้ปักหมุด (pin) หรือถอด (exclude) ตัวใดก็ได้ ก่อนกด Run ใหม่</p>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
