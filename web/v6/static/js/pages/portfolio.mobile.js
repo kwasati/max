@@ -40,7 +40,7 @@ function _renderShell() {
     '<div class="divider-block">' +
       '<div class="ornament" style="margin:0"></div>' +
       '<div style="font-family:var(--font-head);font-weight:900;font-size:1.2rem;margin-top:10px">Simulated Below</div>' +
-      '<div style="font-family:var(--font-head);font-style:italic;color:var(--ink-soft);font-size:0.85rem;margin-top:3px">Target weights · not yet deployed</div>' +
+      '<div style="font-family:var(--font-head);font-style:italic;color:var(--fg-secondary);font-size:0.85rem;margin-top:3px">Target weights · not yet deployed</div>' +
     '</div>' +
 
     // 04b SIMULATED
@@ -204,27 +204,27 @@ function _openAddTxModal(root) {
   const today = new Date().toISOString().slice(0, 10);
   const html =
     '<div style="display:flex;flex-direction:column;gap:var(--sp-4)">' +
-      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim)">Symbol' +
-        '<input type="text" id="tx-symbol" placeholder="BBL" inputmode="text" autocapitalize="characters" style="margin-top:4px;width:100%;padding:12px;border:1px solid var(--rule);background:var(--paper-3);font-family:var(--font-mono);font-size:16px;color:var(--ink);min-height:44px">' +
+      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-dim)">Symbol' +
+        '<input type="text" id="tx-symbol" placeholder="BBL" inputmode="text" autocapitalize="characters" style="margin-top:4px;width:100%;padding:12px;border:1px solid var(--border-subtle);background:var(--bg-surface);font-family:var(--font-mono);font-size:16px;color:var(--fg-primary);min-height:44px">' +
       '</label>' +
-      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim)">Date' +
-        '<input type="date" id="tx-date" value="' + today + '" style="margin-top:4px;width:100%;padding:12px;border:1px solid var(--rule);background:var(--paper-3);font-family:var(--font-mono);font-size:16px;color:var(--ink);min-height:44px">' +
+      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-dim)">Date' +
+        '<input type="date" id="tx-date" value="' + today + '" style="margin-top:4px;width:100%;padding:12px;border:1px solid var(--border-subtle);background:var(--bg-surface);font-family:var(--font-mono);font-size:16px;color:var(--fg-primary);min-height:44px">' +
       '</label>' +
       '<div>' +
-        '<div style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim)">Type</div>' +
+        '<div style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-dim)">Type</div>' +
         '<div style="margin-top:6px;display:flex;gap:var(--sp-5)">' +
-          '<label style="font-family:var(--font-body);font-size:16px;color:var(--ink);min-height:44px;display:inline-flex;align-items:center"><input type="radio" name="tx-type" value="BUY" checked style="margin-right:6px"> BUY</label>' +
-          '<label style="font-family:var(--font-body);font-size:16px;color:var(--ink);min-height:44px;display:inline-flex;align-items:center"><input type="radio" name="tx-type" value="SELL" style="margin-right:6px"> SELL</label>' +
+          '<label style="font-family:var(--font-body);font-size:16px;color:var(--fg-primary);min-height:44px;display:inline-flex;align-items:center"><input type="radio" name="tx-type" value="BUY" checked style="margin-right:6px"> BUY</label>' +
+          '<label style="font-family:var(--font-body);font-size:16px;color:var(--fg-primary);min-height:44px;display:inline-flex;align-items:center"><input type="radio" name="tx-type" value="SELL" style="margin-right:6px"> SELL</label>' +
         '</div>' +
       '</div>' +
-      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim)">Price' +
-        '<input type="number" id="tx-price" step="0.01" min="0" inputmode="decimal" placeholder="150.00" style="margin-top:4px;width:100%;padding:12px;border:1px solid var(--rule);background:var(--paper-3);font-family:var(--font-mono);font-size:16px;color:var(--ink);min-height:44px">' +
+      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-dim)">Price' +
+        '<input type="number" id="tx-price" step="0.01" min="0" inputmode="decimal" placeholder="150.00" style="margin-top:4px;width:100%;padding:12px;border:1px solid var(--border-subtle);background:var(--bg-surface);font-family:var(--font-mono);font-size:16px;color:var(--fg-primary);min-height:44px">' +
       '</label>' +
-      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim)">Qty' +
-        '<input type="number" id="tx-qty" step="1" min="0" inputmode="numeric" placeholder="100" style="margin-top:4px;width:100%;padding:12px;border:1px solid var(--rule);background:var(--paper-3);font-family:var(--font-mono);font-size:16px;color:var(--ink);min-height:44px">' +
+      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-dim)">Qty' +
+        '<input type="number" id="tx-qty" step="1" min="0" inputmode="numeric" placeholder="100" style="margin-top:4px;width:100%;padding:12px;border:1px solid var(--border-subtle);background:var(--bg-surface);font-family:var(--font-mono);font-size:16px;color:var(--fg-primary);min-height:44px">' +
       '</label>' +
-      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim)">Note' +
-        '<input type="text" id="tx-note" placeholder="(optional)" style="margin-top:4px;width:100%;padding:12px;border:1px solid var(--rule);background:var(--paper-3);font-family:var(--font-mono);font-size:16px;color:var(--ink);min-height:44px">' +
+      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-dim)">Note' +
+        '<input type="text" id="tx-note" placeholder="(optional)" style="margin-top:4px;width:100%;padding:12px;border:1px solid var(--border-subtle);background:var(--bg-surface);font-family:var(--font-mono);font-size:16px;color:var(--fg-primary);min-height:44px">' +
       '</label>' +
     '</div>' +
     '<div style="display:flex;gap:var(--sp-3);margin-top:var(--sp-5)">' +
@@ -442,18 +442,18 @@ function _openEditSimModal(root, idx) {
   const html =
     '<div style="display:flex;flex-direction:column;gap:var(--sp-4)">' +
       '<div>' +
-        '<div style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim)">Symbol</div>' +
+        '<div style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-dim)">Symbol</div>' +
         '<div style="margin-top:4px;font-family:var(--font-head);font-weight:700;font-size:1.2rem">' + E(p.symbol) + '</div>' +
       '</div>' +
-      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim)">Weight %' +
-        '<input type="number" id="sim-edit-weight" step="0.5" min="0" max="100" inputmode="decimal" value="' + (p.weight_pct || 0) + '" style="margin-top:4px;width:100%;padding:12px;border:1px solid var(--rule);background:var(--paper-3);font-family:var(--font-mono);font-size:16px;color:var(--ink);min-height:44px">' +
+      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-dim)">Weight %' +
+        '<input type="number" id="sim-edit-weight" step="0.5" min="0" max="100" inputmode="decimal" value="' + (p.weight_pct || 0) + '" style="margin-top:4px;width:100%;padding:12px;border:1px solid var(--border-subtle);background:var(--bg-surface);font-family:var(--font-mono);font-size:16px;color:var(--fg-primary);min-height:44px">' +
       '</label>' +
-      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim)">Label' +
-        '<input type="text" id="sim-edit-label" value="' + E(p.label || '') + '" placeholder="core defensive / hidden value / ..." style="margin-top:4px;width:100%;padding:12px;border:1px solid var(--rule);background:var(--paper-3);font-family:var(--font-mono);font-size:16px;color:var(--ink);min-height:44px">' +
+      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-dim)">Label' +
+        '<input type="text" id="sim-edit-label" value="' + E(p.label || '') + '" placeholder="core defensive / hidden value / ..." style="margin-top:4px;width:100%;padding:12px;border:1px solid var(--border-subtle);background:var(--bg-surface);font-family:var(--font-mono);font-size:16px;color:var(--fg-primary);min-height:44px">' +
       '</label>' +
     '</div>' +
     '<div style="display:flex;gap:var(--sp-3);margin-top:var(--sp-5)">' +
-      '<button type="button" class="btn ghost" id="sim-edit-del" style="flex:1;min-height:44px;color:var(--accent)">ลบ</button>' +
+      '<button type="button" class="btn ghost" id="sim-edit-del" style="flex:1;min-height:44px;color:var(--c-positive)">ลบ</button>' +
       '<button type="button" class="btn ghost" id="sim-edit-cancel" style="flex:1;min-height:44px">Cancel</button>' +
       '<button type="button" class="btn primary" id="sim-edit-save" style="flex:1;min-height:44px">Save</button>' +
     '</div>';
@@ -486,14 +486,14 @@ function _openEditSimModal(root, idx) {
 function _openAddSimModal(root) {
   const html =
     '<div style="display:flex;flex-direction:column;gap:var(--sp-4)">' +
-      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim)">Symbol' +
-        '<input type="text" id="sim-add-symbol" placeholder="BBL" inputmode="text" autocapitalize="characters" style="margin-top:4px;width:100%;padding:12px;border:1px solid var(--rule);background:var(--paper-3);font-family:var(--font-mono);font-size:16px;color:var(--ink);min-height:44px">' +
+      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-dim)">Symbol' +
+        '<input type="text" id="sim-add-symbol" placeholder="BBL" inputmode="text" autocapitalize="characters" style="margin-top:4px;width:100%;padding:12px;border:1px solid var(--border-subtle);background:var(--bg-surface);font-family:var(--font-mono);font-size:16px;color:var(--fg-primary);min-height:44px">' +
       '</label>' +
-      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim)">Weight %' +
-        '<input type="number" id="sim-add-weight" step="0.5" min="0" max="100" inputmode="decimal" placeholder="10" style="margin-top:4px;width:100%;padding:12px;border:1px solid var(--rule);background:var(--paper-3);font-family:var(--font-mono);font-size:16px;color:var(--ink);min-height:44px">' +
+      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-dim)">Weight %' +
+        '<input type="number" id="sim-add-weight" step="0.5" min="0" max="100" inputmode="decimal" placeholder="10" style="margin-top:4px;width:100%;padding:12px;border:1px solid var(--border-subtle);background:var(--bg-surface);font-family:var(--font-mono);font-size:16px;color:var(--fg-primary);min-height:44px">' +
       '</label>' +
-      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-dim)">Label' +
-        '<input type="text" id="sim-add-label" placeholder="core defensive / hidden value / ..." style="margin-top:4px;width:100%;padding:12px;border:1px solid var(--rule);background:var(--paper-3);font-family:var(--font-mono);font-size:16px;color:var(--ink);min-height:44px">' +
+      '<label style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-dim)">Label' +
+        '<input type="text" id="sim-add-label" placeholder="core defensive / hidden value / ..." style="margin-top:4px;width:100%;padding:12px;border:1px solid var(--border-subtle);background:var(--bg-surface);font-family:var(--font-mono);font-size:16px;color:var(--fg-primary);min-height:44px">' +
       '</label>' +
     '</div>' +
     '<div style="display:flex;gap:var(--sp-3);margin-top:var(--sp-5)">' +

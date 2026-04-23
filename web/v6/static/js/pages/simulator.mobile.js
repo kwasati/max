@@ -23,7 +23,7 @@ export function mount(root) {
 
 function renderShell() {
   return (
-    MMComponents.renderSectionNum('05', 'Simulator', '3 modes') +
+    '<div class="section-title" style="margin:var(--sp-6) 0 var(--sp-4);font-weight:700;font-size:var(--fs-lg);color:var(--fg-primary)">Simulator</div>' +
     '<select class="mode-select" id="mode-select">' +
       '<option value="single">DCA รายตัว</option>' +
       '<option value="multi">DCA ทั้งพอร์ต</option>' +
@@ -340,13 +340,13 @@ function renderPerPositionList(per) {
     var symShort = (p.symbol || '').replace(/\.BK$/i, '');
     var retCls = (p.return_pct || 0) >= 0 ? 'pos' : 'neg';
     return (
-      '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px 0;border-bottom:1px dotted var(--rule-hair);font-family:var(--font-mono);font-size:0.8rem">' +
+      '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px 0;border-bottom:1px dotted var(--border-subtle);font-family:var(--font-mono);font-size:0.8rem">' +
         '<div><span style="font-family:var(--font-head);font-weight:700">' + MMUtils.escapeHtml(symShort) + '</span>' +
           ' · ' + MMUtils.fmtNum(p.weight_pct, 0) + '%</div>' +
         '<div class="num ' + retCls + '">' + ((p.return_pct || 0) >= 0 ? '+' : '') + MMUtils.fmtNum(p.return_pct, 0) + '%</div>' +
-        '<div style="color:var(--ink-dim);font-size:0.72rem">inv ฿' + MMUtils.fmtCompact(p.invested) +
+        '<div style="color:var(--fg-dim);font-size:0.72rem">inv ฿' + MMUtils.fmtCompact(p.invested) +
           ' → ฿' + MMUtils.fmtCompact(p.ending_value) + '</div>' +
-        '<div style="color:var(--ink-dim);font-size:0.72rem;text-align:right">div ฿' + MMUtils.fmtCompact(p.dividends) + '</div>' +
+        '<div style="color:var(--fg-dim);font-size:0.72rem;text-align:right">div ฿' + MMUtils.fmtCompact(p.dividends) + '</div>' +
       '</div>'
     );
   }).join('');
@@ -397,9 +397,9 @@ function renderBacktestBody() {
 
   return (
     '<h3 id="backtest-title" style="font-family:var(--font-head);font-weight:900;font-size:1.5rem;line-height:1.15;margin:10px 0 6px">' +
-      'ถ้า DCA ตั้งแต่<br><span style="font-style:italic;color:var(--accent)">มกราคม 2015</span> จนถึงวันนี้' +
+      'ถ้า DCA ตั้งแต่<br><span style="font-style:italic;color:var(--c-positive)">มกราคม 2015</span> จนถึงวันนี้' +
     '</h3>' +
-    '<p id="backtest-kicker" style="font-family:var(--font-head);font-style:italic;color:var(--ink-soft);font-size:0.85rem;margin-bottom:16px">' +
+    '<p id="backtest-kicker" style="font-family:var(--font-head);font-style:italic;color:var(--fg-secondary);font-size:0.85rem;margin-bottom:16px">' +
       'Monthly DCA · dividends reinvested' +
     '</p>' +
     '<div class="input-group">' +
@@ -517,7 +517,7 @@ function updateBacktestTitle(root, data) {
                     'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
   var label = (thaiMonths[monthIdx] || '') + ' ' + year;
   if (title) {
-    title.innerHTML = 'ถ้า DCA ตั้งแต่<br><span style="font-style:italic;color:var(--accent)">' +
+    title.innerHTML = 'ถ้า DCA ตั้งแต่<br><span style="font-style:italic;color:var(--c-positive)">' +
       MMUtils.escapeHtml(label.trim()) + '</span> จนถึงวันนี้';
   }
   if (kicker) {
@@ -551,14 +551,14 @@ function renderBacktestResult(host, data, amountMonthly) {
       '</div>' +
     '</div>' +
     '<div class="sim-chart-big" style="height:320px"><canvas id="chart-backtest-m"></canvas></div>' +
-    '<p style="font-family:var(--font-head);font-style:italic;color:var(--ink-soft);font-size:0.82rem;margin-top:14px;padding-top:10px;border-top:1px solid var(--rule-hair);line-height:1.5">' +
+    '<p style="font-family:var(--font-head);font-style:italic;color:var(--fg-secondary);font-size:0.82rem;margin-top:14px;padding-top:10px;border-top:1px solid var(--border-subtle);line-height:1.5">' +
       '<strong>Assumptions.</strong> Monthly DCA of ฿' + MMUtils.fmtNum(amountMonthly, 0) +
       ' from ' + MMUtils.escapeHtml(data.start_date || '—') + ' to ' + MMUtils.escapeHtml(data.end_date || '—') +
       '. Dividends reinvested at declaration date. Benchmark proxy: ' +
       MMUtils.escapeHtml(assump.benchmark_proxy || 'TDEX / SET') +
       '. No transaction costs or tax modeled.' +
     '</p>' +
-    '<h3 style="font-family:var(--font-head);font-weight:700;font-size:1rem;margin-top:22px;margin-bottom:10px;border-top:3px double var(--rule);padding-top:14px">Yearly Breakdown</h3>' +
+    '<h3 style="font-family:var(--font-head);font-weight:700;font-size:1rem;margin-top:22px;margin-bottom:10px;border-top:3px double var(--border-subtle);padding-top:14px">Yearly Breakdown</h3>' +
     renderMobileYearly(yearly);
 
   drawBacktestChart(host.querySelector('#chart-backtest-m'), timeline);
@@ -569,12 +569,12 @@ function renderMobileYearly(yearly) {
   // card-list view: 2 cols of small cards
   var items = yearly.map(function (y) {
     return (
-      '<div style="border-top:1px solid var(--rule-hair);padding-top:6px">' +
+      '<div style="border-top:1px solid var(--border-subtle);padding-top:6px">' +
         '<div style="font-family:var(--font-head);font-weight:700;font-size:0.9rem">' + y.year + '</div>' +
         '<div>inv ฿' + MMUtils.fmtCompact(y.invested_ytd) + '</div>' +
         '<div>port ฿' + MMUtils.fmtCompact(y.port_value_ytd) + '</div>' +
         '<div>div ฿' + MMUtils.fmtCompact(y.dividends_ytd) + '</div>' +
-        '<div style="color:var(--ink-dim)">SET ฿' + MMUtils.fmtCompact(y.benchmark_ytd) + '</div>' +
+        '<div style="color:var(--fg-dim)">SET ฿' + MMUtils.fmtCompact(y.benchmark_ytd) + '</div>' +
       '</div>'
     );
   }).join('');
