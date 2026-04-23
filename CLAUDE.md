@@ -8,7 +8,7 @@
 - **Reference files:** `data/case_study_patterns.json` (8 patterns: RETAIL_DEFENSIVE_MOAT/BANK_VALUE_PBV1/HOLDING_CO_HIDDEN/VIETNAM_GROWTH_EXPOSURE[disabled]/ENERGY_CYCLICAL_EXIT + UTILITY_DEFENSIVE/HOSPITAL_AGING/F&B_CONSUMER_BRAND), `data/exit_baselines.json`, `data/history.json` (v2 schema: top_candidates/watchlist_status/entry_thesis/dividend_paid_since_entry/price_snapshot), `user_data.json` (`transactions[]` portfolio tracking)
 - **Alerting:** Telegram high-severity exit alerts via `scripts/telegram_alert.py` (uses `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` from root `.env`)
 - **Server:** FastAPI on port 50089, Cloudflare Tunnel → max.intensivetrader.com
-- **Schedule:** APScheduler ใน server (cron เดียว, อาทิตย์ 09:00 เรียก scan)
+- **Schedule:** APScheduler ใน server — **2 cron jobs**: (1) อาทิตย์ 09:00 Asia/Bangkok → weekly scan 933 หุ้น, (2) ทุกวัน 19:00 Asia/Bangkok → daily price refresh (watchlist + PASS candidates → `data/price_cache/{sym}.json`)
 - **Philosophy:** Dr.Niwes Way: VI ฉบับ ดร.นิเวศน์ — Dividend-First + Hidden Value + 5-5-5-5
 - **Goal:** คัดหุ้นสำหรับ DCA 10-20 ปี ปันผลคือผลตอบแทนหลัก + safety จาก PE/PBV ต่ำ + hidden value
 
@@ -56,8 +56,8 @@
 - **Startup:** `max-server.bat` หรือ `py -m uvicorn server.app:app --port 50089`
 - **Auth:** `MAX_TOKEN` ใน `.env` (Bearer token สำหรับ API)
 - **Frontend:** `web/v6/` → served at `/` (desktop) + `/m` (mobile) — client-side device-detect redirect
-- **Public API:** `/api/screener`, `/api/screener/trend`, `/api/stock/{sym}/*`, `/api/watchlist`, `/api/watchlist/enriched`, `/api/watchlist/compare`, `/api/portfolio/pnl`, `/api/portfolio/simulated`, `/api/portfolio/transactions`, `/api/simulate/dca`, `/api/simulate/dca-portfolio`, `/api/simulate/portfolio-backtest`, `/api/settings`, `/api/user`, `/api/status`, `/api/history/v2`, `/api/search` (POST)
-- **Admin API:** `/api/admin/*` — scan trigger, SSE events, pipeline control, reports listing (same `MAX_TOKEN` auth)
+- **Public API:** `/api/screener`, `/api/screener/trend`, `/api/stock/{sym}/*`, `/api/watchlist`, `/api/watchlist/enriched`, `/api/watchlist/compare`, `/api/portfolio/pnl`, `/api/portfolio/simulated`, `/api/portfolio/transactions`, `/api/portfolio/builder` (POST, Niwes 5-sector 80/20 builder), `/api/simulate/dca`, `/api/simulate/dca-portfolio`, `/api/simulate/portfolio-backtest`, `/api/settings`, `/api/user`, `/api/status`, `/api/history/v2`, `/api/search` (POST)
+- **Admin API:** `/api/admin/*` — scan trigger, **price-refresh/trigger**, SSE events, pipeline control, reports listing (same `MAX_TOKEN` auth)
 
 ### Frontend Layout (v6)
 - `web/v6/desktop/{index,portfolio,watchlist}.html` — shells (portfolio + watchlist preload Chart.js)
@@ -81,6 +81,8 @@
 - `scripts/scan.py` — unified scan (screener + top picks) สร้าง scan_*.md report
 - `scripts/report_template.py` — markdown generator (deterministic, no LLM)
 - `scripts/telegram_alert.py` — exit signal alert
+- `scripts/portfolio_builder.py` — Niwes portfolio construction (niwes_composite + sector grouper + 80/20 allocator + override resolver)
+- `scripts/daily_price_refresh.py` — daily 19:00 price refresh for watchlist + PASS (yahooquery batch → `data/price_cache/{sym}.json`)
 - `server/app.py` — FastAPI server (public API, pipeline, scheduler, SSE)
 - `server/admin.py` — admin namespace router (legacy/debug endpoints)
 - `max-server.bat` — startup script
@@ -121,13 +123,21 @@
 | DATA_WARNING | ข้อมูลผิดปกติ (yield >20%, growth >300%) |
 | OVERPRICED | จาก valuation_grade F |
 
-## Analysis Framework (6 ด้าน — Niwes-style)
-- **Dividend Sustainability** — ปันผล ≥5%? streak กี่ปี? payout ratio ยั่งยืนไหม? จ่ายจาก cash จริงไม่ใช่หนี้?
-- **Hidden Value** — มี asset/stake ที่ตลาดไม่ได้คิดเข้าราคาไหม? (เช่น QH ถือ HMPRO, INTUCH ถือ ADVANC)
-- **Business Quality** — ขาดไม่ได้ของผู้บริโภค? อยู่ในชีวิตประจำวัน? ผ่านวิกฤติมาหลายรอบ?
-- **Valuation Discipline** — P/E ≤15 (bonus ≤8)? P/BV ≤1.5 (bonus ≤1.0)? เทียบ historical ของตัวเองถูก/แพง?
-- **DCA Suitability** — เหมาะสะสม 10-20 ปีไหม? (⭐⭐⭐ / ⭐⭐ / ⭐)
-- **Macro Risk** — sector concentration + structural Thai (เศรษฐกิจซบ ดอกเบี้ย ค่าเงิน)
+## Analysis Framework (Claude Opus deep analyze — 4 neutral + 1 Max-to-Art + verdict)
+
+**JSON response schema 6 keys:** `{dividend, hidden, moat, valuation, to_art, verdict}`
+
+**4 neutral sections (dispassionate analysis):**
+- **Dividend Sustainability** — ปันผล ≥5%? streak กี่ปี? payout ratio ยั่งยืนไหม? จ่ายจาก cash จริงไม่ใช่หนี้? DPS growth trajectory?
+- **Hidden Value Audit** — cross-holdings / land bank / non-core assets ที่ตลาดไม่ pricing in?
+- **Business Moat (Thai market)** — structural ยืนนานไหม? daily-use? เทียบคู่แข่ง sector?
+- **Valuation Discipline** — PE vs sector median + self 5y? PBV <1? yield ≥5% ตอนนี้ + 5 ปีหน้า?
+
+**Max-to-Art conversational section** — Max (AI persona) คุยกับ 'อาร์ท' (user) เชื่อมโยงหุ้นกับ **เสาหลัก 1 พอร์ตปันผล 100M** context: 3 ย่อหน้า = (a) scenario ตัวเลขจริง (ถ้าใส่ X M ที่ yield Y% = ปันผลปีแรก Z, compound 10y yield-on-cost), (b) ตำแหน่งใน pillar 1 (anchor/supporting/tail + concentration 80/20), (c) Step ถัดไปสำหรับอาร์ท
+
+**Verdict** — BUY / HOLD / SELL + เหตุผล 1 ประโยค (lens = DCA 10-20y + dividend-first + pillar 1 fit)
+
+**Legacy archived:** 3-perspective Buffett/เซียนฮง/Max ในบันทึกเดิม (pre-2026-04-23) — ทิ้งแล้ว ไม่ใช้
 
 ## References
 - **Niwes research:** `docs/niwes/00-index.md` — master index ของบทความ + quotes verbatim
