@@ -78,6 +78,18 @@ function _renderCard(stock) {
   var pbStr = pb == null ? '—' : window.MMUtils.fmtNum(pb, 2);
   var mcapStr = mcap == null ? '—' : window.MMUtils.fmtCompact(mcap);
 
+  var price = metrics.current_price;
+  var priceStr = price == null ? null : '฿' + window.MMUtils.fmtNum(price, 2);
+  var asOf = stock.price_as_of ? window.MMUtils.fmtDateThaiShort(stock.price_as_of) : null;
+  var priceRow = '';
+  if (priceStr) {
+    priceRow =
+      '<div class="card-price-row" style="display:flex;justify-content:space-between;align-items:baseline;margin-top:10px;padding-top:8px;border-top:1px dashed var(--border-subtle);font-family:var(--font-mono)">' +
+        '<span style="font-weight:700;font-size:0.95rem;color:var(--fg-primary)">' + priceStr + '</span>' +
+        (asOf ? '<span style="font-size:0.7rem;color:var(--fg-dim)">ณ ' + esc(asOf) + '</span>' : '') +
+      '</div>';
+  }
+
   return (
     '<article class="card" data-sym="' + sym + '">' +
       ribbon +
@@ -96,6 +108,7 @@ function _renderCard(stock) {
         '<div><span class="lbl">P/BV</span><span class="v">' + pbStr + '</span></div>' +
         '<div><span class="lbl">Mcap</span><span class="v">' + mcapStr + '</span></div>' +
       '</div>' +
+      priceRow +
     '</article>'
   );
 }
