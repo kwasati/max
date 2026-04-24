@@ -71,140 +71,138 @@ function _ensureChartJs() {
 
 // -------- section renderers --------
 
-function _renderArticleHead(stock, patterns) {
+function _renderHero(stock, patterns) {
   var esc = window.MMUtils.escapeHtml;
   var sym = esc(stock.symbol || '');
   var name = esc(stock.name || '');
+  var sector = esc(stock.sector || '');
   var signals = stock.signals || [];
   var tags = '';
   if (signals.indexOf('NIWES_5555') !== -1) tags += '<span class="tag primary">Niwes 5-5-5-5</span>';
-  if (signals.indexOf('QUALITY_DIVIDEND') !== -1) tags += '<span class="tag">Quality Div</span>';
+  if (signals.indexOf('QUALITY_DIVIDEND') !== -1) tags += '<span class="tag">Quality Dividend</span>';
   if (signals.indexOf('HIDDEN_VALUE') !== -1) tags += '<span class="tag">Hidden Value</span>';
-  var caseTag = patterns && (patterns.case_study_tags || [])[0];
-  return (
-    '<section class="article-head" style="padding:20px 0 16px;text-align:center;border-bottom:3px double var(--border-subtle)">' +
-      '<div class="article-kicker" style="font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-dim);margin-bottom:8px">Full Report' + (caseTag ? ' · ' + esc(caseTag) : '') + '</div>' +
-      '<h1 class="article-sym" style="font-family:var(--font-head);font-weight:900;font-size:2.8rem;line-height:0.95;letter-spacing:-0.02em">' + sym + '</h1>' +
-      '<div class="article-name" style="font-family:var(--font-head);font-style:italic;font-size:0.95rem;color:var(--fg-secondary);margin:6px 0 12px">' + name + '</div>' +
-      '<div class="article-tags" style="display:flex;justify-content:center;gap:4px;flex-wrap:wrap">' + tags + '</div>' +
-    '</section>' +
-    _renderPriceHero(stock)
-  );
-}
-
-function _renderPriceHero(stock) {
-  var esc = window.MMUtils.escapeHtml;
+  if (signals.indexOf('DEEP_VALUE') !== -1) tags += '<span class="tag">Deep Value</span>';
+  if (patterns && (patterns.case_study_tags || []).length) tags += '<span class="tag">' + esc(patterns.case_study_tags[0]) + '</span>';
   var metrics = stock.screener_metrics || stock.metrics || {};
   var price = metrics.current_price != null ? metrics.current_price : stock.price;
-  if (price == null) return '';
-  var asOf = stock.price_as_of ? window.MMUtils.fmtDateThaiShort(stock.price_as_of) : null;
-  var priceStr = '฿' + window.MMUtils.fmtNum(price, 2);
-  var asOfLine = asOf ? 'ราคาวันที่ ' + asOf : '';
+  var priceStr = price == null ? '—' : '฿' + window.MMUtils.fmtNum(price, 2);
+  var asOf = stock.price_as_of ? ('ราคาวันที่ ' + window.MMUtils.fmtDateThaiShort(stock.price_as_of)) : '';
+  var score = stock.quality_score != null ? stock.quality_score : (stock.score || 0);
+  var narrative = stock.narrative || {};
+  var verdictHtml = _buildVerdictChip(narrative.verdict);
   return (
-    '<section class="report-hero" style="background:linear-gradient(135deg,var(--bg-elevated-start),var(--bg-elevated-end));border:1px solid var(--bg-elevated-border);border-radius:24px;padding:22px;margin:14px 0;box-shadow:var(--shadow-card)">' +
-      '<div class="report-hero-price" style="display:flex;align-items:baseline;gap:10px">' +
-        '<span style="font-family:var(--font-mono);font-size:36px;font-weight:900;color:var(--fg-primary);letter-spacing:-0.02em">' + priceStr + '</span>' +
-        '<span style="color:var(--fg-dim);font-size:13px">THB</span>' +
+    '<section class="report-hero">' +
+      '<div class="report-hero-left">' +
+        '<h1 style="font-family:var(--font-head);font-weight:900;font-size:clamp(1.6rem,8vw,2.4rem);letter-spacing:-0.02em;line-height:1;margin:0;color:var(--fg-primary)">' + sym + '</h1>' +
+        '<div style="font-size:var(--fs-sm);color:var(--fg-secondary)">' + name + (sector ? ' · ' + sector : '') + '</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap">' + tags + '</div>' +
       '</div>' +
-      (asOfLine ? '<div class="report-hero-asof" style="font-family:var(--font-mono);font-size:11px;color:var(--fg-dim);margin-top:4px;letter-spacing:0.08em;text-transform:uppercase">' + esc(asOfLine) + '</div>' : '') +
+      '<div class="report-hero-right">' +
+        '<div class="report-hero-price" id="v6-mhero-price">' + priceStr + '<span style="font-size:var(--fs-sm);color:var(--fg-dim);margin-left:6px">THB</span></div>' +
+        (asOf ? '<div style="font-family:var(--font-mono);font-size:var(--fs-xs);color:var(--fg-dim);letter-spacing:0.08em;text-transform:uppercase">' + esc(asOf) + '</div>' : '') +
+        '<div style="display:flex;gap:var(--sp-2);align-items:center">' +
+          '<span style="font-family:var(--font-mono);font-size:var(--fs-sm);color:var(--fg-dim)">Score</span>' +
+          '<span id="v6-mhero-score" style="font-family:var(--font-mono);font-size:var(--fs-md);font-weight:700;color:var(--fg-primary)">' + Math.round(score) + '/100</span>' +
+        '</div>' +
+        '<div id="v6-mhero-verdict">' + verdictHtml + '</div>' +
+      '</div>' +
     '</section>'
   );
 }
 
-function _renderTheCase(stock) {
-  var esc = window.MMUtils.escapeHtml;
-  var caseText = (stock.narrative || {}).case_text;
-  var byline = '<div class="byline" style="text-align:center;margin-bottom:16px;font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-dim)">By <strong style="color:var(--fg-primary);font-weight:500">Max Mahon</strong> · Staff Analyst</div>';
-  var body;
-  if (caseText) {
-    var paras = String(caseText).split(/\n\n+/).filter(Boolean);
-    body = '<div class="case-cols" id="v6-mcase-cols" style="column-count:1;font-size:0.98rem;line-height:1.65">' +
-      paras.map(function (p, i) {
-        var cls = i === 0 ? 'drop-cap' : '';
-        return '<p' + (cls ? ' class="' + cls + '"' : '') + ' style="margin-bottom:14px">' + esc(p) + '</p>';
-      }).join('') +
-      '</div>';
-  } else {
-    body = '<div id="v6-mcase-cols" style="text-align:center;padding:16px 0;font-family:var(--font-head);font-style:italic;color:var(--fg-secondary);font-size:0.95rem">บทวิเคราะห์ยังไม่ได้ generate — กดปุ่มด้านล่างเพื่อเรียก Max.</div>';
-  }
-  return (
-    '<div class="section-num"><span class="no">01 · The Case</span><span>Editorial</span></div>' +
-    '<section class="case-body" style="padding:20px 0">' + byline + body + '</section>'
-  );
+function _buildVerdictChip(verdictRaw) {
+  if (!verdictRaw) return '<span class="v6-verdict-chip empty">ยังไม่ได้วิเคราะห์</span>';
+  var v = String(verdictRaw).trim();
+  var cls = 'hold', label = 'HOLD';
+  if (/^\s*BUY\b/i.test(v)) { cls = 'buy'; label = 'BUY'; }
+  else if (/^\s*SELL\b/i.test(v)) { cls = 'sell'; label = 'SELL'; }
+  return '<span class="v6-verdict-chip ' + cls + '">' + label + '</span>';
+}
+
+function _applyHeroVerdict(verdict) {
+  var el = document.getElementById('v6-mhero-verdict');
+  if (el) el.innerHTML = _buildVerdictChip(verdict);
 }
 
 function _renderScore(stock) {
   var score = stock.quality_score != null ? stock.quality_score : (stock.score || 0);
   return (
-    '<div class="section-num"><span class="no">02 · Score</span><span>Of 100</span></div>' +
-    '<div class="score-display" style="text-align:center">' +
-      '<div class="huge" style="font-family:var(--font-mono);font-weight:300;font-size:7rem;line-height:0.85;color:var(--fg-primary)">' + Math.round(score) + '</div>' +
-      '<div class="slash" style="font-family:var(--font-head);font-style:italic;color:var(--fg-dim);margin-top:10px">of one hundred</div>' +
-    '</div>' +
-    '<div class="score-chart-wrap" style="height:260px;margin-top:16px"><canvas id="v6-mscore-chart"></canvas></div>'
+    '<div class="v6-section-head"><h2>Score</h2><small>Of One Hundred · Niwes Dividend-First</small></div>' +
+    '<section class="v6-score-block">' +
+      '<div class="v6-score-display">' +
+        '<div class="v6-score-huge">' + Math.round(score) + '</div>' +
+        '<div class="v6-score-slash">of one hundred</div>' +
+        '<div class="v6-score-version">niwes-dividend-first · v2</div>' +
+      '</div>' +
+      '<div><div class="v6-chart-box" style="height:260px"><canvas id="v6-mscore-chart"></canvas></div></div>' +
+    '</section>'
   );
 }
 
-function _renderChecklist(stock) {
+function _renderChecklistEnriched(stock) {
   var metrics = stock.screener_metrics || {};
-  function _get(k) { return metrics[k] != null ? metrics[k] : stock[k]; }
+  var fallback = stock;
+  function _get(key) { return metrics[key] != null ? metrics[key] : fallback[key]; }
   var yld = _get('dividend_yield');
-  var pe = _get('pe') == null ? stock.pe_ratio : _get('pe');
-  var pb = _get('pb_ratio') == null ? stock.pb_ratio : _get('pb_ratio');
-  var mcap = _get('mcap') == null ? stock.market_cap : _get('mcap');
-  var streak = stock.dividend_streak_years == null ? metrics.dividend_streak_years : stock.dividend_streak_years;
-  var epsPos = stock.eps_positive_count == null ? metrics.eps_positive_count : stock.eps_positive_count;
-
-  function item(label, actual, threshold, pass) {
-    var mark = pass ? '<div class="check-mark pass">✓</div>' : '<div class="check-mark fail">✗</div>';
+  var pe = _get('pe') == null ? fallback.pe_ratio : _get('pe');
+  var pb = _get('pb_ratio') == null ? fallback.pb_ratio : _get('pb_ratio');
+  var mcap = _get('mcap') == null ? fallback.market_cap : _get('mcap');
+  var streak = stock.dividend_streak_years || metrics.dividend_streak_years || metrics.div_streak;
+  var epsPos = stock.eps_positive_count != null ? stock.eps_positive_count : metrics.eps_positive_count;
+  var reasons = stock.reasons_narrative || stock.reasons || [];
+  function _matchReasonFor(keys) {
+    for (var i = 0; i < reasons.length; i++) {
+      var r = typeof reasons[i] === 'string' ? reasons[i] : (reasons[i].text || '');
+      var low = r.toLowerCase();
+      for (var k = 0; k < keys.length; k++) { if (low.indexOf(keys[k]) !== -1) return r; }
+    }
+    return '';
+  }
+  function _item(label, actual, threshold, pass, keys) {
+    var reason = _matchReasonFor(keys);
+    var markCls = pass ? 'pass' : 'fail';
+    var markIcon = pass ? '✓' : '✗';
     return (
-      '<div class="checklist-item" style="display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:12px 0;border-bottom:1px solid var(--border-subtle);align-items:baseline">' +
-        '<div class="check-label" style="font-family:var(--font-head);font-size:1rem;font-weight:500">' + label + '</div>' +
-        '<div class="check-actual" style="font-family:var(--font-mono);font-weight:500;font-size:1rem">' + actual + '</div>' +
-        mark +
-        '<div class="check-threshold" style="font-family:var(--font-mono);font-size:0.7rem;color:var(--fg-dim);grid-column:1/-1;text-align:right;margin-top:-4px">' + threshold + '</div>' +
+      '<div class="v6-checklist-item">' +
+        '<div class="v6-check-label">' + label + '</div>' +
+        '<div class="v6-check-actual">' + actual + '</div>' +
+        '<div class="v6-check-threshold">' + threshold + '</div>' +
+        '<div class="v6-check-mark ' + markCls + '">' + markIcon + '</div>' +
+        '<div class="v6-check-reason">' + window.MMUtils.escapeHtml(reason) + '</div>' +
       '</div>'
     );
   }
   return (
-    '<div class="section-num"><span class="no">03 · 5-5-5-5 Test</span><span>Hard Filters</span></div>' +
-    '<div>' +
-      item('Dividend Yield', yld == null ? '—' : window.MMUtils.fmtPercent(yld), '≥ 5%', yld != null && yld >= 5) +
-      item('Dividend Streak', streak == null ? '—' : (streak + ' yr'), '≥ 5 yr', streak != null && streak >= 5) +
-      item('EPS Positive 5/5', epsPos == null ? '—' : (epsPos + '/5'), 'no loss years', epsPos != null && epsPos >= 5) +
-      item('P/E', pe == null ? '—' : (window.MMUtils.fmtNum(pe, 1) + '×'), '≤ 15× (bonus ≤8×)', pe != null && pe <= 15) +
-      item('P/BV', pb == null ? '—' : (window.MMUtils.fmtNum(pb, 2) + '×'), '≤ 1.5× (bonus ≤1×)', pb != null && pb <= 1.5) +
-      item('Market Cap', mcap == null ? '—' : window.MMUtils.fmtCompact(mcap), '≥ 5B THB', mcap != null && mcap >= 5e9) +
+    '<div class="v6-section-head"><h2>5-5-5-5 Test</h2><small>Hard Filters · Pass All or Fail</small></div>' +
+    '<div class="v6-checklist">' +
+      _item('Dividend Yield', (yld == null ? '—' : window.MMUtils.fmtPercent(yld)), '≥ 5.00%', yld != null && yld >= 5, ['yield', 'ปันผล']) +
+      _item('Dividend Streak', (streak == null ? '—' : (streak + ' yrs')), '≥ 5 yrs', streak != null && streak >= 5, ['streak', 'ติดต่อกัน', 'จ่ายปันผล']) +
+      _item('EPS Positive (5y)', (epsPos == null ? '—' : (epsPos + ' / 5')), 'No loss years', epsPos != null && epsPos >= 5, ['eps', 'ขาดทุน']) +
+      _item('P/E', (pe == null ? '—' : (window.MMUtils.fmtNum(pe, 1) + '×')), '≤ 15×', pe != null && pe <= 15, ['p/e', 'pe', 'earnings']) +
+      _item('P/BV', (pb == null ? '—' : (window.MMUtils.fmtNum(pb, 2) + '×')), '≤ 1.5×', pb != null && pb <= 1.5, ['p/bv', 'pbv', 'book']) +
+      _item('Market Cap', (mcap == null ? '—' : window.MMUtils.fmtCompact(mcap) + ' THB'), '≥ 5B THB', mcap != null && mcap >= 5e9, ['mcap', 'market cap']) +
     '</div>'
   );
 }
 
-function _renderPattern(patterns) {
-  var esc = window.MMUtils.escapeHtml;
+function _renderPatternFootnote(patterns) {
   var matched = (patterns && patterns.matched_patterns) || [];
-  if (!matched.length) {
-    return (
-      '<div class="section-num"><span class="no">04 · Pattern</span><span>No Match</span></div>' +
-      '<p style="text-align:center;padding:16px;font-family:var(--font-head);font-style:italic;color:var(--fg-dim);font-size:0.9rem">— ไม่มี case study pattern —</p>'
-    );
-  }
-  var body = matched.map(function (p) {
-    return (
-      '<div class="pattern-block" style="border-top:3px double var(--border-subtle);border-bottom:3px double var(--border-subtle);padding:20px 0;margin:20px 0">' +
-        '<div class="pattern-label" style="font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-dim);margin-bottom:8px">Matched Pattern</div>' +
-        '<div class="pattern-name" style="font-family:var(--font-head);font-weight:900;font-size:1.3rem;line-height:1;color:var(--c-positive);margin-bottom:14px">' + esc(p.tag || '') + '</div>' +
-        '<div class="pattern-body" style="font-family:var(--font-body);font-size:0.95rem;line-height:1.65;font-style:italic;color:var(--fg-secondary)"><p>' + esc(p.narrative || '') + '</p></div>' +
-      '</div>'
-    );
+  if (!matched.length) return '';
+  var esc = window.MMUtils.escapeHtml;
+  return matched.map(function (p) {
+    var src = p.source ? '<div class="src">Source: ' + esc(p.source) + '</div>' : '';
+    return '<details class="v6-pattern-footnote"><summary>Reference: ' + esc(p.tag || '') + ' pattern</summary><p>' + esc(p.narrative || '') + '</p>' + src + '</details>';
   }).join('');
-  return (
-    '<div class="section-num"><span class="no">04 · Pattern</span><span>Matched</span></div>' + body
-  );
 }
 
 function _renderKeyNumbers(stock) {
   var rows = stock.five_year_history || [];
-  if (!rows.length) return '';
+  if (!rows.length) {
+    return (
+      '<div class="v6-section-head"><h2>Key Numbers</h2><small>Five-Year Financial History</small></div>' +
+      '<p class="v6-empty-state">— no five-year history —</p>'
+    );
+  }
   var asc = rows.slice().sort(function (a, b) { return (a.year || 0) - (b.year || 0); });
   var years = asc.map(function (r) { return '<th class="num">' + String(r.year).slice(-2) + '</th>'; }).join('');
   function fmt(v, dec) {
@@ -217,7 +215,7 @@ function _renderKeyNumbers(stock) {
     return '<tr><td class="sym">' + label + '</td>' + cells + '</tr>';
   }
   return (
-    '<div class="section-num"><span class="no">05 · Key Numbers</span><span>5 yr</span></div>' +
+    '<div class="v6-section-head"><h2>Key Numbers</h2><small>Five-Year Financial History</small></div>' +
     '<div class="data-table-wrap" style="overflow-x:auto">' +
       '<table class="data-table">' +
         '<thead><tr><th>Metric</th>' + years + '</tr></thead>' +
@@ -235,19 +233,31 @@ function _renderKeyNumbers(stock) {
 
 function _renderDividendHistory(stock) {
   var rows = stock.dividend_history_10y || [];
-  if (!rows.length) return '';
+  if (!rows.length) {
+    return (
+      '<div class="v6-section-head"><h2>Dividend History</h2><small>Ten Years of Distributions</small></div>' +
+      '<p class="v6-empty-state">— no dividend history —</p>'
+    );
+  }
   return (
-    '<div class="section-num"><span class="no">06 · Dividend History</span><span>10 yr</span></div>' +
-    '<div class="chart-box" style="height:220px"><canvas id="v6-mdps-chart"></canvas></div>'
+    '<div class="v6-section-head"><h2>Dividend History</h2><small>Ten Years of Distributions</small></div>' +
+    '<div class="v6-chart-box" style="height:220px"><canvas id="v6-mdps-chart"></canvas></div>' +
+    '<div class="v6-chart-caption">DPS per year · last 10 years</div>'
   );
 }
 
 function _renderScoreHistory(history) {
   var timeline = ((history || {}).timeline || []).filter(function (t) { return t.score != null; });
-  if (!timeline.length) return '';
+  if (!timeline.length) {
+    return (
+      '<div class="v6-section-head"><h2>Score History</h2><small>No pass history</small></div>' +
+      '<p class="v6-empty-state">— not yet passed in any scan —</p>'
+    );
+  }
   return (
-    '<div class="section-num"><span class="no">07 · Score History</span><span>' + timeline.length + ' scans</span></div>' +
-    '<div class="chart-box" style="height:220px"><canvas id="v6-mscorehist-chart"></canvas></div>'
+    '<div class="v6-section-head"><h2>Score History</h2><small>' + timeline.length + ' scans</small></div>' +
+    '<div class="v6-chart-box" style="height:220px"><canvas id="v6-mscorehist-chart"></canvas></div>' +
+    '<div class="v6-chart-caption">Score trajectory since first appearance</div>'
   );
 }
 
@@ -266,35 +276,40 @@ function _renderExitBaseline(exitStatus) {
   var dScore = ctx.delta_score;
   var dStr = dScore == null ? '—' : (dScore > 0 ? '+' + dScore : String(dScore));
 
+  function _cell(lbl, v) {
+    return (
+      '<div class="v6-exit-cell">' +
+        '<span class="lbl" style="font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-dim)">' + lbl + '</span>' +
+        '<span class="v" style="font-family:var(--font-mono);font-size:1.1rem;font-weight:500;display:block;margin-top:3px">' + v + '</span>' +
+      '</div>'
+    );
+  }
+
   return (
-    '<div class="section-num"><span class="no">08 · Exit Baseline</span><span>Watchlist</span></div>' +
-    '<div class="exit-panel" style="border:3px double var(--c-positive);padding:18px;margin:20px 0">' +
+    '<div class="v6-section-head"><h2>Exit Baseline</h2><small>Watchlist Position</small></div>' +
+    '<div class="v6-exit-panel">' +
       '<div class="head" style="font-family:var(--font-mono);font-size:0.7rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--c-positive);margin-bottom:12px">Current · ' + sevBadge + '</div>' +
-      '<p style="font-style:italic;color:var(--fg-secondary);margin-bottom:14px;font-size:0.9rem">' + esc(exitStatus.narrative || '') + '</p>' +
-      '<div class="exit-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px 0;border-top:1px solid var(--border-subtle);border-bottom:1px solid var(--border-subtle);margin:14px 0">' +
-        '<div class="exit-cell"><span class="lbl" style="font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-dim)">Entry Date</span><span class="v" style="font-family:var(--font-mono);font-size:1.1rem;font-weight:500;display:block;margin-top:3px">' + entryDate + '</span></div>' +
-        '<div class="exit-cell"><span class="lbl" style="font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-dim)">Entry PE</span><span class="v" style="font-family:var(--font-mono);font-size:1.1rem;font-weight:500;display:block;margin-top:3px">' + entryPE + '</span></div>' +
-        '<div class="exit-cell"><span class="lbl" style="font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-dim)">Entry Yld</span><span class="v" style="font-family:var(--font-mono);font-size:1.1rem;font-weight:500;display:block;margin-top:3px">' + entryYld + '</span></div>' +
-        '<div class="exit-cell"><span class="lbl" style="font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-dim)">Δ Score</span><span class="v" style="font-family:var(--font-mono);font-size:1.1rem;font-weight:500;display:block;margin-top:3px">' + dStr + '</span></div>' +
+      '<p style="color:var(--fg-secondary);margin-bottom:14px;font-size:0.9rem">' + esc(exitStatus.narrative || '') + '</p>' +
+      '<div class="v6-exit-grid">' +
+        _cell('Entry Date', entryDate) +
+        _cell('Entry PE', entryPE) +
+        _cell('Entry Yld', entryYld) +
+        _cell('Δ Score', dStr) +
       '</div>' +
     '</div>'
   );
 }
 
 function _renderDeepAnalyze() {
-  return (
-    '<div class="analyze-block" id="v6-mdeep-analyze" style="padding:20px 18px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:18px;text-align:center;margin-top:28px;border-top:3px double var(--border-subtle)">' +
-      _renderAnalyzeInitialInner() +
-    '</div>'
-  );
+  return '<section class="v6-deep-analyze" id="v6-mdeep-analyze">' + _renderAnalyzeInitialInner() + '</section>';
 }
 
 function _renderAnalyzeInitialInner() {
   return (
-    '<h2 style="font-family:var(--font-head);font-weight:900;font-size:1.5rem;line-height:1.15;margin:6px 0 8px">ขอวิเคราะห์เจาะลึก</h2>' +
-    '<p style="font-family:var(--font-head);font-style:italic;color:var(--fg-dim);font-size:0.95rem;margin-bottom:16px">ให้ Claude Opus วิเคราะห์ตามกรอบ ดร.นิเวศน์ 5 ด้าน + verdict สำหรับ DCA 10-20 ปี เน้นปันผลสะสม</p>' +
-    '<button class="btn primary" id="v6-mdeep-btn" style="padding:12px 22px;border-radius:999px;font-weight:700;min-height:48px">ขอวิเคราะห์เพิ่มเติม</button>' +
-    '<div style="margin-top:12px;font-family:var(--font-mono);font-size:0.62rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-mute)">Cached 7 days · API MAX_ANTHROPIC_API_KEY</div>'
+    '<h2 style="font-family:var(--font-head);font-weight:900;font-size:var(--fs-xl);line-height:1.15;margin:4px 0 8px">ขอวิเคราะห์เจาะลึก</h2>' +
+    '<p style="color:var(--fg-dim);max-width:50ch;margin:0 auto 16px;font-size:var(--fs-md)">ให้ Claude Opus วิเคราะห์ตามกรอบ ดร.นิเวศน์ 5 ด้าน + verdict สำหรับ DCA 10-20 ปี เน้นปันผลสะสม</p>' +
+    '<div style="text-align:center"><button class="btn primary" id="v6-deep-btn" style="padding:12px 24px;border-radius:999px;font-weight:700;min-height:48px">ขอวิเคราะห์เพิ่มเติม</button></div>' +
+    '<div style="margin-top:12px;font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-mute);text-align:center">Cached 7 days · Claude Opus</div>'
   );
 }
 
@@ -312,88 +327,70 @@ function _renderAnalyzeErrorInner(msg) {
   var esc = window.MMUtils.escapeHtml;
   return (
     '<div style="padding:18px 0;text-align:center">' +
-      '<div style="font-family:var(--font-head);font-style:italic;color:var(--c-negative);margin-bottom:14px;font-size:0.95rem">' + esc(msg || 'Timeout · server ไม่ตอบกลับ') + '</div>' +
-      '<button class="btn primary" id="v6-mdeep-btn" style="padding:12px 22px;border-radius:999px;font-weight:700;min-height:48px">ลองอีกครั้ง</button>' +
+      '<div style="color:var(--c-negative);margin-bottom:14px;font-size:0.95rem">' + esc(msg || 'Timeout · server ไม่ตอบกลับ') + '</div>' +
+      '<button class="btn primary" id="v6-deep-btn" style="padding:12px 22px;border-radius:999px;font-weight:700;min-height:48px">ลองอีกครั้ง</button>' +
     '</div>'
   );
 }
 
 function _renderAnalyzeResult(data) {
   var esc = window.MMUtils.escapeHtml;
+  var svg = window.MMUtils.svg;
   var analyzedAt = data.analyzed_at
     ? (window.MMUtils.fmtDateThaiShort(data.analyzed_at) + ' · Claude Opus')
     : 'Claude Opus';
   var verdictRaw = String(data.verdict || '').trim();
-  var verdictClass = 'hold';
-  var badge = 'HOLD';
+  var verdictClass = 'hold', badge = 'HOLD';
   if (/^\s*BUY\b/i.test(verdictRaw)) { verdictClass = 'buy'; badge = 'BUY'; }
   else if (/^\s*SELL\b/i.test(verdictRaw)) { verdictClass = 'sell'; badge = 'SELL'; }
   var verdictWhy = verdictRaw.replace(/^(BUY|HOLD|SELL)\s*[:\-·—]?\s*/i, '');
-  var badgeBg = verdictClass === 'buy'
-    ? 'var(--c-positive)'
-    : (verdictClass === 'sell' ? 'var(--c-negative)' : 'var(--fg-dim)');
-  var verdictCardBg = verdictClass === 'buy'
-    ? 'var(--c-positive-soft)'
-    : (verdictClass === 'sell' ? 'var(--c-negative-soft)' : 'var(--bg-surface-2, #ebebe4)');
-  var verdictBorder = verdictClass === 'buy'
-    ? 'var(--c-positive-border)'
-    : (verdictClass === 'sell' ? 'var(--c-negative-border)' : 'var(--border-subtle)');
 
-  function _section(icon, title, text) {
+  function _sec(iconName, title, text) {
     if (!text) return '';
     return (
-      '<div class="sec" style="padding:14px 0;border-top:1px solid var(--border-subtle)">' +
-        '<h4 style="margin:0 0 6px;font-size:0.95rem;font-weight:800;color:var(--c-positive-strong);display:flex;align-items:center;gap:8px">' +
-          '<span style="width:22px;height:22px;border-radius:6px;background:var(--c-positive-soft);display:inline-grid;place-items:center;font-size:11px">' + icon + '</span>' +
-          title +
-        '</h4>' +
-        '<p style="margin:0;font-size:0.92rem;color:var(--fg-secondary);line-height:1.6">' + esc(text) + '</p>' +
+      '<div class="v6-deep-section">' +
+        '<h4>' + svg(iconName) + title + '</h4>' +
+        '<p>' + esc(text) + '</p>' +
       '</div>'
     );
   }
 
   var toArtParas = String(data.to_art || '').split(/\n\n+/).filter(Boolean).map(function (p) {
-    return '<p style="margin:0 0 10px;font-size:0.92rem;color:var(--fg-primary);line-height:1.6">' + esc(p) + '</p>';
+    return '<p>' + esc(p) + '</p>';
   }).join('');
-  var artTalk = data.to_art
-    ? (
-      '<div class="sec art-talk" style="background:var(--c-positive-tint);margin:14px -18px -2px;padding:16px 18px 18px;border-radius:0 0 18px 18px;border-top:1px solid var(--c-positive-border)">' +
-        '<h4 style="margin:0 0 8px;font-size:0.95rem;font-weight:800;color:var(--c-positive-strong);display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
-          '<span style="width:22px;height:22px;border-radius:6px;background:var(--c-positive);color:#fff;display:inline-grid;place-items:center;font-size:11px">💬</span>' +
-          'Max คุยกับอาร์ท' +
-          '<span style="font-size:0.58rem;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--bg-surface);color:var(--fg-secondary);border:1px solid var(--border-subtle);font-family:var(--font-mono);letter-spacing:0.05em;text-transform:none">เสาหลัก 1 · พอร์ตปันผล 100M</span>' +
-        '</h4>' +
-        toArtParas +
-      '</div>'
-    )
-    : '';
+  var talkPanel = data.to_art ? (
+    '<div class="v6-deep-talk-panel">' +
+      '<h4>' + svg('message-circle') + 'Max คุยกับอาร์ท' +
+        '<span class="pillar-badge">เสาหลัก 1 · พอร์ตปันผล 100M</span>' +
+      '</h4>' +
+      toArtParas +
+    '</div>'
+  ) : '';
 
   return (
-    '<div style="text-align:left">' +
-      '<div style="font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-dim);margin-bottom:14px;display:flex;justify-content:space-between">' +
-        '<span>' + esc(analyzedAt) + '</span>' +
-        '<span>Cache 7 วัน</span>' +
-      '</div>' +
-      '<div class="verdict ' + verdictClass + '" style="padding:14px 16px;border-radius:12px;background:' + verdictCardBg + ';border:1px solid ' + verdictBorder + ';margin-bottom:16px;display:flex;align-items:center;gap:12px">' +
-        '<span style="padding:5px 12px;border-radius:8px;font-weight:800;font-size:0.8rem;letter-spacing:0.04em;background:' + badgeBg + ';color:#fff">' + badge + '</span>' +
-        '<span style="font-size:0.9rem;color:var(--fg-primary);line-height:1.45;flex:1">' + esc(verdictWhy || verdictRaw) + '</span>' +
-      '</div>' +
-      _section('💵', 'Dividend Sustainability', data.dividend) +
-      _section('💎', 'Hidden Value Audit', data.hidden) +
-      _section('🏛️', 'Business Moat', data.moat) +
-      _section('⚖️', 'Valuation Discipline', data.valuation) +
-      artTalk +
-    '</div>'
+    '<div style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-dim);margin-bottom:var(--sp-4);display:flex;justify-content:space-between">' +
+      '<span>' + esc(analyzedAt) + '</span><span>Cache 7 วัน</span>' +
+    '</div>' +
+    '<div class="v6-deep-verdict-bar">' +
+      '<span class="v6-verdict-chip ' + verdictClass + '">' + badge + '</span>' +
+      '<span style="font-size:var(--fs-sm);color:var(--fg-primary);line-height:1.5;flex:1">' + esc(verdictWhy || verdictRaw) + '</span>' +
+    '</div>' +
+    '<div class="v6-deep-grid">' +
+      _sec('banknote', 'Dividend Sustainability', data.dividend) +
+      _sec('gem', 'Hidden Value Audit', data.hidden) +
+      _sec('landmark', 'Business Moat', data.moat) +
+      _sec('scale', 'Valuation Discipline', data.valuation) +
+    '</div>' +
+    talkPanel
   );
 }
 
 function _buildMobileReportHtml(stock, patterns, history, exitStatus) {
   return (
-    _renderArticleHead(stock, patterns) +
-    _renderTheCase(stock) +
+    _renderHero(stock, patterns) +
     _renderScore(stock) +
-    _renderChecklist(stock) +
-    _renderPattern(patterns) +
+    _renderChecklistEnriched(stock) +
+    _renderPatternFootnote(patterns) +
     _renderKeyNumbers(stock) +
     _renderDividendHistory(stock) +
     _renderScoreHistory(history) +
@@ -505,6 +502,7 @@ function _wireDeepAnalyze(sym) {
   window.MMApi.get('/api/stock/' + encodeURIComponent(sym) + '/analysis').then(function (cached) {
     if (_hasAnalysisData(cached)) {
       block.innerHTML = _renderAnalyzeResult(cached);
+      _applyHeroVerdict(cached.verdict);
     } else {
       _attachClick(sym, block);
     }
@@ -514,7 +512,7 @@ function _wireDeepAnalyze(sym) {
 }
 
 function _attachClick(sym, block) {
-  var btn = block.querySelector('#v6-mdeep-btn');
+  var btn = block.querySelector('#v6-deep-btn');
   if (!btn) return;
   btn.addEventListener('click', function () {
     _stopPoll();
@@ -522,6 +520,7 @@ function _attachClick(sym, block) {
     window.MMApi.post('/api/stock/' + encodeURIComponent(sym) + '/analyze', {}).then(function (payload) {
       if (_hasAnalysisData(payload)) {
         block.innerHTML = _renderAnalyzeResult(payload);
+        _applyHeroVerdict(payload.verdict);
         return;
       }
       _pollAnalysis(sym, block);
@@ -541,6 +540,7 @@ function _pollAnalysis(sym, block) {
       if (_hasAnalysisData(r)) {
         _stopPoll();
         block.innerHTML = _renderAnalyzeResult(r);
+        _applyHeroVerdict(r.verdict);
         return;
       }
     } catch (_) { /* 404 = still pending */ }
