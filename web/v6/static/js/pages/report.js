@@ -175,37 +175,6 @@ function _renderPriceHero(stock) {
   );
 }
 
-function _renderTheCase(stock) {
-  var esc = window.MMUtils.escapeHtml;
-  var narrative = stock.narrative || {};
-  var caseText = narrative.case_text;
-  var byline =
-    '<div class="byline" style="text-align:center;margin-bottom:var(--sp-5)">By <strong>Max Mahon</strong> · Staff Analyst · Niwes Dividend-First</div>';
-
-  var body;
-  if (caseText) {
-    var paras = String(caseText).split(/\n\n+/).filter(Boolean);
-    var htmlParas = paras.map(function (p, i) {
-      var cls = i === 0 ? 'drop-cap' : '';
-      return '<p' + (cls ? ' class="' + cls + '"' : '') + '>' + esc(p) + '</p>';
-    }).join('');
-    body =
-      '<div class="case-cols" id="v6-case-cols" style="column-count:2;column-gap:var(--sp-6);column-rule:1px solid var(--border-subtle);text-align:justify;hyphens:auto;font-size:1.02rem;line-height:1.7">' +
-        htmlParas +
-      '</div>';
-  } else {
-    body =
-      '<div id="v6-case-cols" style="text-align:center;padding:var(--sp-6) 0;font-family:var(--font-head);font-style:italic;color:var(--fg-secondary);font-size:var(--fs-md);max-width:62ch;margin:0 auto">' +
-        'The editorial case has not been generated yet. กดปุ่มข้างล่างเพื่อเรียก Max วิเคราะห์เชิงคุณภาพ — Claude Opus จะใช้เวลาประมาณ 45 วินาที.' +
-      '</div>';
-  }
-
-  return (
-    '<div class="section-num"><span class="no">01 · The Case</span><span>Editorial Narrative · Read First</span></div>' +
-    '<section class="case-body" style="padding:var(--sp-6) 0">' + byline + body + '</section>'
-  );
-}
-
 function _renderScoreBreakdown(stock) {
   var esc = window.MMUtils.escapeHtml;
   var score = stock.quality_score != null ? stock.quality_score : (stock.score || 0);
@@ -617,7 +586,6 @@ function _buildReportHtml(stock, patterns, history, exitStatus) {
 
   return (
     _renderArticleHead(stock, patterns) +
-    _renderTheCase(stock) +
     _renderScoreBreakdown(stock) +
     _renderChecklist(stock) +
     _renderReasonsGrid(stock) +
