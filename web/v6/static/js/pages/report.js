@@ -71,6 +71,59 @@ function _ensureChartJs() {
 
 // ---------- section renderers ----------
 
+function _renderHero(stock, patterns) {
+  var esc = window.MMUtils.escapeHtml;
+  var sym = esc(stock.symbol || '');
+  var name = esc(stock.name || '');
+  var sector = esc(stock.sector || '');
+  var signals = stock.signals || [];
+  var tags = '';
+  if (signals.indexOf('NIWES_5555') !== -1) tags += '<span class="tag primary">Niwes 5-5-5-5</span>';
+  if (signals.indexOf('QUALITY_DIVIDEND') !== -1) tags += '<span class="tag">Quality Dividend</span>';
+  if (signals.indexOf('HIDDEN_VALUE') !== -1) tags += '<span class="tag">Hidden Value</span>';
+  if (signals.indexOf('DEEP_VALUE') !== -1) tags += '<span class="tag">Deep Value</span>';
+  if (patterns && (patterns.case_study_tags || []).length) tags += '<span class="tag">' + esc(patterns.case_study_tags[0]) + '</span>';
+  var metrics = stock.screener_metrics || stock.metrics || {};
+  var price = metrics.current_price != null ? metrics.current_price : stock.price;
+  var priceStr = price == null ? '—' : '฿' + window.MMUtils.fmtNum(price, 2);
+  var asOf = stock.price_as_of ? ('ราคาวันที่ ' + window.MMUtils.fmtDateThaiShort(stock.price_as_of)) : '';
+  var score = stock.quality_score != null ? stock.quality_score : (stock.score || 0);
+  var narrative = stock.narrative || {};
+  var verdictHtml = _buildVerdictChip(narrative.verdict);
+  return (
+    '<section class="report-hero">' +
+      '<div class="report-hero-left">' +
+        '<h1 style="font-family:var(--font-head);font-weight:900;font-size:clamp(2rem,4vw,3rem);letter-spacing:-0.02em;line-height:1;margin:0;color:var(--fg-primary)">' + sym + '</h1>' +
+        '<div style="font-size:var(--fs-md);color:var(--fg-secondary)">' + name + (sector ? ' · ' + sector : '') + '</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap">' + tags + '</div>' +
+      '</div>' +
+      '<div class="report-hero-right">' +
+        '<div class="report-hero-price">' + priceStr + '<span style="font-size:var(--fs-sm);color:var(--fg-dim);margin-left:6px">THB</span></div>' +
+        (asOf ? '<div style="font-family:var(--font-mono);font-size:var(--fs-xs);color:var(--fg-dim);letter-spacing:0.08em;text-transform:uppercase">' + esc(asOf) + '</div>' : '') +
+        '<div style="display:flex;gap:var(--sp-2);align-items:center">' +
+          '<span style="font-family:var(--font-mono);font-size:var(--fs-sm);color:var(--fg-dim)">Score</span>' +
+          '<span id="v6-hero-score" style="font-family:var(--font-mono);font-size:var(--fs-md);font-weight:700;color:var(--fg-primary)">' + Math.round(score) + '/100</span>' +
+        '</div>' +
+        '<div id="v6-hero-verdict">' + verdictHtml + '</div>' +
+      '</div>' +
+    '</section>'
+  );
+}
+
+function _buildVerdictChip(verdictRaw) {
+  if (!verdictRaw) return '<span class="v6-verdict-chip empty">ยังไม่ได้วิเคราะห์</span>';
+  var v = String(verdictRaw).trim();
+  var cls = 'hold', label = 'HOLD';
+  if (/^\s*BUY\b/i.test(v)) { cls = 'buy'; label = 'BUY'; }
+  else if (/^\s*SELL\b/i.test(v)) { cls = 'sell'; label = 'SELL'; }
+  return '<span class="v6-verdict-chip ' + cls + '">' + label + '</span>';
+}
+
+function _applyHeroVerdict(verdict) {
+  var el = document.getElementById('v6-hero-verdict');
+  if (el) el.innerHTML = _buildVerdictChip(verdict);
+}
+
 function _renderArticleHead(stock, patterns) {
   var esc = window.MMUtils.escapeHtml;
   var sym = esc(stock.symbol || '');
