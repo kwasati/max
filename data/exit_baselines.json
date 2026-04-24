@@ -78,7 +78,8 @@
     "dy_baseline": 9.90990990990991,
     "date_added": "2026-04-21",
     "date_refreshed": "2026-04-22",
-    "thesis_change_flag": false
+    "thesis_change_flag": false,
+    "entry_score": 74
   },
   "BPP.BK": {
     "passed_5555": true,
@@ -258,7 +259,8 @@
     "dy_baseline": 11.320754716981133,
     "date_added": "2026-04-21",
     "date_refreshed": "2026-04-22",
-    "thesis_change_flag": false
+    "thesis_change_flag": false,
+    "entry_score": 62
   },
   "MTI.BK": {
     "passed_5555": true,
@@ -321,7 +323,8 @@
     "dy_baseline": 9.929078014184398,
     "date_added": "2026-04-21",
     "date_refreshed": "2026-04-22",
-    "thesis_change_flag": false
+    "thesis_change_flag": false,
+    "entry_score": 69
   },
   "RATCH.BK": {
     "passed_5555": true,
@@ -456,7 +459,8 @@
     "dy_baseline": 6.167400881057269,
     "date_added": "2026-04-21",
     "date_refreshed": "2026-04-22",
-    "thesis_change_flag": false
+    "thesis_change_flag": false,
+    "entry_score": 66
   },
   "THANI.BK": {
     "passed_5555": true,
@@ -492,6 +496,7 @@
     "dy_baseline": 5.0,
     "date_added": "2026-04-22",
     "date_refreshed": "2026-04-22",
-    "thesis_change_flag": false
+    "thesis_change_flag": false,
+    "entry_score": 63
   }
 }
