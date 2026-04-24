@@ -773,6 +773,7 @@ function _wireDeepAnalyze(sym) {
   window.MMApi.get('/api/stock/' + encodeURIComponent(sym) + '/analysis').then(function (cached) {
     if (_hasAnalysisData(cached)) {
       block.innerHTML = _renderAnalyzeResult(cached);
+      _applyHeroVerdict(cached.verdict);
     } else {
       _attachClick(sym, block);
     }
@@ -790,6 +791,7 @@ function _attachClick(sym, block) {
     window.MMApi.post('/api/stock/' + encodeURIComponent(sym) + '/analyze', {}).then(function (payload) {
       if (_hasAnalysisData(payload)) {
         block.innerHTML = _renderAnalyzeResult(payload);
+        _applyHeroVerdict(payload.verdict);
         return;
       }
       _pollAnalysis(sym, block);
@@ -809,6 +811,7 @@ function _pollAnalysis(sym, block) {
       if (_hasAnalysisData(r)) {
         _stopPoll();
         block.innerHTML = _renderAnalyzeResult(r);
+        _applyHeroVerdict(r.verdict);
         return;
       }
     } catch (_) { /* 404 = still pending */ }
