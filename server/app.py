@@ -366,10 +366,15 @@ def _load_cached_narrative(symbol: str) -> dict:
                 text = "\n\n".join([p for p in parts if p]).strip()
             if text:
                 lede = text.split("\n\n", 1)[0] if "\n\n" in text else text[:200]
-                return {"case_text": text, "lede": lede}
+                return {
+                    "case_text": text,
+                    "lede": lede,
+                    "verdict": cached.get("verdict"),
+                    "analyzed_at": cached.get("analyzed_at"),
+                }
         except Exception:
             pass
-    return {"case_text": None, "lede": None}
+    return {"case_text": None, "lede": None, "verdict": None, "analyzed_at": None}
 
 
 def _build_five_year_history(stock_data: dict) -> list[dict]:
