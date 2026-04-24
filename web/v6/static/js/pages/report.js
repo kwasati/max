@@ -262,33 +262,14 @@ function _renderChecklistEnriched(stock) {
   );
 }
 
-function _renderPatternSection(patterns) {
-  var esc = window.MMUtils.escapeHtml;
+function _renderPatternFootnote(patterns) {
   var matched = (patterns && patterns.matched_patterns) || [];
-  if (!matched.length) {
-    return (
-      '<div class="section-num"><span class="no">05 · Case Study Pattern</span><span>No Matches</span></div>' +
-      '<p style="text-align:center;padding:var(--sp-5);font-family:var(--font-head);font-style:italic;color:var(--fg-dim)">ไม่มี case study pattern ที่ match ในรอบนี้.</p>'
-    );
-  }
-  var blocks = matched.map(function (p) {
-    var tag = esc(p.tag || '');
-    var nar = esc(p.narrative || '');
-    var src = p.source ? '<div class="dim" style="margin-top:var(--sp-3);font-family:var(--font-mono);font-size:var(--fs-xs);color:var(--fg-mute)">Source: ' + esc(p.source) + '</div>' : '';
-    return (
-      '<div class="pattern-block" style="border-top:3px double var(--border-subtle);border-bottom:3px double var(--border-subtle);padding:var(--sp-5);margin:var(--sp-5) 0;display:grid;grid-template-columns:auto 1fr;gap:var(--sp-6)">' +
-        '<div>' +
-          '<div class="pattern-label" style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-dim);margin-bottom:var(--sp-2)">Pattern</div>' +
-          '<div class="pattern-name" style="font-family:var(--font-head);font-weight:900;font-size:var(--fs-xl);line-height:1;color:var(--c-positive);letter-spacing:-0.01em">' + tag + '</div>' +
-        '</div>' +
-        '<div class="pattern-body" style="font-family:var(--font-body);font-size:var(--fs-md);line-height:1.65;font-style:italic;color:var(--fg-secondary)"><p>' + nar + '</p>' + src + '</div>' +
-      '</div>'
-    );
+  if (!matched.length) return '';
+  var esc = window.MMUtils.escapeHtml;
+  return matched.map(function (p) {
+    var src = p.source ? '<div class="src">Source: ' + esc(p.source) + '</div>' : '';
+    return '<details class="v6-pattern-footnote"><summary>Reference: ' + esc(p.tag || '') + ' pattern</summary><p>' + esc(p.narrative || '') + '</p>' + src + '</details>';
   }).join('');
-  return (
-    '<div class="section-num"><span class="no">05 · Case Study Pattern</span><span>Matched · ' + matched.length + '</span></div>' +
-    blocks
-  );
 }
 
 function _renderKeyNumbers(stock) {
@@ -562,7 +543,7 @@ function _buildReportHtml(stock, patterns, history, exitStatus) {
     _renderArticleHead(stock, patterns) +
     _renderScoreBreakdown(stock) +
     _renderChecklistEnriched(stock) +
-    _renderPatternSection(patterns) +
+    _renderPatternFootnote(patterns) +
     _renderKeyNumbers(stock) +
     _renderDividendHistory(stock) +
     _renderScoreHistory(history) +
