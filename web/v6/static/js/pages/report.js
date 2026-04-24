@@ -490,14 +490,14 @@ function _buildReportHtml(stock, patterns, history, exitStatus) {
 
   return (
     _renderHero(stock, patterns) +
+    _renderDeepAnalyze() +
     _renderScoreBreakdown(stock) +
     _renderChecklistEnriched(stock) +
-    _renderPatternFootnote(patterns) +
     _renderKeyNumbers(stock) +
     _renderDividendHistory(stock) +
     _renderScoreHistory(history) +
     _renderExitBaseline(exitStatus) +
-    _renderDeepAnalyze() +
+    _renderPatternFootnote(patterns) +
     foot
   );
 }
