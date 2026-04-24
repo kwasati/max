@@ -216,75 +216,49 @@ function _renderScoreBreakdown(stock) {
   );
 }
 
-function _renderChecklist(stock) {
+function _renderChecklistEnriched(stock) {
   var metrics = stock.screener_metrics || {};
-  var fallback = stock; // top-level fields normalized
-  function _get(key) {
-    if (metrics[key] != null) return metrics[key];
-    return fallback[key];
-  }
+  var fallback = stock;
+  function _get(key) { return metrics[key] != null ? metrics[key] : fallback[key]; }
   var yld = _get('dividend_yield');
   var pe = _get('pe') == null ? fallback.pe_ratio : _get('pe');
   var pb = _get('pb_ratio') == null ? fallback.pb_ratio : _get('pb_ratio');
   var mcap = _get('mcap') == null ? fallback.market_cap : _get('mcap');
-  var streak = stock.dividend_streak_years == null ? (metrics.dividend_streak_years || metrics.div_streak) : stock.dividend_streak_years;
-  var epsPos = stock.eps_positive_count == null ? metrics.eps_positive_count : stock.eps_positive_count;
-
-  function _item(label, actual, threshold, pass) {
-    var mark = pass ? '<div class="check-mark pass">✓</div>' : '<div class="check-mark fail">✗</div>';
-    return (
-      '<div class="checklist-item">' +
-        '<div class="check-label">' + label + '</div>' +
-        '<div class="check-actual">' + actual + '</div>' +
-        '<div class="check-threshold">' + threshold + '</div>' +
-        mark +
-      '</div>'
-    );
-  }
-
-  var yldOk = yld != null && yld >= 5;
-  var streakOk = streak != null && streak >= 5;
-  var epsOk = epsPos != null && epsPos >= 5;
-  var peOk = pe != null && pe <= 15;
-  var pbOk = pb != null && pb <= 1.5;
-  var mcapOk = mcap != null && mcap >= 5e9;
-
-  return (
-    '<div class="section-num"><span class="no">03 · The 5-5-5-5 Test</span><span>Hard Filters · Pass All or Fail</span></div>' +
-    '<div class="checklist" style="margin:var(--sp-5) 0">' +
-      _item('Dividend Yield', (yld == null ? '—' : window.MMUtils.fmtPercent(yld)), '≥ 5.00%', yldOk) +
-      _item('Dividend Streak', (streak == null ? '—' : (streak + ' yrs')), '≥ 5 yrs consecutive', streakOk) +
-      _item('EPS Positive · Last Five Years', (epsPos == null ? '—' : (epsPos + ' / 5')), 'No loss years', epsOk) +
-      _item('Price / Earnings', (pe == null ? '—' : (window.MMUtils.fmtNum(pe, 1) + '×')), '≤ 15× (bonus ≤ 8×)', peOk) +
-      _item('Price / Book', (pb == null ? '—' : (window.MMUtils.fmtNum(pb, 2) + '×')), '≤ 1.5× (bonus ≤ 1.0×)', pbOk) +
-      _item('Market Cap', (mcap == null ? '—' : window.MMUtils.fmtCompact(mcap) + ' THB'), '≥ 5B THB', mcapOk) +
-    '</div>'
-  );
-}
-
-function _renderReasonsGrid(stock) {
-  var esc = window.MMUtils.escapeHtml;
+  var streak = stock.dividend_streak_years || metrics.dividend_streak_years || metrics.div_streak;
+  var epsPos = stock.eps_positive_count != null ? stock.eps_positive_count : metrics.eps_positive_count;
   var reasons = stock.reasons_narrative || stock.reasons || [];
-  if (!reasons.length) {
-    return (
-      '<div class="section-num"><span class="no">04 · Reasons</span><span>Why This Passes</span></div>' +
-      '<p style="text-align:center;padding:var(--sp-5);font-family:var(--font-head);font-style:italic;color:var(--fg-dim)">— no reasons logged —</p>'
-    );
+  function _matchReasonFor(keys) {
+    for (var i = 0; i < reasons.length; i++) {
+      var r = typeof reasons[i] === 'string' ? reasons[i] : (reasons[i].text || '');
+      var low = r.toLowerCase();
+      for (var k = 0; k < keys.length; k++) { if (low.indexOf(keys[k]) !== -1) return r; }
+    }
+    return '';
   }
-  var items = reasons.map(function (r, i) {
-    var num = String(i + 1).padStart(2, '0');
-    // Reasons may be strings or {text} objects
-    var text = typeof r === 'string' ? r : (r.text || r.reason || JSON.stringify(r));
+  function _item(label, actual, threshold, pass, keys) {
+    var reason = _matchReasonFor(keys);
+    var markCls = pass ? 'pass' : 'fail';
+    var markIcon = pass ? '✓' : '✗';
     return (
-      '<div class="reason-item" style="break-inside:avoid;padding:var(--sp-3) 0;border-bottom:1px solid var(--border-subtle);display:flex;gap:var(--sp-3);align-items:baseline">' +
-        '<span class="reason-num" style="font-family:var(--font-mono);font-size:var(--fs-sm);color:var(--fg-mute);min-width:24px">' + num + '</span>' +
-        '<div class="reason-text" style="font-family:var(--font-body);font-size:var(--fs-sm);line-height:1.5">' + esc(text) + '</div>' +
+      '<div class="v6-checklist-item">' +
+        '<div class="v6-check-label">' + label + '</div>' +
+        '<div class="v6-check-actual">' + actual + '</div>' +
+        '<div class="v6-check-threshold">' + threshold + '</div>' +
+        '<div class="v6-check-mark ' + markCls + '">' + markIcon + '</div>' +
+        '<div class="v6-check-reason">' + window.MMUtils.escapeHtml(reason) + '</div>' +
       '</div>'
     );
-  }).join('');
+  }
   return (
-    '<div class="section-num"><span class="no">04 · Reasons</span><span>Why This Passes · ' + reasons.length + ' Points</span></div>' +
-    '<div class="reasons-grid" style="column-count:3;column-gap:var(--sp-5);margin:var(--sp-5) 0">' + items + '</div>'
+    '<div class="v6-section-head"><h2>5-5-5-5 Test</h2><small>Hard Filters · Pass All or Fail</small></div>' +
+    '<div class="v6-checklist">' +
+      _item('Dividend Yield', (yld == null ? '—' : window.MMUtils.fmtPercent(yld)), '≥ 5.00%', yld != null && yld >= 5, ['yield', 'ปันผล']) +
+      _item('Dividend Streak', (streak == null ? '—' : (streak + ' yrs')), '≥ 5 yrs', streak != null && streak >= 5, ['streak', 'ติดต่อกัน', 'จ่ายปันผล']) +
+      _item('EPS Positive (5y)', (epsPos == null ? '—' : (epsPos + ' / 5')), 'No loss years', epsPos != null && epsPos >= 5, ['eps', 'ขาดทุน']) +
+      _item('P/E', (pe == null ? '—' : (window.MMUtils.fmtNum(pe, 1) + '×')), '≤ 15×', pe != null && pe <= 15, ['p/e', 'pe', 'earnings']) +
+      _item('P/BV', (pb == null ? '—' : (window.MMUtils.fmtNum(pb, 2) + '×')), '≤ 1.5×', pb != null && pb <= 1.5, ['p/bv', 'pbv', 'book']) +
+      _item('Market Cap', (mcap == null ? '—' : window.MMUtils.fmtCompact(mcap) + ' THB'), '≥ 5B THB', mcap != null && mcap >= 5e9, ['mcap', 'market cap']) +
+    '</div>'
   );
 }
 
@@ -587,8 +561,7 @@ function _buildReportHtml(stock, patterns, history, exitStatus) {
   return (
     _renderArticleHead(stock, patterns) +
     _renderScoreBreakdown(stock) +
-    _renderChecklist(stock) +
-    _renderReasonsGrid(stock) +
+    _renderChecklistEnriched(stock) +
     _renderPatternSection(patterns) +
     _renderKeyNumbers(stock) +
     _renderDividendHistory(stock) +
