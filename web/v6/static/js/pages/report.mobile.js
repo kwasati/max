@@ -386,16 +386,19 @@ function _renderAnalyzeResult(data) {
 }
 
 function _buildMobileReportHtml(stock, patterns, history, exitStatus) {
+  var esc = window.MMUtils.escapeHtml;
+  var foot = '<div class="page-foot" style="padding:var(--sp-5) 0;margin-top:var(--sp-6);text-align:center;color:var(--fg-dim);font-size:var(--fs-xs);border-top:1px solid var(--border-subtle)">End · ' + esc(stock.symbol || '') + '</div>';
   return (
     _renderHero(stock, patterns) +
+    _renderDeepAnalyze() +
     _renderScore(stock) +
     _renderChecklistEnriched(stock) +
-    _renderPatternFootnote(patterns) +
     _renderKeyNumbers(stock) +
     _renderDividendHistory(stock) +
     _renderScoreHistory(history) +
     _renderExitBaseline(exitStatus) +
-    _renderDeepAnalyze()
+    _renderPatternFootnote(patterns) +
+    foot
   );
 }
 
