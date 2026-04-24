@@ -524,19 +524,15 @@ function _renderExitBaseline(exitStatus) {
 }
 
 function _renderDeepAnalyze() {
-  return (
-    '<div class="analyze-block" id="v6-deep-analyze" style="padding:24px 20px;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:18px;text-align:center;margin-top:var(--sp-7);max-width:640px;margin-left:auto;margin-right:auto">' +
-      _renderAnalyzeInitialInner() +
-    '</div>'
-  );
+  return '<section class="v6-deep-analyze" id="v6-deep-analyze">' + _renderAnalyzeInitialInner() + '</section>';
 }
 
 function _renderAnalyzeInitialInner() {
   return (
     '<h2 style="font-family:var(--font-head);font-weight:900;font-size:var(--fs-xl);line-height:1.15;margin:4px 0 8px">ขอวิเคราะห์เจาะลึก</h2>' +
-    '<p style="font-family:var(--font-head);font-style:italic;color:var(--fg-dim);max-width:50ch;margin:0 auto 16px;font-size:var(--fs-md)">ให้ Claude Opus วิเคราะห์ตามกรอบ ดร.นิเวศน์ 5 ด้าน + verdict สำหรับ DCA 10-20 ปี เน้นปันผลสะสม</p>' +
-    '<button class="btn primary" id="v6-deep-btn" style="padding:12px 24px;border-radius:999px;font-weight:700;min-height:48px">ขอวิเคราะห์เพิ่มเติม</button>' +
-    '<div style="margin-top:12px;font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-mute)">Cached 7 days · API MAX_ANTHROPIC_API_KEY</div>'
+    '<p style="color:var(--fg-dim);max-width:50ch;margin:0 auto 16px;font-size:var(--fs-md)">ให้ Claude Opus วิเคราะห์ตามกรอบ ดร.นิเวศน์ 5 ด้าน + verdict สำหรับ DCA 10-20 ปี เน้นปันผลสะสม</p>' +
+    '<div style="text-align:center"><button class="btn primary" id="v6-deep-btn" style="padding:12px 24px;border-radius:999px;font-weight:700;min-height:48px">ขอวิเคราะห์เพิ่มเติม</button></div>' +
+    '<div style="margin-top:12px;font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-mute);text-align:center">Cached 7 days · Claude Opus</div>'
   );
 }
 
@@ -554,7 +550,7 @@ function _renderAnalyzeErrorInner(msg) {
   var esc = window.MMUtils.escapeHtml;
   return (
     '<div style="padding:20px 0;text-align:center">' +
-      '<div style="font-family:var(--font-head);font-style:italic;color:var(--c-negative);margin-bottom:14px;font-size:var(--fs-md)">' + esc(msg || 'Timeout · server ไม่ตอบกลับ') + '</div>' +
+      '<div style="color:var(--c-negative);margin-bottom:14px;font-size:var(--fs-md)">' + esc(msg || 'Timeout · server ไม่ตอบกลับ') + '</div>' +
       '<button class="btn primary" id="v6-deep-btn" style="padding:12px 24px;border-radius:999px;font-weight:700;min-height:48px">ลองอีกครั้ง</button>' +
     '</div>'
   );
@@ -562,70 +558,51 @@ function _renderAnalyzeErrorInner(msg) {
 
 function _renderAnalyzeResult(data) {
   var esc = window.MMUtils.escapeHtml;
-  var analyzedAt = data.analyzed_at
-    ? (window.MMUtils.fmtDateThaiShort(data.analyzed_at) + ' · Claude Opus')
-    : 'Claude Opus';
+  var svg = window.MMUtils.svg;
+  var analyzedAt = data.analyzed_at ? (window.MMUtils.fmtDateThaiShort(data.analyzed_at) + ' · Claude Opus') : 'Claude Opus';
   var verdictRaw = String(data.verdict || '').trim();
-  var verdictClass = 'hold';
-  var badge = 'HOLD';
+  var verdictClass = 'hold', badge = 'HOLD';
   if (/^\s*BUY\b/i.test(verdictRaw)) { verdictClass = 'buy'; badge = 'BUY'; }
   else if (/^\s*SELL\b/i.test(verdictRaw)) { verdictClass = 'sell'; badge = 'SELL'; }
   var verdictWhy = verdictRaw.replace(/^(BUY|HOLD|SELL)\s*[:\-·—]?\s*/i, '');
-  var badgeBg = verdictClass === 'buy'
-    ? 'var(--c-positive)'
-    : (verdictClass === 'sell' ? 'var(--c-negative)' : 'var(--fg-dim)');
-  var verdictCardBg = verdictClass === 'buy'
-    ? 'var(--c-positive-soft)'
-    : (verdictClass === 'sell' ? 'var(--c-negative-soft)' : 'var(--bg-surface-2, #ebebe4)');
-  var verdictBorder = verdictClass === 'buy'
-    ? 'var(--c-positive-border)'
-    : (verdictClass === 'sell' ? 'var(--c-negative-border)' : 'var(--border-subtle)');
 
-  function _section(icon, title, text) {
+  function _sec(iconName, title, text) {
     if (!text) return '';
     return (
-      '<div class="sec" style="padding:14px 0;border-top:1px solid var(--border-subtle)">' +
-        '<h4 style="margin:0 0 6px;font-size:var(--fs-md);font-weight:800;color:var(--c-positive-strong);display:flex;align-items:center;gap:8px">' +
-          '<span style="width:24px;height:24px;border-radius:6px;background:var(--c-positive-soft);display:inline-grid;place-items:center;font-size:12px">' + icon + '</span>' +
-          title +
-        '</h4>' +
-        '<p style="margin:0;font-size:var(--fs-sm);color:var(--fg-secondary);line-height:1.65">' + esc(text) + '</p>' +
+      '<div class="v6-deep-section">' +
+        '<h4>' + svg(iconName) + title + '</h4>' +
+        '<p>' + esc(text) + '</p>' +
       '</div>'
     );
   }
 
   var toArtParas = String(data.to_art || '').split(/\n\n+/).filter(Boolean).map(function (p) {
-    return '<p style="margin:0 0 10px;font-size:var(--fs-sm);color:var(--fg-primary);line-height:1.65">' + esc(p) + '</p>';
+    return '<p>' + esc(p) + '</p>';
   }).join('');
-  var artTalk = data.to_art
-    ? (
-      '<div class="sec art-talk" style="background:var(--c-positive-tint);margin:18px -20px -4px;padding:18px 20px 20px;border-radius:0 0 18px 18px;border-top:1px solid var(--c-positive-border)">' +
-        '<h4 style="margin:0 0 8px;font-size:var(--fs-md);font-weight:800;color:var(--c-positive-strong);display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
-          '<span style="width:24px;height:24px;border-radius:6px;background:var(--c-positive);color:#fff;display:inline-grid;place-items:center;font-size:12px">💬</span>' +
-          'Max คุยกับอาร์ท' +
-          '<span style="font-size:var(--fs-xs);font-weight:700;padding:3px 10px;border-radius:999px;background:var(--bg-surface);color:var(--fg-secondary);border:1px solid var(--border-subtle);font-family:var(--font-mono);letter-spacing:0.05em;text-transform:none">เสาหลัก 1 · พอร์ตปันผล 100M</span>' +
-        '</h4>' +
-        toArtParas +
-      '</div>'
-    )
-    : '';
+  var talkPanel = data.to_art ? (
+    '<div class="v6-deep-talk-panel">' +
+      '<h4>' + svg('message-circle') + 'Max คุยกับอาร์ท' +
+        '<span class="pillar-badge">เสาหลัก 1 · พอร์ตปันผล 100M</span>' +
+      '</h4>' +
+      toArtParas +
+    '</div>'
+  ) : '';
 
   return (
-    '<div style="text-align:left">' +
-      '<div style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-dim);margin-bottom:16px;display:flex;justify-content:space-between">' +
-        '<span>' + esc(analyzedAt) + '</span>' +
-        '<span>Cache 7 วัน</span>' +
-      '</div>' +
-      '<div class="verdict ' + verdictClass + '" style="padding:14px 16px;border-radius:12px;background:' + verdictCardBg + ';border:1px solid ' + verdictBorder + ';margin-bottom:16px;display:flex;align-items:center;gap:12px">' +
-        '<span style="padding:6px 14px;border-radius:8px;font-weight:800;font-size:var(--fs-sm);letter-spacing:0.04em;background:' + badgeBg + ';color:#fff">' + badge + '</span>' +
-        '<span style="font-size:var(--fs-sm);color:var(--fg-primary);line-height:1.5;flex:1">' + esc(verdictWhy || verdictRaw) + '</span>' +
-      '</div>' +
-      _section('💵', 'Dividend Sustainability', data.dividend) +
-      _section('💎', 'Hidden Value Audit', data.hidden) +
-      _section('🏛️', 'Business Moat', data.moat) +
-      _section('⚖️', 'Valuation Discipline', data.valuation) +
-      artTalk +
-    '</div>'
+    '<div style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-dim);margin-bottom:var(--sp-4);display:flex;justify-content:space-between">' +
+      '<span>' + esc(analyzedAt) + '</span><span>Cache 7 วัน</span>' +
+    '</div>' +
+    '<div class="v6-deep-verdict-bar">' +
+      '<span class="v6-verdict-chip ' + verdictClass + '">' + badge + '</span>' +
+      '<span style="font-size:var(--fs-sm);color:var(--fg-primary);line-height:1.5;flex:1">' + esc(verdictWhy || verdictRaw) + '</span>' +
+    '</div>' +
+    '<div class="v6-deep-grid">' +
+      _sec('banknote', 'Dividend Sustainability', data.dividend) +
+      _sec('gem', 'Hidden Value Audit', data.hidden) +
+      _sec('landmark', 'Business Moat', data.moat) +
+      _sec('scale', 'Valuation Discipline', data.valuation) +
+    '</div>' +
+    talkPanel
   );
 }
 
