@@ -124,57 +124,6 @@ function _applyHeroVerdict(verdict) {
   if (el) el.innerHTML = _buildVerdictChip(verdict);
 }
 
-function _renderArticleHead(stock, patterns) {
-  var esc = window.MMUtils.escapeHtml;
-  var sym = esc(stock.symbol || '');
-  var name = esc(stock.name || '');
-  var sector = esc(stock.sector || '');
-  var signals = stock.signals || [];
-  var tags = '';
-  var caseTag = null;
-  if (signals.indexOf('NIWES_5555') !== -1) tags += '<span class="tag primary">Niwes 5-5-5-5</span>';
-  if (signals.indexOf('QUALITY_DIVIDEND') !== -1) tags += '<span class="tag">Quality Dividend</span>';
-  if (signals.indexOf('HIDDEN_VALUE') !== -1) tags += '<span class="tag">Hidden Value</span>';
-  if (signals.indexOf('DEEP_VALUE') !== -1) tags += '<span class="tag">Deep Value</span>';
-  if (patterns && (patterns.case_study_tags || []).length) {
-    caseTag = patterns.case_study_tags[0];
-    tags += '<span class="tag">' + esc(caseTag) + '</span>';
-  }
-  var subtitle = name;
-  if (sector) subtitle += ' · SET · ' + sector;
-
-  return (
-    '<section class="article-head" style="padding:var(--sp-6) 0 var(--sp-5);border-bottom:3px double var(--border-subtle);text-align:center">' +
-      '<div class="article-kicker" style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-dim);margin-bottom:var(--sp-3)">' +
-        'Full Report' + (caseTag ? ' · ' + esc(caseTag) : '') +
-      '</div>' +
-      '<h1 class="article-sym" style="font-family:var(--font-head);font-weight:900;font-size:var(--fs-3xl);letter-spacing:-0.02em;line-height:0.95;margin-bottom:var(--sp-2)">' + sym + '</h1>' +
-      '<div class="article-name" style="font-family:var(--font-head);font-style:italic;font-weight:400;font-size:var(--fs-md);color:var(--fg-secondary);margin-bottom:var(--sp-4)">' + subtitle + '</div>' +
-      '<div class="article-tags" style="display:flex;justify-content:center;gap:4px;flex-wrap:wrap">' + tags + '</div>' +
-    '</section>' +
-    _renderPriceHero(stock)
-  );
-}
-
-function _renderPriceHero(stock) {
-  var esc = window.MMUtils.escapeHtml;
-  var metrics = stock.screener_metrics || stock.metrics || {};
-  var price = metrics.current_price != null ? metrics.current_price : stock.price;
-  if (price == null) return '';
-  var asOf = stock.price_as_of ? window.MMUtils.fmtDateThaiShort(stock.price_as_of) : null;
-  var priceStr = '฿' + window.MMUtils.fmtNum(price, 2);
-  var asOfLine = asOf ? 'ราคาวันที่ ' + asOf : '';
-  return (
-    '<section class="report-hero" style="background:linear-gradient(135deg,var(--bg-elevated-start),var(--bg-elevated-end));border:1px solid var(--bg-elevated-border);border-radius:24px;padding:22px;margin:14px 0;box-shadow:var(--shadow-card)">' +
-      '<div class="report-hero-price" style="display:flex;align-items:baseline;gap:10px">' +
-        '<span style="font-family:var(--font-mono);font-size:36px;font-weight:900;color:var(--fg-primary);letter-spacing:-0.02em">' + priceStr + '</span>' +
-        '<span style="color:var(--fg-dim);font-size:13px">THB</span>' +
-      '</div>' +
-      (asOfLine ? '<div class="report-hero-asof" style="font-family:var(--font-mono);font-size:11px;color:var(--fg-dim);margin-top:4px;letter-spacing:0.08em;text-transform:uppercase">' + esc(asOfLine) + '</div>' : '') +
-    '</section>'
-  );
-}
-
 function _renderScoreBreakdown(stock) {
   var esc = window.MMUtils.escapeHtml;
   var score = stock.quality_score != null ? stock.quality_score : (stock.score || 0);
@@ -193,14 +142,14 @@ function _renderScoreBreakdown(stock) {
   }
 
   return (
-    '<div class="section-num"><span class="no">02 · Score Breakdown</span><span>Of One Hundred · Per Niwes Dividend-First Schema</span></div>' +
-    '<section class="score-block" style="display:grid;grid-template-columns:1fr 1.4fr;gap:var(--sp-6);padding:var(--sp-6) 0;align-items:center">' +
-      '<div class="score-display" style="text-align:center">' +
-        '<div class="huge" style="font-family:var(--font-mono);font-weight:300;font-size:11rem;line-height:0.8;letter-spacing:-0.05em;color:var(--fg-primary)">' + Math.round(score) + '</div>' +
-        '<div class="slash" style="font-family:var(--font-head);font-style:italic;color:var(--fg-dim);font-size:var(--fs-lg);margin-top:var(--sp-3)">of one hundred</div>' +
-        '<div class="scoring-version" style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-mute);margin-top:var(--sp-4)">niwes-dividend-first · v2</div>' +
+    '<div class="v6-section-head"><h2>Score Breakdown</h2><small>Of One Hundred · Per Niwes Dividend-First Schema</small></div>' +
+    '<section class="v6-score-block">' +
+      '<div class="v6-score-display">' +
+        '<div class="v6-score-huge">' + Math.round(score) + '</div>' +
+        '<div class="v6-score-slash">of one hundred</div>' +
+        '<div class="v6-score-version">niwes-dividend-first · v2</div>' +
       '</div>' +
-      '<div><div class="score-chart-wrap" style="position:relative;height:320px"><canvas id="v6-score-chart"></canvas></div></div>' +
+      '<div><div class="v6-chart-box" style="position:relative;height:320px"><canvas id="v6-score-chart"></canvas></div></div>' +
     '</section>' +
     '<table class="data-table" style="margin-top:var(--sp-4)">' +
       '<thead><tr><th style="width:40%">Component</th><th class="num">Max</th><th class="num">Scored</th><th>Driver</th></tr></thead>' +
@@ -209,7 +158,7 @@ function _renderScoreBreakdown(stock) {
         _cell('Valuation', 25, _val(val), 'P/E · P/BV · EV/EBITDA') +
         _cell('Cash Flow Strength', 15, _val(cf), 'FCF · OCF/NI · Int Coverage') +
         _cell('Hidden Value', 10, _val(hv), breakdown.hidden_value_note || '') +
-        '<tr><td class="sym italic">Modifier</td><td class="num">—</td><td class="num pos">' + (mod > 0 ? '+' + mod : mod) + '</td><td class="dim">Valuation grade / signals</td></tr>' +
+        '<tr><td class="sym">Modifier</td><td class="num">—</td><td class="num pos">' + (mod > 0 ? '+' + mod : mod) + '</td><td class="dim">Valuation grade / signals</td></tr>' +
         '<tr style="border-top:2px solid var(--border-subtle)"><td class="sym">Total</td><td class="num">100</td><td class="num" style="font-size:1.2em">' + Math.round(score) + '</td><td></td></tr>' +
       '</tbody>' +
     '</table>'
@@ -276,8 +225,8 @@ function _renderKeyNumbers(stock) {
   var rows = stock.five_year_history || [];
   if (!rows.length) {
     return (
-      '<div class="section-num"><span class="no">06 · Key Numbers</span><span>Five-Year Financial History</span></div>' +
-      '<p style="text-align:center;padding:var(--sp-4);font-family:var(--font-head);font-style:italic;color:var(--fg-dim)">— no five-year history —</p>'
+      '<div class="v6-section-head"><h2>Key Numbers</h2><small>Five-Year Financial History</small></div>' +
+      '<p class="v6-empty-state">— no five-year history —</p>'
     );
   }
   // Sort ascending for display
@@ -295,7 +244,7 @@ function _renderKeyNumbers(stock) {
     return '<tr><td class="sym">' + label + '</td>' + cells + '</tr>';
   }
   return (
-    '<div class="section-num"><span class="no">06 · Key Numbers</span><span>Five-Year Financial History</span></div>' +
+    '<div class="v6-section-head"><h2>Key Numbers</h2><small>Five-Year Financial History</small></div>' +
     '<table class="data-table">' +
       '<thead><tr><th>Metric</th>' + years + '</tr></thead>' +
       '<tbody>' +
@@ -316,8 +265,8 @@ function _renderDividendHistory(stock) {
   var rows = stock.dividend_history_10y || [];
   if (!rows.length) {
     return (
-      '<div class="section-num"><span class="no">07 · Dividend History</span><span>Ten Years of Distributions</span></div>' +
-      '<p style="text-align:center;padding:var(--sp-4);font-family:var(--font-head);font-style:italic;color:var(--fg-dim)">— no dividend history —</p>'
+      '<div class="v6-section-head"><h2>Dividend History</h2><small>Ten Years of Distributions</small></div>' +
+      '<p class="v6-empty-state">— no dividend history —</p>'
     );
   }
   var asc = rows.slice().sort(function (a, b) { return (a.year || 0) - (b.year || 0); });
@@ -327,11 +276,11 @@ function _renderDividendHistory(stock) {
   }).join('');
 
   return (
-    '<div class="section-num"><span class="no">07 · Dividend History</span><span>Ten Years of Distributions</span></div>' +
-    '<div class="chart-pair" style="display:grid;grid-template-columns:1.6fr 1fr;gap:var(--sp-6);margin:var(--sp-5) 0;align-items:flex-start">' +
+    '<div class="v6-section-head"><h2>Dividend History</h2><small>Ten Years of Distributions</small></div>' +
+    '<div class="v6-chart-pair">' +
       '<div>' +
-        '<div class="chart-box" style="height:260px"><canvas id="v6-dps-chart"></canvas></div>' +
-        '<div class="chart-caption" style="font-family:var(--font-head);font-style:italic;font-size:var(--fs-sm);color:var(--fg-dim);text-align:center;margin-top:var(--sp-3)">DPS per year · last 10 years</div>' +
+        '<div class="v6-chart-box" style="height:260px"><canvas id="v6-dps-chart"></canvas></div>' +
+        '<div class="v6-chart-caption">DPS per year · last 10 years</div>' +
       '</div>' +
       '<div>' +
         '<table class="data-table">' +
@@ -347,15 +296,15 @@ function _renderScoreHistory(history) {
   var timeline = (history && history.timeline) || [];
   if (!timeline.length) {
     return (
-      '<div class="section-num"><span class="no">08 · Score History</span><span>No history</span></div>' +
-      '<p style="text-align:center;padding:var(--sp-4);font-family:var(--font-head);font-style:italic;color:var(--fg-dim)">— first scan, no prior history —</p>'
+      '<div class="v6-section-head"><h2>Score History</h2><small>No history</small></div>' +
+      '<p class="v6-empty-state">— first scan, no prior history —</p>'
     );
   }
   var passedOnly = timeline.filter(function (t) { return t.score != null; });
   if (!passedOnly.length) {
     return (
-      '<div class="section-num"><span class="no">08 · Score History</span><span>No pass history</span></div>' +
-      '<p style="text-align:center;padding:var(--sp-4);font-family:var(--font-head);font-style:italic;color:var(--fg-dim)">— not yet passed in any scan —</p>'
+      '<div class="v6-section-head"><h2>Score History</h2><small>No pass history</small></div>' +
+      '<p class="v6-empty-state">— not yet passed in any scan —</p>'
     );
   }
   var rows = '';
@@ -374,11 +323,11 @@ function _renderScoreHistory(history) {
     rows += '<tr><td class="mono">' + window.MMUtils.escapeHtml(dateShort) + '</td><td class="num">' + t.score + '</td><td class="dim">' + window.MMUtils.escapeHtml(signals) + '</td><td class="' + deltaCls + '">' + delta + '</td></tr>';
   }
   return (
-    '<div class="section-num"><span class="no">08 · Score History</span><span>' + passedOnly.length + ' scans</span></div>' +
-    '<div class="chart-pair" style="display:grid;grid-template-columns:1.6fr 1fr;gap:var(--sp-6);margin:var(--sp-5) 0;align-items:flex-start">' +
+    '<div class="v6-section-head"><h2>Score History</h2><small>' + passedOnly.length + ' scans</small></div>' +
+    '<div class="v6-chart-pair">' +
       '<div>' +
-        '<div class="chart-box" style="height:260px"><canvas id="v6-scorehist-chart"></canvas></div>' +
-        '<div class="chart-caption" style="font-family:var(--font-head);font-style:italic;font-size:var(--fs-sm);color:var(--fg-dim);text-align:center;margin-top:var(--sp-3)">Score trajectory since first appearance</div>' +
+        '<div class="v6-chart-box" style="height:260px"><canvas id="v6-scorehist-chart"></canvas></div>' +
+        '<div class="v6-chart-caption">Score trajectory since first appearance</div>' +
       '</div>' +
       '<div>' +
         '<table class="data-table">' +
@@ -393,8 +342,8 @@ function _renderScoreHistory(history) {
 function _renderExitBaseline(exitStatus) {
   if (!exitStatus || !exitStatus.in_watchlist) {
     return (
-      '<div class="section-num"><span class="no">09 · Exit Baseline</span><span>Not in Watchlist</span></div>' +
-      '<p style="text-align:center;padding:var(--sp-5);font-family:var(--font-head);font-style:italic;color:var(--fg-dim)">หุ้นนี้ยังไม่ได้เข้า watchlist — ไม่มี baseline ให้ monitor.</p>'
+      '<div class="v6-section-head"><h2>Exit Baseline</h2><small>Not in Watchlist</small></div>' +
+      '<p class="v6-empty-state">หุ้นนี้ยังไม่ได้เข้า watchlist — ไม่มี baseline ให้ monitor.</p>'
     );
   }
   var esc = window.MMUtils.escapeHtml;
@@ -416,10 +365,10 @@ function _renderExitBaseline(exitStatus) {
 
   function _cell(lbl, v, sub) {
     return (
-      '<div class="exit-cell">' +
+      '<div class="v6-exit-cell">' +
         '<span class="lbl" style="font-family:var(--font-mono);font-size:0.65rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-dim)">' + lbl + '</span>' +
         '<span class="v" style="font-family:var(--font-mono);font-size:var(--fs-lg);font-weight:500;display:block;margin-top:4px">' + v + '</span>' +
-        (sub ? '<span class="sub" style="font-family:var(--font-head);font-style:italic;font-size:var(--fs-xs);color:var(--fg-dim);display:block;margin-top:2px">' + esc(sub) + '</span>' : '') +
+        (sub ? '<span class="sub" style="font-size:var(--fs-xs);color:var(--fg-dim);display:block;margin-top:2px">' + esc(sub) + '</span>' : '') +
       '</div>'
     );
   }
@@ -432,11 +381,11 @@ function _renderExitBaseline(exitStatus) {
   var weeks = ctx.weeks_held == null ? '' : (ctx.weeks_held + ' weeks ago');
 
   return (
-    '<div class="section-num"><span class="no">09 · Exit Baseline</span><span>Watchlist Position · Monitoring Active</span></div>' +
-    '<div class="exit-panel" style="border:3px double var(--c-positive);padding:var(--sp-5);margin:var(--sp-5) 0">' +
+    '<div class="v6-section-head"><h2>Exit Baseline</h2><small>Watchlist Position · Monitoring Active</small></div>' +
+    '<div class="v6-exit-panel">' +
       '<div class="head" style="font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:0.18em;text-transform:uppercase;color:var(--c-positive);margin-bottom:var(--sp-3)">Current Assessment · ' + sevBadge + '</div>' +
-      '<p class="body" style="font-style:italic;color:var(--fg-secondary);margin-bottom:var(--sp-4)">' + esc(exitStatus.narrative || '') + '</p>' +
-      '<div class="exit-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-5);padding:var(--sp-4) 0;border-top:1px solid var(--border-subtle);border-bottom:1px solid var(--border-subtle);margin:var(--sp-4) 0">' +
+      '<p class="body" style="color:var(--fg-secondary);margin-bottom:var(--sp-4)">' + esc(exitStatus.narrative || '') + '</p>' +
+      '<div class="v6-exit-grid">' +
         _cell('Entry Date', entryDate, weeks) +
         _cell('Entry P/E', entryPE, '') +
         _cell('Entry Yield', entryYld, '') +
@@ -535,12 +484,12 @@ function _renderAnalyzeResult(data) {
 function _buildReportHtml(stock, patterns, history, exitStatus) {
   var esc = window.MMUtils.escapeHtml;
   var foot =
-    '<div class="page-foot" style="padding:var(--sp-6) 0;border-top:3px double var(--border-subtle);margin-top:var(--sp-7);text-align:center;font-family:var(--font-head);font-style:italic;color:var(--fg-dim);font-size:var(--fs-sm)">' +
-      'End of Report · ' + esc(stock.symbol || '') + ' · Max Mahon — The Dividend Review' +
+    '<div class="page-foot" style="padding:var(--sp-5) 0;margin-top:var(--sp-6);text-align:center;color:var(--fg-dim);font-size:var(--fs-sm);border-top:1px solid var(--border-subtle)">' +
+      'End of Report · ' + esc(stock.symbol || '') +
     '</div>';
 
   return (
-    _renderArticleHead(stock, patterns) +
+    _renderHero(stock, patterns) +
     _renderScoreBreakdown(stock) +
     _renderChecklistEnriched(stock) +
     _renderPatternFootnote(patterns) +
