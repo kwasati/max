@@ -35,6 +35,7 @@
     var items = [
       ['latest-scan', '/',          'LATEST SCAN'],
       ['watchlist',   '/watchlist', 'WATCHLIST'],
+      ['portfolio',   '/portfolio', 'จัดพอร์ต'],
       ['settings',    '/settings',  'SETTINGS']
     ];
     var nav = '';
@@ -69,6 +70,7 @@
     var items = [
       ['home',      '/m',                   '⌂', 'Home'],
       ['saved',     '/m/watchlist',         '⌕', 'WATCHLIST'],
+      ['portfolio', '/m/portfolio',         '◇', 'จัดพอร์ต'],
       ['settings',  '/m/settings',          '⚙', 'Settings']
     ];
     var html = '<nav class="bottom-nav" role="navigation">';
