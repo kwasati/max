@@ -53,7 +53,7 @@
     var tabKey = routeFromPath();
     var mappedActive = ({
       home: 'home', watchlist: 'saved', saved: 'saved',
-      portfolio: 'portfolio', 'portfolio-builder': 'builder', builder: 'builder', settings: 'settings'
+      settings: 'settings'
     })[tabKey] || 'home';
     host.innerHTML = MMComponents.renderMobileNav(mappedActive);
   }
