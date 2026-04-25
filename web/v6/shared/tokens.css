@@ -63,6 +63,14 @@
   --c-purple-soft: #ebe7f4;
   --c-purple-fg:   #6a5c9e;
 
+  /* Role badges (Portfolio Builder anchor/supporting/tail) */
+  --role-anchor-bg:  linear-gradient(135deg, #7ba688, #5d8c69);
+  --role-anchor-fg:  #ffffff;
+  --role-support-bg: linear-gradient(135deg, #e7eaf0, #c9cfdb);
+  --role-support-fg: #4a5264;
+  --role-tail-bg:    #ebebe4;
+  --role-tail-fg:    #878d9a;
+
   /* Rank medals */
   --rank-gold-start:   #f2e5ba;
   --rank-gold-end:     #d9c08a;
@@ -190,6 +198,14 @@
     --c-info-fg:         #a8c2d9;
     --c-purple-soft:     rgba(157,144,199,.14);
     --c-purple-fg:       #c1b6e0;
+
+    /* Role badges — dark mode overrides */
+    --role-anchor-bg:  linear-gradient(135deg, #7ba688, #5d8c69);
+    --role-anchor-fg:  #ffffff;
+    --role-support-bg: linear-gradient(135deg, #363c4a, #474e5f);
+    --role-support-fg: #c9cfdb;
+    --role-tail-bg:    #2f343d;
+    --role-tail-fg:    #838896;
 
     /* Rank medals — inverse */
     --rank-gold-start:   #4d421e;
