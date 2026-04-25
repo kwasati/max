@@ -146,7 +146,7 @@ function _renderTable(tbody) {
     html +=
       '<tr data-sym="' + sym + '">' +
         '<td><span class="star filled" data-mm-star="' + sym + '" role="button" aria-label="Remove ' + sym + ' from watchlist">★</span></td>' +
-        '<td><span class="sym">' + sym + '</span> <span class="dim italic">· ' + name + '</span></td>' +
+        '<td><a href="/report/' + sym + '" class="sym-link" style="color:inherit;text-decoration:none"><span class="sym">' + sym + '</span> <span class="dim italic">· ' + name + '</span></a></td>' +
         '<td class="num">' + score + '</td>' +
         '<td class="num">' + delta + '</td>' +
         '<td class="mono">' + esc(entry) + '</td>' +

@@ -114,8 +114,10 @@ function _renderList(host) {
       '<div class="wl-card" data-sym="' + sym + '">' +
         '<div class="star" data-mm-star="' + sym + '" role="button" aria-label="Remove ' + sym + '">★</div>' +
         '<div class="wl-body">' +
-          '<div class="sym">' + sym + '</div>' +
-          '<div class="name">' + name + '</div>' +
+          '<a href="/m/report/' + sym + '" class="sym-link" style="display:block;color:inherit;text-decoration:none">' +
+            '<div class="sym">' + sym + '</div>' +
+            '<div class="name">' + name + '</div>' +
+          '</a>' +
           '<div class="delta-row">' +
             '<span>Entry ' + esc(entry) + '</span>' +
             '<span>·</span>' +
