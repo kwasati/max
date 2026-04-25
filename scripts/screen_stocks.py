@@ -4,6 +4,8 @@ import json
 import logging
 import re
 import sys
+import time as _time_module
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -684,6 +686,25 @@ def main():
     # v6 Phase 6 — load prior screener files for score streak computation
     prior_screener_files = load_prior_screener_files()
 
+    # ===== Phase A — parallel fetch =====
+    fetch_targets = [s for s in symbols if s not in blacklisted]
+    fetched_data: dict[str, dict] = {}
+    fetch_start = _time_module.time()
+    print(f"\n=== Phase A: parallel fetch ({len(fetch_targets)} stocks, 5 workers) ===")
+    with ThreadPoolExecutor(max_workers=5) as ex:
+        futures = {ex.submit(fetch_multi_year_safe, sym): sym for sym in fetch_targets}
+        for n, future in enumerate(as_completed(futures), 1):
+            sym = futures[future]
+            try:
+                fetched_data[sym] = future.result()
+            except Exception as e:
+                fetched_data[sym] = {"symbol": sym, "delisted": True, "error": str(e)}
+            print(f"  [fetched {n}/{len(fetch_targets)}] {sym}")
+    fetch_elapsed = _time_module.time() - fetch_start
+    avg = fetch_elapsed / max(len(fetch_targets), 1)
+    print(f"\n=== Fetch phase done in {fetch_elapsed:.1f}s ({avg:.2f}s/stock avg) ===\n")
+
+    # ===== Phase B — serial post-process =====
     candidates = []
     review_candidates: list[dict] = []
     filtered_stocks = []
@@ -696,7 +717,7 @@ def main():
             continue
 
         try:
-            data = fetch_multi_year_safe(sym)
+            data = fetched_data.get(sym)
 
             if data is None:
                 print(f"  [{i+1}/{len(symbols)}] {sym} — skipped: no data")
