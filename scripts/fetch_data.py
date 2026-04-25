@@ -8,7 +8,7 @@ No fallback: if thaifin fails the stock is treated as delisted/missing.
 import json
 import logging
 import sys
-import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 
@@ -293,25 +293,29 @@ def main():
     user_data = json.loads(USER_DATA.read_text(encoding="utf-8"))
     symbols = user_data.get("watchlist", [])
 
-    print(f"Max Mahon v4 fetching {len(symbols)} stocks (multi-year)...")
-    results = []
-    for i, sym in enumerate(symbols):
-        try:
-            print(f"  [{i+1}/{len(symbols)}] {sym}", end=" ")
-            data = fetch_multi_year_safe(sym)
+    print(f"Max Mahon v4 fetching {len(symbols)} stocks (multi-year, parallel)...")
 
-            if data.get("delisted"):
-                logger.info(f"skip delisted {sym}: {data.get('error', 'unknown')}")
-                print(f"DELISTED/ERROR: {data.get('error', 'unknown')}")
-                results.append(data)
+    results: list[dict] = []
+    with ThreadPoolExecutor(max_workers=5) as ex:
+        futures = {ex.submit(fetch_multi_year_safe, sym): sym for sym in symbols}
+        for n, future in enumerate(as_completed(futures), 1):
+            sym = futures[future]
+            try:
+                data = future.result()
+            except Exception as e:
+                print(f"  [{n}/{len(symbols)}] {sym} ERROR: {e}")
+                results.append({"symbol": sym, "error": str(e)})
                 continue
-
+            # Ensure symbol field is set (defensive — for deterministic sort below)
+            if not data.get("symbol"):
+                data["symbol"] = sym
             results.append(data)
-
-            if "error" in data:
-                print(f"ERROR: {data['error']}")
+            if data.get("delisted"):
+                print(f"  [{n}/{len(symbols)}] {sym} DELISTED/ERROR: {data.get('error', 'unknown')}")
                 continue
-
+            if "error" in data:
+                print(f"  [{n}/{len(symbols)}] {sym} ERROR: {data['error']}")
+                continue
             price = data.get("price") or "N/A"
             dy = data.get("dividend_yield")
             dy_str = f"{dy:.1f}%" if dy else "N/A"
@@ -319,12 +323,11 @@ def main():
             streak = data["aggregates"]["dividend_streak"]
             warns = len(data.get("warnings", []))
             warn_str = f" ⚠{warns}" if warns > 0 else ""
-            print(f"฿{price} yield={dy_str} | {years}yr data | div streak={streak}yr{warn_str}")
-        except Exception as e:
-            print(f"ERROR: {e}")
-            results.append({"symbol": sym, "error": str(e)})
+            print(f"  [{n}/{len(symbols)}] {sym} ฿{price} yield={dy_str} | {years}yr | streak={streak}yr{warn_str}")
 
-        time.sleep(0.3)
+    # Sort results to match original symbol order (deterministic output)
+    sym_order = {s: i for i, s in enumerate(symbols)}
+    results.sort(key=lambda d: sym_order.get(d.get("symbol"), 999999))
 
     today = datetime.now().strftime("%Y-%m-%d")
     DATA_DIR.mkdir(parents=True, exist_ok=True)
