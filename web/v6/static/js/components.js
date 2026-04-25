@@ -59,17 +59,15 @@
   }
 
   /**
-   * Mobile sticky bottom nav — 5 touch targets with monochrome icon glyphs
+   * Mobile sticky bottom nav — 3 touch targets with monochrome icon glyphs
    * + label (Robinhood-style). Active tab uses --c-positive.
-   * @param {string} active — one of: home, saved, portfolio, builder, settings
+   * @param {string} active — one of: home, saved, settings
    * @returns {string} HTML for <nav class="bottom-nav">
    */
   function renderMobileNav(active) {
     var items = [
       ['home',      '/m',                   '⌂', 'Home'],
       ['saved',     '/m/watchlist',         '⌕', 'Screen'],
-      ['portfolio', '/m/portfolio',         '◈', 'Portfolio'],
-      ['builder',   '/m/portfolio-builder', '◎', 'จัดพอร์ต'],
       ['settings',  '/m/settings',          '⚙', 'Settings']
     ];
     var html = '<nav class="bottom-nav" role="navigation">';
