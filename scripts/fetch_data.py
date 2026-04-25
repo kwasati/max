@@ -264,27 +264,27 @@ def fetch_multi_year(symbol: str) -> dict:
     return {"symbol": symbol, "delisted": True, "error": "thaifin fetch returned no data"}
 
 
-def fetch_multi_year_safe(symbol: str) -> dict:
-    """Wrap fetch_multi_year with try/except for delisted/invalid symbols.
+def fetch_multi_year_safe(symbol: str, use_cache: bool = True) -> dict:
+    """Wrap fetch_multi_year with try/except + day-scoped cache.
 
-    Returns {'symbol', 'delisted': True, 'error': str} on failure.
-    Also converts error-dict results (e.g. "near-empty info") into delisted
-    shape so callers have a single check.
-    Callers must check .get('delisted') before processing.
+    Returns cached data if same-day cache hit (instant). Otherwise fetches
+    + caches successful results. Failures (delisted, no price) NOT cached.
     """
+    if use_cache:
+        cached = _load_from_cache(symbol)
+        if cached is not None:
+            return cached
     try:
         result = fetch_multi_year(symbol)
     except Exception as e:
         logger.warning(f"fetch failed for {symbol}: {e}")
         return {"symbol": symbol, "delisted": True, "error": str(e)}
-
-    # Adapter returns error-dict instead of raising when data is unavailable
-    # (e.g. symbol not found, near-empty info). Normalize to delisted shape.
     if isinstance(result, dict) and "error" in result and not result.get("price"):
         err = result.get("error", "unknown")
         logger.warning(f"fetch returned error for {symbol}: {err}")
         return {"symbol": symbol, "delisted": True, "error": str(err)}
-
+    if use_cache:
+        _save_to_cache(symbol, result)
     return result
 
 
