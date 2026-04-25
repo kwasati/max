@@ -56,19 +56,21 @@
 - **Startup:** `max-server.bat` หรือ `py -m uvicorn server.app:app --port 50089`
 - **Auth:** `MAX_TOKEN` ใน `.env` (Bearer token สำหรับ API)
 - **Frontend:** `web/v6/` → served at `/` (desktop) + `/m` (mobile) — client-side device-detect redirect
-- **Public API:** `/api/screener`, `/api/screener/trend`, `/api/stock/{sym}/*`, `/api/watchlist`, `/api/watchlist/enriched`, `/api/watchlist/compare`, `/api/portfolio/pnl`, `/api/portfolio/simulated`, `/api/portfolio/transactions`, `/api/portfolio/builder` (POST, Niwes 5-sector 80/20 builder), `/api/simulate/dca`, `/api/simulate/dca-portfolio`, `/api/simulate/portfolio-backtest`, `/api/settings`, `/api/user`, `/api/status`, `/api/history/v2`, `/api/search` (POST)
+- **Public API:** `/api/screener`, `/api/screener/trend`, `/api/stock/{sym}/*`, `/api/watchlist`, `/api/watchlist/enriched`, `/api/watchlist/compare`, `/api/portfolio/builder` (GET, watchlist input → 5-sector × 80/20 + role tags anchor/supporting/tail), `/api/portfolio/builder/explain` (POST, Claude Opus pillar-1 commentary), `/api/settings`, `/api/user`, `/api/status`, `/api/history/v2`, `/api/search` (POST)
+- **HTML routes (frontend shells):** `/`, `/watchlist`, `/portfolio`, `/settings`, `/report/{sym}` (desktop) + `/m`, `/m/watchlist`, `/m/portfolio`, `/m/settings`, `/m/report/{sym}` (mobile)
 - **Admin API:** `/api/admin/*` — scan trigger, **price-refresh/trigger**, SSE events, pipeline control, reports listing (same `MAX_TOKEN` auth)
 
 ### Frontend Layout (v6)
-- `web/v6/desktop/{index,portfolio,watchlist}.html` — shells (portfolio + watchlist preload Chart.js)
-- `web/v6/mobile/{index,portfolio,watchlist}.html` — mobile shells
+- `web/v6/desktop/index.html` + `mobile/index.html` — shared shells; all routes serve same shell, page module loads by pathname
 - `web/v6/shared/{tokens,base,mobile}.css` — design tokens + global styles (served at `/static/v6/shared/`)
-- `web/v6/static/css/components.css` — page-level component extensions
+- `web/v6/static/css/components.css` — page-level component extensions (incl. PORTFOLIO BUILDER section + role badge classes)
 - `web/v6/static/js/{api,components,device,utils}.js` — shared client libs
-- `web/v6/static/js/pages/{home,report,watchlist,portfolio,simulator,settings}.js` — desktop page modules
-- `web/v6/static/js/pages/{home,report,watchlist,portfolio,simulator,settings}.mobile.js` — mobile page modules
+- `web/v6/static/js/pages/{home,report,watchlist,portfolio,settings}.js` — desktop page modules
+- `web/v6/static/js/pages/{home,report,watchlist,portfolio,settings}.mobile.js` — mobile page modules
+- Nav: 4-tab (LATEST SCAN / WATCHLIST / จัดพอร์ต / SETTINGS) — `components.js` renders both desktop top nav + mobile bottom nav
 - Shell imports page module dynamically by pathname (`pages/{route}.js` or `pages/{route}.mobile.js`)
 - Device detect: touch UA → `/m`, desktop UA → `/` (one-time redirect on load, no infinite loop)
+- `mockup/` — approved design mockups (e.g. `portfolio-from-watchlist-{desktop,mobile}.html`) — source of truth for component HTML
 
 ## Key Files
 - `user_data.json` — user preferences (watchlist, blacklist, notes, lists, transactions, simulated_portfolio)
@@ -81,7 +83,7 @@
 - `scripts/scan.py` — unified scan (screener + top picks) สร้าง scan_*.md report
 - `scripts/report_template.py` — markdown generator (deterministic, no LLM)
 - `scripts/telegram_alert.py` — exit signal alert
-- `scripts/portfolio_builder.py` — Niwes portfolio construction (niwes_composite + sector grouper + 80/20 allocator + override resolver)
+- `scripts/portfolio_builder.py` — Niwes portfolio construction pure functions: input watchlist + screener → output 5-sector × 80/20 portfolio (Banking/Energy/Property/REIT-PFund/Other canonical buckets) + role tags (anchor/supporting/tail) + bench list + sector warnings. Used by `/api/portfolio/builder`. Standalone smoke test in `__main__`.
 - `scripts/daily_price_refresh.py` — daily 19:00 price refresh for watchlist + PASS (yahooquery batch → `data/price_cache/{sym}.json`)
 - `server/app.py` — FastAPI server (public API, pipeline, scheduler, SSE)
 - `server/admin.py` — admin namespace router (legacy/debug endpoints)

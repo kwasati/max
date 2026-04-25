@@ -1,5 +1,39 @@
 # Max Mahon Changelog
 
+## v6.3.0 — 2026-04-25 · Portfolio Builder จาก Watchlist (Niwes role-based)
+
+**Feature ใหม่ทั้งฟีเจอร์ — เอาหุ้นใน watchlist มาจัดพอร์ตแบบนิเวศน์ ตอบโจทย์ "หุ้นในมือกลายเป็นพอร์ตได้ยังไง"** ของเก่า portfolio builder ที่ archive ไปวันก่อน (capital-based, ขอเงินก้อน) ถูกแทนด้วยแนวคิดใหม่: ไม่ต้องใส่เงิน ใช้หุ้นใน watchlist เป็น input แสดงเป็น % พร้อมระบุบทบาทของแต่ละตัว (anchor/supporting/tail) + เหตุผลภาษาคน
+
+### New — หน้าจัดพอร์ต `/portfolio` + `/m/portfolio`
+- **Input:** หุ้นทุกตัวที่อยู่ใน watchlist (auto-load) — ไม่ต้องกรอกเงิน
+- **Output:** พอร์ต 5 ตัว 5 sector (Banking / Energy / Property / REIT-PFund / Other) ตามแนวนิเวศน์ 80/20 concentration (40/35/12/8/5)
+- **Role badges สี:** Anchor (sage strong) สำหรับ rank 1-2 / Supporting (silver) rank 3 / Tail (stone) rank 4-5 — ดู 3 วิรู้ตัวไหนสำคัญ
+- **Reason ต่อหุ้น:** อธิบายเป็นภาษาคนว่าทำไมตัวนี้ถึงเป็น anchor/supporting/tail (signals + yield + PE/PBV)
+- **Pin override:** ปักหมุดหุ้นที่อยากบังคับใส่พอร์ต — ชนะ score แม้ตัวอื่นใน sector เดียวกันจะ score สูงกว่า
+- **Bench list:** หุ้นใน watchlist ที่ไม่ติดพอร์ต พร้อมเหตุผลที่ไม่เลือก (sector ซ้ำ / score รอง)
+- **Sector warning:** แจ้งเมื่อ watchlist ขาด sector หลัก (เช่น Banking ว่าง → แนะนำ BBL/SCB/KBANK)
+- **Claude Opus pillar-1 commentary:** ปุ่มเดียวให้แมกซ์อธิบายภาพรวมพอร์ต — เชื่อมกับเสาหลัก 1 (พอร์ตปันผล 100M) + scenario ตัวเลขจริง + step ถัดไป (cached 7 วัน)
+
+### Changed — Watchlist row คลิกได้
+- กดที่ symbol+name ใน watchlist → ไปหน้า full report ของหุ้นนั้นเลย (ทั้ง desktop + mobile) — ก่อนหน้านี้ต้องไป search หาหรือคลิกผ่านที่อื่น
+
+### Changed — Nav 3-tab → 4-tab
+- เพิ่มเมนู "จัดพอร์ต" ระหว่าง WATCHLIST กับ SETTINGS ทั้ง desktop top nav + mobile bottom nav
+- Mobile bottom-nav: 3-col grid → 4-col + mappedActive map รับ key portfolio (fix active state)
+
+### Architecture
+- `scripts/portfolio_builder.py` (ใหม่) — pure functions ไม่มี I/O: sector canonical mapper (5 buckets) + Niwes composite score + role tagger + bench builder + sector warnings + orchestrator
+- `server/app.py` — เพิ่ม `GET /api/portfolio/builder` (build) + `POST /api/portfolio/builder/explain` (Opus 4-7 + cache 7d) + `GET /portfolio` + `GET /m/portfolio` (HTML routes reuse existing shell)
+- `web/v6/static/js/pages/portfolio.{js,mobile.js}` (ใหม่) — page modules ตาม approved mockups
+- `web/v6/shared/tokens.css` — เพิ่ม role badge tokens (anchor/supporting/tail × bg/fg) ทั้ง light + dark
+- `web/v6/static/css/components.css` — เพิ่ม PORTFOLIO BUILDER section + mobile overrides
+
+### Notes — ของเก่าที่ลบไปแล้ว
+- `/api/portfolio/{pnl,simulated,transactions}` + `/api/simulate/*` (capital-based portfolio + DCA simulator) — archived 2026-04-25 ก่อนหน้า feature นี้ (ดู `_archive/portfolio-simulator-builder-2026-04-25/`)
+- เมนูเก่า "Portfolio" + "Simulator" ใน nav 5-tab → ทิ้ง รวมเหลือ 4-tab
+
+---
+
 ## v6.2.0 — 2026-04-23 · Portfolio Builder + UI Modernize (Robinhood Sage) + Stock Detail Polish
 
 **Mega-release วันเดียวจบ ~55 tasks** — feature ใหม่ 'จัดพอร์ตสไตล์แมกซ์' + retire vintage newspaper UI แทนด้วย Robinhood muted sage palette + Claude Opus prompt rewrite + daily price refresh scheduler + UI polish (Δ score + inline analysis + price as-of)
