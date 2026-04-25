@@ -174,11 +174,12 @@ function _renderSummary(host, s) {
 
 function _sectorColor(sectorClass) {
   const map = {
-    's-prop': 'var(--c-positive)',
-    's-bank': 'var(--c-info)',
-    's-comm': 'var(--c-warn)',
-    's-ict':  'var(--c-purple)',
-    's-nrg':  'var(--c-negative)'
+    's-prop':   'var(--c-positive)',
+    's-bank':   'var(--c-info)',
+    's-comm':   'var(--c-warn)',
+    's-purple': 'var(--c-purple)',
+    's-ict':    'var(--c-purple)',
+    's-nrg':    'var(--c-negative)'
   };
   return map[sectorClass] || 'var(--c-warn)';
 }
