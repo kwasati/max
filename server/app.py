@@ -775,7 +775,7 @@ def _execute_sync(scripts: list[str], label: str = "pipeline"):
                 encoding="utf-8",
                 cwd=str(PROJECT_DIR),
                 env=env,
-                timeout=1800,
+                timeout=3600,
             )
             if result.returncode != 0:
                 err_msg = result.stderr[:500] if result.stderr else ""
