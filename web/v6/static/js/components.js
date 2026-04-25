@@ -15,7 +15,7 @@
    * @returns {string} HTML string for <header class="app-header">…</header>
    */
   function renderMasthead(ctx) {
-    var active = (ctx && ctx.active) || 'watchlist';
+    var active = (ctx && ctx.active) || 'latest-scan';
     return renderMastNav(active);
   }
 
@@ -29,12 +29,13 @@
   function renderMastNav(activeOrCtx) {
     var active = typeof activeOrCtx === 'string'
       ? activeOrCtx
-      : ((activeOrCtx && activeOrCtx.active) || 'watchlist');
-    // Legacy callers pass 'home'/'report' — treat both as 'watchlist' (default landing)
-    if (active === 'home' || active === 'report') active = 'watchlist';
+      : ((activeOrCtx && activeOrCtx.active) || 'latest-scan');
+    // Legacy callers pass 'home'/'report' — treat both as 'latest-scan' (default landing)
+    if (active === 'home' || active === 'report') active = 'latest-scan';
     var items = [
-      ['watchlist',         '/',                  'WATCHLIST'],
-      ['settings',          '/settings',          'SETTINGS']
+      ['latest-scan', '/',          'LATEST SCAN'],
+      ['watchlist',   '/watchlist', 'WATCHLIST'],
+      ['settings',    '/settings',  'SETTINGS']
     ];
     var nav = '';
     for (var i = 0; i < items.length; i++) {
@@ -67,7 +68,7 @@
   function renderMobileNav(active) {
     var items = [
       ['home',      '/m',                   '⌂', 'Home'],
-      ['saved',     '/m/watchlist',         '⌕', 'Screen'],
+      ['saved',     '/m/watchlist',         '⌕', 'WATCHLIST'],
       ['settings',  '/m/settings',          '⚙', 'Settings']
     ];
     var html = '<nav class="bottom-nav" role="navigation">';

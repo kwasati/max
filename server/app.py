@@ -342,6 +342,8 @@ async def get_stock(symbol: str):
     # reasons_narrative: current 'reasons' is already a list[str]; keep shape, alias for frontend clarity
     stock_data["reasons_narrative"] = stock_data.get("reasons") or []
 
+    stock_data['user_in_watchlist'] = symbol in (load_user_data().get('watchlist') or [])
+
     return stock_data
 
 
