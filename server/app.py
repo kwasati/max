@@ -5,6 +5,7 @@ Run: py -m uvicorn server.app:app --port 50089
 """
 
 import asyncio
+import hashlib
 import json
 import logging
 import os
@@ -52,6 +53,8 @@ WEB_DIR = PROJECT_DIR / "web"
 _ANALYSIS_CACHE_DIR = PROJECT_DIR / "data" / "analysis_cache"
 _ANALYSIS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 _CACHE_TTL_DAYS = 7  # plan 05 Phase 3 — Claude cache TTL
+_PORTFOLIO_OPUS_CACHE_DIR = DATA_DIR / "portfolio_opus_cache"
+_PORTFOLIO_OPUS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 # ---------------------------------------------------------------------------
 # Env / Auth
@@ -2594,6 +2597,147 @@ async def watchlist_compare(symbols: str):
     return {"symbols": sym_list, "rows": rows}
 
 
+# ============================================================================
+# Plan portfolio-from-watchlist Phase 2 — Builder + Explain + HTML routes
+# ============================================================================
+
+@app.get("/api/portfolio/builder")
+async def get_portfolio_builder(pins: str = ""):
+    """Build Niwes 5-sector 80/20 portfolio from user watchlist + latest screener.
+
+    `pins` = optional comma-separated symbols to force-include (override resolver).
+    Returns: {summary, portfolio, bench, warnings, source}.
+    """
+    # CRITICAL: lazy import (scripts/ is not a Python package + needs sys.path injection)
+    _project_root = str(PROJECT_DIR)
+    if _project_root not in sys.path:
+        sys.path.insert(0, _project_root)
+    from scripts import portfolio_builder as pb_mod
+
+    user_data = load_user_data()
+    watchlist = user_data.get("watchlist") or []
+    try:
+        screener = _latest_screener_file()
+    except HTTPException:
+        screener = {"candidates": [], "review_candidates": [], "filtered_out_stocks": []}
+    pin_list = [p.strip().upper() for p in pins.split(",") if p.strip()]
+    result = pb_mod.build_portfolio(watchlist, screener, pins=pin_list)
+
+    # source block — find latest screener file mtime for freshness display
+    files = sorted(DATA_DIR.glob("screener_*.json"), reverse=True)
+    if files:
+        m_ts = files[0].stat().st_mtime
+        scan_at = datetime.fromtimestamp(m_ts).isoformat(timespec="seconds")
+        hours_ago = int((datetime.now() - datetime.fromtimestamp(m_ts)).total_seconds() / 3600)
+    else:
+        scan_at, hours_ago = None, None
+    result["source"] = {
+        "watchlist_count": len(watchlist),
+        "scan_at": scan_at,
+        "scan_hours_ago": hours_ago,
+    }
+    return result
+
+
+def _build_portfolio_explain_prompt(portfolio: list) -> str:
+    """Build Niwes pillar-1 100M context prompt — 3-paragraph commentary."""
+    total_yield = 0
+    yield_count = 0
+    for p in portfolio:
+        y = p.get("dividend_yield")
+        if y is not None:
+            total_yield += y
+            yield_count += 1
+    avg_yield = round(total_yield / max(yield_count, 1), 2)
+
+    pos_lines = []
+    for p in portfolio:
+        pos_lines.append(
+            f"- {p.get('symbol', '?')} ({p.get('sector_canonical', '?')}) "
+            f"weight {p.get('weight_pct', 0)}% · score {p.get('score', '?')} · "
+            f"role {p.get('role', '?')} · yield {p.get('dividend_yield', '?')}%"
+        )
+    portfolio_text = "\n".join(pos_lines)
+
+    return f"""คุณคือ "แมกซ์" — เพื่อนสนิทของอาร์ทที่เข้าใจปรัชญา ดร.นิเวศน์ เหมวชิรวรากร และเสาหลัก 1 ของอาร์ท: พอร์ตหุ้นปันผลไทย mục tiêu 100 ล้านบาท ลงทุน DCA 10-20 ปี
+
+อาร์ทเพิ่งจัดพอร์ตจาก watchlist ตามแนวนิเวศน์:
+{portfolio_text}
+- avg yield: {avg_yield}%
+
+เขียนคุยกับอาร์ทเป็น 3 ย่อหน้า ภาษาคน (ใช้ มึง/กู), ห้ามพ่นชื่อฟังก์ชัน/ตัวแปร, ตรงประเด็น:
+
+ย่อหน้า 1 (Scenario ตัวเลขจริง): ถ้าใส่เงิน 5 ล้านในพอร์ตนี้ที่ avg yield {avg_yield}% — ปันผลปีแรกได้เท่าไหร่ · compound 10 ปีคิด yield-on-cost (สมมติ DPS growth 5%/ปี) จะอยู่ที่กี่ % · เมื่อโต 20 เท่าตามเป้า 100M ปันผลรวมต่อปีเท่าไหร่ — ใช้ตัวเลขจริงไม่ใช่ generic.
+
+ย่อหน้า 2 (ตำแหน่งใน Pillar 1): พอร์ตนี้กระจาย sector แค่ไหน · 80/20 concentration ตามนิเวศน์เป็นยังไง · จุดอ่อนคืออะไร (sector ขาด, score ต่ำ, exposure overlap) · เปรียบเทียบกับนิเวศน์ pattern: top 5 = 70-80% concentration.
+
+ย่อหน้า 3 (Step ถัดไป): อาร์ทควรทำอะไรต่อ — เพิ่ม sector ที่ขาดไหม / DCA แบบไหน / เกณฑ์ exit เมื่อไหร่ · จบแบบ takeaway ที่จับต้องได้.
+
+ห้ามขึ้นต้น "I'd be happy" / "ครับ" / "ได้เลย". เริ่มย่อหน้าแรกด้วย scenario ตัวเลขเลย."""
+
+
+@app.post("/api/portfolio/builder/explain")
+async def explain_portfolio(payload: dict):
+    """Claude Opus on-demand commentary on a built portfolio. Cached 7d by hash."""
+    if _anthropic_client is None:
+        raise HTTPException(503, "MAX_ANTHROPIC_API_KEY missing")
+    watchlist = payload.get("watchlist", [])
+    pins = payload.get("pins", [])
+    portfolio = payload.get("portfolio", [])
+
+    h = hashlib.sha256(
+        ("|".join(sorted(watchlist)) + "|" + "|".join(sorted(pins))).encode()
+    ).hexdigest()[:16]
+    cache_file = _PORTFOLIO_OPUS_CACHE_DIR / f"{h}.json"
+
+    if cache_file.exists():
+        try:
+            cached = json.loads(cache_file.read_text(encoding="utf-8"))
+            age = datetime.now() - datetime.fromisoformat(cached.get("analyzed_at", ""))
+            if age < timedelta(days=_CACHE_TTL_DAYS):
+                return cached
+        except Exception:
+            pass
+
+    prompt = _build_portfolio_explain_prompt(portfolio)
+    loop = asyncio.get_event_loop()
+    response = await loop.run_in_executor(
+        None,
+        lambda: _anthropic_client.messages.create(
+            model="claude-opus-4-7",
+            max_tokens=4000,
+            messages=[{"role": "user", "content": prompt}],
+            timeout=90.0,
+        ),
+    )
+
+    # MANDATORY stop_reason check (Karl rule: Thai output truncate risk)
+    if response.stop_reason != "end_turn":
+        logging.warning(
+            "explain_portfolio: stop_reason=%s (not end_turn) — Thai may be truncated",
+            response.stop_reason,
+        )
+
+    payload_out = {
+        "analyzed_at": datetime.now().isoformat(timespec="seconds"),
+        "model": "claude-opus-4-7",
+        "commentary": response.content[0].text.strip(),
+    }
+    cache_file.write_text(
+        json.dumps(payload_out, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    return payload_out
+
+
+@app.get("/portfolio", response_class=HTMLResponse)
+async def serve_portfolio_desktop():
+    return _render_shell(_V6_DESKTOP)
+
+
+@app.get("/m/portfolio", response_class=HTMLResponse)
+async def serve_portfolio_mobile():
+    return _render_shell(_V6_MOBILE)
 
 
 # ---------------------------------------------------------------------------
