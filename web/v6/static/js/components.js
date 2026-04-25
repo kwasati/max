@@ -68,7 +68,7 @@
   function renderMobileNav(active) {
     var items = [
       ['home',      '/m',                   '⌂', 'Home'],
-      ['saved',     '/m/watchlist',         '⌕', 'Screen'],
+      ['saved',     '/m/watchlist',         '⌕', 'WATCHLIST'],
       ['settings',  '/m/settings',          '⚙', 'Settings']
     ];
     var html = '<nav class="bottom-nav" role="navigation">';
