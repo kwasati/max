@@ -154,6 +154,36 @@ function _renderShell(data) {
 
   var sectionNum = '<div class="section-title" style="margin:var(--sp-6) 0 var(--sp-4);font-weight:700;font-size:var(--fs-lg);color:var(--fg-primary)">Settings</div>';
 
+  var opsSection =
+    '<section class="v6-ops-panel">' +
+      '<div class="v6-ops-head">' +
+        '<h2>Operations</h2>' +
+        '<small>Server status &amp; manual actions</small>' +
+      '</div>' +
+      '<div class="v6-ops-grid">' +
+        '<div class="v6-ops-cell">' +
+          '<span class="lbl">Server Uptime</span>' +
+          '<span class="val" id="v6-ops-uptime">—</span>' +
+        '</div>' +
+        '<div class="v6-ops-cell">' +
+          '<span class="lbl">Last Data Date</span>' +
+          '<span class="val" id="v6-ops-last-data">—</span>' +
+        '</div>' +
+        '<div class="v6-ops-cell">' +
+          '<span class="lbl">Last Scan</span>' +
+          '<span class="val" id="v6-ops-last-scan">—</span>' +
+        '</div>' +
+        '<div class="v6-ops-cell">' +
+          '<span class="lbl">Pipeline State</span>' +
+          '<span class="v6-ops-status-badge idle" id="v6-ops-pipeline-state">idle</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="v6-ops-actions">' +
+        '<button class="btn primary v6-ops-action-btn" id="v6-ops-scan-btn" type="button">รันสแกนตอนนี้</button>' +
+        '<button class="btn primary v6-ops-action-btn" id="v6-ops-refresh-btn" type="button">รีเฟรชราคาตอนนี้</button>' +
+      '</div>' +
+    '</section>';
+
   var dayChips = '';
   for (var i = 0; i < DAYS.length; i++) {
     var d = DAYS[i];
@@ -178,6 +208,7 @@ function _renderShell(data) {
     : 'All changes captured &middot; next scan uses these values.';
 
   return (
+    opsSection +
     sectionNum +
     '<h2 class="section-title">House Rules.</h2>' +
     '<p style="color:var(--fg-dim);font-size:var(--fs-sm);margin-bottom:var(--sp-4)">ตั้งค่าการ scan + เกณฑ์กรองของ ดร.นิเวศน์. บันทึกเมื่อกด Save ด้านล่าง.</p>' +
