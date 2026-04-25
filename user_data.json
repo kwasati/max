@@ -16,11 +16,5 @@
     "TISCO.BK": "ธนาคารเล็ก ปันผลสูงสุดในกลุ่ม ROE ดี"
   },
   "custom_lists": {},
-  "updated_at": "2026-04-23T16:29:15.996530",
-  "transactions": [],
-  "cash_reserve": 0,
-  "simulated_portfolio": {
-    "positions": [],
-    "cash_reserve_pct": 0.0
-  }
+  "updated_at": "2026-04-23T16:29:15.996530"
 }

@@ -1421,12 +1421,6 @@ def load_user_data() -> dict:
     data.setdefault("blacklist", [])
     data.setdefault("notes", {})
     data.setdefault("custom_lists", {})
-    data.setdefault("transactions", [])
-    data.setdefault("cash_reserve", 0)
-    data.setdefault(
-        "simulated_portfolio",
-        {"positions": [], "cash_reserve_pct": 0.0, "updated_at": None},
-    )
     data.setdefault("updated_at", None)
     return data
 

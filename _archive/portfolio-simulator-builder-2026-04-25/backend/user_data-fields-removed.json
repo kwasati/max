@@ -1,0 +1,10 @@
+{
+  "_note": "Backed up from user_data.json before removing 3 fields (Phase 4.3). Restore with git revert if needed.",
+  "_backup_date": "2026-04-25",
+  "transactions": [],
+  "cash_reserve": 0,
+  "simulated_portfolio": {
+    "positions": [],
+    "cash_reserve_pct": 0.0
+  }
+}
