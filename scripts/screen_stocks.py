@@ -700,6 +700,13 @@ def main():
             except Exception as e:
                 fetched_data[sym] = {"symbol": sym, "delisted": True, "error": str(e)}
             print(f"  [fetched {n}/{len(fetch_targets)}] {sym}")
+            if n % 50 == 0:
+                elapsed = _time_module.time() - fetch_start
+                avg = elapsed / n
+                remaining = len(fetch_targets) - n
+                eta = avg * remaining
+                pct = n / len(fetch_targets) * 100
+                print(f"  === Progress: {n}/{len(fetch_targets)} ({pct:.1f}%) elapsed={elapsed:.0f}s avg={avg:.2f}s/stock ETA={eta:.0f}s ===")
     fetch_elapsed = _time_module.time() - fetch_start
     avg = fetch_elapsed / max(len(fetch_targets), 1)
     print(f"\n=== Fetch phase done in {fetch_elapsed:.1f}s ({avg:.2f}s/stock avg) ===\n")
