@@ -19,7 +19,8 @@ var DAYS = [
 var _state = {
   dirty: false,
   initial: null,
-  mounted: false
+  mounted: false,
+  opsPollHandle: null
 };
 
 export async function mount(container) {
@@ -49,6 +50,7 @@ export async function mount(container) {
   _wireSave(container, data);
   _wireDiscard(container, data);
   _wireDirtyTracking(container);
+  _wireOperations(container);
 
   if (!_state.mounted) {
     _state.mounted = true;
@@ -407,6 +409,98 @@ function _wireDiscard(root, originalData) {
 function _wireDirtyTracking(root) {
   // Generic input listener covers manual typing; specific wires above already flag dirty.
   root.addEventListener('change', function () { _markDirty(root); });
+}
+
+// ----------------------------------------------------------
+// Operations panel — server status + manual triggers
+// ----------------------------------------------------------
+function _wireOperations(container) {
+  if (!container) return;
+  var scanBtn = container.querySelector('#v6-ops-scan-btn');
+  var refreshBtn = container.querySelector('#v6-ops-refresh-btn');
+  if (scanBtn) {
+    scanBtn.addEventListener('click', function () {
+      if (!window.confirm('รันสแกน 933 หุ้นเลยไหม? ใช้เวลา 10-15 นาที')) return;
+      window.MMApi.post('/api/admin/scan/trigger', {}).then(function () {
+        _showOpsToast(container, 'สแกนเริ่มแล้ว');
+        _refreshStatus(container);
+      }).catch(function (e) {
+        _showOpsToast(container, 'ผิดพลาด: ' + (e.message || 'request failed'), true);
+      });
+    });
+  }
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', function () {
+      window.MMApi.post('/api/admin/price-refresh/trigger', {}).then(function () {
+        _showOpsToast(container, 'รีเฟรชราคาแล้ว');
+        _refreshStatus(container);
+      }).catch(function (e) {
+        _showOpsToast(container, 'ผิดพลาด: ' + (e.message || 'request failed'), true);
+      });
+    });
+  }
+  _refreshStatus(container);
+  if (_state.opsPollHandle) clearInterval(_state.opsPollHandle);
+  _state.opsPollHandle = setInterval(function () { _refreshStatus(container); }, 5000);
+}
+
+function _refreshStatus(container) {
+  if (!container || !document.body.contains(container)) {
+    if (_state.opsPollHandle) { clearInterval(_state.opsPollHandle); _state.opsPollHandle = null; }
+    return;
+  }
+  window.MMApi.get('/api/status').then(function (s) {
+    var uptime = container.querySelector('#v6-ops-uptime');
+    var lastData = container.querySelector('#v6-ops-last-data');
+    var lastScan = container.querySelector('#v6-ops-last-scan');
+    var pipeState = container.querySelector('#v6-ops-pipeline-state');
+    var scanBtn = container.querySelector('#v6-ops-scan-btn');
+    var refreshBtn = container.querySelector('#v6-ops-refresh-btn');
+    if (uptime) uptime.textContent = _fmtUptime(s.uptime_seconds);
+    if (lastData) lastData.textContent = s.last_data_date ? window.MMUtils.fmtDateThaiShort(s.last_data_date) : '—';
+    if (lastScan) lastScan.textContent = s.last_run ? _fmtRelative(s.last_run) : 'ยังไม่เคยสแกน';
+    if (pipeState) {
+      if (s.pipeline_running) {
+        pipeState.textContent = (s.current_task || 'running');
+        pipeState.className = 'v6-ops-status-badge running';
+      } else {
+        pipeState.textContent = 'idle';
+        pipeState.className = 'v6-ops-status-badge idle';
+      }
+    }
+    if (scanBtn) scanBtn.disabled = !!s.pipeline_running;
+    if (refreshBtn) refreshBtn.disabled = !!s.pipeline_running;
+  }).catch(function () { /* silent — keep last good values */ });
+}
+
+function _fmtUptime(seconds) {
+  if (seconds == null) return '—';
+  var hours = Math.floor(seconds / 3600);
+  var mins = Math.floor((seconds % 3600) / 60);
+  if (hours > 0) return hours + ' ชม ' + mins + ' นาที';
+  return mins + ' นาที';
+}
+
+function _fmtRelative(iso) {
+  try {
+    var t = new Date(iso).getTime();
+    var diff = (Date.now() - t) / 1000;
+    if (diff < 60) return 'เพิ่งเสร็จ';
+    if (diff < 3600) return Math.floor(diff / 60) + ' นาทีที่แล้ว';
+    if (diff < 86400) return Math.floor(diff / 3600) + ' ชม.ที่แล้ว';
+    return window.MMUtils.fmtDateThaiShort(iso);
+  } catch (e) { return iso; }
+}
+
+function _showOpsToast(container, msg, isError) {
+  var existing = container.querySelector('.v6-ops-toast');
+  if (existing) existing.remove();
+  var t = document.createElement('div');
+  t.className = 'v6-ops-toast' + (isError ? ' err' : '');
+  t.textContent = msg;
+  var panel = container.querySelector('.v6-ops-panel');
+  if (panel) panel.appendChild(t);
+  setTimeout(function () { if (t.parentNode) t.remove(); }, 3500);
 }
 
 // ----------------------------------------------------------
