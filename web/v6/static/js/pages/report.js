@@ -38,6 +38,7 @@ export async function mount(container) {
     container.innerHTML = _buildReportHtml(stock, patterns, history, exitStatus);
     _mountCharts(stock, history);
     _wireDeepAnalyze(stock.symbol || sym);
+    _wireHeroStar(stock.symbol || sym);
   });
 }
 
@@ -105,6 +106,7 @@ function _renderHero(stock, patterns) {
           '<span id="v6-hero-score" style="font-family:var(--font-mono);font-size:var(--fs-md);font-weight:700;color:var(--fg-primary)">' + Math.round(score) + '/100</span>' +
         '</div>' +
         '<div id="v6-hero-verdict">' + verdictHtml + '</div>' +
+        '<span class="v6-star" id="v6-hero-star" data-sym="' + sym + '" data-watched="' + (stock.user_in_watchlist ? 'true' : 'false') + '" title="Toggle watchlist">★</span>' +
       '</div>' +
     '</section>'
   );
@@ -122,6 +124,20 @@ function _buildVerdictChip(verdictRaw) {
 function _applyHeroVerdict(verdict) {
   var el = document.getElementById('v6-hero-verdict');
   if (el) el.innerHTML = _buildVerdictChip(verdict);
+}
+
+function _wireHeroStar(sym) {
+  var el = document.getElementById('v6-hero-star');
+  if (!el) return;
+  el.addEventListener('click', function () {
+    var watched = el.getAttribute('data-watched') === 'true';
+    var body = watched ? { remove: [sym] } : { add: [sym] };
+    window.MMApi.put('/api/user/watchlist', body).then(function () {
+      el.setAttribute('data-watched', String(!watched));
+    }).catch(function (err) {
+      console.error('watchlist toggle failed', err);
+    });
+  });
 }
 
 function _renderScoreBreakdown(stock) {
