@@ -196,6 +196,41 @@ def _build_aggregates(yearly_metrics, dps_by_year):
 
 
 
+CACHE_ROOT = Path(__file__).parent.parent / 'data' / 'screener_cache'
+
+
+def _cache_dir_today() -> Path:
+    today = datetime.now().strftime('%Y-%m-%d')
+    return CACHE_ROOT / today
+
+
+def _load_from_cache(symbol: str) -> dict | None:
+    p = _cache_dir_today() / f'{symbol}.json'
+    if not p.exists():
+        return None
+    try:
+        data = json.loads(p.read_text(encoding='utf-8'))
+        # Sanity check: fetched_at must be from today (cache file might be stale on day rollover)
+        fa = data.get('fetched_at', '')
+        if fa.startswith(datetime.now().strftime('%Y-%m-%d')):
+            return data
+    except Exception:
+        pass
+    return None
+
+
+def _save_to_cache(symbol: str, data: dict) -> None:
+    if not data or data.get('delisted') or not data.get('price'):
+        return  # don't cache failures
+    cache_dir = _cache_dir_today()
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    p = cache_dir / f'{symbol}.json'
+    try:
+        p.write_text(json.dumps(data, ensure_ascii=False, default=str), encoding='utf-8')
+    except Exception as e:
+        logger.warning(f'cache save failed for {symbol}: {e}')
+
+
 def fetch_multi_year(symbol: str) -> dict:
     """Fetch multi-year fundamentals. thaifin primary, yahooquery supplement, no fallback."""
     # Try thaifin + yahooquery supplement via adapter
