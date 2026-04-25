@@ -34,9 +34,6 @@
     if (active === 'home' || active === 'report') active = 'watchlist';
     var items = [
       ['watchlist',         '/',                  'WATCHLIST'],
-      ['portfolio',         '/portfolio',         'PORTFOLIO'],
-      ['portfolio-builder', '/portfolio-builder', 'จัดพอร์ต'],
-      ['simulator',         '/simulator',         'SIMULATOR'],
       ['settings',          '/settings',          'SETTINGS']
     ];
     var nav = '';
