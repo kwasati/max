@@ -8,7 +8,7 @@ No fallback: if thaifin fails the stock is treated as delisted/missing.
 import json
 import logging
 import sys
-import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 
@@ -196,6 +196,41 @@ def _build_aggregates(yearly_metrics, dps_by_year):
 
 
 
+CACHE_ROOT = Path(__file__).parent.parent / 'data' / 'screener_cache'
+
+
+def _cache_dir_today() -> Path:
+    today = datetime.now().strftime('%Y-%m-%d')
+    return CACHE_ROOT / today
+
+
+def _load_from_cache(symbol: str) -> dict | None:
+    p = _cache_dir_today() / f'{symbol}.json'
+    if not p.exists():
+        return None
+    try:
+        data = json.loads(p.read_text(encoding='utf-8'))
+        # Sanity check: fetched_at must be from today (cache file might be stale on day rollover)
+        fa = data.get('fetched_at', '')
+        if fa.startswith(datetime.now().strftime('%Y-%m-%d')):
+            return data
+    except Exception:
+        pass
+    return None
+
+
+def _save_to_cache(symbol: str, data: dict) -> None:
+    if not data or data.get('delisted') or not data.get('price'):
+        return  # don't cache failures
+    cache_dir = _cache_dir_today()
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    p = cache_dir / f'{symbol}.json'
+    try:
+        p.write_text(json.dumps(data, ensure_ascii=False, default=str), encoding='utf-8')
+    except Exception as e:
+        logger.warning(f'cache save failed for {symbol}: {e}')
+
+
 def fetch_multi_year(symbol: str) -> dict:
     """Fetch multi-year fundamentals. thaifin primary, yahooquery supplement, no fallback."""
     # Try thaifin + yahooquery supplement via adapter
@@ -229,27 +264,27 @@ def fetch_multi_year(symbol: str) -> dict:
     return {"symbol": symbol, "delisted": True, "error": "thaifin fetch returned no data"}
 
 
-def fetch_multi_year_safe(symbol: str) -> dict:
-    """Wrap fetch_multi_year with try/except for delisted/invalid symbols.
+def fetch_multi_year_safe(symbol: str, use_cache: bool = True) -> dict:
+    """Wrap fetch_multi_year with try/except + day-scoped cache.
 
-    Returns {'symbol', 'delisted': True, 'error': str} on failure.
-    Also converts error-dict results (e.g. "near-empty info") into delisted
-    shape so callers have a single check.
-    Callers must check .get('delisted') before processing.
+    Returns cached data if same-day cache hit (instant). Otherwise fetches
+    + caches successful results. Failures (delisted, no price) NOT cached.
     """
+    if use_cache:
+        cached = _load_from_cache(symbol)
+        if cached is not None:
+            return cached
     try:
         result = fetch_multi_year(symbol)
     except Exception as e:
         logger.warning(f"fetch failed for {symbol}: {e}")
         return {"symbol": symbol, "delisted": True, "error": str(e)}
-
-    # Adapter returns error-dict instead of raising when data is unavailable
-    # (e.g. symbol not found, near-empty info). Normalize to delisted shape.
     if isinstance(result, dict) and "error" in result and not result.get("price"):
         err = result.get("error", "unknown")
         logger.warning(f"fetch returned error for {symbol}: {err}")
         return {"symbol": symbol, "delisted": True, "error": str(err)}
-
+    if use_cache:
+        _save_to_cache(symbol, result)
     return result
 
 
@@ -258,25 +293,29 @@ def main():
     user_data = json.loads(USER_DATA.read_text(encoding="utf-8"))
     symbols = user_data.get("watchlist", [])
 
-    print(f"Max Mahon v4 fetching {len(symbols)} stocks (multi-year)...")
-    results = []
-    for i, sym in enumerate(symbols):
-        try:
-            print(f"  [{i+1}/{len(symbols)}] {sym}", end=" ")
-            data = fetch_multi_year_safe(sym)
+    print(f"Max Mahon v4 fetching {len(symbols)} stocks (multi-year, parallel)...")
 
-            if data.get("delisted"):
-                logger.info(f"skip delisted {sym}: {data.get('error', 'unknown')}")
-                print(f"DELISTED/ERROR: {data.get('error', 'unknown')}")
-                results.append(data)
+    results: list[dict] = []
+    with ThreadPoolExecutor(max_workers=5) as ex:
+        futures = {ex.submit(fetch_multi_year_safe, sym): sym for sym in symbols}
+        for n, future in enumerate(as_completed(futures), 1):
+            sym = futures[future]
+            try:
+                data = future.result()
+            except Exception as e:
+                print(f"  [{n}/{len(symbols)}] {sym} ERROR: {e}")
+                results.append({"symbol": sym, "error": str(e)})
                 continue
-
+            # Ensure symbol field is set (defensive — for deterministic sort below)
+            if not data.get("symbol"):
+                data["symbol"] = sym
             results.append(data)
-
-            if "error" in data:
-                print(f"ERROR: {data['error']}")
+            if data.get("delisted"):
+                print(f"  [{n}/{len(symbols)}] {sym} DELISTED/ERROR: {data.get('error', 'unknown')}")
                 continue
-
+            if "error" in data:
+                print(f"  [{n}/{len(symbols)}] {sym} ERROR: {data['error']}")
+                continue
             price = data.get("price") or "N/A"
             dy = data.get("dividend_yield")
             dy_str = f"{dy:.1f}%" if dy else "N/A"
@@ -284,12 +323,11 @@ def main():
             streak = data["aggregates"]["dividend_streak"]
             warns = len(data.get("warnings", []))
             warn_str = f" ⚠{warns}" if warns > 0 else ""
-            print(f"฿{price} yield={dy_str} | {years}yr data | div streak={streak}yr{warn_str}")
-        except Exception as e:
-            print(f"ERROR: {e}")
-            results.append({"symbol": sym, "error": str(e)})
+            print(f"  [{n}/{len(symbols)}] {sym} ฿{price} yield={dy_str} | {years}yr | streak={streak}yr{warn_str}")
 
-        time.sleep(0.3)
+    # Sort results to match original symbol order (deterministic output)
+    sym_order = {s: i for i, s in enumerate(symbols)}
+    results.sort(key=lambda d: sym_order.get(d.get("symbol"), 999999))
 
     today = datetime.now().strftime("%Y-%m-%d")
     DATA_DIR.mkdir(parents=True, exist_ok=True)
