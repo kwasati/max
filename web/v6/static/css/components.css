@@ -549,3 +549,44 @@
   .v6-checklist-item { grid-template-columns: 1fr auto auto auto; grid-template-rows: auto auto; }
   .v6-check-reason { grid-column: 1 / -1; grid-row: 2; margin-top: 4px; }
 }
+
+/* ========== Star button (watchlist toggle) ========== */
+.v6-star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--fg-mute);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 120ms ease;
+  user-select: none;
+}
+.v6-star:hover {
+  background: var(--bg-surface-2);
+  border-color: var(--border-subtle);
+}
+.v6-star[data-watched="true"] {
+  color: var(--c-warn);
+}
+.v6-star[data-watched="true"]:hover {
+  color: var(--c-warn);
+  background: var(--bg-surface-2);
+}
+.v6-star.compact {
+  width: 28px;
+  height: 28px;
+  font-size: 1.1rem;
+}
+@media (max-width: 900px) {
+  .v6-star {
+    width: 44px;
+    height: 44px;
+    font-size: 1.5rem;
+  }
+}
