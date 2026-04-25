@@ -152,7 +152,7 @@ function _renderShell(data) {
   var minMcap = filters.min_market_cap != null ? filters.min_market_cap : 5e9;
   var minMcapB = Math.round(minMcap / 1e9);
 
-  var sectionNum = window.'<div class="section-title" style="margin:var(--sp-6) 0 var(--sp-4);font-weight:700;font-size:var(--fs-lg);color:var(--fg-primary)">Settings</div>';
+  var sectionNum = '<div class="section-title" style="margin:var(--sp-6) 0 var(--sp-4);font-weight:700;font-size:var(--fs-lg);color:var(--fg-primary)">Settings</div>';
 
   var dayChips = '';
   for (var i = 0; i < DAYS.length; i++) {
