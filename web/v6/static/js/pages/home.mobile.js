@@ -90,13 +90,15 @@ function _renderCard(stock) {
       '</div>';
   }
 
+  var starHtml = '<span class="v6-star" data-mm-star data-sym="' + sym + '" data-watched="' + (stock.in_watchlist ? 'true' : 'false') + '" title="Toggle watchlist">★</span>';
+
   return (
     '<article class="card" data-sym="' + sym + '">' +
       ribbon +
       '<div class="card-head"><div>' +
         '<div class="card-sym">' + sym + '</div>' +
         '<div class="card-name">' + name + '</div>' +
-      '</div></div>' +
+      '</div>' + starHtml + '</div>' +
       '<div class="card-tags">' + tags + '</div>' +
       '<div class="card-score-row">' +
         '<div><span class="score-big">' + scoreCurr + '</span><span class="score-max">/100</span></div>' +
@@ -230,6 +232,7 @@ function _renderGrid() {
       if (sym) location.href = '/m/report/' + encodeURIComponent(sym);
     });
   });
+  _wireStarButtons(grid);
   if (pager) {
     var remaining = filtered.length - visible.length;
     if (remaining > 0) {
@@ -240,6 +243,24 @@ function _renderGrid() {
       pager.innerHTML = '';
     }
   }
+}
+
+function _wireStarButtons(container) {
+  if (!container) return;
+  container.querySelectorAll('[data-mm-star]').forEach(function (el) {
+    el.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var sym = el.getAttribute('data-sym');
+      var watched = el.getAttribute('data-watched') === 'true';
+      var body = watched ? { remove: [sym] } : { add: [sym] };
+      window.MMApi.put('/api/user/watchlist', body).then(function () {
+        el.setAttribute('data-watched', String(!watched));
+      }).catch(function (err) {
+        console.error('watchlist toggle failed', err);
+      });
+    });
+  });
 }
 
 function _wireControls(screener) {
