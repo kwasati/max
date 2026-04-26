@@ -51,7 +51,8 @@
     "dy_baseline": 7.142857142857142,
     "date_added": "2026-04-21",
     "date_refreshed": "2026-04-25",
-    "thesis_change_flag": false
+    "thesis_change_flag": false,
+    "entry_score": 73
   },
   "AYUD.BK": {
     "passed_5555": true,
@@ -77,7 +78,7 @@
     "pbv_baseline": 0.55377245,
     "dy_baseline": 9.90990990990991,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false,
     "entry_score": 74
   },
@@ -87,7 +88,7 @@
     "pbv_baseline": 0.70533407,
     "dy_baseline": 6.25,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "CIMBT.BK": {
@@ -96,7 +97,7 @@
     "pbv_baseline": 0.24683124,
     "dy_baseline": 15.945945945945944,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-21",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "CMR.BK": {
@@ -105,7 +106,7 @@
     "pbv_baseline": 1.1764705,
     "dy_baseline": 20.76923076923077,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "CPNREIT.BK": {
@@ -114,7 +115,7 @@
     "pbv_baseline": 1.019796,
     "dy_baseline": 9.15966386554622,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "EGCO.BK": {
@@ -123,7 +124,7 @@
     "pbv_baseline": 0.5829535,
     "dy_baseline": 5.88235294117647,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "FPT.BK": {
@@ -132,7 +133,7 @@
     "pbv_baseline": 0.40040678,
     "dy_baseline": 5.079365079365079,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "FTREIT.BK": {
@@ -141,7 +142,7 @@
     "pbv_baseline": 1.0439904,
     "dy_baseline": 6.666666666666668,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "HTC.BK": {
@@ -150,7 +151,7 @@
     "pbv_baseline": 1.4686375,
     "dy_baseline": 6.967741935483872,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "ILM.BK": {
@@ -159,7 +160,7 @@
     "pbv_baseline": 1.0547858,
     "dy_baseline": 7.462686567164178,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "IMPACT.BK": {
@@ -168,7 +169,7 @@
     "pbv_baseline": 1.0129732,
     "dy_baseline": 6.666666666666667,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "JMT.BK": {
@@ -177,7 +178,7 @@
     "pbv_baseline": 0.49779356,
     "dy_baseline": 9.297297297297296,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "KBANK.BK": {
@@ -186,7 +187,7 @@
     "pbv_baseline": 0.7460891,
     "dy_baseline": 6.557377049180328,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "KGI.BK": {
@@ -195,7 +196,7 @@
     "pbv_baseline": 0.986261,
     "dy_baseline": 7.711442786069653,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "KKP.BK": {
@@ -204,7 +205,7 @@
     "pbv_baseline": 1.0121331,
     "dy_baseline": 7.0588235294117645,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "KTB.BK": {
@@ -213,7 +214,7 @@
     "pbv_baseline": 0.9935569,
     "dy_baseline": 10.969696969696969,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "KYE.BK": {
@@ -222,7 +223,7 @@
     "pbv_baseline": 0.5402029,
     "dy_baseline": 6.180555555555555,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "LANNA.BK": {
@@ -231,7 +232,7 @@
     "pbv_baseline": 0.95743304,
     "dy_baseline": 6.756756756756756,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "LH.BK": {
@@ -240,7 +241,7 @@
     "pbv_baseline": 0.9610063,
     "dy_baseline": 6.282722513089005,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "LHFG.BK": {
@@ -249,7 +250,7 @@
     "pbv_baseline": 0.5704365,
     "dy_baseline": 7.82608695652174,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "METCO.BK": {
@@ -258,7 +259,7 @@
     "pbv_baseline": 0.7314562,
     "dy_baseline": 11.320754716981133,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false,
     "entry_score": 62
   },
@@ -268,7 +269,7 @@
     "pbv_baseline": 1.0832384,
     "dy_baseline": 5.328947368421053,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "NER.BK": {
@@ -277,7 +278,7 @@
     "pbv_baseline": 0.9366077,
     "dy_baseline": 6.300813008130081,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "NYT.BK": {
@@ -286,7 +287,7 @@
     "pbv_baseline": 1.4401624,
     "dy_baseline": 11.737089201877934,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "PRG.BK": {
@@ -304,7 +305,7 @@
     "pbv_baseline": 0.86046624,
     "dy_baseline": 6.131386861313868,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false
   },
   "PTTEP.BK": {
@@ -322,7 +323,7 @@
     "pbv_baseline": 0.49946865,
     "dy_baseline": 9.929078014184398,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
+    "date_refreshed": "2026-04-25",
     "thesis_change_flag": false,
     "entry_score": 69
   },
@@ -368,8 +369,9 @@
     "pbv_baseline": 0.75784546,
     "dy_baseline": 10.738255033557047,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
-    "thesis_change_flag": false
+    "date_refreshed": "2026-04-25",
+    "thesis_change_flag": false,
+    "entry_score": 75
   },
   "SC.BK": {
     "passed_5555": true,
@@ -404,8 +406,9 @@
     "pbv_baseline": 0.5522914,
     "dy_baseline": 11.347517730496454,
     "date_added": "2026-04-21",
-    "date_refreshed": "2026-04-22",
-    "thesis_change_flag": false
+    "date_refreshed": "2026-04-25",
+    "thesis_change_flag": false,
+    "entry_score": 63
   },
   "SJWD.BK": {
     "passed_5555": true,
@@ -498,5 +501,15 @@
     "date_refreshed": "2026-04-22",
     "thesis_change_flag": false,
     "entry_score": 63
+  },
+  "OR.BK": {
+    "passed_5555": true,
+    "pe_baseline": 12.6595745,
+    "pbv_baseline": 1.2552743,
+    "dy_baseline": 5.042016806722689,
+    "entry_score": 48,
+    "date_added": "2026-04-25",
+    "date_refreshed": "2026-04-25",
+    "thesis_change_flag": false
   }
 }

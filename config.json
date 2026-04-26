@@ -6,15 +6,15 @@
     "minute": 0
   },
   "filters": {
-    "min_dividend_yield": 5.0,
+    "min_dividend_yield": 5,
     "min_dividend_streak": 5,
     "min_eps_positive_years": 5,
-    "max_pe": 15.0,
+    "max_pe": 15,
     "bonus_pe": 8.0,
     "max_pbv": 1.5,
     "bonus_pbv": 1.0,
     "min_market_cap": 5000000000
   },
-  "universe": "set_mai",
-  "last_saved_at": null
+  "universe": "set_only",
+  "last_saved_at": "2026-04-25T18:47:46"
 }
