@@ -5,5 +5,6 @@ data/
 !data/hidden_value_holdings.json
 data/analysis_cache/
 data/price_history/
+data/setsmart_cache/
 _archive/*
 !_archive/portfolio-simulator-builder-2026-04-25/
