@@ -6,35 +6,35 @@ Verifies fix from plan `fix-dps-fiscal-year-attribution` — DIY (Fiscal Year At
 
 | Symbol | Field | Before (bug) | After (fix) | Note |
 |--------|-------|--------------|-------------|------|
-| **BBL.BK** | price | 158.5000 | 160.5000 | snapshot vs current |
-| | yield | 10.4100% | 6.2305% | DIY methodology |
+| **BBL.BK** | price | 158.5000 | 158.5000 | snapshot vs current |
+| | yield | 10.4100% | 6.3100% | DIY methodology |
 | | dps | 16.5000 | 10.0000 | FY total |
 | | payout | 0.3527 | 0.4151 | DPS/EPS same FY |
 | | yield_5y | 3.5300% | 4.1745% | avg 5 complete FY |
 | **METCO.BK** | price | 264.0000 | 264.0000 | snapshot vs current |
-| | yield | 11.3600% | 11.3636% | DIY methodology |
+| | yield | 11.3600% | 11.3600% | DIY methodology |
 | | dps | 30.0000 | 30.0000 | FY total |
 | | payout | 0.1496 | 0.1496 | DPS/EPS same FY |
 | | yield_5y | 4.5500% | 6.0606% | avg 5 complete FY |
-| **QH.BK** | price | 1.4200 | 1.3500 | snapshot vs current |
-| | yield | 9.8600% | 6.6667% | DIY methodology |
+| **QH.BK** | price | 1.4200 | 1.4200 | snapshot vs current |
+| | yield | 9.8600% | 6.3500% | DIY methodology |
 | | dps | 0.1400 | 0.0900 | FY total |
 | | payout | 0.6250 | 0.5625 | DPS/EPS same FY |
-| | yield_5y | 8.4500% | 8.7407% | avg 5 complete FY |
-| **SAT.BK** | price | 14.7000 | 14.6000 | snapshot vs current |
-| | yield | 10.8800% | 10.9589% | DIY methodology |
+| | yield_5y | 8.4500% | 8.8060% | avg 5 complete FY |
+| **SAT.BK** | price | 14.7000 | 14.7000 | snapshot vs current |
+| | yield | 10.8800% | 10.8800% | DIY methodology |
 | | dps | 1.6000 | 1.6000 | FY total |
 | | payout | 0.9535 | 0.9275 | DPS/EPS same FY |
-| | yield_5y | 9.5000% | 10.5479% | avg 5 complete FY |
+| | yield_5y | 9.5000% | 10.6207% | avg 5 complete FY |
 
 ## SET Streaming Reference (อาร์ทกรอกเอง)
 
 | Symbol | SET DIY yield | Max yield (after) | Diff | PASS (±1%) |
 |--------|---------------|-------------------|------|------------|
-| **BBL.BK** | _____ %  | 6.23% | _____ | _____ |
+| **BBL.BK** | _____ %  | 6.31% | _____ | _____ |
 | **METCO.BK** | _____ %  | 11.36% | _____ | _____ |
-| **QH.BK** | _____ %  | 6.67% | _____ | _____ |
-| **SAT.BK** | _____ %  | 10.96% | _____ | _____ |
+| **QH.BK** | _____ %  | 6.35% | _____ | _____ |
+| **SAT.BK** | _____ %  | 10.88% | _____ | _____ |
 
 _Tolerance: ±1.0% absolute. ตัวอย่าง: SET=6.8% / Max=6.23% → diff=0.57% → PASS_
 

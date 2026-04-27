@@ -1,5 +1,49 @@
 # Max Mahon Changelog
 
+## v6.4.0 — 2026-04-27 · SETSMART Integration (Layer 0 primary)
+
+**SETSMART API (data feed ทางการของ SET) ขึ้นเป็น primary aggregate layer แทน thaifin/yahooquery — ตัวเลข yield/PE/PBV/market cap/ราคา ที่หน้า max ตรงกับหน้า SET screen เป๊ะ** ก่อนหน้านี้ yield drift จากค่าจริง 0.5-1% เพราะ thaifin snapshot ช้า + yahooquery บางตัวอัพเดตช้า (เคส BBL FY2025 ex-date 22 เม.ย. 69: SET = 10 บาท แต่ Yahoo ยังอ่าน 8 บาท) — pivot มา fetch จาก API ต้นน้ำของ SET เอง = numbers ที่นักลงทุนเห็นทุกที่ตรงกัน
+
+### New — SETSMART adapter + cache layer
+- `scripts/setsmart_adapter.py` (ใหม่) — wrapper 4 endpoints: `eod-price-by-symbol`, `eod-price-by-security-type` (bulk all-CS ~933 securities/วัน), `financial-data-and-ratio-by-symbol`, `financial-data-and-ratio` (bulk all-companies)
+- **Bulk request 1 ครั้ง** ดึงครบทั้งตลาด ~933 ตัว แทนยิงทีละสัญลักษณ์ — ประหยัด rate limit + เร็วกว่า
+- Cache บนดิสก์ที่ `data/setsmart_cache/` (gitignored) — `eod_{date}.json` + `financial_{year}_q{N}.json` + `eod_by_symbol_{SYM}_{start}_{end}.json`
+- Smoke test 4 cases ใน `__main__` (รวม BBL package coverage discovery)
+
+### Changed — Data flow: Layer 0 → 1 → 2
+- `scripts/data_adapter.py` — เพิ่ม `_fetch_setsmart` helper, wire SETSMART เป็น **primary aggregate** ใน `fetch_fundamentals()` (override yield/PE/PBV/market cap/EPS/ROE/ROA/D/E ก่อน thaifin)
+- `server/app.py` — module logger + SETSMART override block ใน `GET /api/stock/{sym}` ที่เขียนทับ top-level `dividend_yield` / `pe_ratio` / `pb_ratio` / `price` / `market_cap` ถ้ามี cache
+- `scripts/daily_price_refresh.py` — pre-warm SETSMART EOD bulk **ก่อน** yahooquery batch (cron 19:00 Asia/Bangkok เดิม)
+- `.gitignore` — เพิ่ม `data/setsmart_cache/`
+
+### Architecture
+- **Layer 0 — SETSMART (primary aggregate):** snapshot fields ที่ SET เปิดผ่าน API ของตัวเอง (yield, P/E, P/BV, market cap, EPS, ROE, ROA, D/E, ราคาปิด). Coverage history ~3 ปี (smoke test BBL: package เริ่ม 2022)
+- **Layer 1 — thaifin (history):** financial statements 10-16 ปี + ratios สำหรับช่วง before SETSMART package เริ่ม
+- **Layer 2 — yahooquery (supplement):** DPS event-by-event (SETSMART ไม่มี), 52w range, capex, interest_expense, fallback price
+- **Rule 0 ใน CLAUDE.md Data Source Invariants** — SETSMART precedence: ถ้ามี cache ใช้ก่อน, fall back thaifin, yahooquery เฉพาะของที่ Layer 0/1 ไม่มี
+- Override paths: `fetch_fundamentals()` (scan/screener pipeline) + `GET /api/stock/{sym}` (frontend hot path)
+
+### Bug fixes — found during build
+- **Empty cache file walk** — `_fetch_setsmart` เดิมอ่าน cache file ใหม่สุดไฟล์เดียว แต่ Saturday EOD = `[]` (ตลาดปิด) → return None เงียบๆ. Fix: walk newest → older, skip empty files จน hit สัญลักษณ์ที่ต้องการ. ใส่ logic เดียวกันใน `/api/stock` override block ด้วย
+- **HTTP 500 on out-of-coverage range** — smoke test 4 (BBL package coverage) ยิง 2010-2020 → SETSMART ส่ง 500 (package เริ่ม ≥ 2022). Wrap try/except ให้ HTTP 500 แปลเป็น "ช่วงนี้ไม่ครอบคลุม" → discovery walk forward ต่อได้ ไม่ crash
+- **Override key path ผิด schema (QH bug)** — initial implementation เขียนเข้า `metrics["dividend_yield"]` (sub-dict ที่ frontend ไม่อ่าน) → frontend ยังโชว์ค่าเก่า. Fix: เขียน top-level `dividend_yield` / `pe_ratio` / `pb_ratio` ตาม schema ที่ frontend ใช้จริง
+
+### Verify — production ผ่าน curl 4 ตัว (server restart แล้ว)
+
+| สัญลักษณ์ | yield | PE | PBV | price |
+|---|---|---|---|---|
+| BBL | 6.31 | 6.58 | 0.53 | 158.5 |
+| METCO | 11.36 | 4.94 | 0.73 | 264.0 |
+| QH | 6.35 | 8.79 | 0.50 | 1.42 |
+| SAT | 10.88 | 8.56 | 0.75 | 14.7 |
+
+ทุกตัว match SETSMART cache + ตรงหน้า SET screen เป๊ะ
+
+### References
+- Plans: `.claude/plans/MaxMahon/setsmart-integration-{01-adapter,02-wire-pipeline,index}.md`
+
+---
+
 ## v6.3.0 — 2026-04-25 · Portfolio Builder จาก Watchlist (Niwes role-based)
 
 **Feature ใหม่ทั้งฟีเจอร์ — เอาหุ้นใน watchlist มาจัดพอร์ตแบบนิเวศน์ ตอบโจทย์ "หุ้นในมือกลายเป็นพอร์ตได้ยังไง"** ของเก่า portfolio builder ที่ archive ไปวันก่อน (capital-based, ขอเงินก้อน) ถูกแทนด้วยแนวคิดใหม่: ไม่ต้องใส่เงิน ใช้หุ้นใน watchlist เป็น input แสดงเป็น % พร้อมระบุบทบาทของแต่ละตัว (anchor/supporting/tail) + เหตุผลภาษาคน

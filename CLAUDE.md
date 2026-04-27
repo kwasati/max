@@ -2,7 +2,7 @@
 
 ## Architecture
 - **Agent:** Max Mahon — Thai stock analyst, Niwes Dividend-First style
-- **Stack:** Python + thaifin (primary) + yahooquery (supplement) + Anthropic SDK (claude-opus-4-7)
+- **Stack:** Python + SETSMART API (primary aggregate) + thaifin (history) + yahooquery (DPS events + 52w/capex/IE) + Anthropic SDK (claude-opus-4-7)
 - **AI:** On-demand only — **scan pipeline = pure deterministic algo** (Niwes framework แกะเป็น Python rules: case study detectors + moat tags + 3-tier PASS/REVIEW/FAIL + exit baseline + sector spread). Claude SDK ใช้เฉพาะเมื่อ Karl กดขอ 'วิเคราะห์เพิ่มเติม' ใน UI ต่อหุ้น 1 ตัว (POST `/api/stock/{sym}/analyze`) — auth ผ่าน `MAX_ANTHROPIC_API_KEY`, cache TTL 7 วัน
 - **Scoring version:** `niwes-dividend-first-v2` (screener + history v2 schema)
 - **Reference files:** `data/case_study_patterns.json` (8 patterns: RETAIL_DEFENSIVE_MOAT/BANK_VALUE_PBV1/HOLDING_CO_HIDDEN/VIETNAM_GROWTH_EXPOSURE[disabled]/ENERGY_CYCLICAL_EXIT + UTILITY_DEFENSIVE/HOSPITAL_AGING/F&B_CONSUMER_BRAND), `data/exit_baselines.json`, `data/history.json` (v2 schema: top_candidates/watchlist_status/entry_thesis/dividend_paid_since_entry/price_snapshot), `user_data.json` (`transactions[]` portfolio tracking)
@@ -81,7 +81,8 @@
 ## Key Files
 - `user_data.json` — user preferences (watchlist, blacklist, notes, lists, transactions, simulated_portfolio)
 - `config.json` — server config (schedule + filters + universe) — edited via `/settings` UI
-- `scripts/data_adapter.py` — thaifin + yahooquery adapter
+- `scripts/setsmart_adapter.py` — SETSMART API adapter (4 endpoints + cache layer at `data/setsmart_cache/`)
+- `scripts/data_adapter.py` — SETSMART + thaifin + yahooquery adapter (SETSMART primary aggregate via `_fetch_setsmart` helper, thaifin yearly history, yahooquery supplement)
 - `scripts/update_universe.py` — ดึง list หุ้นทั้ง SET/mai
 - `scripts/migrate_watchlist.py` — migration จาก watchlist.json เดิม
 - `scripts/fetch_data.py` — ดึง multi-year financials + dividends + compute yearly metrics + sanity check

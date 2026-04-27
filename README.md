@@ -6,7 +6,7 @@ Dashboard at [max.intensivetrader.com](https://max.intensivetrader.com)
 
 ## What It Does
 
-- **Unified scan (weekly, Saturday 09:00):** Fetches multi-year financials via thaifin + yahooquery, screens 933-stock universe through Niwes 5-5-5-5 hard filters (Yield ≥5% · Streak ≥5y · EPS positive 5y · PE ≤15 · PBV ≤1.5 · Mcap ≥5B), scores quality out of 100, tags signals (NIWES_5555, HIDDEN_VALUE, QUALITY_DIVIDEND, DEEP_VALUE, etc.)
+- **Unified scan (weekly, Saturday 09:00):** Fetches snapshot aggregate via SETSMART API (yield, P/E, P/BV, mcap, ROE/ROA), multi-year history via thaifin, DPS events + 52w via yahooquery; screens 933-stock universe through Niwes 5-5-5-5 hard filters (Yield ≥5% · Streak ≥5y · EPS positive 5y · PE ≤15 · PBV ≤1.5 · Mcap ≥5B), scores quality out of 100, tags signals (NIWES_5555, HIDDEN_VALUE, QUALITY_DIVIDEND, DEEP_VALUE, etc.)
 - **3-tier bucket:** PASS / REVIEW / FAIL — REVIEW shows edge cases that need manual decision
 - **Exit alerts:** Saves entry baseline on first NIWES_5555 pass; Telegram alert when FILTER_DEGRADATION / VALUATION_BUBBLE / THESIS_CHANGE triggers
 - **Vintage newspaper dashboard:** Separate desktop + mobile frontends, editorial typography (Playfair Display + Lora + IBM Plex Serif Thai), oxblood accent
@@ -19,7 +19,7 @@ Dashboard at [max.intensivetrader.com](https://max.intensivetrader.com)
 ### ขั้น 1 — ดึงข้อมูลหุ้น
 Max เอารายชื่อหุ้นไทยทั้งตลาด (SET 704 + mai 229 = 933 ตัว) แล้วไล่ดึงข้อมูล **ย้อนหลัง 16 ปี** ของแต่ละตัวออกมา: รายได้, กำไร, EPS, เงินปันผล, มูลค่าบริษัท, ROE, หนี้สิน, กระแสเงินสด ฯลฯ
 
-แหล่งข้อมูล = thaifin เป็นหลัก + yahooquery สำหรับราคาปัจจุบัน/ปันผลรายครั้ง
+แหล่งข้อมูล 3 ชั้น = **SETSMART API** (snapshot อัจฉริยะ: yield, P/E, P/BV, mcap, ROE/ROA — refresh daily 19:00) + **thaifin** (ประวัติย้อน 10-16 ปีที่ SETSMART package ไม่ครอบ ~3 ปี) + **yahooquery** (ปันผลรายครั้ง + 52w range + capex/interest expense)
 
 ### ขั้น 2 — คัดรอบแรก "5-5-5-5" (เกณฑ์ไม่ผ่าน = คัดทิ้งเลย)
 เช็คว่าหุ้นผ่านกฎ ดร.นิเวศน์ 6 ข้อหรือเปล่า:
@@ -103,7 +103,7 @@ severity = high → Telegram alert (flag only, Max **ไม่เคยสั่
 
 ## Tech Stack
 
-- Python + thaifin (primary data) + yahooquery (price/dividends)
+- Python + SETSMART API (primary aggregate snapshot) + thaifin (yearly history) + yahooquery (DPS events / 52w / capex)
 - Anthropic SDK (on-demand only)
 - FastAPI + APScheduler (server + weekly cron)
 - Vanilla JS + Chart.js (dashboard, no build step)
