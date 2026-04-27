@@ -614,12 +614,14 @@ def fetch_fundamentals(symbol: str) -> dict:
 
         # --- DPS fix: use Yahoo dividends as source of truth ---
         yf_dps_by_year = yf_supp.get("dps_by_year", {})
+        yf_dps_by_fy = yf_supp.get("dps_by_fiscal_year", {})
+        yf_fy_complete = yf_supp.get("fy_is_complete", {})
         yf_capex_by_year = yf_supp.get("capex_by_year", {})
         yf_oi_by_year = yf_supp.get("operating_income_by_year", {})
         yf_ie_by_year = yf_supp.get("interest_expense_by_year", {})
 
-        # Build dividend_history from Yahoo DPS (source of truth)
-        dividend_history = {y: round(dps, 4) for y, dps in yf_dps_by_year.items()}
+        # Build dividend_history from Yahoo DPS attributed to fiscal year (SET DIY methodology)
+        dividend_history = {y: round(dps, 4) for y, dps in yf_dps_by_fy.items()}
 
         # Patch yearly_metrics with capex, operating_income, interest data from Yahoo
         for m in yearly_metrics:
@@ -664,35 +666,43 @@ def fetch_fundamentals(symbol: str) -> dict:
         forward_pe = yf_info.get("forwardPE")
         pb_ratio = yf_info.get("priceToBook") or tf_snap.get("pb_ratio")
 
-        # --- Dividend: DPS-first, yield = DPS/price ---
-        # Current DPS from Yahoo (dividendRate = annual DPS)
-        dps_current = yf_info.get("dividendRate")
-        # Fallback: trailingAnnualDividendRate
-        if dps_current is None:
-            dps_current = yf_info.get("trailingAnnualDividendRate")
+        # --- Dividend: DPS-first, yield = DPS/price (Fiscal Year Attribution per SET methodology) ---
+        complete_fys = sorted([y for y, ok in yf_fy_complete.items() if ok])
+        latest_complete_fy = complete_fys[-1] if complete_fys else None
 
-        # dividend_yield = DPS / price * 100 (percentage)
+        if latest_complete_fy is not None:
+            dps_current = yf_dps_by_fy.get(latest_complete_fy)
+        else:
+            dps_current = None
+
         if dps_current is not None and price is not None and price > 0:
             dy = dps_current / price * 100
         else:
-            # Fallback to thaifin snapshot (may be unreliable)
-            dy = tf_snap.get("dividend_yield")
+            dy = tf_snap.get("dividend_yield")  # fallback thaifin
 
-        # five_year_avg_yield = avg DPS last 5 years / current price * 100
+        # five_year_avg_yield = avg DPS of last 5 COMPLETE FYs / current price
         current_year = datetime.now().year
-        recent_dps = [yf_dps_by_year[y] for y in yf_dps_by_year
-                      if y >= current_year - 5 and y < current_year
-                      and yf_dps_by_year[y] is not None]
+        recent_complete_fys = complete_fys[-5:] if len(complete_fys) >= 5 else complete_fys
+        recent_dps = [yf_dps_by_fy.get(y) for y in recent_complete_fys if yf_dps_by_fy.get(y) is not None]
         if recent_dps and price is not None and price > 0:
             avg_dps = sum(recent_dps) / len(recent_dps)
             five_year_avg_yield = avg_dps / price * 100
         else:
-            # Fallback: Yahoo fiveYearAvgDividendYield (already percentage)
             raw_5y = yf_info.get("fiveYearAvgDividendYield")
             five_year_avg_yield = raw_5y if raw_5y is not None else None
 
         dividend_rate = dps_current
-        payout_ratio = yf_info.get("payoutRatio")
+        # payout_ratio = latest FY DPS / latest FY EPS (same period match)
+        payout_ratio = None
+        if latest_complete_fy is not None and dps_current is not None:
+            for m in yearly_metrics:
+                if int(m.get("year", 0)) == latest_complete_fy:
+                    eps_fy = m.get("diluted_eps")
+                    if eps_fy and eps_fy > 0:
+                        payout_ratio = dps_current / eps_fy
+                    break
+        if payout_ratio is None:
+            payout_ratio = yf_info.get("payoutRatio")  # fallback Yahoo
 
         # EPS
         eps_trailing = tf_snap.get("eps_trailing") or yf_info.get("trailingEps")
