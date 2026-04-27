@@ -352,15 +352,13 @@ async def get_stock(symbol: str):
                     break
 
             if ss_eod_row:
-                metrics = stock_data.get("metrics") or {}
+                # Override top-level snapshot fields (matches stock_data schema used by frontend)
                 if ss_eod_row.get("dividendYield") is not None:
-                    metrics["dividend_yield"] = ss_eod_row["dividendYield"]
+                    stock_data["dividend_yield"] = ss_eod_row["dividendYield"]
                 if ss_eod_row.get("pe") is not None:
-                    metrics["pe"] = ss_eod_row["pe"]
+                    stock_data["pe_ratio"] = ss_eod_row["pe"]
                 if ss_eod_row.get("pbv") is not None:
-                    metrics["pbv"] = ss_eod_row["pbv"]
-                stock_data["metrics"] = metrics
-
+                    stock_data["pb_ratio"] = ss_eod_row["pbv"]
                 if ss_eod_row.get("close") is not None:
                     stock_data["price"] = ss_eod_row["close"]
                 if ss_eod_row.get("marketCap") is not None:
