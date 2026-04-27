@@ -611,22 +611,31 @@ def _fetch_setsmart(symbol: str) -> dict | None:
         eod_files = sorted(cache_dir.glob("eod_*.json"), reverse=True)
         # Filter out per-symbol files (eod_by_symbol_*.json) — only bulk files (eod_YYYY-MM-DD.json)
         eod_files = [f for f in eod_files if not f.name.startswith("eod_by_symbol_")]
+        # Walk newest→older: skip empty cache files (weekend/holiday) until we find symbol
         eod_row = None
-        if eod_files:
-            latest_eod = json.loads(eod_files[0].read_text(encoding="utf-8"))
-            for r in latest_eod:
+        for f in eod_files:
+            rows = json.loads(f.read_text(encoding="utf-8"))
+            if not rows:
+                continue
+            for r in rows:
                 if r.get("symbol") == sym_no_bk:
                     eod_row = r
                     break
+            if eod_row is not None:
+                break
 
         fin_files = sorted(cache_dir.glob("financial_*.json"), reverse=True)
         fin_row = None
-        if fin_files:
-            latest_fin = json.loads(fin_files[0].read_text(encoding="utf-8"))
-            for r in latest_fin:
+        for f in fin_files:
+            rows = json.loads(f.read_text(encoding="utf-8"))
+            if not rows:
+                continue
+            for r in rows:
                 if r.get("symbol") == sym_no_bk:
                     fin_row = r
                     break
+            if fin_row is not None:
+                break
 
         if eod_row is None and fin_row is None:
             return None

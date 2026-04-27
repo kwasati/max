@@ -338,13 +338,18 @@ async def get_stock(symbol: str):
             eod_files = sorted(SS_CACHE_DIR.glob("eod_*.json"), reverse=True)
             # Filter out per-symbol files; only bulk eod_YYYY-MM-DD.json
             eod_files = [f for f in eod_files if not f.name.startswith("eod_by_symbol_")]
+            # Walk newest→older: skip empty cache files (weekend/holiday) until symbol found
             ss_eod_row = None
-            if eod_files:
-                latest_eod = json.loads(eod_files[0].read_text(encoding="utf-8"))
-                for r in latest_eod:
+            for f in eod_files:
+                rows = json.loads(f.read_text(encoding="utf-8"))
+                if not rows:
+                    continue
+                for r in rows:
                     if r.get("symbol") == sym_no_bk:
                         ss_eod_row = r
                         break
+                if ss_eod_row is not None:
+                    break
 
             if ss_eod_row:
                 metrics = stock_data.get("metrics") or {}
