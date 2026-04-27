@@ -414,16 +414,27 @@ def _attribute_dividends_to_fiscal_years(divs) -> dict:
         except (ValueError, TypeError, AttributeError):
             continue
 
-    # Detect completeness: FY is complete if has both interim+final, OR has only 1 payment but next FY already has payments (means the company paid annually)
-    is_complete = {}
+    # Detect completeness: adaptive per company's typical pay frequency
+    # 1. Count events per FY for older FYs (skip latest 1 — may still be in-progress)
+    # 2. Find mode (most common count) → typical_count for this company
+    # 3. FY complete = event count >= typical_count
     sorted_fys = sorted(by_fy.keys())
-    for i, fy in enumerate(sorted_fys):
-        periods = {p for _, _, p in events_per_fy.get(fy, [])}
-        has_both = 'interim' in periods and 'final' in periods
-        has_next_fy = (i < len(sorted_fys) - 1) and (sorted_fys[i+1] in by_fy)
-        is_complete[fy] = has_both or has_next_fy
+    is_complete = {}
+    typical_count = 2  # default semi-annual (common Thai pattern)
+    if len(sorted_fys) >= 2:
+        # Use older FYs (exclude latest) to detect pattern
+        older_counts = [len(events_per_fy.get(fy, [])) for fy in sorted_fys[:-1]]
+        if older_counts:
+            from collections import Counter
+            typical_count = Counter(older_counts).most_common(1)[0][0]
+            if typical_count < 1:
+                typical_count = 1  # safety floor
 
-    return {'by_fy': by_fy, 'is_complete': is_complete, 'events_per_fy': events_per_fy}
+    for fy in sorted_fys:
+        actual_count = len(events_per_fy.get(fy, []))
+        is_complete[fy] = actual_count >= typical_count
+
+    return {'by_fy': by_fy, 'is_complete': is_complete, 'events_per_fy': events_per_fy, 'typical_count': typical_count}
 
 
 def _fetch_yahoo_supplement(symbol: str) -> dict:
