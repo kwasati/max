@@ -494,6 +494,8 @@ def _fetch_yahoo_supplement(symbol: str) -> dict:
         divs = None
         recent_divs = []
         dps_by_year = {}
+        dps_by_fiscal_year = {}
+        fy_is_complete = {}
         try:
             divs_df = tk.dividend_history(start="2000-01-01")
             if hasattr(divs_df, 'shape') and not divs_df.empty:
@@ -514,6 +516,10 @@ def _fetch_yahoo_supplement(symbol: str) -> dict:
                         dps_by_year[y] = dps_by_year.get(y, 0) + round(float(val), 4)
                     except (ValueError, TypeError):
                         continue
+                # FY attribution per SET DIY methodology
+                fy_result = _attribute_dividends_to_fiscal_years(divs)
+                dps_by_fiscal_year = fy_result['by_fy']
+                fy_is_complete = fy_result['is_complete']
         except Exception:
             pass
 
@@ -557,7 +563,9 @@ def _fetch_yahoo_supplement(symbol: str) -> dict:
             "info": info,
             "divs": divs,
             "recent_dividends": recent_divs,
-            "dps_by_year": dps_by_year,
+            "dps_by_year": dps_by_year,                  # legacy calendar bin (debug)
+            "dps_by_fiscal_year": dps_by_fiscal_year,    # NEW — SET DIY source of truth
+            "fy_is_complete": fy_is_complete,            # NEW — flag complete FYs
             "capex_by_year": capex_by_year,
             "operating_income_by_year": operating_income_by_year,
             "interest_expense_by_year": interest_expense_by_year,
@@ -566,7 +574,8 @@ def _fetch_yahoo_supplement(symbol: str) -> dict:
     except Exception as e:
         logger.warning("yahooquery failed for %s: %s", symbol, e)
         return {"info": {}, "divs": None, "recent_dividends": [],
-                "dps_by_year": {}, "capex_by_year": {},
+                "dps_by_year": {}, "dps_by_fiscal_year": {}, "fy_is_complete": {},
+                "capex_by_year": {},
                 "operating_income_by_year": {}, "interest_expense_by_year": {}}
 
 
