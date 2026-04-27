@@ -366,6 +366,66 @@ def _fetch_thaifin(symbol: str) -> dict | None:
         return None
 
 
+def _attribute_dividends_to_fiscal_years(divs) -> dict:
+    """Group dividends by fiscal year per SET methodology.
+
+    SET DIY uses 'latest annual operating period' which = fiscal year.
+    For Thai stocks (FY = calendar year):
+      - ex-date Jan-Jun of year N+1 → final of FY N
+      - ex-date Jul-Dec of year N → interim of FY N
+
+    Args:
+        divs: pandas Series with timestamp index, DPS values
+
+    Returns:
+        {
+            'by_fy': {fy_year: total_dps},
+            'is_complete': {fy_year: bool},  # True if both interim+final detected, or single payment + no recent payment expected
+            'events_per_fy': {fy_year: [(date, amount, period), ...]},  # for debug
+        }
+
+    Example:
+        >>> # BBL events: Sep 2025=2.0, Apr 2026=10.0
+        >>> result = _attribute_dividends_to_fiscal_years(divs)
+        >>> result['by_fy'][2025]
+        12.0
+    """
+    if divs is None or (hasattr(divs, 'empty') and divs.empty):
+        return {'by_fy': {}, 'is_complete': {}, 'events_per_fy': {}}
+
+    by_fy = {}
+    events_per_fy = {}
+    for idx, val in divs.items():
+        try:
+            ts = idx if hasattr(idx, 'month') else None
+            if ts is None:
+                continue
+            month = ts.month
+            cal_year = ts.year
+            amount = float(val)
+            if month <= 6:
+                fy = cal_year - 1  # H1 next year = final of last FY
+                period = 'final'
+            else:
+                fy = cal_year       # H2 same year = interim of this FY
+                period = 'interim'
+            by_fy[fy] = by_fy.get(fy, 0) + round(amount, 4)
+            events_per_fy.setdefault(fy, []).append((ts, amount, period))
+        except (ValueError, TypeError, AttributeError):
+            continue
+
+    # Detect completeness: FY is complete if has both interim+final, OR has only 1 payment but next FY already has payments (means the company paid annually)
+    is_complete = {}
+    sorted_fys = sorted(by_fy.keys())
+    for i, fy in enumerate(sorted_fys):
+        periods = {p for _, _, p in events_per_fy.get(fy, [])}
+        has_both = 'interim' in periods and 'final' in periods
+        has_next_fy = (i < len(sorted_fys) - 1) and (sorted_fys[i+1] in by_fy)
+        is_complete[fy] = has_both or has_next_fy
+
+    return {'by_fy': by_fy, 'is_complete': is_complete, 'events_per_fy': events_per_fy}
+
+
 def _fetch_yahoo_supplement(symbol: str) -> dict:
     """Fetch supplementary data from yahooquery (price, 52w, forward PE, etc.).
 
@@ -781,3 +841,14 @@ def check_hidden_value(symbol: str) -> list:
         if "holding_mcap" not in h:  # don't overwrite if caller pre-set
             h["holding_mcap"] = _holding_mcap(h.get("holding"))
     return holdings
+
+
+if __name__ == '__main__':
+    import pandas as pd
+    mock_divs = pd.Series(
+        [2.0, 10.0],
+        index=[pd.Timestamp('2025-09-15'), pd.Timestamp('2026-04-22')],
+    )
+    result = _attribute_dividends_to_fiscal_years(mock_divs)
+    assert result['by_fy'][2025] == 12.0, f"Expected FY2025=12.0, got {result['by_fy'].get(2025)}"
+    print('FY attribution OK')
