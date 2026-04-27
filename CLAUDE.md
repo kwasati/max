@@ -13,13 +13,19 @@
 - **Goal:** คัดหุ้นสำหรับ DCA 10-20 ปี ปันผลคือผลตอบแทนหลัก + safety จาก PE/PBV ต่ำ + hidden value
 
 ### Data Sources
-- **Primary:** thaifin — 10-16 ปี financial statements + ratios
-- **Supplement:** yahooquery — realtime price, 52w range, forward PE, market cap, DPS, capex, interest_expense
-- **DPS = Source of Truth** — ปันผลต่อหุ้นใช้จาก yahooquery dividends history โดยตรง, yield% คำนวณจาก DPS/price
+- **Layer 0 (after Plan 02 merge):** SETSMART API — primary source ของ aggregate snapshot (yield, P/E, P/BV, market cap, ROE, ROA, EPS, ratios). 4 endpoints: `eod-price-by-symbol`, `eod-price-by-security-type` (bulk all-CS, ~933 rows/day), `financial-data-and-ratio-by-symbol`, `financial-data-and-ratio` (bulk all-companies). Cache: `data/setsmart_cache/eod_{date}.json` + `financial_{year}_q{N}.json` + `eod_by_symbol_{SYM}_{start}_{end}.json` — refresh ทุกวัน 19:00 ผ่าน daily_price_refresh. **Package coverage:** smoke test BBL พบ history ≥ 2022 (~3 ปี) — thaifin ยังจำเป็นสำหรับ history ก่อน 2022. **Adapter:** `scripts/setsmart_adapter.py`
+- **Layer 1 (history):** thaifin — 10-16 ปี financial statements + ratios (ใช้สำหรับ history beyond SETSMART package)
+- **Layer 2 (supplement):** yahooquery — realtime price (fallback), 52w range, forward PE, market cap (fallback), **DPS event-by-event** (SETSMART ไม่มี), capex, interest_expense
+- **DPS = Source of Truth** — ปันผลต่อหุ้นใช้จาก yahooquery dividends history โดยตรง, yield% override จาก SETSMART (ถ้ามี cache) ไม่งั้น compute จาก DPS/price
 - **FCF = OCF - capex** — ไม่ใช้ total investing activities
 - **Universe:** 933 stocks (SET 704 + mai 229) via thaifin
 
 ### Data Source Invariants
+
+**Rule 0 — SETSMART precedence (after Plan 02 merge):**
+- SETSMART = primary สำหรับ realtime aggregate (yield, P/E, P/BV, market cap, EPS, ROE, ROA, D/E) — override snapshot fields ใน fetch_fundamentals + `/api/stock/{sym}` ถ้ามี cache
+- thaifin = fallback / history beyond SETSMART package (~3 ปี coverage จาก smoke test)
+- yahooquery = DPS events + 52w range + capex + interest_expense (SETSMART ไม่มี)
 
 **Rule 1 — Historical/yearly data:**
 - ใช้ **thaifin เท่านั้น** สำหรับ field ที่เป็นต่อปี (close, dividend_yield, mkt_cap, bvps, payout_ratio, pe_ratio, pb_ratio, roe, net_margin, revenue, earnings, etc.)
