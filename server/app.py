@@ -80,6 +80,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+logger = logging.getLogger(__name__)
+
 START_TIME = time.time()
 
 # ---------------------------------------------------------------------------
@@ -320,6 +322,49 @@ async def get_stock(symbol: str):
                         if key not in stock_data and key in c:
                             stock_data[key] = c[key]
                 break
+
+    # Override snapshot fields with SETSMART cache (daily refresh layer).
+    # Compute-heavy fields (score/breakdown/signals/aggregates) stay from screener cache.
+    # Snapshot fields (yield/pe/pbv/marketCap/price) override from SETSMART (refresh daily 19:00).
+    if stock_data is not None:
+        try:
+            _scripts_dir = str(PROJECT_DIR / "scripts")
+            if _scripts_dir not in sys.path:
+                sys.path.insert(0, _scripts_dir)
+            from setsmart_adapter import CACHE_DIR as SS_CACHE_DIR
+
+            sym_no_bk = _norm_sym(symbol).replace(".BK", "")
+
+            eod_files = sorted(SS_CACHE_DIR.glob("eod_*.json"), reverse=True)
+            # Filter out per-symbol files; only bulk eod_YYYY-MM-DD.json
+            eod_files = [f for f in eod_files if not f.name.startswith("eod_by_symbol_")]
+            ss_eod_row = None
+            if eod_files:
+                latest_eod = json.loads(eod_files[0].read_text(encoding="utf-8"))
+                for r in latest_eod:
+                    if r.get("symbol") == sym_no_bk:
+                        ss_eod_row = r
+                        break
+
+            if ss_eod_row:
+                metrics = stock_data.get("metrics") or {}
+                if ss_eod_row.get("dividendYield") is not None:
+                    metrics["dividend_yield"] = ss_eod_row["dividendYield"]
+                if ss_eod_row.get("pe") is not None:
+                    metrics["pe"] = ss_eod_row["pe"]
+                if ss_eod_row.get("pbv") is not None:
+                    metrics["pbv"] = ss_eod_row["pbv"]
+                stock_data["metrics"] = metrics
+
+                if ss_eod_row.get("close") is not None:
+                    stock_data["price"] = ss_eod_row["close"]
+                if ss_eod_row.get("marketCap") is not None:
+                    stock_data["market_cap"] = ss_eod_row["marketCap"]
+
+                logger.info("SETSMART override applied for %s: yield=%s, pe=%s",
+                            symbol, ss_eod_row.get("dividendYield"), ss_eod_row.get("pe"))
+        except Exception as e:
+            logger.warning("SETSMART override skipped for %s: %s", symbol, e)
 
     # Also check request files
     if stock_data is None:
