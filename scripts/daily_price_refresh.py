@@ -12,7 +12,7 @@ import json
 import logging
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from yahooquery import Ticker
@@ -60,8 +60,26 @@ def _load_symbols() -> list[str]:
 def refresh_prices() -> dict:
     """Fetch current prices for watchlist + PASS candidates and cache to disk.
 
-    Returns a dict {symbol: price} for symbols successfully fetched.
+    Layer 0: SETSMART EOD bulk (1 request, all CS securities) — primary aggregate snapshot.
+    Layer 1: yahooquery batch (preserved for DPS events + per-symbol price fallback).
+
+    Returns a dict {symbol: price} for symbols successfully fetched via yahooquery.
     """
+    # 0. SETSMART EOD bulk — 1 request covering ~933 CS symbols (cached to data/setsmart_cache/)
+    try:
+        from setsmart_adapter import cached_eod_bulk
+        for delta in range(1, 8):
+            d = (datetime.now() - timedelta(days=delta)).strftime("%Y-%m-%d")
+            data = cached_eod_bulk(d)
+            if len(data) > 0:
+                logger.info("SETSMART EOD bulk: %d rows for %s", len(data), d)
+                break
+        else:
+            logger.warning("SETSMART EOD bulk: no data found in last 7 days")
+    except Exception as e:
+        logger.warning("SETSMART bulk fetch failed (continuing with yahooquery): %s", e)
+
+    # 1. yahooquery batch (preserved for DPS events + price fallback)
     symbols = _load_symbols()
     logger.info(f"refreshing {len(symbols)} symbols")
     fetched: dict[str, float] = {}
