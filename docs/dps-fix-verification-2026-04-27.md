@@ -12,15 +12,15 @@ Verifies fix from plan `fix-dps-fiscal-year-attribution` — DIY (Fiscal Year At
 | | payout | 0.3527 | 0.4151 | DPS/EPS same FY |
 | | yield_5y | 3.5300% | 4.1745% | avg 5 complete FY |
 | **METCO.BK** | price | 264.0000 | 264.0000 | snapshot vs current |
-| | yield | 11.3600% | 3.0303% | DIY methodology |
-| | dps | 30.0000 | 8.0000 | FY total |
-| | payout | 0.1496 | 0.4251 | DPS/EPS same FY |
-| | yield_5y | 4.5500% | 4.5455% | avg 5 complete FY |
-| **QH.BK** | price | 1.4200 | 1.3400 | snapshot vs current |
-| | yield | 9.8600% | 6.7164% | DIY methodology |
+| | yield | 11.3600% | 11.3636% | DIY methodology |
+| | dps | 30.0000 | 30.0000 | FY total |
+| | payout | 0.1496 | 0.1496 | DPS/EPS same FY |
+| | yield_5y | 4.5500% | 6.0606% | avg 5 complete FY |
+| **QH.BK** | price | 1.4200 | 1.3500 | snapshot vs current |
+| | yield | 9.8600% | 6.6667% | DIY methodology |
 | | dps | 0.1400 | 0.0900 | FY total |
 | | payout | 0.6250 | 0.5625 | DPS/EPS same FY |
-| | yield_5y | 8.4500% | 8.8060% | avg 5 complete FY |
+| | yield_5y | 8.4500% | 8.7407% | avg 5 complete FY |
 | **SAT.BK** | price | 14.7000 | 14.6000 | snapshot vs current |
 | | yield | 10.8800% | 10.9589% | DIY methodology |
 | | dps | 1.6000 | 1.6000 | FY total |
@@ -32,8 +32,8 @@ Verifies fix from plan `fix-dps-fiscal-year-attribution` — DIY (Fiscal Year At
 | Symbol | SET DIY yield | Max yield (after) | Diff | PASS (±1%) |
 |--------|---------------|-------------------|------|------------|
 | **BBL.BK** | _____ %  | 6.23% | _____ | _____ |
-| **METCO.BK** | _____ %  | 3.03% | _____ | _____ |
-| **QH.BK** | _____ %  | 6.72% | _____ | _____ |
+| **METCO.BK** | _____ %  | 11.36% | _____ | _____ |
+| **QH.BK** | _____ %  | 6.67% | _____ | _____ |
 | **SAT.BK** | _____ %  | 10.96% | _____ | _____ |
 
 _Tolerance: ±1.0% absolute. ตัวอย่าง: SET=6.8% / Max=6.23% → diff=0.57% → PASS_
