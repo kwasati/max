@@ -10,13 +10,17 @@ Public API:
     fetch_fundamentals(symbol) → dict | None  (combined thaifin + yahooquery)
 """
 
+import json
 import logging
 import math
 from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
 
 logger = logging.getLogger(__name__)
+
+ROOT = Path(__file__).resolve().parent.parent
 
 
 # Cache for holding mcap lookups (symbol → int | None). Per-process memoization.
@@ -588,6 +592,49 @@ def _fetch_yahoo_supplement(symbol: str) -> dict:
                 "dps_by_year": {}, "dps_by_fiscal_year": {}, "fy_is_complete": {},
                 "capex_by_year": {},
                 "operating_income_by_year": {}, "interest_expense_by_year": {}}
+
+
+def _fetch_setsmart(symbol: str) -> dict | None:
+    """Fetch aggregate data from SETSMART (cached bulk endpoints).
+
+    Returns dict with EOD snapshot (latest day) + financial ratios (latest quarter), or None on failure.
+    Reads from data/setsmart_cache/ — populated by daily_price_refresh + weekly scan.
+    Lazy import of setsmart_adapter to avoid circular import at module load.
+    """
+    try:
+        sym_no_bk = _to_tf_symbol(symbol)  # 'BBL.BK' → 'BBL' (SETSMART uses no .BK suffix)
+
+        cache_dir = ROOT / "data" / "setsmart_cache"
+        if not cache_dir.exists():
+            return None
+
+        eod_files = sorted(cache_dir.glob("eod_*.json"), reverse=True)
+        # Filter out per-symbol files (eod_by_symbol_*.json) — only bulk files (eod_YYYY-MM-DD.json)
+        eod_files = [f for f in eod_files if not f.name.startswith("eod_by_symbol_")]
+        eod_row = None
+        if eod_files:
+            latest_eod = json.loads(eod_files[0].read_text(encoding="utf-8"))
+            for r in latest_eod:
+                if r.get("symbol") == sym_no_bk:
+                    eod_row = r
+                    break
+
+        fin_files = sorted(cache_dir.glob("financial_*.json"), reverse=True)
+        fin_row = None
+        if fin_files:
+            latest_fin = json.loads(fin_files[0].read_text(encoding="utf-8"))
+            for r in latest_fin:
+                if r.get("symbol") == sym_no_bk:
+                    fin_row = r
+                    break
+
+        if eod_row is None and fin_row is None:
+            return None
+
+        return {"eod": eod_row, "financial": fin_row}
+    except Exception as e:
+        logger.warning("SETSMART fetch failed for %s: %s", symbol, e)
+        return None
 
 
 # Public API aliases
