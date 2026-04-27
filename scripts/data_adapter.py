@@ -875,10 +875,32 @@ def check_hidden_value(symbol: str) -> list:
 
 if __name__ == '__main__':
     import pandas as pd
-    mock_divs = pd.Series(
+
+    # Test 1: Semi-annual pattern (BBL-like) — 2 events จัดเป็น FY2025
+    bbl_divs = pd.Series(
         [2.0, 10.0],
         index=[pd.Timestamp('2025-09-15'), pd.Timestamp('2026-04-22')],
     )
-    result = _attribute_dividends_to_fiscal_years(mock_divs)
-    assert result['by_fy'][2025] == 12.0, f"Expected FY2025=12.0, got {result['by_fy'].get(2025)}"
+    r1 = _attribute_dividends_to_fiscal_years(bbl_divs)
+    assert r1['by_fy'][2025] == 12.0, f"BBL: Expected FY2025=12.0, got {r1['by_fy'].get(2025)}"
+    # sorted_fys = [2025] → typical_count = 2 default → actual_count for FY2025 = 2 → is_complete = True
+    assert r1['is_complete'][2025] is True, "BBL FY2025 should be complete"
+
+    # Test 2: Annual-pay pattern (METCO-like) — pays once per year in February
+    metco_divs = pd.Series(
+        [10.0, 14.0, 18.0, 10.0, 8.0, 30.0],
+        index=[
+            pd.Timestamp('2021-02-10'),  # FY2020 final
+            pd.Timestamp('2022-02-09'),  # FY2021 final
+            pd.Timestamp('2023-02-08'),  # FY2022 final
+            pd.Timestamp('2024-02-07'),  # FY2023 final
+            pd.Timestamp('2025-02-06'),  # FY2024 final
+            pd.Timestamp('2026-02-05'),  # FY2025 final (single event = whole year for annual-pay)
+        ],
+    )
+    r2 = _attribute_dividends_to_fiscal_years(metco_divs)
+    assert r2['typical_count'] == 1, f"METCO typical should be 1 (annual), got {r2.get('typical_count')}"
+    assert r2['by_fy'][2025] == 30.0, f"METCO FY2025 should be 30.0, got {r2['by_fy'].get(2025)}"
+    assert r2['is_complete'][2025] is True, "METCO FY2025 should be complete (annual-pay, 1 event = full year)"
+
     print('FY attribution OK')
