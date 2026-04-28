@@ -102,10 +102,13 @@ def build_v2_entry(screener_data: dict, scanned_at: datetime, report_filename: s
     }
 
 
-def append_scan_v2(entry: dict, history: dict | None = None) -> dict:
-    """Append entry to history + atomic write. Returns updated history dict."""
+def upsert_scan_v2(entry: dict, history: dict | None = None) -> dict:
+    """Replace entry of same iso_week, or append if new week. Atomic write."""
     hist = history or load_history()
-    hist.setdefault("scans", []).append(entry)
+    iso_wk = entry["iso_week"]
+    scans = [s for s in hist.get("scans", []) if s.get("iso_week") != iso_wk]
+    scans.append(entry)
+    hist["scans"] = scans
     _HISTORY_PATH.write_text(
         json.dumps(hist, indent=2, ensure_ascii=False), encoding="utf-8"
     )
