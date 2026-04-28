@@ -21,7 +21,7 @@ export async function mount(container) {
 
   _updateMasthead(status);
   _ensureChartJs().then(function () {
-    container.innerHTML = _buildMobileHomeHtml(screener);
+    container.innerHTML = _buildMobileHomeHtml(screener, trend);
     _mountTrendChart(trend);
     _wireControls(screener);
   });
@@ -115,7 +115,7 @@ function _renderCard(stock) {
   );
 }
 
-function _buildMobileHomeHtml(screener) {
+function _buildMobileHomeHtml(screener, trend) {
   var esc = window.MMUtils.escapeHtml;
   var s = screener.summary || {};
   var passed = s.passed_count || 0;
@@ -123,6 +123,14 @@ function _buildMobileHomeHtml(screener) {
   var avgYield = s.avg_yield == null ? 0 : s.avg_yield;
   var topScore = s.top_score || 0;
   var candidates = screener.candidates || [];
+  var tWeeks = (trend && trend.weeks) || [];
+  var tLast = tWeeks.length ? tWeeks[tWeeks.length - 1].scanned_at : null;
+  var tLine = '';
+  if (tLast) {
+    var td = new Date(tLast);
+    var tf = td.toLocaleString('th-TH', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+    tLine = '<div class="micro" style="color:var(--fg-dim);margin-bottom:4px">อัพเดตล่าสุด: ' + tf + '</div>';
+  }
 
   var lede =
     '<div style="padding:14px 0 12px;text-align:center;border-bottom:1px solid var(--border-subtle);margin-top:12px">' +
@@ -145,6 +153,7 @@ function _buildMobileHomeHtml(screener) {
   var trendBox =
     '<div style="padding:12px 0;border-bottom:1px solid var(--border-subtle)">' +
       '<div class="micro" style="margin-bottom:6px">Pass Count · Trailing 12 Weeks</div>' +
+      tLine +
       '<div style="height:120px"><canvas id="v6-mhome-trend"></canvas></div>' +
     '</div>';
 

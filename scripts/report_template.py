@@ -33,8 +33,12 @@ _TAG_NARRATIVES.update({
 })
 
 
-def _fm(date: str, scan_num: int, version: str) -> str:
-    return f"---\nagent: Max Mahon v5\ndate: {date}\ntype: scan\nscan_num: {scan_num}\nscoring_version: {version}\n---\n"
+def _fm(date: str, iso_week: str, scanned_at: datetime, version: str) -> str:
+    return (
+        f"---\nagent: Max Mahon v5\ndate: {date}\ntype: scan\n"
+        f"iso_week: {iso_week}\nscanned_at: {scanned_at.isoformat(timespec='seconds')}\n"
+        f"scoring_version: {version}\n---\n"
+    )
 
 
 def _top_pick_md(c: dict) -> str:
@@ -74,7 +78,7 @@ def _diff_new(current: list, prev: list) -> list:
     return [c for c in current if c.get("symbol") not in prev_syms]
 
 
-def generate_report_md(screener_data: dict, scan_num: int, prev_scan: dict | None = None) -> str:
+def generate_report_md(screener_data: dict, iso_week: str, scanned_at: datetime, prev_scan: dict | None = None) -> str:
     date = screener_data.get("date", datetime.now().strftime("%Y-%m-%d"))
     version = screener_data.get("scoring_version", "niwes-dividend-first-v2")
     cands = screener_data.get("candidates", [])
@@ -95,9 +99,9 @@ def generate_report_md(screener_data: dict, scan_num: int, prev_scan: dict | Non
     warn = [c for c in cands if any(s in c.get("signals", []) for s in ["DIVIDEND_TRAP", "DATA_WARNING"])]
 
     parts = [
-        _fm(date, scan_num, version),
-        f"# รายงานตรวจหุ้น Niwes 5-5-5-5 (รอบที่ {scan_num})\n",
-        f"_วันที่ {date} · ผ่าน {len(cands)} · review {len(review)} · new {len(new_in)}_\n",
+        _fm(date, iso_week, scanned_at, version),
+        f"# รายงานตรวจหุ้น Niwes 5-5-5-5 (สัปดาห์ {iso_week})\n",
+        f"_วันที่ {date} (ตรวจล่าสุด {scanned_at.strftime('%H:%M')}) · ผ่าน {len(cands)} · review {len(review)} · new {len(new_in)}_\n",
         "## Top Picks\n\n" + ("\n".join(_top_pick_md(c) for c in top) or "_ไม่มีหุ้นผ่านรอบนี้_"),
         "\n## Sector Spread\n\n" + _fmt_sector_spread(top),
         "\n## Review Candidates\n\n" + (
@@ -117,6 +121,9 @@ def generate_report_md(screener_data: dict, scan_num: int, prev_scan: dict | Non
 
 if __name__ == "__main__":
     import sys
+    from datetime import date
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from history_manager import iso_week_key
     if len(sys.argv) >= 3 and sys.argv[1] == "--test":
         data = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8"))
-        print(generate_report_md(data, 0))
+        print(generate_report_md(data, iso_week_key(date.today()), datetime.now()))

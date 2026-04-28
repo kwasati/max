@@ -601,17 +601,17 @@ async def get_stock_history(symbol: str):
     """Aggregate score + signal changes across all screener files for a symbol.
 
     Returns:
-        {symbol, timeline: [{date, scan_num, score, signals, passed, reasons}],
-         events: [{date, scan_num, type, action, detail}]}
+        {symbol, timeline: [{date, iso_week, score, signals, passed, reasons}],
+         events: [{date, iso_week, type, action, detail}]}
     Timeline points come from every screener_*.json sorted by date ASC.
     Events are derived (first_pass / failed / passed / signal) + watchlist adds.
     """
     sym_norm = _norm_sym(symbol)
     timeline: list[dict] = []
 
-    # Load history.json to map screener dates → scan numbers
+    # Load history.json to map screener dates → ISO week keys
     history_file = DATA_DIR / "history.json"
-    scan_nums: dict[str, int] = {}
+    iso_weeks: dict[str, str] = {}
     if history_file.exists():
         try:
             hist = read_json(history_file)
@@ -620,7 +620,7 @@ async def get_stock_history(symbol: str):
                 # scan_YYYY-MM-DD.md → date key
                 date_key = rep.replace("scan_", "").replace(".md", "") if rep else None
                 if date_key:
-                    scan_nums[date_key] = s.get("num")
+                    iso_weeks[date_key] = s.get("iso_week")
         except Exception as e:
             logging.warning(f"stock history: history.json parse error: {e}")
 
@@ -629,13 +629,13 @@ async def get_stock_history(symbol: str):
         try:
             data = read_json(scr_file)
             date = data.get("date") or scr_file.stem.replace("screener_", "")
-            scan_num = scan_nums.get(date)
+            iso_week = iso_weeks.get(date)
             found = False
             for c in data.get("candidates", []):
                 if _norm_sym(c.get("symbol", "")) == sym_norm:
                     timeline.append({
                         "date": date,
-                        "scan_num": scan_num,
+                        "iso_week": iso_week,
                         "score": c.get("score"),
                         "signals": c.get("signals", []) or [],
                         "passed": True,
@@ -649,7 +649,7 @@ async def get_stock_history(symbol: str):
                         reasons = c.get("filter_reasons") or c.get("reasons") or []
                         timeline.append({
                             "date": date,
-                            "scan_num": scan_num,
+                            "iso_week": iso_week,
                             "score": None,
                             "signals": [],
                             "passed": False,
@@ -685,7 +685,7 @@ async def get_stock_history(symbol: str):
         if prev_passed is None and pt["passed"] is True:
             events.append({
                 "date": pt["date"],
-                "scan_num": pt["scan_num"],
+                "iso_week": pt["iso_week"],
                 "type": "first_pass",
                 "action": "ผ่านเกณฑ์ (ครั้งแรก)",
                 "detail": f"score {pt['score']}" if pt["score"] is not None else "",
@@ -694,7 +694,7 @@ async def get_stock_history(symbol: str):
             detail = pt["reasons"][0] if pt["reasons"] else ""
             events.append({
                 "date": pt["date"],
-                "scan_num": pt["scan_num"],
+                "iso_week": pt["iso_week"],
                 "type": "failed",
                 "action": "หลุดรอบ",
                 "detail": detail,
@@ -702,7 +702,7 @@ async def get_stock_history(symbol: str):
         elif prev_passed is False and pt["passed"] is True:
             events.append({
                 "date": pt["date"],
-                "scan_num": pt["scan_num"],
+                "iso_week": pt["iso_week"],
                 "type": "passed",
                 "action": "กลับมาผ่านเกณฑ์",
                 "detail": f"score {pt['score']}" if pt["score"] is not None else "",
@@ -712,7 +712,7 @@ async def get_stock_history(symbol: str):
         for sig in sorted(new_signals):
             events.append({
                 "date": pt["date"],
-                "scan_num": pt["scan_num"],
+                "iso_week": pt["iso_week"],
                 "type": "signal",
                 "action": f"Signal: {sig}",
                 "detail": "",
@@ -726,7 +726,7 @@ async def get_stock_history(symbol: str):
         action = ev.get("action", "")
         events.append({
             "date": raw_date[:10],
-            "scan_num": None,
+            "iso_week": None,
             "type": f"watchlist_{action}",
             "action": "เพิ่มใน watchlist" if action == "add" else "ถอดจาก watchlist",
             "detail": "",
@@ -2418,9 +2418,12 @@ async def screener_trend(weeks: int = 12):
         top = s.get("top_candidates") or []
         yields = [c.get("yield") for c in top if c.get("yield") is not None]
         scan_date = (s.get("date") or "")[:10]
-        num = s.get("num")
+        iso_week = s.get("iso_week") or ""
+        week_label = ("W" + iso_week.split("-W")[-1]) if iso_week else scan_date
         weeks_out.append({
-            "week_label": f"W{num}" if num else scan_date,
+            "week_label": week_label,
+            "iso_week": iso_week,
+            "scanned_at": s.get("scanned_at"),
             "scan_date": scan_date,
             "passed": counts.get("passed", 0),
             "review": counts.get("review", 0),

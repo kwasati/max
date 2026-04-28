@@ -11,7 +11,7 @@ v1 legacy entries preserved as-is; migrate via scripts/migrate_history_v2.py.
 """
 import json
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, date
 
 _HISTORY_PATH = Path(__file__).resolve().parent.parent / "data" / "history.json"
 
@@ -26,12 +26,18 @@ def load_history() -> dict:
         return {"scans": []}
 
 
-def build_v2_entry(screener_data: dict, scan_num: int, report_filename: str) -> dict:
+def iso_week_key(d: date) -> str:
+    """Return ISO week key like '2026-W17' (Mon-Sun, ISO 8601)."""
+    iso = d.isocalendar()
+    return f"{iso[0]}-W{iso[1]:02d}"
+
+
+def build_v2_entry(screener_data: dict, scanned_at: datetime, report_filename: str) -> dict:
     """Build a v2 history entry from screener output.
 
-    Returns dict with 10 top-level keys: num, date, counts, summary, report,
-    scoring_version, top_candidates, watchlist_status, entry_thesis,
-    dividend_paid_since_entry, price_snapshot.
+    Returns dict with iso_week + scanned_at + date + counts/summary/report/
+    scoring_version/top_candidates/watchlist_status/entry_thesis/
+    dividend_paid_since_entry/price_snapshot.
     """
     cands = screener_data.get("candidates", [])
     review = screener_data.get("review_candidates", [])
@@ -75,8 +81,9 @@ def build_v2_entry(screener_data: dict, scan_num: int, report_filename: str) -> 
         for c in top
     }
     return {
-        "num": scan_num,
-        "date": datetime.now().isoformat(timespec="seconds"),
+        "iso_week": iso_week_key(scanned_at.date()),
+        "scanned_at": scanned_at.isoformat(timespec="seconds"),
+        "date": scanned_at.strftime("%Y-%m-%d"),
         "counts": {
             "scanned": screener_data.get("total_scanned", 0),
             "passed": len(cands),
@@ -95,10 +102,13 @@ def build_v2_entry(screener_data: dict, scan_num: int, report_filename: str) -> 
     }
 
 
-def append_scan_v2(entry: dict, history: dict | None = None) -> dict:
-    """Append entry to history + atomic write. Returns updated history dict."""
+def upsert_scan_v2(entry: dict, history: dict | None = None) -> dict:
+    """Replace entry of same iso_week, or append if new week. Atomic write."""
     hist = history or load_history()
-    hist.setdefault("scans", []).append(entry)
+    iso_wk = entry["iso_week"]
+    scans = [s for s in hist.get("scans", []) if s.get("iso_week") != iso_wk]
+    scans.append(entry)
+    hist["scans"] = scans
     _HISTORY_PATH.write_text(
         json.dumps(hist, indent=2, ensure_ascii=False), encoding="utf-8"
     )
