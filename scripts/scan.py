@@ -45,14 +45,6 @@ def load_history() -> dict:
         return {"scans": []}
 
 
-def next_scan_num(history: dict) -> int:
-    scans = history.get("scans", [])
-    if not scans:
-        return 1
-    nums = [s.get("num", 0) for s in scans]
-    return max(nums) + 1
-
-
 def main():
     screener_path = get_latest_screener()
     print(f"Using screener: {screener_path.name}")
@@ -67,11 +59,12 @@ def main():
     watchlist = user_data.get("watchlist", [])
 
     history = load_history()
-    scan_num = next_scan_num(history)
-    today = datetime.now().strftime("%Y-%m-%d")
+    scanned_at = datetime.now()
+    today = scanned_at.strftime("%Y-%m-%d")
 
     # Wire deterministic report generation (niwes-algo-02 task 3)
     from report_template import generate_report_md
+    from history_manager import build_v2_entry, upsert_scan_v2, iso_week_key
 
     # Determine prev_scan for diff (New In Batch section)
     prev_scan = None
@@ -82,17 +75,15 @@ def main():
     except Exception:
         prev_scan = None
 
+    iso_week = iso_week_key(scanned_at.date())
     report_path = REPORTS_DIR / f"scan_{today}.md"
-    report_md = generate_report_md(screener_data, scan_num, prev_scan)
+    report_md = generate_report_md(screener_data, iso_week, scanned_at, prev_scan)
     report_path.write_text(report_md, encoding="utf-8")
     print(f"report written: {report_path}")
 
-    # Wire v2 history
-    from history_manager import build_v2_entry, append_scan_v2
-
-    history_entry = build_v2_entry(screener_data, scan_num, report_path.name)
-    append_scan_v2(history_entry, history)  # pass loaded history dict to avoid re-read
-    print(f"history entry appended: scan_num={scan_num}")
+    history_entry = build_v2_entry(screener_data, scanned_at, report_path.name)
+    upsert_scan_v2(history_entry, history)  # pass loaded history dict to avoid re-read
+    print(f"history upserted: iso_week={iso_week} scanned_at={scanned_at.isoformat(timespec='seconds')}")
 
     # Telegram alert for high-severity exit triggers (plan 05 Phase 3)
     try:
