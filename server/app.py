@@ -2418,9 +2418,12 @@ async def screener_trend(weeks: int = 12):
         top = s.get("top_candidates") or []
         yields = [c.get("yield") for c in top if c.get("yield") is not None]
         scan_date = (s.get("date") or "")[:10]
-        num = s.get("num")
+        iso_week = s.get("iso_week") or ""
+        week_label = ("W" + iso_week.split("-W")[-1]) if iso_week else scan_date
         weeks_out.append({
-            "week_label": f"W{num}" if num else scan_date,
+            "week_label": week_label,
+            "iso_week": iso_week,
+            "scanned_at": s.get("scanned_at"),
             "scan_date": scan_date,
             "passed": counts.get("passed", 0),
             "review": counts.get("review", 0),
