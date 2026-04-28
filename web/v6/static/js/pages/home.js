@@ -201,10 +201,20 @@ function _buildTrendStrip(screener, trend) {
   });
   if (!leadersHtml) leadersHtml = '<li><span class="val" style="color:var(--ink-dim);font-style:italic">No leaders this week</span></li>';
 
+  var weeks = (trend && trend.weeks) || [];
+  var lastScanned = weeks.length ? weeks[weeks.length - 1].scanned_at : null;
+  var scanLine = '';
+  if (lastScanned) {
+    var d = new Date(lastScanned);
+    var fmt = d.toLocaleString('th-TH', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+    scanLine = '<div class="micro" style="color:var(--fg-dim);margin-bottom:var(--sp-2)">อัพเดตล่าสุด: ' + fmt + '</div>';
+  }
+
   return (
     '<section class="mini-chart-strip" style="display:grid;grid-template-columns:2fr 1fr;gap:var(--sp-6);padding:var(--sp-5) 0;border-bottom:1px solid var(--rule);align-items:center">' +
       '<div>' +
         '<div class="micro" style="margin-bottom:var(--sp-2)">Pass Count · Trailing 12 Weeks</div>' +
+        scanLine +
         '<div class="mini-chart-box" style="height:140px"><canvas id="v6-home-trend"></canvas></div>' +
       '</div>' +
       '<div class="strip-right" style="border-left:1px solid var(--rule-hair);padding-left:var(--sp-5)">' +
