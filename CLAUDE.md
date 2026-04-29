@@ -103,7 +103,7 @@
 - `server/auth.py` — Supabase JWT (ES256/JWKS) verifier + role guard
 - `scripts/user_data_io.py` — per-user file accessor + aggregate
 - `scripts/migrate_to_per_user.py` — one-shot legacy migration (ใช้ UUID จาก Supabase Auth Users)
-- `scripts/auth_smoke_test.html` + `scripts/run_auth_smoke_test.py` — auth flow test (อ่าน ANON_KEY จาก .env, serve, decode JWT)
+- `scripts/_archive/auth_smoke_test.html` + `scripts/_archive/run_auth_smoke_test.py` — auth flow test (archived; serves on port 50091 to avoid clashing with production max-server on 50089)
 - `docs/auth-setup.md` — Supabase setup runbook
 - `scripts/setsmart_adapter.py` — SETSMART API adapter (4 endpoints + cache layer at `data/setsmart_cache/`)
 - `scripts/data_adapter.py` — SETSMART + thaifin + yahooquery adapter (SETSMART primary aggregate via `_fetch_setsmart` helper, thaifin yearly history, yahooquery supplement)

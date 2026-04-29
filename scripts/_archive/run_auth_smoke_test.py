@@ -1,13 +1,12 @@
 """
-1-click smoke test runner for Plan 01 user-login-01-supabase.
+1-click smoke test runner for Plan 01 user-login-01-supabase (archived).
 
 Reads SUPABASE_HUB_ANON_KEY from root .env, injects into auth_smoke_test.html,
-serves on http://localhost:50089/, opens browser.
+serves on http://localhost:50091/, opens browser. Port 50091 keeps it clear
+of the production max-server (50089) so both can run side-by-side.
 
-Run: py projects/MaxMahon/scripts/run_auth_smoke_test.py
+Run: py projects/MaxMahon/scripts/_archive/run_auth_smoke_test.py
 Stop: Ctrl+C
-
-NOTE: Stop max-server.bat (FastAPI on 50089) first or this errors.
 """
 import http.server
 import socketserver
@@ -25,7 +24,7 @@ except ImportError:
 PROJECT_ROOT = Path(__file__).parent.parent
 WORKSPACE_ROOT = PROJECT_ROOT.parent.parent
 HTML_PATH = PROJECT_ROOT / "scripts" / "auth_smoke_test.html"
-PORT = 50089
+PORT = 50091
 PLACEHOLDER = "<paste-from-Supabase-Dashboard-Settings-API-anon-public-key>"
 
 dotenv.load_dotenv(WORKSPACE_ROOT / ".env")
@@ -68,7 +67,7 @@ def main():
         if "10048" in str(e) or "address already in use" in str(e).lower():
             sys.exit(
                 f"\nERROR: Port {PORT} is in use.\n"
-                "Stop max-server.bat (FastAPI) first, then re-run this script."
+                "Another smoke-test instance is running, or change PORT in this script."
             )
         raise
     except KeyboardInterrupt:
