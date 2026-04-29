@@ -1,12 +1,9 @@
 {
   "watchlist": [
-    "KTB.BK",
     "LH.BK",
     "METCO.BK",
-    "PTT.BK",
     "QH.BK",
     "SAT.BK",
-    "SIRI.BK",
     "TISCO.BK"
   ],
   "blacklist": [],
@@ -25,5 +22,5 @@
     "TISCO.BK": "ธนาคารเล็ก ปันผลสูงสุดในกลุ่ม ROE ดี"
   },
   "custom_lists": {},
-  "updated_at": "2026-04-26T09:15:18.673425"
+  "updated_at": "2026-04-28T21:35:56.772675"
 }

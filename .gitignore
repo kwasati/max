@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 .env
+.claude/
 data/
 !data/hidden_value_holdings.json
 data/analysis_cache/
