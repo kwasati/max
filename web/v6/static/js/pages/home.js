@@ -33,7 +33,7 @@ export async function mount(container) {
 function _updateMasthead(status) {
   var host = document.getElementById('masthead');
   if (!host) return;
-  host.innerHTML = window.MMComponents.renderMasthead({ active: 'home' });
+  host.innerHTML = window.MMComponents.renderMasthead({ active: 'home' }, window.__MM_ME);
 }
 
 // ----- Chart.js loader -----

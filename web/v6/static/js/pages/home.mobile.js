@@ -33,7 +33,7 @@ function _updateMasthead(status) {
   var date = status && status.last_data_date
     ? window.MMUtils.fmtDateLong(status.last_data_date).toUpperCase()
     : window.MMUtils.fmtDateLong(new Date()).toUpperCase();
-  host.innerHTML = window.MMComponents.renderMasthead({ active: 'home' });
+  host.innerHTML = window.MMComponents.renderMobileMastHead(window.__MM_ME, 'Max Mahon');
   // Mobile masthead has no top nav — keep shell's bottom nav active
   var navHost = document.getElementById('mobile-nav-host');
   if (navHost) navHost.innerHTML = window.MMComponents.renderMobileNav('home');
