@@ -12,9 +12,11 @@
 <link rel="stylesheet" href="/static/v6/shared/base.css?v={{CACHEBUST}}">
 <link rel="stylesheet" href="/static/v6/css/components.css?v={{CACHEBUST}}">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0"></script>
 <script src="/static/v6/js/device.js?v={{CACHEBUST}}"></script>
 <script src="/static/v6/js/utils.js?v={{CACHEBUST}}"></script>
 <script src="/static/v6/js/components.js?v={{CACHEBUST}}"></script>
+<script src="/static/v6/js/supabase-client.js?v={{CACHEBUST}}"></script>
 <script src="/static/v6/js/api.js?v={{CACHEBUST}}"></script>
 </head>
 <body>
@@ -28,18 +30,62 @@
 (function () {
   'use strict';
 
-  // Render masthead immediately so the shell is legible even if the page
-  // module fails to import. Date values are best-effort until the page
-  // fetches real issue metadata and re-renders via MMComponents.renderMasthead.
+  function currentRoute() {
+    return (location.pathname.replace(/^\//, '').split('/')[0]) || 'home';
+  }
+
+  // Auth guard — wait for Supabase, check session, fetch /api/me.
+  // Returns true if cleared to boot, false if redirected.
+  async function authGuard() {
+    if (location.pathname === '/login') return true;
+
+    // Wait up to 1s for Supabase JS CDN to load
+    for (var i = 0; i < 20; i++) {
+      if (window.MMSupabase) break;
+      await new Promise(function (r) { setTimeout(r, 50); });
+    }
+    if (!window.MMSupabase) {
+      document.getElementById('app').innerHTML =
+        '<div class="mm-shell-empty">Supabase failed to load — refresh page</div>';
+      return false;
+    }
+
+    var token = await window.MMSupabase.getAccessToken();
+    if (!token) {
+      location.href = '/login';
+      return false;
+    }
+
+    try {
+      var r = await fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + token } });
+      if (r.status === 403) {
+        await window.MMSupabase.signOut();
+        return false;
+      }
+      if (!r.ok) {
+        document.getElementById('app').innerHTML =
+          '<div class="mm-shell-empty">Auth check failed (' + r.status + ') — refresh page</div>';
+        return false;
+      }
+      window.__MM_ME = await r.json();
+      return true;
+    } catch (e) {
+      document.getElementById('app').innerHTML =
+        '<div class="mm-shell-empty">Network error — refresh page</div>';
+      return false;
+    }
+  }
+
   function bootMasthead() {
-    var route = (location.pathname.replace(/^\//, '').split('/')[0]) || 'home';
+    var route = currentRoute();
+    if (route === 'login') return; // login page has no masthead
     var mastCtx = { active: route };
     var host = document.getElementById('masthead');
-    if (host) host.innerHTML = MMComponents.renderMasthead(mastCtx);
+    if (host) host.innerHTML = MMComponents.renderMasthead(mastCtx, window.__MM_ME);
   }
 
   async function bootPage() {
-    var route = (location.pathname.replace(/^\//, '').split('/')[0]) || 'home';
+    var route = currentRoute();
     var app = document.getElementById('app');
     try {
       var mod = await import('/static/v6/js/pages/' + route + '.js?v={{CACHEBUST}}');
@@ -49,7 +95,6 @@
         MMComponents.renderError(app, 'Page module for "' + route + '" did not export mount().');
       }
     } catch (e) {
-      // Plan 04-08 add page modules; until then the shell itself is the deliverable.
       app.innerHTML =
         '<div class="mm-shell-empty">' +
           'Page &ldquo;' + MMUtils.escapeHtml(route) + '&rdquo; not yet implemented.' +
@@ -57,7 +102,9 @@
     }
   }
 
-  function boot() {
+  async function boot() {
+    var ok = await authGuard();
+    if (!ok) return;
     bootMasthead();
     bootPage();
   }

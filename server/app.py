@@ -2812,6 +2812,7 @@ def _render_shell(html_path: Path) -> HTMLResponse:
 @app.get("/home", response_class=HTMLResponse)
 @app.get("/watchlist", response_class=HTMLResponse)
 @app.get("/settings", response_class=HTMLResponse)
+@app.get("/login", response_class=HTMLResponse)
 async def serve_index():
     return _render_shell(_V6_DESKTOP)
 
@@ -2829,6 +2830,7 @@ async def serve_desktop_report(symbol: str):
 @app.get("/m/home", response_class=HTMLResponse)
 @app.get("/m/watchlist", response_class=HTMLResponse)
 @app.get("/m/settings", response_class=HTMLResponse)
+@app.get("/m/login", response_class=HTMLResponse)
 async def serve_mobile():
     return _render_shell(_V6_MOBILE)
 

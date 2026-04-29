@@ -13,9 +13,11 @@
 <link rel="stylesheet" href="/static/v6/shared/mobile.css?v={{CACHEBUST}}">
 <link rel="stylesheet" href="/static/v6/css/components.css?v={{CACHEBUST}}">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0"></script>
 <script src="/static/v6/js/device.js?v={{CACHEBUST}}"></script>
 <script src="/static/v6/js/utils.js?v={{CACHEBUST}}"></script>
 <script src="/static/v6/js/components.js?v={{CACHEBUST}}"></script>
+<script src="/static/v6/js/supabase-client.js?v={{CACHEBUST}}"></script>
 <script src="/static/v6/js/api.js?v={{CACHEBUST}}"></script>
 </head>
 <body>
@@ -30,7 +32,6 @@
 (function () {
   'use strict';
 
-  // Map: /m, /m/watchlist, /m/portfolio/...  →  route key
   function routeFromPath() {
     var p = location.pathname || '/m';
     if (p === '/m' || p === '/mobile' || p === '/m/' || p === '/mobile/') return 'home';
@@ -39,17 +40,66 @@
     return first || 'home';
   }
 
+  // Auth guard — wait for Supabase, check session, fetch /api/me.
+  async function authGuard() {
+    if (location.pathname === '/m/login') return true;
+
+    for (var i = 0; i < 20; i++) {
+      if (window.MMSupabase) break;
+      await new Promise(function (r) { setTimeout(r, 50); });
+    }
+    if (!window.MMSupabase) {
+      document.getElementById('app').innerHTML =
+        '<div class="mm-shell-empty">Supabase failed to load — refresh page</div>';
+      return false;
+    }
+
+    var token = await window.MMSupabase.getAccessToken();
+    if (!token) {
+      location.href = '/m/login';
+      return false;
+    }
+
+    try {
+      var r = await fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + token } });
+      if (r.status === 403) {
+        await window.MMSupabase.signOut();
+        return false;
+      }
+      if (!r.ok) {
+        document.getElementById('app').innerHTML =
+          '<div class="mm-shell-empty">Auth check failed (' + r.status + ') — refresh page</div>';
+        return false;
+      }
+      window.__MM_ME = await r.json();
+      return true;
+    } catch (e) {
+      document.getElementById('app').innerHTML =
+        '<div class="mm-shell-empty">Network error — refresh page</div>';
+      return false;
+    }
+  }
+
   function bootMasthead() {
-    var mastCtx = { active: routeFromPath() };
+    var route = routeFromPath();
+    if (location.pathname === '/m/login') return;
     var host = document.getElementById('masthead');
-    if (host) host.innerHTML = MMComponents.renderMasthead(mastCtx);
+    if (host) host.innerHTML = MMComponents.renderMobileMastHead(window.__MM_ME, _pageTitleFor(route));
+  }
+
+  function _pageTitleFor(route) {
+    if (route === 'home' || route === 'latest-scan') return 'Latest Scan';
+    if (route === 'watchlist') return 'Watchlist';
+    if (route === 'portfolio') return 'จัดพอร์ต';
+    if (route === 'settings') return 'Settings';
+    if (route === 'report') return 'Report';
+    return 'Max Mahon';
   }
 
   function bootMobileNav() {
+    if (location.pathname === '/m/login') return; // login page = no nav
     var host = document.getElementById('mobile-nav-host');
     if (!host) return;
-    // Map report/<sym> back to whichever tab it belongs in — for now, show
-    // "home" as active on any unmapped route. Pages can re-render later.
     var tabKey = routeFromPath();
     var mappedActive = ({
       home: 'home', watchlist: 'saved', saved: 'saved',
@@ -76,7 +126,9 @@
     }
   }
 
-  function boot() {
+  async function boot() {
+    var ok = await authGuard();
+    if (!ok) return;
     bootMasthead();
     bootMobileNav();
     bootPage();
