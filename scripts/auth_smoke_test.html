@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MaxMahon Auth Smoke Test</title>
+  <style>body{font-family:sans-serif;max-width:720px;margin:2em auto;padding:0 1em}button{padding:0.5em 1em;margin-right:0.5em}pre{background:#f4f4f4;padding:1em;overflow:auto}</style>
+</head>
+<body>
+  <h1>MaxMahon Auth Smoke Test</h1>
+  <p>Click <strong>Sign in with Google</strong>. After redirect back, the decoded JWT payload prints below + in browser console.</p>
+  <button id="btn-signin">Sign in with Google</button>
+  <button id="btn-signout">Sign out</button>
+  <pre id="out">(not signed in)</pre>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0"></script>
+  <script>
+    const SUPABASE_URL = 'https://zmscqylztzvzeyxwamzp.supabase.co';
+    const SUPABASE_ANON_KEY = '<paste-from-Supabase-Dashboard-Settings-API-anon-public-key>';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    document.getElementById('btn-signin').onclick = async () => {
+      const { data, error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.href } });
+      console.log('signin response', data, error);
+    };
+    document.getElementById('btn-signout').onclick = async () => { await sb.auth.signOut(); location.reload(); };
+    sb.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        const s = data.session;
+        const payload = JSON.parse(atob(s.access_token.split('.')[1]));
+        const out = {
+          access_token_preview: s.access_token.slice(0, 60) + '...',
+          access_token_length: s.access_token.length,
+          decoded_payload: payload,
+          aud_claim: payload.aud,
+          user_id: payload.sub,
+          email: payload.email,
+          expires_at: new Date(s.expires_at*1000).toISOString()
+        };
+        document.getElementById('out').textContent = JSON.stringify(out, null, 2);
+        console.log('full JWT:', s.access_token);
+        console.log('decoded payload:', payload);
+      }
+    });
+  </script>
+</body>
+</html>
