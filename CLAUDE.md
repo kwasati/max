@@ -49,8 +49,26 @@
 - ✅ เรียก `yahooquery.Ticker(sym).history(period='10y', interval='1mo')` เฉพาะ DCA simulator endpoint
 - ✅ เรียก `yahooquery.Ticker(sym).summary_detail[sym]['fiftyTwoWeekHigh']` เพราะ thaifin ไม่มี 52w range
 
-### User Data
-- `user_data.json` — watchlist, blacklist, notes, custom lists (จัดการจาก UI ได้)
+### Auth + User System
+- **Provider:** Supabase Hub (`zmscqylztzvzeyxwamzp`) Google OAuth — ES256-signed JWT
+- **Verify:** `server/auth.py` ใช้ PyJWT + JWKS endpoint `https://zmscqylztzvzeyxwamzp.supabase.co/auth/v1/.well-known/jwks.json` — fetch public key by `kid`, verify signature + audience='authenticated'
+- **Whitelist:** env `MAXMAHON_ALLOWED_USERS` = JSON array `[{email, role, name}]` — admin invite only, fail-closed (403 ถ้า email ไม่อยู่ใน list)
+- **Roles:** `admin` (อาร์ท) / `viewer` (เมีย)
+- **Endpoints:**
+  - `GET /api/me` — return `{user_id, email, name, role}` ของ session ปัจจุบัน (ใช้ `Depends(get_current_user)`)
+  - `Depends(require_admin)` gate ที่: `POST /api/settings`, `POST /api/admin/scan/trigger`, `POST /api/admin/price-refresh/trigger`, ทุก endpoint ใต้ `/api/admin/*` router (router-level dep ใน `server/admin.py`)
+- **Frontend:** Supabase JS client (`@supabase/supabase-js@2.45.0` pinned) — `web/v6/static/js/supabase-client.js` exposes `window.MMSupabase` กับ `getAccessToken()` + `signInGoogle()` + `signOut()`. Auth guard ใน `desktop/index.html` + `mobile/index.html` boot script — wait CDN, fetch /api/me, redirect /login ถ้าไม่มี session
+- **Login pages:** `/login` (desktop) + `/m/login` (mobile) — Google sign-in card, public route ไม่ require auth
+
+### Per-User Data
+- **Layout:** `data/users/{user_id}/user_data.json` — แยกข้อมูลต่อ user (UUID จาก Supabase auth)
+- **Helper:** `scripts/user_data_io.py` — funcs `load_user_data(user_id)`, `save_user_data(user_id, data)`, `all_user_ids()`, `aggregate_watchlists()` (set union)
+- **Schema:** เหมือนเดิม — `watchlist`, `blacklist`, `notes`, `custom_lists`, `transactions`, `simulated_portfolio`
+- **Migration:** `scripts/migrate_to_per_user.py --user-id <uuid>` — รัน 1 ครั้งย้าย legacy global file → per-user folder + archive
+- **Cron aggregate:** `scripts/daily_price_refresh.py` ใช้ `aggregate_watchlists()` รวม watchlist ทุก user (no dup)
+
+### User Data (legacy term)
+- per-user `data/users/{user_id}/user_data.json` — watchlist, blacklist, notes, custom lists, transactions (จัดการจาก UI, แยกตาม session login)
 
 ### Pipeline
 - **Unified Scan (ทุกสัปดาห์):** fetch → update_universe → screen → scan (Claude รวม screener + top picks) → scan_*.md
@@ -60,11 +78,12 @@
 - **Port:** 50089
 - **URL:** https://max.intensivetrader.com (Cloudflare Tunnel → localhost:50089)
 - **Startup:** `max-server.bat` หรือ `py -m uvicorn server.app:app --port 50089`
-- **Auth:** `MAX_TOKEN` ใน `.env` (Bearer token สำหรับ API)
-- **Frontend:** `web/v6/` → served at `/` (desktop) + `/m` (mobile) — client-side device-detect redirect
-- **Public API:** `/api/screener`, `/api/screener/trend`, `/api/stock/{sym}/*`, `/api/watchlist`, `/api/watchlist/enriched`, `/api/watchlist/compare`, `/api/portfolio/builder` (GET, watchlist input → 5-sector × 80/20 + role tags anchor/supporting/tail), `/api/portfolio/builder/explain` (POST, Claude Opus pillar-1 commentary), `/api/settings`, `/api/user`, `/api/status`, `/api/history/v2`, `/api/search` (POST)
-- **HTML routes (frontend shells):** `/`, `/watchlist`, `/portfolio`, `/settings`, `/report/{sym}` (desktop) + `/m`, `/m/watchlist`, `/m/portfolio`, `/m/settings`, `/m/report/{sym}` (mobile)
-- **Admin API:** `/api/admin/*` — scan trigger, **price-refresh/trigger**, SSE events, pipeline control, reports listing (same `MAX_TOKEN` auth)
+- **Auth:** Supabase Hub Google OAuth — JWT (ES256) verified ด้วย JWKS endpoint via `server/auth.py`. Env: `SUPABASE_HUB_JWT_SECRET` (legacy HS256, ไม่ใช้แล้ว), `SUPABASE_HUB_ANON_KEY` (public, ฝัง client JS), `MAXMAHON_ALLOWED_USERS` (JSON whitelist email→role). `MAX_TOKEN` legacy — ลบจาก middleware แล้ว
+- **Frontend:** `web/v6/` → served at `/` (desktop) + `/m` (mobile) — client-side device-detect redirect. Auth guard redirects ไป `/login` (desktop) หรือ `/m/login` (mobile) ถ้าไม่มี session
+- **Public API:** `/api/me` (signed-in user info), `/api/screener`, `/api/screener/trend`, `/api/stock/{sym}/*`, `/api/watchlist*`, `/api/portfolio/builder*`, `/api/settings`, `/api/user`, `/api/status`, `/api/history/v2`, `/api/search` (POST). ทุก endpoint ที่อ่าน/เขียน user data ผ่าน `Depends(get_current_user)` + per-user file
+- **HTML routes (frontend shells):** `/`, `/login`, `/watchlist`, `/portfolio`, `/settings`, `/report/{sym}` (desktop) + `/m`, `/m/login`, `/m/watchlist`, `/m/portfolio`, `/m/settings`, `/m/report/{sym}` (mobile)
+- **Admin API:** `/api/admin/*` — scan trigger, **price-refresh/trigger**, SSE events, pipeline control, reports listing — gated ด้วย `Depends(require_admin)` (router-level), `POST /api/settings` ก็ admin-only เช่นกัน
+- **Login flow:** `/login` ปุ่ม Google → Supabase OAuth → callback → JWT ใน localStorage (Supabase JS auto-refresh) → redirect `/` → auth guard เช็ค `/api/me` → 403 ถ้า email ไม่อยู่ใน whitelist (sign out + redirect login + show error)
 
 ### Frontend Layout (v6)
 - `web/v6/desktop/index.html` + `mobile/index.html` — shared shells; all routes serve same shell, page module loads by pathname
@@ -79,8 +98,13 @@
 - `mockup/` — approved design mockups (e.g. `portfolio-from-watchlist-{desktop,mobile}.html`) — source of truth for component HTML
 
 ## Key Files
-- `user_data.json` — user preferences (watchlist, blacklist, notes, lists, transactions, simulated_portfolio)
-- `config.json` — server config (schedule + filters + universe) — edited via `/settings` UI
+- `data/users/{user_id}/user_data.json` — per-user preferences (watchlist, blacklist, notes, lists, transactions, simulated_portfolio) — แยกต่อ user หลัง Plan 02
+- `config.json` — server config (schedule + filters + universe) — edited via `/settings` UI (admin only)
+- `server/auth.py` — Supabase JWT (ES256/JWKS) verifier + role guard
+- `scripts/user_data_io.py` — per-user file accessor + aggregate
+- `scripts/migrate_to_per_user.py` — one-shot legacy migration (ใช้ UUID จาก Supabase Auth Users)
+- `scripts/auth_smoke_test.html` + `scripts/run_auth_smoke_test.py` — auth flow test (อ่าน ANON_KEY จาก .env, serve, decode JWT)
+- `docs/auth-setup.md` — Supabase setup runbook
 - `scripts/setsmart_adapter.py` — SETSMART API adapter (4 endpoints + cache layer at `data/setsmart_cache/`)
 - `scripts/data_adapter.py` — SETSMART + thaifin + yahooquery adapter (SETSMART primary aggregate via `_fetch_setsmart` helper, thaifin yearly history, yahooquery supplement)
 - `scripts/update_universe.py` — ดึง list หุ้นทั้ง SET/mai
