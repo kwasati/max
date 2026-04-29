@@ -28,9 +28,14 @@ export async function mount(container) {
 
   window.MMComponents.renderLoading(container, 'Loading settings');
 
-  var data;
+  var data, me;
   try {
-    data = await window.MMApi.get('/api/settings');
+    var results = await Promise.all([
+      window.MMApi.get('/api/settings'),
+      Promise.resolve(window.__MM_ME || window.MMApi.get('/api/me'))
+    ]);
+    data = results[0];
+    me = results[1];
   } catch (e) {
     window.MMComponents.renderError(container, e.message, function () { mount(container); });
     return;
@@ -39,21 +44,26 @@ export async function mount(container) {
   _state.initial = _extractFormState(data);
   _state.dirty = false;
 
-  container.innerHTML = _renderShell(data);
+  var isAdmin = me && me.role === 'admin';
 
-  _wireDaychips(container);
-  _wireSwitch(container);
-  _wireSliders(container);
-  _wireRadios(container);
-  _wireTimeInput(container);
-  _wireSave(container, data);
-  _wireDiscard(container, data);
-  _wireDirtyTracking(container);
-  _wireOperations(container);
+  container.innerHTML = _renderShell(data, me);
+  if (!isAdmin) container.classList.add('read-only');
+
+  if (isAdmin) {
+    _wireDaychips(container);
+    _wireSwitch(container);
+    _wireSliders(container);
+    _wireRadios(container);
+    _wireTimeInput(container);
+    _wireSave(container, data);
+    _wireDiscard(container, data);
+    _wireDirtyTracking(container);
+    _wireOperations(container);
+  }
 
   if (!_state.mounted) {
     _state.mounted = true;
-    _attachUnsavedGuards();
+    if (isAdmin) _attachUnsavedGuards();
   }
 
   _updateNextRunLabel(container);
@@ -130,7 +140,12 @@ function _ensureStyles() {
 // ----------------------------------------------------------
 // Render
 // ----------------------------------------------------------
-function _renderShell(data) {
+function _renderShell(data, me) {
+  var isAdmin = me && me.role === 'admin';
+  var roleBanner = isAdmin
+    ? '<div class="role-banner admin"><span class="icon">👑</span><div style="font-size:var(--fs-xs)"><strong>Admin.</strong> แก้ได้</div></div>'
+    : '<div class="role-banner viewer"><span class="icon">🔒</span><div style="font-size:var(--fs-xs)"><strong>View only.</strong> ดูได้ แก้ไม่ได้</div></div>';
+  var lockPill = isAdmin ? '' : ' <span class="lock-pill">🔒</span>';
   var schedule = data.schedule || {};
   var filters = data.filters || {};
   var universe = data.universe || 'set_mai';
@@ -201,12 +216,13 @@ function _renderShell(data) {
     : 'All changes captured &middot; next scan uses these values.';
 
   return (
-    opsSection +
+    roleBanner +
+    (isAdmin ? opsSection : '') +
     sectionNum +
     '<div class="settings-wrap-mobile">' +
       /* AUTO SCAN */
       '<div class="setting-block">' +
-        '<div class="setting-label">Auto Scan</div>' +
+        '<div class="setting-label">Auto Scan' + lockPill + '</div>' +
         '<div class="setting-help">ดึงข้อมูล + scan ทุกสัปดาห์</div>' +
         '<label class="switch' + (enabled ? ' on' : '') + '" id="sched-switch" style="margin-bottom:14px">' +
           '<input type="checkbox" id="sched-enabled"' + (enabled ? ' checked' : '') + '>' +
@@ -223,7 +239,7 @@ function _renderShell(data) {
       '</div>' +
       /* NIWES THRESHOLDS */
       '<div class="setting-block">' +
-        '<div class="setting-label">Niwes Filters</div>' +
+        '<div class="setting-label">Niwes Filters' + lockPill + '</div>' +
         '<div class="setting-help">5-5-5-5 + market cap</div>' +
         _sliderRow('f-yield', 'Min Yield', 'Niwes default 5.0%', 1, 10, 0.5, minYield, '%', 1) +
         _sliderRow('f-streak', 'Min Streak', 'Niwes default 5 yrs', 1, 15, 1, minStreak, ' y', 0) +
@@ -233,19 +249,21 @@ function _renderShell(data) {
       '</div>' +
       /* UNIVERSE */
       '<div class="setting-block">' +
-        '<div class="setting-label">Stock Universe</div>' +
+        '<div class="setting-label">Stock Universe' + lockPill + '</div>' +
         '<div class="setting-help">ยิ่งเยอะยิ่งช้า แต่ครอบคลุมกว่า</div>' +
         universeCards +
       '</div>' +
     '</div>' +
-    /* SAVE — sticky bottom */
-    '<div class="save-row-mobile">' +
-      '<button class="btn primary" id="btn-save" type="button" disabled>Save All Changes</button>' +
-      '<div>' +
-        '<button class="btn ghost" id="btn-discard" type="button" disabled>Discard</button>' +
-      '</div>' +
-      '<div class="last-saved" id="last-saved">' + lastSaved + '</div>' +
-    '</div>'
+    /* SAVE — admin only */
+    (isAdmin
+      ? '<div class="save-row-mobile">' +
+          '<button class="btn primary" id="btn-save" type="button" disabled>Save All Changes</button>' +
+          '<div>' +
+            '<button class="btn ghost" id="btn-discard" type="button" disabled>Discard</button>' +
+          '</div>' +
+          '<div class="last-saved" id="last-saved">' + lastSaved + '</div>' +
+        '</div>'
+      : '')
   );
 }
 

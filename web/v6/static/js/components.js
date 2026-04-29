@@ -14,9 +14,9 @@
    * @param {{active?:string}} ctx
    * @returns {string} HTML string for <header class="app-header">…</header>
    */
-  function renderMasthead(ctx) {
+  function renderMasthead(ctx, user) {
     var active = (ctx && ctx.active) || 'latest-scan';
-    return renderMastNav(active);
+    return renderMastNav(active, user);
   }
 
   /**
@@ -26,11 +26,10 @@
    * @param {string|{active?:string}} activeOrCtx — either active key or ctx-like object
    * @returns {string} HTML for <header class="app-header">
    */
-  function renderMastNav(activeOrCtx) {
+  function renderMastNav(activeOrCtx, user) {
     var active = typeof activeOrCtx === 'string'
       ? activeOrCtx
       : ((activeOrCtx && activeOrCtx.active) || 'latest-scan');
-    // Legacy callers pass 'home'/'report' — treat both as 'latest-scan' (default landing)
     if (active === 'home' || active === 'report') active = 'latest-scan';
     var items = [
       ['latest-scan', '/',          'LATEST SCAN'],
@@ -45,6 +44,9 @@
       var label = items[i][2];
       nav += '<a href="' + href + '"' + (key === active ? ' class="active"' : '') + '>' + label + '</a>';
     }
+    var userArea = user ? renderUserBadge(user) : '<button class="icon-btn" type="button" aria-label="menu">⋮</button>';
+    var dropdown = user ? renderUserDropdown(user) : '';
+    setTimeout(_wireUserBadge, 0); // attach handler after DOM render
     return (
       '<header class="app-header">' +
         '<div class="brand">' +
@@ -55,9 +57,112 @@
           '</div>' +
         '</div>' +
         '<nav>' + nav + '</nav>' +
-        '<button class="icon-btn" type="button" aria-label="menu">⋮</button>' +
+        '<div class="user-badge-wrap">' + userArea + dropdown + '</div>' +
       '</header>'
     );
+  }
+
+  function renderUserBadge(user) {
+    var initial = ((user.name || user.email || '?') + '').charAt(0).toUpperCase();
+    var roleClass = user.role === 'admin' ? 'admin' : 'viewer';
+    var roleLabel = user.role === 'admin' ? 'Admin' : 'Viewer';
+    return (
+      '<div class="user-badge" data-user-toggle="1">' +
+        '<div class="user-avatar ' + roleClass + '">' + initial + '</div>' +
+        '<span class="user-name">' + (user.name || '') + '</span>' +
+        '<span class="user-role ' + roleClass + '">' + roleLabel + '</span>' +
+        '<span class="caret">▾</span>' +
+      '</div>'
+    );
+  }
+
+  function renderUserDropdown(user) {
+    var roleClass = user.role === 'admin' ? 'admin' : 'viewer';
+    var roleLabel = user.role === 'admin' ? 'Admin' : 'Viewer';
+    return (
+      '<div class="dropdown-menu" data-user-dropdown hidden>' +
+        '<div class="dropdown-head">' +
+          '<div class="who">' + (user.name || '') + ' <span class="user-role ' + roleClass + '">' + roleLabel + '</span></div>' +
+          '<div class="email">' + (user.email || '') + '</div>' +
+        '</div>' +
+        '<a class="dropdown-item danger" data-action="logout">Logout</a>' +
+      '</div>'
+    );
+  }
+
+  function renderMobileMastHead(user, pageTitle) {
+    setTimeout(_wireUserBadge, 0);
+    if (!user) return '<header class="mobile-masthead"><div class="brand-row"><div class="mark-sm">M</div><strong>' + (pageTitle || 'Max Mahon') + '</strong></div></header>';
+    var initial = ((user.name || user.email || '?') + '').charAt(0).toUpperCase();
+    var roleClass = user.role === 'admin' ? 'admin' : 'viewer';
+    var roleLabel = user.role === 'admin' ? 'Admin' : 'Viewer';
+    return (
+      '<header class="mobile-masthead">' +
+        '<div class="brand-row">' +
+          '<div class="mark-sm">M</div>' +
+          '<strong>' + (pageTitle || 'Max Mahon') + '</strong>' +
+        '</div>' +
+        '<div class="user-badge mobile" data-user-toggle="1">' +
+          '<div class="user-avatar ' + roleClass + '" style="width:24px;height:24px;font-size:0.7rem">' + initial + '</div>' +
+          '<span class="user-role ' + roleClass + '">' + roleLabel + '</span>' +
+        '</div>' +
+      '</header>'
+    );
+  }
+
+  function _wireUserBadge() {
+    var badges = document.querySelectorAll('[data-user-toggle="1"]');
+    badges.forEach(function (b) {
+      if (b.__wired) return;
+      b.__wired = true;
+      b.addEventListener('click', function (e) {
+        e.stopPropagation();
+        // Mobile: open modal sheet with user info + logout
+        if (b.classList.contains('mobile')) {
+          var me = window.__MM_ME || {};
+          var roleClass = me.role === 'admin' ? 'admin' : 'viewer';
+          var roleLabel = me.role === 'admin' ? 'Admin' : 'Viewer';
+          var html =
+            '<div style="padding:var(--sp-3) 0">' +
+              '<div style="font-weight:700;font-size:var(--fs-md);margin-bottom:4px">' + (me.name || '') +
+                ' <span class="user-role ' + roleClass + '">' + roleLabel + '</span></div>' +
+              '<div style="font-family:var(--font-mono);font-size:var(--fs-xs);color:var(--fg-dim);margin-bottom:var(--sp-5)">' + (me.email || '') + '</div>' +
+              '<button class="btn ghost" id="mm-logout-btn" style="width:100%;color:var(--c-negative)">Logout</button>' +
+            '</div>';
+          openModal(html, { headline: 'Account' });
+          var lb = document.getElementById('mm-logout-btn');
+          if (lb) lb.addEventListener('click', function () {
+            if (window.MMSupabase) window.MMSupabase.signOut();
+          });
+          return;
+        }
+        // Desktop: toggle dropdown
+        var dd = document.querySelector('[data-user-dropdown]');
+        if (!dd) return;
+        if (dd.hasAttribute('hidden')) dd.removeAttribute('hidden');
+        else dd.setAttribute('hidden', '');
+      });
+    });
+    // Wire logout in dropdown
+    var logoutLinks = document.querySelectorAll('[data-action="logout"]');
+    logoutLinks.forEach(function (a) {
+      if (a.__wired) return;
+      a.__wired = true;
+      a.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (window.MMSupabase) window.MMSupabase.signOut();
+      });
+    });
+    // Click outside closes desktop dropdown
+    if (!document.__userBadgeOutsideWired) {
+      document.__userBadgeOutsideWired = true;
+      document.addEventListener('click', function (e) {
+        var dd = document.querySelector('[data-user-dropdown]');
+        if (!dd || dd.hasAttribute('hidden')) return;
+        if (e.target.closest && (e.target.closest('[data-user-dropdown]') || e.target.closest('[data-user-toggle="1"]'))) return;
+        dd.setAttribute('hidden', '');
+      });
+    }
   }
 
   /**
@@ -289,6 +394,9 @@
     renderMasthead: renderMasthead,
     renderMastNav: renderMastNav,
     renderMobileNav: renderMobileNav,
+    renderMobileMastHead: renderMobileMastHead,
+    renderUserBadge: renderUserBadge,
+    renderUserDropdown: renderUserDropdown,
     renderSectionNum: renderSectionNum,
     renderPullQuote: renderPullQuote,
     renderDropCap: renderDropCap,

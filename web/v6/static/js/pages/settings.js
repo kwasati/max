@@ -29,9 +29,14 @@ export async function mount(container) {
 
   window.MMComponents.renderLoading(container, 'Loading settings');
 
-  var data;
+  var data, me;
   try {
-    data = await window.MMApi.get('/api/settings');
+    var results = await Promise.all([
+      window.MMApi.get('/api/settings'),
+      Promise.resolve(window.__MM_ME || window.MMApi.get('/api/me'))
+    ]);
+    data = results[0];
+    me = results[1];
   } catch (e) {
     window.MMComponents.renderError(container, e.message, function () { mount(container); });
     return;
@@ -40,21 +45,26 @@ export async function mount(container) {
   _state.initial = _extractFormState(data);
   _state.dirty = false;
 
-  container.innerHTML = _renderShell(data);
+  var isAdmin = me && me.role === 'admin';
 
-  _wireDaychips(container);
-  _wireSwitch(container);
-  _wireSliders(container);
-  _wireRadios(container);
-  _wireTimeInput(container);
-  _wireSave(container, data);
-  _wireDiscard(container, data);
-  _wireDirtyTracking(container);
-  _wireOperations(container);
+  container.innerHTML = _renderShell(data, me);
+  if (!isAdmin) container.classList.add('read-only');
+
+  if (isAdmin) {
+    _wireDaychips(container);
+    _wireSwitch(container);
+    _wireSliders(container);
+    _wireRadios(container);
+    _wireTimeInput(container);
+    _wireSave(container, data);
+    _wireDiscard(container, data);
+    _wireDirtyTracking(container);
+    _wireOperations(container);
+  }
 
   if (!_state.mounted) {
     _state.mounted = true;
-    _attachUnsavedGuards();
+    if (isAdmin) _attachUnsavedGuards();
   }
 
   _updateNextRunLabel(container);
@@ -137,7 +147,12 @@ function _ensureStyles() {
 // ----------------------------------------------------------
 // Render
 // ----------------------------------------------------------
-function _renderShell(data) {
+function _renderShell(data, me) {
+  var isAdmin = me && me.role === 'admin';
+  var roleBanner = isAdmin
+    ? '<div class="role-banner admin"><span class="icon">👑</span><div><strong>Admin mode.</strong> แก้ค่าได้ทุกตัว</div></div>'
+    : '<div class="role-banner viewer"><span class="icon">🔒</span><div><strong>Viewer mode.</strong> ดูได้ แก้ไม่ได้ — ติดต่อ admin (อาร์ท) ถ้าจะเปลี่ยน</div></div>';
+  var lockPill = isAdmin ? '' : ' <span class="lock-pill">🔒 read-only</span>';
   var schedule = data.schedule || {};
   var filters = data.filters || {};
   var universe = data.universe || 'set_mai';
@@ -210,7 +225,8 @@ function _renderShell(data) {
     : 'All changes captured &middot; next scan uses these values.';
 
   return (
-    opsSection +
+    roleBanner +
+    (isAdmin ? opsSection : '') +
     sectionNum +
     '<h2 class="section-title">House Rules.</h2>' +
     '<p style="color:var(--fg-dim);font-size:var(--fs-sm);margin-bottom:var(--sp-4)">ตั้งค่าการ scan + เกณฑ์กรองของ ดร.นิเวศน์. บันทึกเมื่อกด Save ด้านล่าง.</p>' +
@@ -218,7 +234,7 @@ function _renderShell(data) {
       /* AUTO SCAN */
       '<div class="setting-block">' +
         '<div>' +
-          '<div class="setting-label">Auto Scan</div>' +
+          '<div class="setting-label">Auto Scan' + lockPill + '</div>' +
           '<div class="setting-help">ระบบจะดึงข้อมูลใหม่ + เรียก screen ทุกสัปดาห์ในเวลาที่กำหนด</div>' +
         '</div>' +
         '<div class="setting-control">' +
@@ -239,7 +255,7 @@ function _renderShell(data) {
       /* NIWES THRESHOLDS */
       '<div class="setting-block">' +
         '<div>' +
-          '<div class="setting-label">Niwes Filter Thresholds</div>' +
+          '<div class="setting-label">Niwes Filter Thresholds' + lockPill + '</div>' +
           '<div class="setting-help">เกณฑ์ 5-5-5-5 + market cap &middot; ปรับให้เข้มขึ้น = หุ้นผ่านน้อยลง &middot; ย่อหย่อน = ผ่านมากขึ้น</div>' +
         '</div>' +
         '<div class="setting-control">' +
@@ -253,17 +269,19 @@ function _renderShell(data) {
       /* UNIVERSE */
       '<div class="setting-block">' +
         '<div>' +
-          '<div class="setting-label">Stock Universe</div>' +
+          '<div class="setting-label">Stock Universe' + lockPill + '</div>' +
           '<div class="setting-help">จำนวนหุ้นที่ scan ทุกสัปดาห์ &middot; ยิ่งเยอะยิ่งช้า &middot; แต่ครอบคลุมกว่า</div>' +
         '</div>' +
         '<div class="setting-control">' + universeCards + '</div>' +
       '</div>' +
-      /* SAVE */
-      '<div class="save-row">' +
-        '<button class="btn primary" id="btn-save" type="button" disabled>Save All Changes</button>' +
-        '<button class="btn ghost" id="btn-discard" type="button" disabled>Discard</button>' +
-        '<div class="last-saved" id="last-saved">' + lastSaved + '</div>' +
-      '</div>' +
+      /* SAVE — admin only (CSS .read-only hides for viewer too, but we render conditionally for cleanliness) */
+      (isAdmin
+        ? '<div class="save-row">' +
+            '<button class="btn primary" id="btn-save" type="button" disabled>Save All Changes</button>' +
+            '<button class="btn ghost" id="btn-discard" type="button" disabled>Discard</button>' +
+            '<div class="last-saved" id="last-saved">' + lastSaved + '</div>' +
+          '</div>'
+        : '') +
     '</div>'
   );
 }
