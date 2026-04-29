@@ -19,13 +19,22 @@ from pathlib import Path
 from typing import Optional
 
 import markdown
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
+from server.auth import require_admin
 
-router = APIRouter(prefix="/api/admin", tags=["admin"])
+
+# All /api/admin/* endpoints require an admin-role JWT (Supabase whitelist).
+# Router-level dependency guarantees every route below is admin-gated even if
+# someone forgets to add Depends(require_admin) to a new handler.
+router = APIRouter(
+    prefix="/api/admin",
+    tags=["admin"],
+    dependencies=[Depends(require_admin)],
+)
 
 # ---------------------------------------------------------------------------
 # Shared state — must be initialized from app.py via init_admin(...)

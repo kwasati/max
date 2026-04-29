@@ -23,9 +23,9 @@ import markdown
 import uvicorn
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request, status
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
@@ -40,6 +40,7 @@ except ImportError:
 
 from server.console import count_request, start_refresh_loop
 from server.admin import router as admin_router, init_admin
+from server.auth import get_current_user, require_admin
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -60,7 +61,6 @@ _PORTFOLIO_OPUS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 # Env / Auth
 # ---------------------------------------------------------------------------
 load_dotenv(Path("C:/WORKSPACE/.env"))
-MAX_TOKEN = os.getenv("MAX_TOKEN", "")
 
 if _anthropic_mod and _anthropic_client is None:
     _ak = os.getenv("MAX_ANTHROPIC_API_KEY")
@@ -110,22 +110,9 @@ async def request_logger(request: Request, call_next):
     return response
 
 
-@app.middleware("http")
-async def auth_middleware(request: Request, call_next):
-    path = request.url.path
-    # Skip auth for non-API routes (static files, root, etc.)
-    if not path.startswith("/api/"):
-        return await call_next(request)
-    # Skip auth if no token configured
-    if not MAX_TOKEN:
-        return await call_next(request)
-    auth = request.headers.get("Authorization", "")
-    if auth != f"Bearer {MAX_TOKEN}":
-        return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"detail": "Unauthorized"},
-        )
-    return await call_next(request)
+# Auth migration: legacy global Bearer middleware removed. Per-endpoint
+# Supabase JWT verification now happens via Depends(get_current_user) /
+# Depends(require_admin) on the routes that need it (see server.auth).
 
 
 # ---------------------------------------------------------------------------
@@ -211,16 +198,16 @@ def _load_previous_screener(exclude_current: Path) -> Optional[dict]:
 
 
 @app.get("/api/screener")
-async def get_screener():
+async def get_screener(user: dict = Depends(get_current_user)):
     path = find_latest("screener_*.json", DATA_DIR)
     if not path:
         raise HTTPException(404, "No screener data found")
     data = read_json(path)
     # P3.1 — tag each candidate with is_new_in_batch (never passed in any prior screener)
     historical = _get_historical_passed_symbols(exclude_current=path)
-    # P3.2 — inject in_watchlist on BOTH candidates + filtered_out_stocks from live user_data
+    # P3.2 — inject in_watchlist on BOTH candidates + filtered_out_stocks from this user's watchlist
     try:
-        user_data = load_user_data()
+        user_data = load_user_data(user["user_id"])
     except Exception:
         user_data = {"watchlist": []}
     watched = {_norm_sym(s) for s in (user_data.get("watchlist") or [])}
@@ -288,7 +275,7 @@ async def get_screener():
 
 
 @app.get("/api/stock/{symbol}")
-async def get_stock(symbol: str):
+async def get_stock(symbol: str, user: dict = Depends(get_current_user)):
     """Merge stock data from snapshot + screener."""
     stock_data = None
 
@@ -393,7 +380,7 @@ async def get_stock(symbol: str):
     # reasons_narrative: current 'reasons' is already a list[str]; keep shape, alias for frontend clarity
     stock_data["reasons_narrative"] = stock_data.get("reasons") or []
 
-    stock_data['user_in_watchlist'] = symbol in (load_user_data().get('watchlist') or [])
+    stock_data['user_in_watchlist'] = symbol in (load_user_data(user["user_id"]).get('watchlist') or [])
 
     return stock_data
 
@@ -757,6 +744,17 @@ async def get_status():
     }
 
 
+@app.get("/api/me")
+async def get_me(user: dict = Depends(get_current_user)):
+    """Return the authenticated user's identity (from Supabase JWT + whitelist)."""
+    return {
+        "user_id": user["user_id"],
+        "email": user["email"],
+        "name": user.get("name"),
+        "role": user["role"],
+    }
+
+
 # ---------------------------------------------------------------------------
 # Request Analyze API
 # ---------------------------------------------------------------------------
@@ -947,7 +945,7 @@ async def get_settings():
 
 
 @app.post("/api/settings")
-async def post_settings(request: Request):
+async def post_settings(request: Request, _: dict = Depends(require_admin)):
     body = await request.json()
     # v6 Phase 2 — validate schema
     filters = body.get("filters")
@@ -1078,7 +1076,7 @@ async def on_shutdown():
 
 
 @app.post("/api/admin/price-refresh/trigger")
-async def admin_trigger_price_refresh():
+async def admin_trigger_price_refresh(_: dict = Depends(require_admin)):
     """Manually trigger the daily price refresh job (otherwise runs 19:00 Asia/Bangkok).
 
     Runs the refresh in an executor so the request does not block the event loop,
@@ -1458,32 +1456,15 @@ async def dca_simulate(
 
 
 # ---------------------------------------------------------------------------
-# User Data API
+# User Data API — per-user via scripts.user_data_io (Plan 02 Phase 3)
 # ---------------------------------------------------------------------------
 
-USER_DATA_PATH = PROJECT_DIR / "user_data.json"
-
-
-def load_user_data() -> dict:
-    if USER_DATA_PATH.exists():
-        data = json.loads(USER_DATA_PATH.read_text(encoding="utf-8"))
-    else:
-        data = {}
-    # v6 Phase 2 — ensure all expected top-level keys are present
-    data.setdefault("watchlist", [])
-    data.setdefault("blacklist", [])
-    data.setdefault("notes", {})
-    data.setdefault("custom_lists", {})
-    data.setdefault("updated_at", None)
-    return data
-
-
-def save_user_data(data: dict):
-    data["updated_at"] = datetime.now().isoformat()
-    USER_DATA_PATH.write_text(
-        json.dumps(data, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+# Lazy import: scripts/ is added to sys.path elsewhere in the file too. We do
+# the load here once so all endpoints below share the same callable refs.
+_scripts_dir_for_user_io = str(PROJECT_DIR)
+if _scripts_dir_for_user_io not in sys.path:
+    sys.path.insert(0, _scripts_dir_for_user_io)
+from scripts.user_data_io import load_user_data, save_user_data  # noqa: E402
 
 
 def _normalize_symbol(s: str) -> str:
@@ -1494,8 +1475,8 @@ def _normalize_symbol(s: str) -> str:
 
 
 @app.get("/api/user")
-async def get_user_data():
-    return load_user_data()
+async def get_user_data(user: dict = Depends(get_current_user)):
+    return load_user_data(user["user_id"])
 
 
 class WatchlistUpdate(BaseModel):
@@ -1504,8 +1485,11 @@ class WatchlistUpdate(BaseModel):
 
 
 @app.put("/api/user/watchlist")
-async def update_watchlist(body: WatchlistUpdate):
-    data = load_user_data()
+async def update_watchlist(
+    body: WatchlistUpdate,
+    user: dict = Depends(get_current_user),
+):
+    data = load_user_data(user["user_id"])
     old_wl = set(data.get("watchlist") or [])
     wl = set(old_wl)
     for s in body.add:
@@ -1513,7 +1497,7 @@ async def update_watchlist(body: WatchlistUpdate):
     for s in body.remove:
         wl.discard(_normalize_symbol(s))
     data["watchlist"] = sorted(wl)
-    save_user_data(data)
+    save_user_data(user["user_id"], data)
 
     # P5.2 — append watchlist events (add/remove) to jsonl log
     added = wl - old_wl
@@ -1525,12 +1509,14 @@ async def update_watchlist(body: WatchlistUpdate):
             with events_file.open("a", encoding="utf-8") as f:
                 for sym in sorted(added):
                     f.write(json.dumps(
-                        {"date": now_iso, "symbol": sym, "action": "add"},
+                        {"date": now_iso, "symbol": sym, "action": "add",
+                         "user_id": user["user_id"]},
                         ensure_ascii=False,
                     ) + "\n")
                 for sym in sorted(removed):
                     f.write(json.dumps(
-                        {"date": now_iso, "symbol": sym, "action": "remove"},
+                        {"date": now_iso, "symbol": sym, "action": "remove",
+                         "user_id": user["user_id"]},
                         ensure_ascii=False,
                     ) + "\n")
         except Exception as e:
@@ -1540,15 +1526,18 @@ async def update_watchlist(body: WatchlistUpdate):
 
 
 @app.put("/api/user/blacklist")
-async def update_blacklist(body: WatchlistUpdate):
-    data = load_user_data()
-    bl = set(data["blacklist"])
+async def update_blacklist(
+    body: WatchlistUpdate,
+    user: dict = Depends(get_current_user),
+):
+    data = load_user_data(user["user_id"])
+    bl = set(data.get("blacklist") or [])
     for s in body.add:
         bl.add(_normalize_symbol(s))
     for s in body.remove:
         bl.discard(_normalize_symbol(s))
     data["blacklist"] = sorted(bl)
-    save_user_data(data)
+    save_user_data(user["user_id"], data)
     return {"blacklist": data["blacklist"]}
 
 
@@ -1557,14 +1546,19 @@ class NoteUpdate(BaseModel):
 
 
 @app.put("/api/user/notes/{symbol}")
-async def update_note(symbol: str, body: NoteUpdate):
-    data = load_user_data()
+async def update_note(
+    symbol: str,
+    body: NoteUpdate,
+    user: dict = Depends(get_current_user),
+):
+    data = load_user_data(user["user_id"])
     sym = _normalize_symbol(symbol)
+    notes = data.setdefault("notes", {})
     if body.note.strip():
-        data["notes"][sym] = body.note.strip()
+        notes[sym] = body.note.strip()
     else:
-        data["notes"].pop(sym, None)
-    save_user_data(data)
+        notes.pop(sym, None)
+    save_user_data(user["user_id"], data)
     return {"notes": data["notes"]}
 
 
@@ -2157,7 +2151,7 @@ async def get_stock_patterns(symbol: str):
 
 
 @app.get("/api/watchlist/{symbol}/exit-status")
-async def get_exit_status(symbol: str):
+async def get_exit_status(symbol: str, user: dict = Depends(get_current_user)):
     """Return baseline + exit triggers + severity summary for watchlist stock."""
     baselines_file = DATA_DIR / "exit_baselines.json"
     baselines = (
@@ -2166,12 +2160,8 @@ async def get_exit_status(symbol: str):
         else {}
     )
 
-    # Load user watchlist
-    user_data = (
-        json.loads(USER_DATA_PATH.read_text(encoding="utf-8"))
-        if USER_DATA_PATH.exists()
-        else {}
-    )
+    # Load user watchlist (per-user)
+    user_data = load_user_data(user["user_id"])
     in_watchlist = symbol in set(user_data.get("watchlist", []))
 
     # Look up exit triggers from latest screener
@@ -2436,11 +2426,11 @@ async def screener_trend(weeks: int = 12):
 
 
 @app.get("/api/watchlist/enriched")
-async def watchlist_enriched():
+async def watchlist_enriched(user: dict = Depends(get_current_user)):
     """Join watchlist × screener × exit_baselines × notes in one call.
     Avoids client-side N+1 fetches (one per symbol).
     """
-    user_data = load_user_data()
+    user_data = load_user_data(user["user_id"])
     watchlist = user_data.get("watchlist") or []
     notes = user_data.get("notes") or {}
 
@@ -2653,7 +2643,10 @@ async def watchlist_compare(symbols: str):
 # ============================================================================
 
 @app.get("/api/portfolio/builder")
-async def get_portfolio_builder(pins: str = ""):
+async def get_portfolio_builder(
+    pins: str = "",
+    user: dict = Depends(get_current_user),
+):
     """Build Niwes 5-sector 80/20 portfolio from user watchlist + latest screener.
 
     `pins` = optional comma-separated symbols to force-include (override resolver).
@@ -2665,7 +2658,7 @@ async def get_portfolio_builder(pins: str = ""):
         sys.path.insert(0, _project_root)
     from scripts import portfolio_builder as pb_mod
 
-    user_data = load_user_data()
+    user_data = load_user_data(user["user_id"])
     watchlist = user_data.get("watchlist") or []
     try:
         screener = _latest_screener_file()
@@ -2728,16 +2721,20 @@ def _build_portfolio_explain_prompt(portfolio: list) -> str:
 
 
 @app.post("/api/portfolio/builder/explain")
-async def explain_portfolio(payload: dict):
-    """Claude Opus on-demand commentary on a built portfolio. Cached 7d by hash."""
+async def explain_portfolio(
+    payload: dict,
+    user: dict = Depends(get_current_user),
+):
+    """Claude Opus on-demand commentary on a built portfolio. Cached 7d by hash, per user."""
     if _anthropic_client is None:
         raise HTTPException(503, "MAX_ANTHROPIC_API_KEY missing")
     watchlist = payload.get("watchlist", [])
     pins = payload.get("pins", [])
     portfolio = payload.get("portfolio", [])
 
+    # Cache per-user so two users with similar watchlists don't share output.
     h = hashlib.sha256(
-        ("|".join(sorted(watchlist)) + "|" + "|".join(sorted(pins))).encode()
+        (user["user_id"] + "|" + "|".join(sorted(watchlist)) + "|" + "|".join(sorted(pins))).encode()
     ).hexdigest()[:16]
     cache_file = _PORTFOLIO_OPUS_CACHE_DIR / f"{h}.json"
 

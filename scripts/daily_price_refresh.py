@@ -2,8 +2,9 @@
 
 Scheduled 19:00 Asia/Bangkok (post SET close 17:00 + 2h buffer).
 
-Collects symbols from user_data.json (watchlist) + latest screener_*.json
-(candidates), batches price fetches through yahooquery (20 per chunk, 0.2s
+Collects symbols from EVERY user's watchlist (set-union via
+``scripts.user_data_io.aggregate_watchlists``) + latest screener_*.json
+candidates, batches price fetches through yahooquery (20 per chunk, 0.2s
 sleep between chunks), and writes ``data/price_cache/{symbol}.json`` with
 ``{symbol, price, fetched_at}``. Errors on any single batch are logged and
 do not stop the overall refresh.
@@ -11,6 +12,7 @@ do not stop the overall refresh.
 import json
 import logging
 import re
+import sys
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -19,9 +21,14 @@ from yahooquery import Ticker
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
-USER_DATA = ROOT / "user_data.json"
 CACHE_DIR = DATA_DIR / "price_cache"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+# Make sibling helper importable when this script is run as __main__ via APScheduler.
+_PROJECT_ROOT = str(ROOT)
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
+from scripts.user_data_io import aggregate_watchlists  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -29,17 +36,14 @@ _SCREENER_RE = re.compile(r"^screener_\d{4}-\d{2}-\d{2}\.json$")
 
 
 def _load_symbols() -> list[str]:
-    """Collect deduped, sorted symbol list from watchlist + latest screener."""
+    """Collect deduped, sorted symbol list from ALL users' watchlists + latest screener."""
     symbols: set[str] = set()
 
-    if USER_DATA.exists():
-        try:
-            user = json.loads(USER_DATA.read_text(encoding="utf-8"))
-            for sym in user.get("watchlist", []) or []:
-                if sym:
-                    symbols.add(sym)
-        except (OSError, json.JSONDecodeError) as e:
-            logger.warning(f"could not read user_data.json: {e}")
+    # Plan 02 Phase 4 — union watchlists across every user folder under data/users/.
+    try:
+        symbols.update(aggregate_watchlists())
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"aggregate_watchlists failed: {e}")
 
     # Latest screener candidate list (filter lexical sort to canonical dated files)
     screeners = [p for p in DATA_DIR.glob("screener_*.json") if _SCREENER_RE.match(p.name)]
