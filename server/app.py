@@ -23,9 +23,9 @@ import markdown
 import uvicorn
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request, status
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
@@ -40,6 +40,7 @@ except ImportError:
 
 from server.console import count_request, start_refresh_loop
 from server.admin import router as admin_router, init_admin
+from server.auth import get_current_user, require_admin
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -60,7 +61,6 @@ _PORTFOLIO_OPUS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 # Env / Auth
 # ---------------------------------------------------------------------------
 load_dotenv(Path("C:/WORKSPACE/.env"))
-MAX_TOKEN = os.getenv("MAX_TOKEN", "")
 
 if _anthropic_mod and _anthropic_client is None:
     _ak = os.getenv("MAX_ANTHROPIC_API_KEY")
@@ -110,22 +110,9 @@ async def request_logger(request: Request, call_next):
     return response
 
 
-@app.middleware("http")
-async def auth_middleware(request: Request, call_next):
-    path = request.url.path
-    # Skip auth for non-API routes (static files, root, etc.)
-    if not path.startswith("/api/"):
-        return await call_next(request)
-    # Skip auth if no token configured
-    if not MAX_TOKEN:
-        return await call_next(request)
-    auth = request.headers.get("Authorization", "")
-    if auth != f"Bearer {MAX_TOKEN}":
-        return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"detail": "Unauthorized"},
-        )
-    return await call_next(request)
+# Auth migration: legacy global Bearer middleware removed. Per-endpoint
+# Supabase JWT verification now happens via Depends(get_current_user) /
+# Depends(require_admin) on the routes that need it (see server.auth).
 
 
 # ---------------------------------------------------------------------------
@@ -757,6 +744,17 @@ async def get_status():
     }
 
 
+@app.get("/api/me")
+async def get_me(user: dict = Depends(get_current_user)):
+    """Return the authenticated user's identity (from Supabase JWT + whitelist)."""
+    return {
+        "user_id": user["user_id"],
+        "email": user["email"],
+        "name": user.get("name"),
+        "role": user["role"],
+    }
+
+
 # ---------------------------------------------------------------------------
 # Request Analyze API
 # ---------------------------------------------------------------------------
@@ -947,7 +945,7 @@ async def get_settings():
 
 
 @app.post("/api/settings")
-async def post_settings(request: Request):
+async def post_settings(request: Request, _: dict = Depends(require_admin)):
     body = await request.json()
     # v6 Phase 2 — validate schema
     filters = body.get("filters")
@@ -1078,7 +1076,7 @@ async def on_shutdown():
 
 
 @app.post("/api/admin/price-refresh/trigger")
-async def admin_trigger_price_refresh():
+async def admin_trigger_price_refresh(_: dict = Depends(require_admin)):
     """Manually trigger the daily price refresh job (otherwise runs 19:00 Asia/Bangkok).
 
     Runs the refresh in an executor so the request does not block the event loop,
