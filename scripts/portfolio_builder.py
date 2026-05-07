@@ -296,7 +296,7 @@ def build_portfolio(watchlist, screener, pins=None):
 
     bench = build_bench(enriched, picks)
     picked_sectors = {p.get('sector_canonical') for p in picks}
-    sector_warnings = build_sector_warnings(picked_sectors)
+    sector_warnings = build_sector_warnings(picked_sectors, compute_sector_suggestions(screener))
 
     stock_count = len(picks)
     sector_filled = f'{stock_count}/5'
