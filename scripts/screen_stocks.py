@@ -146,8 +146,9 @@ def hard_filter(data: dict) -> tuple:
 def dividend_score(data: dict) -> tuple:
     """Niwes Dividend pillar — 50 pts max.
 
-    yield (15) + streak (15) + payout sustainability (10) + dividend growth (10)
+    yield (15) + streak (15) + payout sustainability (10) + dividend growth or stable (10)
     """
+    import statistics
     score = 0
     reasons = []
     agg = data.get("aggregates", {})
@@ -168,20 +169,24 @@ def dividend_score(data: dict) -> tuple:
         elif dy >= 2:
             score += 2
 
-    # Streak (15 pts) — Niwes wants ≥5y, ideally 10+
+    # Streak (15 pts) — disproportionate Niwes-style: 20y elite tier
     streak = agg.get("dividend_streak", 0)
-    if streak >= 15:
+    if streak >= 20:
         score += 15
-        reasons.append(f"จ่ายปันผล {streak} ปีติดต่อกัน")
-    elif streak >= 10:
-        score += 12
+        reasons.append(f"จ่ายปันผล {streak} ปีติด (elite)")
+    elif streak >= 15:
+        score += 13
         reasons.append(f"จ่ายปันผล {streak} ปีติด")
-    elif streak >= 5:
+    elif streak >= 10:
+        score += 10
+    elif streak >= 7:
         score += 8
+    elif streak >= 5:
+        score += 5
     elif streak >= 3:
-        score += 4
+        score += 2
 
-    # Payout sustainability (10 pts) — uses compute_payout_sustainability
+    # Payout sustainability (10 pts) — independent if/elif (ไม่ exclusive chain)
     sust_map = compute_payout_sustainability(data)
     payout = data.get("payout_ratio")
     sust_count = sum(1 for v in sust_map.values() if v.get("sustainable"))
@@ -190,20 +195,38 @@ def dividend_score(data: dict) -> tuple:
         reasons.append("payout ยั่งยืน 5+ ปี")
     elif sust_count >= 3:
         score += 6
+    elif sust_count >= 1:
+        score += 3
     elif payout is not None and payout < 0.70:
-        score += 4
-    elif payout is not None and payout >= 1.0:
+        score += 2
+    if payout is not None and payout >= 1.0:
         reasons.append("payout เกิน 100%")
 
-    # Dividend Growth (10 pts)
+    # Dividend Growth or Stable (10 pts) — Niwes accepts both growing AND stable
     div_growth_streak = agg.get("dividend_growth_streak", 0)
+    div_history = data.get("dividend_history") or {}
+    stable = False
+    if div_growth_streak == 0 and len(div_history) >= 5:
+        # Check stable: DPS stdev/mean < 0.1 over last 5 years
+        recent_years = sorted(div_history.keys())[-5:]
+        recent_dps = [div_history[y] for y in recent_years if div_history[y] and div_history[y] > 0]
+        if len(recent_dps) >= 5:
+            mean_dps = sum(recent_dps) / len(recent_dps)
+            if mean_dps > 0:
+                stdev_dps = statistics.stdev(recent_dps)
+                if stdev_dps / mean_dps < 0.1:
+                    stable = True
+
     if div_growth_streak >= 5:
         score += 10
         reasons.append(f"ปันผลเพิ่มต่อเนื่อง {div_growth_streak} ปี")
     elif div_growth_streak >= 3:
-        score += 6
+        score += 7
     elif div_growth_streak >= 1:
-        score += 3
+        score += 4
+    elif stable:
+        score += 5
+        reasons.append("ปันผลคงที่ (stable payer)")
 
     return min(score, 50), reasons
 
@@ -247,7 +270,9 @@ def valuation_score(data: dict) -> tuple:
     yearly = data.get("yearly_metrics", [])
     latest = yearly[-1] if yearly else {}
     ev_ebitda = latest.get("ev_per_ebit_da")
-    if ev_ebitda is not None and ev_ebitda > 0:
+    if ev_ebitda is None:
+        score += 2  # neutral default — missing data shouldn't penalize
+    elif ev_ebitda > 0:
         if ev_ebitda <= 6:
             score += 5
             reasons.append(f"EV/EBITDA {ev_ebitda:.1f}x ถูก")
@@ -260,15 +285,15 @@ def valuation_score(data: dict) -> tuple:
 
 
 def cash_flow_score(data: dict) -> tuple:
-    """Niwes Cash Flow Strength pillar — 15 pts max.
+    """Niwes Cash Flow Strength pillar — 10 pts max.
 
-    FCF positive (5) + OCF/NI ratio (5) + Interest coverage (5)
+    FCF positive (5) + OCF/NI ratio (3) + Interest coverage or no-debt (2)
     """
     score = 0
     reasons = []
     agg = data.get("aggregates", {})
 
-    # FCF positive (5 pts)
+    # FCF positive (5 pts) — keep
     fcf_pos = agg.get("fcf_positive_years", 0)
     fcf_total = agg.get("fcf_total_years", 0)
     if fcf_total >= 3:
@@ -280,34 +305,36 @@ def cash_flow_score(data: dict) -> tuple:
         elif fcf_pos >= fcf_total // 2:
             score += 1
 
-    # OCF/NI ratio (5 pts)
+    # OCF/NI ratio (3 pts) — reduced
     ocf_ni = agg.get("latest_ocf_ni_ratio")
     if ocf_ni is not None:
         if 0.8 <= ocf_ni <= 3.0:
-            score += 5
+            score += 3
             reasons.append("กำไรมีเงินสดรองรับ")
         elif 0.5 <= ocf_ni:
-            score += 3
+            score += 2
 
-    # Interest coverage (5 pts)
+    # Interest coverage or no-debt (2 pts) — reduced + no-debt handle
     int_cov = agg.get("latest_interest_coverage")
+    yearly = data.get("yearly_metrics", [])
+    latest_de = yearly[-1].get("de_ratio") if yearly else None
     if int_cov is not None:
         if int_cov > 10:
-            score += 5
+            score += 2
             reasons.append(f"interest coverage {int_cov:.0f}x")
         elif int_cov > 5:
-            score += 3
-        elif int_cov > 3:
             score += 1
+    elif int_cov is None and latest_de is not None and latest_de < 0.1:
+        score += 2
+        reasons.append("ไม่มีหนี้ (no debt = max coverage)")
 
-    return min(score, 15), reasons
+    return min(score, 10), reasons
 
 
 def hidden_value_score(data: dict) -> tuple:
-    """Niwes Hidden Value pillar — 10 pts max.
+    """Niwes Hidden Value pillar — 5 pts max.
 
-    Base 5 if symbol has hidden-value flag.
-    +5 if any holding's note indicates holding > parent market cap.
+    Base 5 if symbol has hidden-value flag (holdings file maintained manually).
     """
     score = 0
     reasons = []
@@ -319,12 +346,41 @@ def hidden_value_score(data: dict) -> tuple:
     score += 5
     reasons.append(f"hidden value: {len(holdings)} holding(s)")
 
-    for h in holdings:
-        note = (h.get("note") or "").lower()
-        if "exceed" in note or "more than" in note or "worth more" in note:
+    return min(score, 5), reasons
+
+
+def track_record_score(data: dict) -> tuple:
+    """Niwes Track Record pillar — 10 pts max.
+
+    Revenue growth 5y (5) + EPS growth 5y (5).
+    Per Niwes: รายได้เพิ่มทุกปี กำไรเพิ่มทุกปี ปันผลเพิ่มทุกปี.
+    Dividend growth covered in dividend_score; revenue + eps covered here.
+    """
+    score = 0
+    reasons = []
+    agg = data.get("aggregates", {})
+
+    # Revenue CAGR (5 pts)
+    rev_cagr = agg.get("revenue_cagr")
+    if rev_cagr is not None:
+        if rev_cagr >= 0.10:
             score += 5
-            reasons.append("hidden holding > parent mcap")
-            break
+            reasons.append(f"รายได้โต {rev_cagr*100:.1f}%/ปี")
+        elif rev_cagr >= 0.05:
+            score += 3
+        elif rev_cagr >= 0:
+            score += 1
+
+    # EPS CAGR (5 pts)
+    eps_cagr = agg.get("eps_cagr")
+    if eps_cagr is not None:
+        if eps_cagr >= 0.10:
+            score += 5
+            reasons.append(f"กำไร EPS โต {eps_cagr*100:.1f}%/ปี")
+        elif eps_cagr >= 0.05:
+            score += 3
+        elif eps_cagr >= 0:
+            score += 1
 
     return min(score, 10), reasons
 
@@ -666,23 +722,29 @@ def valuation_grade(data: dict, sector_medians: dict) -> dict:
 def quality_score(data: dict) -> dict:
     """Niwes Dividend-First Quality Score — 100 pts cap.
 
-    Dividend 50 + Valuation 25 + Cash Flow 15 + Hidden Value 10
+    Dividend 50 + Valuation 25 + Cash Flow 10 + Hidden Value 5 + Track Record 10
+    Modifiers: NIWES_GROWING +10, DIVIDEND_TRAP -20, DATA_WARNING -5, YIELD_SPIKE_FROM_PRICE_DROP -5
     """
     d_score, d_reasons = dividend_score(data)
     v_score, v_reasons = valuation_score(data)
     c_score, c_reasons = cash_flow_score(data)
     h_score, h_reasons = hidden_value_score(data)
+    t_score, t_reasons = track_record_score(data)
 
-    total = d_score + v_score + c_score + h_score
+    total = d_score + v_score + c_score + h_score + t_score
     signals = assign_signals(data, total)
 
-    # Signal adjustments (cap applied after valuation modifier in main)
+    # Modifier adjustments (cap applied after valuation_grade modifier in main)
+    if "NIWES_GROWING" in signals:
+        total += 10
     if "DIVIDEND_TRAP" in signals:
         total -= 20
     if "DATA_WARNING" in signals:
-        total -= 15
+        total -= 5
+    if "YIELD_SPIKE_FROM_PRICE_DROP" in signals:
+        total -= 5
 
-    all_reasons = d_reasons + v_reasons + c_reasons + h_reasons
+    all_reasons = d_reasons + v_reasons + c_reasons + h_reasons + t_reasons
 
     return {
         "score": max(0, min(100, total)),
@@ -691,6 +753,7 @@ def quality_score(data: dict) -> dict:
             "valuation": v_score,
             "cash_flow": c_score,
             "hidden_value": h_score,
+            "track_record": t_score,
         },
         "signals": signals,
         "reasons": all_reasons,
@@ -959,7 +1022,7 @@ def main():
         val = valuation_grade(val_data, sector_medians)
         c["valuation"] = val
         # Apply valuation modifier + final 0-100 cap (after all signal adjustments)
-        val_modifier = {"A": 5, "B": 0, "C": -5, "D": -10, "F": -20}
+        val_modifier = {"A": 5, "B": 2, "C": 0, "D": -3, "F": -8}
         c["score"] = max(0, min(100, c["score"] + val_modifier.get(val["grade"], 0)))
         # Add OVERPRICED signal
         if "OVERPRICED" in val["signals"] and "OVERPRICED" not in c["signals"]:
