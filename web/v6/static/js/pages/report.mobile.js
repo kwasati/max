@@ -401,12 +401,44 @@ function _renderAnalyzeResult(data) {
   );
 }
 
+function _renderFilterStatusBanner(stock) {
+  var status = stock && stock.filter_status;
+  if (status !== 'FAIL' && status !== 'REVIEW') return '';
+  var esc = window.MMUtils.escapeHtml;
+  var raw, fallback, prefix, variant;
+  if (status === 'FAIL') {
+    raw = stock.filter_reasons;
+    fallback = 'ไม่ผ่าน filter';
+    prefix = 'หุ้นนี้ FAIL filter';
+    variant = 'fail';
+  } else {
+    raw = stock.review_reasons;
+    fallback = 'ต้องตรวจสอบเพิ่ม';
+    prefix = 'REVIEW';
+    variant = 'review';
+  }
+  var reasons;
+  if (Array.isArray(raw) && raw.length) {
+    reasons = raw;
+  } else if (typeof raw === 'string' && raw.length) {
+    reasons = [raw];
+  } else {
+    reasons = [fallback];
+  }
+  return (
+    '<div class="filter-status-banner filter-status-banner--' + variant + '">' +
+      '<strong>' + esc(prefix) + ':</strong> ' + esc(reasons.join(' · ')) +
+    '</div>'
+  );
+}
+
 function _buildMobileReportHtml(stock, patterns, history, exitStatus) {
   var esc = window.MMUtils.escapeHtml;
   var foot = '<div class="page-foot" style="padding:var(--sp-5) 0;margin-top:var(--sp-6);text-align:center;color:var(--fg-dim);font-size:var(--fs-xs);border-top:1px solid var(--border-subtle)">End · ' + esc(stock.symbol || '') + '</div>';
   return (
     _renderHero(stock, patterns) +
     _renderDeepAnalyze() +
+    _renderFilterStatusBanner(stock) +
     _renderScore(stock) +
     _renderChecklistEnriched(stock) +
     _renderKeyNumbers(stock) +
