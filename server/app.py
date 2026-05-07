@@ -292,6 +292,7 @@ async def get_stock(symbol: str, user: dict = Depends(get_current_user)):
     scr_path = find_latest("screener_*.json", DATA_DIR)
     if scr_path:
         scr = read_json(scr_path)
+        found = False
         for c in scr.get("candidates", []):
             if _norm_sym(c.get("symbol", "")) == _norm_sym(symbol):
                 if stock_data is None:
@@ -308,7 +309,47 @@ async def get_stock(symbol: str, user: dict = Depends(get_current_user)):
                     for key in ("aggregates", "yearly_metrics", "dividend_history"):
                         if key not in stock_data and key in c:
                             stock_data[key] = c[key]
+                stock_data["filter_status"] = "PASS"
+                found = True
                 break
+        if not found:
+            for c in scr.get("review_candidates", []):
+                if _norm_sym(c.get("symbol", "")) == _norm_sym(symbol):
+                    if stock_data is None:
+                        stock_data = dict(c)
+                    else:
+                        stock_data["score"] = c.get("score")
+                        stock_data["breakdown"] = c.get("breakdown")
+                        stock_data["signals"] = c.get("signals")
+                        stock_data["reasons"] = c.get("reasons")
+                        stock_data["screener_metrics"] = c.get("metrics")
+                        for key in ("aggregates", "yearly_metrics", "dividend_history"):
+                            if key not in stock_data and key in c:
+                                stock_data[key] = c[key]
+                    stock_data["filter_status"] = "REVIEW"
+                    stock_data["review_reasons"] = c.get("review_reasons") or c.get("reasons") or []
+                    found = True
+                    break
+        if not found:
+            for c in scr.get("filtered_out_stocks", []):
+                if _norm_sym(c.get("symbol", "")) == _norm_sym(symbol):
+                    if stock_data is None:
+                        stock_data = dict(c)
+                    else:
+                        stock_data["signals"] = c.get("signals")
+                        stock_data["reasons"] = c.get("reasons")
+                        stock_data["screener_metrics"] = c.get("metrics")
+                        for key in ("aggregates", "yearly_metrics", "dividend_history"):
+                            if key not in stock_data and key in c:
+                                stock_data[key] = c[key]
+                        stock_data["score"] = 0
+                        stock_data["breakdown"] = {"dividend": 0, "valuation": 0, "cash_flow": 0, "hidden_value": 0, "track_record": 0}
+                    stock_data["filter_status"] = "FAIL"
+                    stock_data["filter_reasons"] = c.get("filter_reasons") or c.get("reasons") or []
+                    stock_data.setdefault("score", 0)
+                    stock_data.setdefault("breakdown", {"dividend": 0, "valuation": 0, "cash_flow": 0, "hidden_value": 0, "track_record": 0})
+                    found = True
+                    break
 
     # Override snapshot fields with SETSMART cache (daily refresh layer).
     # Compute-heavy fields (score/breakdown/signals/aggregates) stay from screener cache.
