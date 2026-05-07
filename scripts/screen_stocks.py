@@ -726,6 +726,41 @@ def main():
     avg = fetch_elapsed / max(len(fetch_targets), 1)
     print(f"\n=== Fetch phase done in {fetch_elapsed:.1f}s ({avg:.2f}s/stock avg) ===\n")
 
+    # ===== Stage 2: yahoo flake recovery =====
+    # Identify stocks where Stage 1 returned empty dividend_history despite yield > 0
+    # (yahoo rate-limited under parallel context). Sleep + sequential refetch to recover.
+    flake_stocks = []
+    for sym, data in fetched_data.items():
+        if not data or data.get("delisted"):
+            continue
+        dy = data.get("dividend_yield")
+        div_history = data.get("dividend_history") or {}
+        if dy is not None and dy > 0 and not div_history:
+            flake_stocks.append(sym)
+
+    if flake_stocks:
+        print(f"=== Stage 2: yahoo flake recovery ({len(flake_stocks)} stocks) ===")
+        print(f"  waiting 30s for yahoo rate limit reset...")
+        _time_module.sleep(30)
+        recovered = 0
+        for n, sym in enumerate(flake_stocks, 1):
+            try:
+                new_data = fetch_multi_year_safe(sym, use_cache=False)
+                if new_data and not new_data.get("delisted"):
+                    new_dh = new_data.get("dividend_history") or {}
+                    if new_dh:
+                        fetched_data[sym] = new_data
+                        recovered += 1
+                        print(f"  [{n}/{len(flake_stocks)}] {sym} recovered ({len(new_dh)} years)")
+                    else:
+                        print(f"  [{n}/{len(flake_stocks)}] {sym} still empty")
+                else:
+                    print(f"  [{n}/{len(flake_stocks)}] {sym} fetch failed")
+            except Exception as e:
+                print(f"  [{n}/{len(flake_stocks)}] {sym} error: {e}")
+            _time_module.sleep(1.5)
+        print(f"=== Stage 2 done: {recovered}/{len(flake_stocks)} recovered ===\n")
+
     # ===== Phase B — serial post-process =====
     candidates = []
     review_candidates: list[dict] = []
