@@ -280,7 +280,7 @@ button {
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-.filter-group { display: flex; gap: var(--sp-3); align-items: center; }
+.filter-group { display: flex; gap: var(--sp-3); align-items: center; flex-wrap: wrap; }
 .filter-group .lbl { color: var(--fg-dim); }
 .filter-chip {
   padding: 4px 10px;
