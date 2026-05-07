@@ -222,6 +222,14 @@ def _load_from_cache(symbol: str) -> dict | None:
 def _save_to_cache(symbol: str, data: dict) -> None:
     if not data or data.get('delisted') or not data.get('price'):
         return  # don't cache failures
+    # Integrity guard: stock has dividend_yield > 0 (SETSMART/thaifin confirms it pays dividends)
+    # but dividend_history is empty = yahoo fetch flake; don't poison the day's cache
+    dy = data.get('dividend_yield')
+    div_history = data.get('dividend_history') or {}
+    if dy is not None and dy > 0 and not div_history:
+        logger.warning("cache skip for %s: dividend_yield=%.2f%% but dividend_history empty (suspected yahoo flake)",
+                       symbol, dy)
+        return
     cache_dir = _cache_dir_today()
     cache_dir.mkdir(parents=True, exist_ok=True)
     p = cache_dir / f'{symbol}.json'

@@ -13,6 +13,7 @@ Public API:
 import json
 import logging
 import math
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -511,32 +512,51 @@ def _fetch_yahoo_supplement(symbol: str) -> dict:
         dps_by_year = {}
         dps_by_fiscal_year = {}
         fy_is_complete = {}
-        try:
-            divs_df = tk.dividend_history(start="2000-01-01")
-            if hasattr(divs_df, 'shape') and not divs_df.empty:
-                # Multi-index (symbol, date) — flatten to date index
-                if hasattr(divs_df.index, 'get_level_values'):
-                    levels = divs_df.index.get_level_values(0)
-                    if yq_sym in levels:
-                        divs_df = divs_df.xs(yq_sym, level=0)
-                # Extract dividends column (named or first col)
-                if 'dividends' in divs_df.columns:
-                    divs = divs_df['dividends']
+        # Dividends — yahooquery dividend_history returns DataFrame
+        # Wrapped in retry loop: yahoo dividend_history flake in parallel context
+        # silently returned empty before, poisoning the day's cache.
+        DIV_RETRY_ATTEMPTS = 3
+        DIV_RETRY_DELAYS = [0.5, 1.0]  # seconds, applied between attempts (last has no follow-up)
+        for attempt in range(DIV_RETRY_ATTEMPTS):
+            try:
+                divs_df = tk.dividend_history(start="2000-01-01")
+                if hasattr(divs_df, 'shape') and not divs_df.empty:
+                    if hasattr(divs_df.index, 'get_level_values'):
+                        levels = divs_df.index.get_level_values(0)
+                        if yq_sym in levels:
+                            divs_df = divs_df.xs(yq_sym, level=0)
+                    if 'dividends' in divs_df.columns:
+                        divs = divs_df['dividends']
+                    else:
+                        divs = divs_df.iloc[:, 0]
+                    recent_divs = divs.tail(8).tolist() if len(divs) > 0 else []
+                    for idx, val in divs.items():
+                        try:
+                            y = idx.year if hasattr(idx, 'year') else int(str(idx)[:4])
+                            dps_by_year[y] = dps_by_year.get(y, 0) + round(float(val), 4)
+                        except (ValueError, TypeError):
+                            continue
+                    fy_result = _attribute_dividends_to_fiscal_years(divs)
+                    dps_by_fiscal_year = fy_result['by_fy']
+                    fy_is_complete = fy_result['is_complete']
+                    break  # success - exit retry loop
                 else:
-                    divs = divs_df.iloc[:, 0]
-                recent_divs = divs.tail(8).tolist() if len(divs) > 0 else []
-                for idx, val in divs.items():
-                    try:
-                        y = idx.year if hasattr(idx, 'year') else int(str(idx)[:4])
-                        dps_by_year[y] = dps_by_year.get(y, 0) + round(float(val), 4)
-                    except (ValueError, TypeError):
-                        continue
-                # FY attribution per SET DIY methodology
-                fy_result = _attribute_dividends_to_fiscal_years(divs)
-                dps_by_fiscal_year = fy_result['by_fy']
-                fy_is_complete = fy_result['is_complete']
-        except Exception:
-            pass
+                    # empty result - log + retry
+                    if attempt < DIV_RETRY_ATTEMPTS - 1:
+                        logger.warning("yahoo dividend_history empty for %s (attempt %d/%d), retrying",
+                                       yq_sym, attempt + 1, DIV_RETRY_ATTEMPTS)
+                        time.sleep(DIV_RETRY_DELAYS[attempt])
+                    else:
+                        logger.warning("yahoo dividend_history empty for %s after %d attempts",
+                                       yq_sym, DIV_RETRY_ATTEMPTS)
+            except Exception as e:
+                if attempt < DIV_RETRY_ATTEMPTS - 1:
+                    logger.warning("yahoo dividend_history failed for %s (attempt %d/%d): %s, retrying",
+                                   yq_sym, attempt + 1, DIV_RETRY_ATTEMPTS, e)
+                    time.sleep(DIV_RETRY_DELAYS[attempt])
+                else:
+                    logger.warning("yahoo dividend_history failed for %s after %d attempts: %s",
+                                   yq_sym, DIV_RETRY_ATTEMPTS, e)
 
         # Capex + Operating Income + Interest Expense — annual cash_flow + income_statement
         capex_by_year = {}
