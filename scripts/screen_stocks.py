@@ -523,6 +523,11 @@ def assign_signals(data: dict, total_score: int) -> list:
     streak = agg.get("dividend_streak", 0)
     sym = data.get("symbol", "")
 
+    # DATA_INCOMPLETE — yahoo flake (yield > 0 but no DPS history)
+    div_history = data.get("dividend_history") or {}
+    if dy > 0 and streak == 0 and not div_history:
+        signals.append("DATA_INCOMPLETE")
+
     # NIWES_5555 — passes 5-5-5-5
     norm_eps = compute_normalized_earnings(data)
     sorted_years = sorted(norm_eps.keys())[-5:] if norm_eps else []
