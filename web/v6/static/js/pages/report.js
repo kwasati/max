@@ -511,6 +511,27 @@ function _renderAnalyzeResult(data) {
 
 // ---------- assembly ----------
 
+function _renderFilterStatusBanner(stock) {
+  var status = stock && stock.filter_status;
+  if (status !== 'FAIL' && status !== 'REVIEW') return '';
+  var esc = window.MMUtils.escapeHtml;
+  var reasons, prefix, variant;
+  if (status === 'FAIL') {
+    reasons = (stock.filter_reasons && stock.filter_reasons.length) ? stock.filter_reasons : ['ไม่ผ่าน filter'];
+    prefix = 'หุ้นนี้ FAIL filter ตอนนี้';
+    variant = 'fail';
+  } else {
+    reasons = (stock.review_reasons && stock.review_reasons.length) ? stock.review_reasons : ['ต้องตรวจสอบเพิ่ม'];
+    prefix = 'REVIEW filter';
+    variant = 'review';
+  }
+  return (
+    '<div class="filter-status-banner filter-status-banner--' + variant + '">' +
+      '<strong>' + esc(prefix) + ':</strong> ' + esc(reasons.join(' · ')) +
+    '</div>'
+  );
+}
+
 function _buildReportHtml(stock, patterns, history, exitStatus) {
   var esc = window.MMUtils.escapeHtml;
   var foot =
@@ -521,6 +542,7 @@ function _buildReportHtml(stock, patterns, history, exitStatus) {
   return (
     _renderHero(stock, patterns) +
     _renderDeepAnalyze() +
+    _renderFilterStatusBanner(stock) +
     _renderScoreBreakdown(stock) +
     _renderChecklistEnriched(stock) +
     _renderKeyNumbers(stock) +
