@@ -226,7 +226,24 @@ function _buildTrendStrip(screener, trend) {
 }
 
 // ----- Filter bar -----
-function _buildFilterBar(totalCount) {
+function _buildFilterBar(totalCount, candidates) {
+  candidates = candidates || [];
+  var sectorSet = {};
+  for (var i = 0; i < candidates.length; i++) {
+    var s = candidates[i].sector;
+    if (s) sectorSet[s] = true;
+  }
+  var sectors = Object.keys(sectorSet).sort();
+  var sectorChips = sectors.map(function (sec) {
+    var safe = sec.replace(/"/g, '&quot;');
+    return '<button class="filter-chip" data-sector="' + safe + '">' + safe + '</button>';
+  }).join('');
+  var sectorGroup = sectors.length
+    ? '<div class="filter-group">' +
+        '<span class="lbl">Sector</span>' +
+        sectorChips +
+      '</div>'
+    : '';
   return (
     '<div class="filter-bar" style="margin-bottom:var(--sp-5)" id="v6-home-filters">' +
       '<div class="filter-group">' +
@@ -245,6 +262,7 @@ function _buildFilterBar(totalCount) {
         '<button class="filter-chip" data-signal="DEEP_VALUE">Deep Value</button>' +
         '<button class="filter-chip" data-signal="QUALITY_DIVIDEND">Quality Div</button>' +
       '</div>' +
+      sectorGroup +
       '<div class="filter-group">' +
         '<span class="lbl" style="margin-right:0">Showing</span>' +
         '<span class="val mono" style="color:var(--ink);font-weight:500" id="v6-home-count">— of ' + totalCount + '</span>' +
@@ -279,7 +297,7 @@ function _buildHomeHtml(screener, trend) {
   return _buildLedeAndSummary(screener) +
          _buildTrendStrip(screener, trend) +
          sectionHdr +
-         _buildFilterBar(candidates.length) +
+         _buildFilterBar(candidates.length, candidates) +
          (candidates.length ? gridHtml : emptyState);
 }
 
