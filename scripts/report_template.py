@@ -30,6 +30,7 @@ _TAG_NARRATIVES.update({
     "QUALITY_DIVIDEND": "yield ≥5% + payout <70% + streak ≥10 ปี",
     "DIVIDEND_TRAP": "ระวัง — yield >8% + ROE declining + payout >100%",
     "YIELD_SPIKE_FROM_PRICE_DROP": "yield สูงเพราะราคาเพิ่งตก — เช็คว่า DPS โตจริงหรือ trap (yield_now / 5y_avg > 1.8x)",
+    "DATA_INCOMPLETE": "ข้อมูลปันผลย้อนหลังไม่ครบ — yahoo ดึงไม่ได้แม้ Stage 2 retry, ลอง rerun พรุ่งนี้",
     "DATA_WARNING": "ข้อมูลผิดปกติ — ตรวจสอบก่อนใช้",
     "OVERPRICED": "valuation grade F — แพงกว่าคุณภาพ",
 })
