@@ -285,15 +285,15 @@ def valuation_score(data: dict) -> tuple:
 
 
 def cash_flow_score(data: dict) -> tuple:
-    """Niwes Cash Flow Strength pillar — 15 pts max.
+    """Niwes Cash Flow Strength pillar — 10 pts max.
 
-    FCF positive (5) + OCF/NI ratio (5) + Interest coverage (5)
+    FCF positive (5) + OCF/NI ratio (3) + Interest coverage or no-debt (2)
     """
     score = 0
     reasons = []
     agg = data.get("aggregates", {})
 
-    # FCF positive (5 pts)
+    # FCF positive (5 pts) — keep
     fcf_pos = agg.get("fcf_positive_years", 0)
     fcf_total = agg.get("fcf_total_years", 0)
     if fcf_total >= 3:
@@ -305,27 +305,30 @@ def cash_flow_score(data: dict) -> tuple:
         elif fcf_pos >= fcf_total // 2:
             score += 1
 
-    # OCF/NI ratio (5 pts)
+    # OCF/NI ratio (3 pts) — reduced
     ocf_ni = agg.get("latest_ocf_ni_ratio")
     if ocf_ni is not None:
         if 0.8 <= ocf_ni <= 3.0:
-            score += 5
+            score += 3
             reasons.append("กำไรมีเงินสดรองรับ")
         elif 0.5 <= ocf_ni:
-            score += 3
+            score += 2
 
-    # Interest coverage (5 pts)
+    # Interest coverage or no-debt (2 pts) — reduced + no-debt handle
     int_cov = agg.get("latest_interest_coverage")
+    yearly = data.get("yearly_metrics", [])
+    latest_de = yearly[-1].get("de_ratio") if yearly else None
     if int_cov is not None:
         if int_cov > 10:
-            score += 5
+            score += 2
             reasons.append(f"interest coverage {int_cov:.0f}x")
         elif int_cov > 5:
-            score += 3
-        elif int_cov > 3:
             score += 1
+    elif int_cov is None and latest_de is not None and latest_de < 0.1:
+        score += 2
+        reasons.append("ไม่มีหนี้ (no debt = max coverage)")
 
-    return min(score, 15), reasons
+    return min(score, 10), reasons
 
 
 def hidden_value_score(data: dict) -> tuple:
