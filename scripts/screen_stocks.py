@@ -722,23 +722,29 @@ def valuation_grade(data: dict, sector_medians: dict) -> dict:
 def quality_score(data: dict) -> dict:
     """Niwes Dividend-First Quality Score — 100 pts cap.
 
-    Dividend 50 + Valuation 25 + Cash Flow 15 + Hidden Value 10
+    Dividend 50 + Valuation 25 + Cash Flow 10 + Hidden Value 5 + Track Record 10
+    Modifiers: NIWES_GROWING +10, DIVIDEND_TRAP -20, DATA_WARNING -5, YIELD_SPIKE_FROM_PRICE_DROP -5
     """
     d_score, d_reasons = dividend_score(data)
     v_score, v_reasons = valuation_score(data)
     c_score, c_reasons = cash_flow_score(data)
     h_score, h_reasons = hidden_value_score(data)
+    t_score, t_reasons = track_record_score(data)
 
-    total = d_score + v_score + c_score + h_score
+    total = d_score + v_score + c_score + h_score + t_score
     signals = assign_signals(data, total)
 
-    # Signal adjustments (cap applied after valuation modifier in main)
+    # Modifier adjustments (cap applied after valuation_grade modifier in main)
+    if "NIWES_GROWING" in signals:
+        total += 10
     if "DIVIDEND_TRAP" in signals:
         total -= 20
     if "DATA_WARNING" in signals:
-        total -= 15
+        total -= 5
+    if "YIELD_SPIKE_FROM_PRICE_DROP" in signals:
+        total -= 5
 
-    all_reasons = d_reasons + v_reasons + c_reasons + h_reasons
+    all_reasons = d_reasons + v_reasons + c_reasons + h_reasons + t_reasons
 
     return {
         "score": max(0, min(100, total)),
@@ -747,6 +753,7 @@ def quality_score(data: dict) -> dict:
             "valuation": v_score,
             "cash_flow": c_score,
             "hidden_value": h_score,
+            "track_record": t_score,
         },
         "signals": signals,
         "reasons": all_reasons,
