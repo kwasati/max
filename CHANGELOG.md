@@ -1,5 +1,82 @@
 # Max Mahon Changelog
 
+## v6.5.0 — 2026-05-07 · Niwes Alignment + Yahoo Resilience + Scoring v2 + Frontend De-hardcode
+
+**4 plans รวด — แก้ filter ให้ตรงเจตนา ดร.นิเวศน์ จริง + กัน yahoo flake poison cache + rebalance scoring + de-hardcode frontend.** ผลลัพธ์ที่ user เห็นใน scan รอบใหม่: AMATA top 82 (เก่า 76) / SAT-METCO-QH กลับคะแนนเดิม 70+ หลัง Stage 2 recover yahoo flake / AWC ผ่าน Niwes growing exception แสดง NIWES_GROWING tag / CMR-CIMBT แสดง YIELD_SPIKE_FROM_PRICE_DROP / sector filter chips multi-select 13 sectors dynamic
+
+### Plan A — Niwes 5-5-5-5 Filter Alignment (`niwes-5555-filter-alignment`)
+
+ของเก่าบังคับ yield ≥ 5% strict + streak ≥ 5 ทำให้ตัดหุ้น CPALL pre-COVID style (yield 2-3% โต) ที่ Niwes บอกชัดว่ารับ. ดู `docs/niwes/04-criteria.md` ข้อ 1 — Niwes พูด yield 5% / 5 ปีข้างหน้า / 5 sectors / ถือ 5 ปี — ไม่มี streak ≥ 5
+
+- Hard filter: yield ≥ 5% **OR** (yield 2-5% AND dividend_growth_streak ≥ 3) — exception path
+- Drop streak ≥ 5 จาก hard filter (ย้ายไป scoring)
+- Signal `NIWES_GROWING` ใหม่ — exception path tag
+- Signal `YIELD_SPIKE_FROM_PRICE_DROP` ใหม่ — yield_now / 5y_avg > 1.8x = warning ราคาตกทำ yield ดีด
+- DEFAULT_FILTERS เพิ่ม `growing_yield_floor: 2.0` + `growing_min_streak: 3`
+- Smoke test 5 cases pass
+
+### Plan B Part 1 — Yahoo Fetch Resilience (`yahoo-fetch-resilience`)
+
+Yahoo `tk.dividend_history()` ฉ่ำๆ ใน parallel context (5 workers) — บางตัว throw exception เงียบๆ → return empty DPS → cache save save แบบ poison → rerun ทั้งวันคะแนนเพี้ยน
+
+- `data_adapter.py:_fetch_yahoo_supplement` — wrap retry loop 3 attempts (delays 0.5s/1s)
+- เปลี่ยน silent `except: pass` → log warning ทุก attempt fail (visibility)
+- `fetch_data.py:_save_to_cache` — integrity guard: ถ้า yield > 0 + dividend_history ว่าง → SKIP save (กัน poison)
+- Smoke test 5/5 PASS + BBL regression 22 years confirmed
+
+### Plan B Part 2 — Stage 2 Yahoo Flake Recovery (`stage2-yahoo-flake-recovery`)
+
+Plan B Part 1 retry timing 0.5s+1s ใน parallel ไม่พอแก้ rate limit หนัก. Plan B Part 2 เพิ่ม Stage 2 phase ที่ pipeline level:
+
+- `screen_stocks.py:main()` — หลัง Phase A → list flake stocks → `time.sleep(30)` → for-loop refetch sequential + 1.5s delay → replace recovered
+- `hard_filter()` data integrity guard — ถ้า yield > 0 + streak == 0 + dividend_history ว่าง → FAIL "ไม่มีข้อมูลปันผลย้อนหลัง"
+- Signal `DATA_INCOMPLETE` ใหม่ + narrative ใน report_template
+- Production scan 932 หุ้น: Stage 2 recover ~280-330 ตัว (53-61%)
+
+### Plan C — Scoring Rebalance v2 (`scoring-rebalance-v2`)
+
+12 fixes ตาม Niwes intent (deep audit เจอ scoring ขัดเจตนา) — total budget reshape: Dividend 50 + Valuation 25 + Cash Flow **15→10** + Hidden Value **10→5** + **Track Record 10 (NEW)**
+
+- **Track Record pillar ใหม่ 10 pts** — revenue_cagr 5y (5) + eps_cagr 5y (5) — Niwes พูด "รายได้+กำไร+ปันผลเพิ่มทุกปี" ตอนนี้มีครบ
+- **NIWES_GROWING +10 modifier** — boost exception path เทียบเคียง main path. AWC.BK score 38 → 55 หลัง boost
+- **Streak threshold disproportionate** — 20y elite=15 / 15y=13 / 10y=10 / 7y=8 / 5y=5 / 3y=2 (เก่า 15y/10y/5y/3y diff น้อย)
+- **Stable payer support** — DPS stdev/mean < 0.1 over 5y → +5 (Niwes รับ stable เช่น TCAP/BCP)
+- **Payout fallback chain fix** — เก่า elif ทำ 1-2y sustain ได้ 0; ใหม่ 1-2y = 3 pts
+- **EV/EBITDA missing → 2 default** — เก่า None = 0 (penalize unfair)
+- **No-debt int_cov max** — de_ratio < 0.1 + int_cov None → max pts (no debt = best, ไม่ใช่ unknown)
+- **Soft modifiers:** valuation grade A+5/B+2/C 0/D-3/F-8 (เก่า ±20 ชนแรง). DATA_WARNING -5 (เก่า -15). YIELD_SPIKE -5 (เก่า 0)
+- **Hidden Value cap 5** (เก่า 10, ตัด +5 holding>parent block)
+- **Cash Flow rebalance 15→10** — FCF (5 keep) + OCF/NI (5→3) + Int Coverage (5→2)
+- Smoke test 6/6 PASS
+
+### Plan D — Frontend De-hardcode (`frontend-dehardcode-v1`)
+
+3 hardcoded เจอจาก audit: portfolio sector suggestions / report breakdown / no sector filter
+
+- **`portfolio_builder.py:compute_sector_suggestions()` ใหม่** — group scan candidates by canonical sector → top 3 by score per sector. Replace static SECTOR_SUGGESTIONS dict (DIF/JASIF/CPNREIT) ด้วย STATIC_SECTOR_SUGGESTIONS (fallback only). Warning ที่ portfolio ตอนนี้ใช้ scan PASS bucket จริง
+- **`report.js` + `report.mobile.js` breakdown dynamic** — `PILLAR_SPEC` array 5 pillars + loop render. เพิ่ม Track Record row + max pts ใหม่ (Cash Flow 10, Hidden Value 5, Track Record 10). Mobile chart 6 segments
+- **`home.js` + `home.mobile.js` sector filter chips** — multi-select dynamic จาก unique sectors ใน candidates. 13 sectors แสดง. CSS `.filter-group { flex-wrap: wrap }` กัน overflow
+
+### Verify (browser confirmed user — 2026-05-07)
+
+- หน้า home: 37 names cleared 5-5-5-5 / AMATA top 82 / sector chips 13 ตัว ทำงาน multi-select
+- หน้า report: breakdown 5 rows + Track Record + Cash Flow max 10 + Hidden Value max 5
+- หน้า portfolio: REIT-PFund warning ขึ้น CPNREIT/AIMIRT (จาก scan) แทน DIF/JASIF/CPNREIT (hardcode เก่า)
+
+### Files changed (4 plans + 1 fix)
+
+- `scripts/screen_stocks.py` (Plan A + B + C — filter logic, Stage 2 phase, scoring functions, signal tags)
+- `scripts/data_adapter.py` (Plan B — yahoo retry)
+- `scripts/fetch_data.py` (Plan B — cache integrity guard)
+- `scripts/portfolio_builder.py` (Plan D — compute_sector_suggestions)
+- `scripts/report_template.py` (Plan A + B — narratives)
+- `web/v6/static/js/pages/home.js` + `home.mobile.js` (Plan D — sector filter)
+- `web/v6/static/js/pages/report.js` + `report.mobile.js` (Plan D — breakdown dynamic)
+- `web/v6/shared/base.css` (filter-group flex-wrap fix)
+- `scripts/_smoke_*.py` (4 new smoke tests)
+
+---
+
 ## v6.4.0 — 2026-04-27 · SETSMART Integration (Layer 0 primary)
 
 **SETSMART API (data feed ทางการของ SET) ขึ้นเป็น primary aggregate layer แทน thaifin/yahooquery — ตัวเลข yield/PE/PBV/market cap/ราคา ที่หน้า max ตรงกับหน้า SET screen เป๊ะ** ก่อนหน้านี้ yield drift จากค่าจริง 0.5-1% เพราะ thaifin snapshot ช้า + yahooquery บางตัวอัพเดตช้า (เคส BBL FY2025 ex-date 22 เม.ย. 69: SET = 10 บาท แต่ Yahoo ยังอ่าน 8 บาท) — pivot มา fetch จาก API ต้นน้ำของ SET เอง = numbers ที่นักลงทุนเห็นทุกที่ตรงกัน

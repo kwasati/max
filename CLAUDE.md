@@ -123,38 +123,69 @@
 - `data/` — snapshots + screener results + history.json (gitignored)
 
 ## Hard Filters — Niwes 5-5-5-5 (ต้องผ่านทุกข้อ)
-- Dividend Yield ≥ 5% (ใช้ normalized earnings)
-- Dividend Streak ≥ 5 ปีติดต่อกัน
-- EPS positive 5/5 ปีล่าสุด (ไม่มีปีขาดทุน)
+- Dividend Yield ≥ 5% **OR** (yield 2-5% **AND** dividend_growth_streak ≥ 3 ปี) — Niwes growing-dividend exception
+- EPS positive 5/5 ปีล่าสุด (4/5 + last 3 positive = REVIEW COVID exception)
 - P/E ≤ 15 (bonus: ≤ 8)
 - P/BV ≤ 1.5 (bonus: ≤ 1.0)
 - Market Cap ≥ 5B THB
+- **Data integrity guard:** ถ้า yield > 0 แต่ dividend_history ว่าง (yahoo flake หลัง Stage 2 retry) → FAIL "ไม่มีข้อมูลปันผลย้อนหลัง"
+- ⚠ **Dividend Streak ออกจาก hard filter** (เก่า ≥ 5 ปีบังคับ) — Niwes ไม่ได้พูดเลข 5 streak; streak ย้ายไปอยู่ใน scoring แทน
 
-## Quality Score (100 คะแนน — Niwes Dividend-First)
+## Scan Pipeline — 3 Stages (after Plan B yahoo-fetch-resilience + Plan B stage2)
+
+1. **Stage 1 — parallel fetch** (ThreadPoolExecutor 5 workers) — เร็ว แต่ yahoo อาจ rate-limit ทำให้ DPS ดึงไม่ได้บางตัว
+2. **Stage 2 — repair phase (NEW):** list flake stocks (yield > 0 + dividend_history ว่าง) → `time.sleep(30)` รอ yahoo unblock → for-loop refetch sequential + 1.5s delay → replace recovered. ตัวที่ refetch ยังไม่ได้ → ส่งต่อ Phase B
+3. **Phase B — serial post-process** — apply hard_filter (รวม data integrity guard) + scoring + assign_signals + valuation_grade modifier → write screener_*.json
+
+**Yahoo retry layer (data_adapter.py):** `tk.dividend_history()` ห่อใน retry loop 3 attempts (delays 0.5s/1s) + log warning ทุก fail (เก่า silent `except: pass` → ส่ง empty cache poison)
+
+**Cache integrity guard (fetch_data.py `_save_to_cache`):** ถ้า dividend_yield > 0 + dividend_history ว่าง → SKIP save + log warning. กัน yahoo flake poison cache ของวัน
+
+## Quality Score (100 คะแนน — Niwes Dividend-First v2 — scoring-rebalance-v2)
 
 | ด้าน | คะแนน | เกณฑ์ |
 |---|---|---|
-| Dividend | 50 | Yield (15) + Streak (15) + Payout Sustainability (10) + Dividend Growth (10) |
-| Valuation | 25 | P/E (10) + P/BV (10) + EV/EBITDA (5) |
-| Cash Flow Strength | 15 | FCF positive (5) + OCF/NI ratio (5) + Interest coverage (5) |
-| Hidden Value | 10 | check_hidden_value flag (5) + holding > parent mcap (5) |
+| Dividend | 50 | Yield (15) + Streak (15) + Payout Sustainability (10) + Growth/Stable (10) |
+| Valuation | 25 | P/E (10) + P/BV (10) + EV/EBITDA (5, neutral 2 ถ้า None) |
+| Cash Flow Strength | **10** | FCF positive (5) + OCF/NI ratio (3) + Interest coverage (2, no-debt = max) |
+| Hidden Value | **5** | check_hidden_value flag |
+| **Track Record (NEW)** | **10** | revenue_cagr 5y (5) + eps_cagr 5y (5) — Niwes "รายได้+กำไร+ปันผลเพิ่มทุกปี" |
 
-### Modifiers
-- Valuation grade: A:+5, B:0, C:-5, D:-10, F:-20
-- Signals: DIVIDEND_TRAP -20, DATA_WARNING -15
+**Streak threshold (disproportionate):** 20y elite=15 / 15y=13 / 10y=10 / 7y=8 / 5y=5 / 3y=2
+
+**Stable payer support:** ถ้า growth_streak=0 + DPS stdev/mean < 0.1 over 5y → +5 (Niwes รับ stable, ไม่บังคับโต)
+
+### Modifiers (in quality_score)
+- **NIWES_GROWING +10** (NEW) — boost exception path เทียบเคียง main path
+- DIVIDEND_TRAP -20 — keep
+- DATA_WARNING -5 (เก่า -15) — softer
+- YIELD_SPIKE_FROM_PRICE_DROP -5 (NEW) — เตือน yield ดีดเพราะราคาตก
 - **Cap: 0-100 เสมอ**
+
+### Valuation grade modifier (in main(), applied AFTER quality_score)
+- A:+5, B:+2, C:0, D:-3, F:-8 (เก่า ±20 ชนแรง — ใหม่ soft range 13)
 
 ## Signal Tags
 
 | Tag | ความหมาย |
 |---|---|
-| NIWES_5555 | ผ่านเกณฑ์ 5-5-5-5 ครบทุกข้อ |
-| HIDDEN_VALUE | มี holding ที่ตลาดไม่ได้ pricing in (ดู `data/hidden_value_holdings.json`) |
+| NIWES_5555 | ผ่านเกณฑ์ 5-5-5-5 ครบทุกข้อ (main path) |
+| **NIWES_GROWING** (NEW) | Niwes growing exception — yield 2-5% + DPS โต ≥3 ปี + EPS 5/5 + PE ≤ 15 + PBV ≤ 1.5 |
+| HIDDEN_VALUE | มี holding ที่ตลาดไม่ pricing in (`data/hidden_value_holdings.json`) |
 | QUALITY_DIVIDEND | yield ≥5% + payout <70% + streak ≥10 ปี |
 | DEEP_VALUE | P/E ≤8 + P/BV ≤1.0 |
-| DIVIDEND_TRAP | yield >8% + ROE declining + payout >100% (renamed from YIELD_TRAP) |
+| DIVIDEND_TRAP | yield >8% + ROE declining + payout >100% |
+| **YIELD_SPIKE_FROM_PRICE_DROP** (NEW) | yield_now / 5y_avg > 1.8x — ราคาตกทำ yield ดีด, เช็ค trap |
+| **DATA_INCOMPLETE** (NEW) | yield > 0 + streak == 0 + dividend_history ว่าง — yahoo flake (filter guard ตัด FAIL อยู่แล้ว — tag เพื่อ visibility) |
 | DATA_WARNING | ข้อมูลผิดปกติ (yield >20%, growth >300%) |
 | OVERPRICED | จาก valuation_grade F |
+
+## Frontend (web/v6/)
+
+- **Sector filter chips (NEW)** — `home.js` + `home.mobile.js` มี multi-select chips กรอง sector dynamic จาก scan candidates (ไม่ hardcode list). 0 chip = show all, N chips = OR filter
+- **Score breakdown 5 pillars dynamic** — `report.js` + `report.mobile.js` ใช้ `PILLAR_SPEC` array loop (เก่า hardcode 4 rows + max pts ผิด). Mobile chart ทำ doughnut 5 segments + modifier
+- **Sector suggestions dynamic** — `portfolio_builder.compute_sector_suggestions(screener)` group scan PASS by canonical sector → top 3 by score per sector. Fallback static dict (`STATIC_SECTOR_SUGGESTIONS`) เมื่อ scan sector ว่าง
+- CSS `.filter-group` มี `flex-wrap: wrap` ให้ chips ไม่ overflow viewport (13 sectors)
 
 ## Analysis Framework (Claude Opus deep analyze — 4 neutral + 1 Max-to-Art + verdict)
 
