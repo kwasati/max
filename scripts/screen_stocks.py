@@ -146,8 +146,9 @@ def hard_filter(data: dict) -> tuple:
 def dividend_score(data: dict) -> tuple:
     """Niwes Dividend pillar — 50 pts max.
 
-    yield (15) + streak (15) + payout sustainability (10) + dividend growth (10)
+    yield (15) + streak (15) + payout sustainability (10) + dividend growth or stable (10)
     """
+    import statistics
     score = 0
     reasons = []
     agg = data.get("aggregates", {})
@@ -168,20 +169,24 @@ def dividend_score(data: dict) -> tuple:
         elif dy >= 2:
             score += 2
 
-    # Streak (15 pts) — Niwes wants ≥5y, ideally 10+
+    # Streak (15 pts) — disproportionate Niwes-style: 20y elite tier
     streak = agg.get("dividend_streak", 0)
-    if streak >= 15:
+    if streak >= 20:
         score += 15
-        reasons.append(f"จ่ายปันผล {streak} ปีติดต่อกัน")
-    elif streak >= 10:
-        score += 12
+        reasons.append(f"จ่ายปันผล {streak} ปีติด (elite)")
+    elif streak >= 15:
+        score += 13
         reasons.append(f"จ่ายปันผล {streak} ปีติด")
-    elif streak >= 5:
+    elif streak >= 10:
+        score += 10
+    elif streak >= 7:
         score += 8
+    elif streak >= 5:
+        score += 5
     elif streak >= 3:
-        score += 4
+        score += 2
 
-    # Payout sustainability (10 pts) — uses compute_payout_sustainability
+    # Payout sustainability (10 pts) — independent if/elif (ไม่ exclusive chain)
     sust_map = compute_payout_sustainability(data)
     payout = data.get("payout_ratio")
     sust_count = sum(1 for v in sust_map.values() if v.get("sustainable"))
@@ -190,20 +195,38 @@ def dividend_score(data: dict) -> tuple:
         reasons.append("payout ยั่งยืน 5+ ปี")
     elif sust_count >= 3:
         score += 6
+    elif sust_count >= 1:
+        score += 3
     elif payout is not None and payout < 0.70:
-        score += 4
-    elif payout is not None and payout >= 1.0:
+        score += 2
+    if payout is not None and payout >= 1.0:
         reasons.append("payout เกิน 100%")
 
-    # Dividend Growth (10 pts)
+    # Dividend Growth or Stable (10 pts) — Niwes accepts both growing AND stable
     div_growth_streak = agg.get("dividend_growth_streak", 0)
+    div_history = data.get("dividend_history") or {}
+    stable = False
+    if div_growth_streak == 0 and len(div_history) >= 5:
+        # Check stable: DPS stdev/mean < 0.1 over last 5 years
+        recent_years = sorted(div_history.keys())[-5:]
+        recent_dps = [div_history[y] for y in recent_years if div_history[y] and div_history[y] > 0]
+        if len(recent_dps) >= 5:
+            mean_dps = sum(recent_dps) / len(recent_dps)
+            if mean_dps > 0:
+                stdev_dps = statistics.stdev(recent_dps)
+                if stdev_dps / mean_dps < 0.1:
+                    stable = True
+
     if div_growth_streak >= 5:
         score += 10
         reasons.append(f"ปันผลเพิ่มต่อเนื่อง {div_growth_streak} ปี")
     elif div_growth_streak >= 3:
-        score += 6
+        score += 7
     elif div_growth_streak >= 1:
-        score += 3
+        score += 4
+    elif stable:
+        score += 5
+        reasons.append("ปันผลคงที่ (stable payer)")
 
     return min(score, 50), reasons
 
