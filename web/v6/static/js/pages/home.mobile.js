@@ -160,6 +160,25 @@ function _buildMobileHomeHtml(screener, trend) {
   var sectionHdr =
     '<div class="section-num"><span class="no">01 · Watchlist</span><span>' + candidates.length + ' names</span></div>';
 
+  var sectorSet = {};
+  for (var i = 0; i < candidates.length; i++) {
+    var s = candidates[i].sector;
+    if (s) sectorSet[s] = true;
+  }
+  var sectorList = Object.keys(sectorSet).sort();
+  var escSec = (window.MMUtils && window.MMUtils.escapeHtml) ? window.MMUtils.escapeHtml : function (v) {
+    return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  };
+  var sectorChips = sectorList.map(function (sec) {
+    var attr = String(sec).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    return '<button class="filter-chip" data-sector="' + attr + '">' + escSec(sec) + '</button>';
+  }).join('');
+  var sectorGroup = sectorList.length
+    ? '<div class="filter-group">' +
+        '<span class="lbl">Sector</span>' +
+        sectorChips +
+      '</div>'
+    : '';
   var filter =
     '<div class="filter-bar" id="v6-mhome-filters">' +
       '<div class="filter-group">' +
@@ -169,6 +188,7 @@ function _buildMobileHomeHtml(screener, trend) {
         '<button class="filter-chip" data-sort="pe">P/E</button>' +
         '<button class="filter-chip" data-sort="delta">Δ</button>' +
       '</div>' +
+      sectorGroup +
     '</div>';
 
   var emptyState = '';
@@ -214,10 +234,15 @@ function _mountTrendChart(trend) {
   });
 }
 
-var _state = { sort: 'score', page: 1, pageSize: 10, all: [] };
+var _state = { sort: 'score', sectors: [], page: 1, pageSize: 10, all: [] };
 
 function _applyFilterSort() {
   var arr = _state.all.slice();
+  if (_state.sectors && _state.sectors.length > 0) {
+    arr = arr.filter(function (c) {
+      return _state.sectors.indexOf(c.sector) !== -1;
+    });
+  }
   arr.sort(function (a, b) {
     if (_state.sort === 'score') return (b.score || 0) - (a.score || 0);
     if (_state.sort === 'yield') return ((b.metrics || {}).dividend_yield || 0) - ((a.metrics || {}).dividend_yield || 0);
@@ -282,6 +307,21 @@ function _wireControls(screener) {
         Array.prototype.forEach.call(bar.querySelectorAll('[data-sort]'), function (b) { b.classList.remove('active'); });
         btn.classList.add('active');
         _state.sort = btn.getAttribute('data-sort');
+        _state.page = 1;
+        _renderGrid();
+      });
+    });
+    Array.prototype.forEach.call(bar.querySelectorAll('[data-sector]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var sector = btn.getAttribute('data-sector');
+        var idx = _state.sectors.indexOf(sector);
+        if (idx >= 0) {
+          _state.sectors.splice(idx, 1);
+          btn.classList.remove('active');
+        } else {
+          _state.sectors.push(sector);
+          btn.classList.add('active');
+        }
         _state.page = 1;
         _renderGrid();
       });

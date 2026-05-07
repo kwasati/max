@@ -234,9 +234,12 @@ function _buildFilterBar(totalCount, candidates) {
     if (s) sectorSet[s] = true;
   }
   var sectors = Object.keys(sectorSet).sort();
+  var escSec = (window.MMUtils && window.MMUtils.escapeHtml) ? window.MMUtils.escapeHtml : function (v) {
+    return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  };
   var sectorChips = sectors.map(function (sec) {
-    var safe = sec.replace(/"/g, '&quot;');
-    return '<button class="filter-chip" data-sector="' + safe + '">' + safe + '</button>';
+    var attr = String(sec).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    return '<button class="filter-chip" data-sector="' + attr + '">' + escSec(sec) + '</button>';
   }).join('');
   var sectorGroup = sectors.length
     ? '<div class="filter-group">' +
