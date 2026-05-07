@@ -341,6 +341,7 @@ function _mountTrendChart(trend) {
 var _state = {
   sort: 'score',
   signal: 'ALL',
+  sectors: [],
   page: 1,
   pageSize: 15,
   all: []
@@ -351,6 +352,11 @@ function _applyFilterSort() {
   if (_state.signal !== 'ALL') {
     arr = arr.filter(function (c) {
       return (c.signals || []).indexOf(_state.signal) !== -1;
+    });
+  }
+  if (_state.sectors && _state.sectors.length > 0) {
+    arr = arr.filter(function (c) {
+      return _state.sectors.indexOf(c.sector) !== -1;
     });
   }
   arr.sort(function (a, b) {
@@ -449,6 +455,21 @@ function _wireControls(screener) {
         });
         btn.classList.add('active');
         _state.signal = btn.getAttribute('data-signal');
+        _state.page = 1;
+        _renderGrid();
+      });
+    });
+    Array.prototype.forEach.call(bar.querySelectorAll('[data-sector]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var sector = btn.getAttribute('data-sector');
+        var idx = _state.sectors.indexOf(sector);
+        if (idx >= 0) {
+          _state.sectors.splice(idx, 1);
+          btn.classList.remove('active');
+        } else {
+          _state.sectors.push(sector);
+          btn.classList.add('active');
+        }
         _state.page = 1;
         _renderGrid();
       });
