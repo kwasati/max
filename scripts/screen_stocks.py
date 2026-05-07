@@ -526,6 +526,13 @@ def assign_signals(data: dict, total_score: int) -> list:
             and pbv is not None and 0 < pbv <= 1.5):
         signals.append("NIWES_5555")
 
+    # NIWES_GROWING — Niwes growing-dividend exception (yield 2-5% + DPS growing 3+ yrs + EPS 5/5 + PE/PBV ok)
+    growth_streak = agg.get("dividend_growth_streak", 0)
+    if (2.0 <= dy < 5 and growth_streak >= 3 and eps_5_pos
+            and pe is not None and 0 < pe <= 15
+            and pbv is not None and 0 < pbv <= 1.5):
+        signals.append("NIWES_GROWING")
+
     # HIDDEN_VALUE
     if check_hidden_value(sym):
         signals.append("HIDDEN_VALUE")
@@ -533,6 +540,11 @@ def assign_signals(data: dict, total_score: int) -> list:
     # QUALITY_DIVIDEND — yield≥5 + payout<70 + streak≥10
     if dy >= 5 and payout is not None and payout < 0.70 and streak >= 10:
         signals.append("QUALITY_DIVIDEND")
+
+    # YIELD_SPIKE_FROM_PRICE_DROP — yield ดีดเพราะราคาตก ไม่ใช่ DPS โต (warning, not exclusion)
+    yield_5y = data.get("five_year_avg_yield") or 0
+    if yield_5y > 0 and dy / yield_5y > 1.8:
+        signals.append("YIELD_SPIKE_FROM_PRICE_DROP")
 
     # DEEP_VALUE — P/E≤8 + P/BV≤1
     if pe is not None and 0 < pe <= 8 and pbv is not None and 0 < pbv <= 1.0:
