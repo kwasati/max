@@ -1022,7 +1022,7 @@ def main():
         val = valuation_grade(val_data, sector_medians)
         c["valuation"] = val
         # Apply valuation modifier + final 0-100 cap (after all signal adjustments)
-        val_modifier = {"A": 5, "B": 0, "C": -5, "D": -10, "F": -20}
+        val_modifier = {"A": 5, "B": 2, "C": 0, "D": -3, "F": -8}
         c["score"] = max(0, min(100, c["score"] + val_modifier.get(val["grade"], 0)))
         # Add OVERPRICED signal
         if "OVERPRICED" in val["signals"] and "OVERPRICED" not in c["signals"]:
