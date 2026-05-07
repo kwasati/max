@@ -226,7 +226,27 @@ function _buildTrendStrip(screener, trend) {
 }
 
 // ----- Filter bar -----
-function _buildFilterBar(totalCount) {
+function _buildFilterBar(totalCount, candidates) {
+  candidates = candidates || [];
+  var sectorSet = {};
+  for (var i = 0; i < candidates.length; i++) {
+    var s = candidates[i].sector;
+    if (s) sectorSet[s] = true;
+  }
+  var sectors = Object.keys(sectorSet).sort();
+  var escSec = (window.MMUtils && window.MMUtils.escapeHtml) ? window.MMUtils.escapeHtml : function (v) {
+    return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  };
+  var sectorChips = sectors.map(function (sec) {
+    var attr = String(sec).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    return '<button class="filter-chip" data-sector="' + attr + '">' + escSec(sec) + '</button>';
+  }).join('');
+  var sectorGroup = sectors.length
+    ? '<div class="filter-group">' +
+        '<span class="lbl">Sector</span>' +
+        sectorChips +
+      '</div>'
+    : '';
   return (
     '<div class="filter-bar" style="margin-bottom:var(--sp-5)" id="v6-home-filters">' +
       '<div class="filter-group">' +
@@ -245,6 +265,7 @@ function _buildFilterBar(totalCount) {
         '<button class="filter-chip" data-signal="DEEP_VALUE">Deep Value</button>' +
         '<button class="filter-chip" data-signal="QUALITY_DIVIDEND">Quality Div</button>' +
       '</div>' +
+      sectorGroup +
       '<div class="filter-group">' +
         '<span class="lbl" style="margin-right:0">Showing</span>' +
         '<span class="val mono" style="color:var(--ink);font-weight:500" id="v6-home-count">— of ' + totalCount + '</span>' +
@@ -279,7 +300,7 @@ function _buildHomeHtml(screener, trend) {
   return _buildLedeAndSummary(screener) +
          _buildTrendStrip(screener, trend) +
          sectionHdr +
-         _buildFilterBar(candidates.length) +
+         _buildFilterBar(candidates.length, candidates) +
          (candidates.length ? gridHtml : emptyState);
 }
 
@@ -323,6 +344,7 @@ function _mountTrendChart(trend) {
 var _state = {
   sort: 'score',
   signal: 'ALL',
+  sectors: [],
   page: 1,
   pageSize: 15,
   all: []
@@ -333,6 +355,11 @@ function _applyFilterSort() {
   if (_state.signal !== 'ALL') {
     arr = arr.filter(function (c) {
       return (c.signals || []).indexOf(_state.signal) !== -1;
+    });
+  }
+  if (_state.sectors && _state.sectors.length > 0) {
+    arr = arr.filter(function (c) {
+      return _state.sectors.indexOf(c.sector) !== -1;
     });
   }
   arr.sort(function (a, b) {
@@ -431,6 +458,21 @@ function _wireControls(screener) {
         });
         btn.classList.add('active');
         _state.signal = btn.getAttribute('data-signal');
+        _state.page = 1;
+        _renderGrid();
+      });
+    });
+    Array.prototype.forEach.call(bar.querySelectorAll('[data-sector]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var sector = btn.getAttribute('data-sector');
+        var idx = _state.sectors.indexOf(sector);
+        if (idx >= 0) {
+          _state.sectors.splice(idx, 1);
+          btn.classList.remove('active');
+        } else {
+          _state.sectors.push(sector);
+          btn.classList.add('active');
+        }
         _state.page = 1;
         _renderGrid();
       });

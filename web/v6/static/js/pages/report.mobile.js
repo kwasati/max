@@ -433,16 +433,17 @@ function _mountCharts(stock, history) {
     var bd = stock.score_breakdown || stock.breakdown || {};
     var div = bd.dividend || 0;
     var val = bd.valuation || 0;
-    var cf  = bd.cashflow != null ? bd.cashflow : (bd.cash_flow || 0);
+    var cf  = bd.cash_flow != null ? bd.cash_flow : (bd.cashflow || 0);
     var hv  = bd.hidden_value != null ? bd.hidden_value : (bd.hidden || 0);
+    var tr  = bd.track_record || 0;
     var mod = bd.modifier != null ? bd.modifier : 0;
     new window.Chart(scoreCanvas, {
       type: 'doughnut',
       data: {
-        labels: ['Dividend ' + div, 'Valuation ' + val, 'Cash Flow ' + cf, 'Hidden ' + hv, 'Mod ' + (mod > 0 ? '+' + mod : mod)],
+        labels: ['Dividend ' + div, 'Valuation ' + val, 'Cash Flow ' + cf, 'Hidden ' + hv, 'Track Rec ' + tr, 'Mod ' + (mod > 0 ? '+' + mod : mod)],
         datasets: [{
-          data: [div, val, cf, Math.max(hv, 0.1), Math.abs(mod)],
-          backgroundColor: [accent, textInk, '#878d9a', '#b2b6c0', '#5a6072'],
+          data: [div, val, cf, Math.max(hv, 0.1), Math.max(tr, 0.1), Math.abs(mod)],
+          backgroundColor: [accent, textInk, '#878d9a', '#b2b6c0', '#9aa1ad', '#5a6072'],
           borderColor: '#f5f5f0',
           borderWidth: 2,
         }]

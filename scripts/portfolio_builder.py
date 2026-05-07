@@ -221,7 +221,7 @@ def build_bench(all_stocks, picks):
     return bench
 
 
-SECTOR_SUGGESTIONS = {
+STATIC_SECTOR_SUGGESTIONS = {
     'Banking': ['BBL', 'SCB', 'KBANK'],
     'Energy': ['PTT', 'PTTEP', 'BCP'],
     'Property': ['QH', 'AP', 'LPN'],
@@ -229,15 +229,44 @@ SECTOR_SUGGESTIONS = {
 }
 
 
-def build_sector_warnings(picked):
-    """Warnings for canonical sectors absent from picks (excluding 'Other')."""
+def compute_sector_suggestions(screener):
+    """Build sector suggestions dict from scan PASS bucket. Top 3 by score per canonical sector.
+
+    Falls back to STATIC_SECTOR_SUGGESTIONS for sectors empty in scan.
+    Returns dict {canonical_sector: [sym1, sym2, sym3]}.
+    """
+    cands = (screener or {}).get('candidates') or []
+    by_sector = {}
+    for c in cands:
+        canonical = to_canonical_sector(c.get('sector'))
+        by_sector.setdefault(canonical, []).append(c)
+    out = {}
+    for sector in ('Banking', 'Energy', 'Property', 'REIT-PFund'):
+        members = by_sector.get(sector, [])
+        members.sort(key=lambda s: s.get('score') or 0, reverse=True)
+        top = [c['symbol'].replace('.BK', '') for c in members[:3] if c.get('symbol')]
+        if top:
+            out[sector] = top
+        else:
+            out[sector] = STATIC_SECTOR_SUGGESTIONS.get(sector, [])
+    return out
+
+
+def build_sector_warnings(picked, suggestions=None):
+    """Warnings for canonical sectors absent from picks (excluding 'Other').
+
+    `suggestions` defaults to STATIC_SECTOR_SUGGESTIONS for backward compat.
+    """
+    if suggestions is None:
+        suggestions = STATIC_SECTOR_SUGGESTIONS
     warnings = []
     for sector in ('Banking', 'Energy', 'Property', 'REIT-PFund'):
         if sector not in picked:
+            sect_sugg = suggestions.get(sector) or STATIC_SECTOR_SUGGESTIONS.get(sector, [])
             warnings.append({
                 'sector': sector,
-                'msg': f'{sector} ว่าง — ลองเพิ่ม {" · ".join(SECTOR_SUGGESTIONS[sector])} ใน watchlist',
-                'suggestions': SECTOR_SUGGESTIONS[sector],
+                'msg': f'{sector} ว่าง — ลองเพิ่ม {" · ".join(sect_sugg)} ใน watchlist',
+                'suggestions': sect_sugg,
             })
     return warnings
 
@@ -267,7 +296,7 @@ def build_portfolio(watchlist, screener, pins=None):
 
     bench = build_bench(enriched, picks)
     picked_sectors = {p.get('sector_canonical') for p in picks}
-    sector_warnings = build_sector_warnings(picked_sectors)
+    sector_warnings = build_sector_warnings(picked_sectors, compute_sector_suggestions(screener))
 
     stock_count = len(picks)
     sector_filled = f'{stock_count}/5'
