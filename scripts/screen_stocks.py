@@ -79,6 +79,14 @@ def hard_filter(data: dict) -> tuple:
         fail_reasons.append(f"market cap {info_mcap/1e9:.1f}B < {HARD_FILTERS['min_market_cap']/1e9:.0f}B")
         return "FAIL", fail_reasons
 
+    # Data integrity guard — yahoo flake (yield > 0 but no DPS history after Stage 2 retry)
+    streak = agg.get("dividend_streak", 0)
+    dy_check = data.get("dividend_yield")
+    div_history = data.get("dividend_history") or {}
+    if dy_check is not None and dy_check > 0 and streak == 0 and not div_history:
+        fail_reasons.append("ไม่มีข้อมูลปันผลย้อนหลัง (yahoo flake — รอ rerun พรุ่งนี้)")
+        return "FAIL", fail_reasons
+
     # 3. EPS — 3-tier
     norm_eps = compute_normalized_earnings(data)
     if norm_eps:
