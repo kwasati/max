@@ -140,22 +140,39 @@ function _wireHeroStar(sym) {
   });
 }
 
+var PILLAR_SPEC = [
+  { key: 'dividend', label: 'Dividend Sustainability', max: 50, driver: 'Yield · Streak · Payout · Growth' },
+  { key: 'valuation', label: 'Valuation', max: 25, driver: 'P/E · P/BV · EV/EBITDA' },
+  { key: 'cash_flow', label: 'Cash Flow Strength', max: 10, driver: 'FCF · OCF/NI · Int Coverage' },
+  { key: 'hidden_value', label: 'Hidden Value', max: 5, driver: '' },
+  { key: 'track_record', label: 'Track Record', max: 10, driver: 'Revenue Growth · EPS Growth' }
+];
+
 function _renderScoreBreakdown(stock) {
   var esc = window.MMUtils.escapeHtml;
   var score = stock.quality_score != null ? stock.quality_score : (stock.score || 0);
   var breakdown = stock.score_breakdown || stock.breakdown || {};
-  // Schema: breakdown often has {dividend, valuation, cashflow, hidden_value, modifier}
-  var div = breakdown.dividend == null ? null : breakdown.dividend;
-  var val = breakdown.valuation == null ? null : breakdown.valuation;
-  var cf  = breakdown.cashflow == null ? breakdown.cash_flow : breakdown.cashflow;
-  var hv  = breakdown.hidden_value == null ? breakdown.hidden : breakdown.hidden_value;
   var mod = breakdown.modifier == null ? (breakdown.modifiers || 0) : breakdown.modifier;
 
-  function _val(v) { return v == null ? 0 : v; }
+  function _getPillarValue(key) {
+    // backward compat: cashflow vs cash_flow / hidden vs hidden_value
+    if (key === 'cash_flow') {
+      return breakdown.cash_flow != null ? breakdown.cash_flow : (breakdown.cashflow || 0);
+    }
+    if (key === 'hidden_value') {
+      return breakdown.hidden_value != null ? breakdown.hidden_value : (breakdown.hidden || 0);
+    }
+    return breakdown[key] == null ? 0 : breakdown[key];
+  }
   function _cell(label, max, scored, driver) {
     var cls = (scored && scored > 0) ? 'pos' : '';
     return '<tr><td class="sym">' + label + '</td><td class="num">' + max + '</td><td class="num ' + cls + '">' + (scored == null ? '—' : scored) + '</td><td class="dim">' + esc(driver || '') + '</td></tr>';
   }
+
+  var rows = PILLAR_SPEC.map(function (p) {
+    var driver = p.key === 'hidden_value' ? (breakdown.hidden_value_note || p.driver) : p.driver;
+    return _cell(p.label, p.max, _getPillarValue(p.key), driver);
+  }).join('');
 
   return (
     '<div class="v6-section-head"><h2>Score Breakdown</h2><small>Of One Hundred · Per Niwes Dividend-First Schema</small></div>' +
@@ -170,10 +187,7 @@ function _renderScoreBreakdown(stock) {
     '<table class="data-table" style="margin-top:var(--sp-4)">' +
       '<thead><tr><th style="width:40%">Component</th><th class="num">Max</th><th class="num">Scored</th><th>Driver</th></tr></thead>' +
       '<tbody>' +
-        _cell('Dividend Sustainability', 50, _val(div), 'Yield · Streak · Payout · Growth') +
-        _cell('Valuation', 25, _val(val), 'P/E · P/BV · EV/EBITDA') +
-        _cell('Cash Flow Strength', 15, _val(cf), 'FCF · OCF/NI · Int Coverage') +
-        _cell('Hidden Value', 10, _val(hv), breakdown.hidden_value_note || '') +
+        rows +
         '<tr><td class="sym">Modifier</td><td class="num">—</td><td class="num pos">' + (mod > 0 ? '+' + mod : mod) + '</td><td class="dim">Valuation grade / signals</td></tr>' +
         '<tr style="border-top:2px solid var(--border-subtle)"><td class="sym">Total</td><td class="num">100</td><td class="num" style="font-size:1.2em">' + Math.round(score) + '</td><td></td></tr>' +
       '</tbody>' +
