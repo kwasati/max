@@ -31,6 +31,8 @@ _PATTERNS = load_patterns()
 DEFAULT_FILTERS = {
     "min_dividend_yield": 5.0,
     "min_dividend_streak": 5,
+    "growing_yield_floor": 2.0,
+    "growing_min_streak": 3,
     "min_eps_positive_years": 5,
     "max_pe": 15.0,
     "bonus_pe": 8.0,
