@@ -349,6 +349,42 @@ def hidden_value_score(data: dict) -> tuple:
     return min(score, 5), reasons
 
 
+def track_record_score(data: dict) -> tuple:
+    """Niwes Track Record pillar — 10 pts max.
+
+    Revenue growth 5y (5) + EPS growth 5y (5).
+    Per Niwes: รายได้เพิ่มทุกปี กำไรเพิ่มทุกปี ปันผลเพิ่มทุกปี.
+    Dividend growth covered in dividend_score; revenue + eps covered here.
+    """
+    score = 0
+    reasons = []
+    agg = data.get("aggregates", {})
+
+    # Revenue CAGR (5 pts)
+    rev_cagr = agg.get("revenue_cagr")
+    if rev_cagr is not None:
+        if rev_cagr >= 0.10:
+            score += 5
+            reasons.append(f"รายได้โต {rev_cagr*100:.1f}%/ปี")
+        elif rev_cagr >= 0.05:
+            score += 3
+        elif rev_cagr >= 0:
+            score += 1
+
+    # EPS CAGR (5 pts)
+    eps_cagr = agg.get("eps_cagr")
+    if eps_cagr is not None:
+        if eps_cagr >= 0.10:
+            score += 5
+            reasons.append(f"กำไร EPS โต {eps_cagr*100:.1f}%/ปี")
+        elif eps_cagr >= 0.05:
+            score += 3
+        elif eps_cagr >= 0:
+            score += 1
+
+    return min(score, 10), reasons
+
+
 def detect_exit_signal(symbol: str, current_data: dict, historical_baseline: dict | None = None) -> list[dict]:
     """Detect exit triggers for a watchlist stock (Niwes sell rules).
 
