@@ -332,10 +332,9 @@ def cash_flow_score(data: dict) -> tuple:
 
 
 def hidden_value_score(data: dict) -> tuple:
-    """Niwes Hidden Value pillar — 10 pts max.
+    """Niwes Hidden Value pillar — 5 pts max.
 
-    Base 5 if symbol has hidden-value flag.
-    +5 if any holding's note indicates holding > parent market cap.
+    Base 5 if symbol has hidden-value flag (holdings file maintained manually).
     """
     score = 0
     reasons = []
@@ -347,14 +346,7 @@ def hidden_value_score(data: dict) -> tuple:
     score += 5
     reasons.append(f"hidden value: {len(holdings)} holding(s)")
 
-    for h in holdings:
-        note = (h.get("note") or "").lower()
-        if "exceed" in note or "more than" in note or "worth more" in note:
-            score += 5
-            reasons.append("hidden holding > parent mcap")
-            break
-
-    return min(score, 10), reasons
+    return min(score, 5), reasons
 
 
 def detect_exit_signal(symbol: str, current_data: dict, historical_baseline: dict | None = None) -> list[dict]:
