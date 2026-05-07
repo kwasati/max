@@ -31,6 +31,8 @@ _PATTERNS = load_patterns()
 DEFAULT_FILTERS = {
     "min_dividend_yield": 5.0,
     "min_dividend_streak": 5,
+    "growing_yield_floor": 2.0,
+    "growing_min_streak": 3,
     "min_eps_positive_years": 5,
     "max_pe": 15.0,
     "bonus_pe": 8.0,
@@ -58,8 +60,7 @@ HARD_FILTERS = load_filters()
 def hard_filter(data: dict) -> tuple:
     """Niwes 5-5-5-5 hard filter — 3-tier (PASS/REVIEW/FAIL).
 
-    1. dividend_yield ≥ 5% (hard FAIL)
-    2. dividend_streak: ≥5 PASS / 3-4 REVIEW / <3 FAIL
+    1. dividend_yield ≥ 5% (main path) OR 2.0%-5% AND growth_streak ≥ 3 (Niwes growing exception) — else FAIL
     3. EPS: 5/5 positive PASS / 4/5 & last 3 positive REVIEW / else FAIL
     4. P/E ≤ 15 (hard FAIL)
     5. P/BV ≤ 1.5 (hard FAIL)
@@ -77,13 +78,6 @@ def hard_filter(data: dict) -> tuple:
     if info_mcap < HARD_FILTERS["min_market_cap"]:
         fail_reasons.append(f"market cap {info_mcap/1e9:.1f}B < {HARD_FILTERS['min_market_cap']/1e9:.0f}B")
         return "FAIL", fail_reasons
-
-    # 2. Dividend streak — 3-tier
-    streak = agg.get("dividend_streak", 0)
-    if streak < 3:
-        fail_reasons.append(f"dividend streak {streak}yr < 3 (FAIL)")
-    elif streak < HARD_FILTERS["min_dividend_streak"]:
-        review_reasons.append(f"dividend streak {streak}yr (3-4 = REVIEW)")
 
     # 3. EPS — 3-tier
     norm_eps = compute_normalized_earnings(data)
@@ -103,12 +97,21 @@ def hard_filter(data: dict) -> tuple:
     else:
         fail_reasons.append("ไม่มีข้อมูล EPS")
 
-    # 1. Dividend yield — hard
+    # 1. Dividend yield — hard, with Niwes growing-dividend exception
     dy = data.get("dividend_yield")
+    growth_streak = agg.get("dividend_growth_streak", 0)
     if dy is None:
         fail_reasons.append("ไม่มีข้อมูลปันผล")
-    elif dy < HARD_FILTERS["min_dividend_yield"]:
-        fail_reasons.append(f"dividend yield {dy:.1f}% < {HARD_FILTERS['min_dividend_yield']:.0f}%")
+    elif dy >= HARD_FILTERS["min_dividend_yield"]:
+        pass
+    elif (dy >= HARD_FILTERS["growing_yield_floor"]
+          and growth_streak >= HARD_FILTERS["growing_min_streak"]):
+        pass
+    else:
+        fail_reasons.append(
+            f"dividend yield {dy:.1f}% < {HARD_FILTERS['min_dividend_yield']:.0f}% "
+            f"(growing exception not met: growth_streak {growth_streak}yr < {HARD_FILTERS['growing_min_streak']})"
+        )
 
     # 4. P/E — hard
     pe = data.get("pe_ratio")
@@ -523,6 +526,13 @@ def assign_signals(data: dict, total_score: int) -> list:
             and pbv is not None and 0 < pbv <= 1.5):
         signals.append("NIWES_5555")
 
+    # NIWES_GROWING — Niwes growing-dividend exception (yield 2-5% + DPS growing 3+ yrs + EPS 5/5 + PE/PBV ok)
+    growth_streak = agg.get("dividend_growth_streak", 0)
+    if (2.0 <= dy < 5 and growth_streak >= 3 and eps_5_pos
+            and pe is not None and 0 < pe <= 15
+            and pbv is not None and 0 < pbv <= 1.5):
+        signals.append("NIWES_GROWING")
+
     # HIDDEN_VALUE
     if check_hidden_value(sym):
         signals.append("HIDDEN_VALUE")
@@ -530,6 +540,11 @@ def assign_signals(data: dict, total_score: int) -> list:
     # QUALITY_DIVIDEND — yield≥5 + payout<70 + streak≥10
     if dy >= 5 and payout is not None and payout < 0.70 and streak >= 10:
         signals.append("QUALITY_DIVIDEND")
+
+    # YIELD_SPIKE_FROM_PRICE_DROP — yield ดีดเพราะราคาตก ไม่ใช่ DPS โต (warning, not exclusion)
+    yield_5y = data.get("five_year_avg_yield") or 0
+    if yield_5y > 0 and dy / yield_5y > 1.8:
+        signals.append("YIELD_SPIKE_FROM_PRICE_DROP")
 
     # DEEP_VALUE — P/E≤8 + P/BV≤1
     if pe is not None and 0 < pe <= 8 and pbv is not None and 0 < pbv <= 1.0:

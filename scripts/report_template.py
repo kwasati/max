@@ -21,6 +21,7 @@ _PATTERNS = json.loads(_PATTERNS_PATH.read_text(encoding="utf-8")) if _PATTERNS_
 _TAG_NARRATIVES = {k: v.get("narrative", "") for k, v in _PATTERNS.items()}
 _TAG_NARRATIVES.update({
     "NIWES_5555": "ผ่านเกณฑ์ 5-5-5-5 ครบ (yield≥5 / streak≥5 / EPS 5yr+ / PE≤15 / PBV≤1.5)",
+    "NIWES_GROWING": "Niwes growing-dividend exception — yield 2-5% + ปันผลเพิ่มต่อเนื่อง 3+ ปี (เจตนา ดร.นิเวศน์ ที่รับหุ้น 2-3% โต)",
     "BRAND_MOAT": "Brand moat — margin สูง + dividend streak ยาว",
     "STRUCTURAL_MOAT": "Structural moat — utility/transport/telecom scale ใหญ่",
     "GOVT_LOCKIN": "Government lock-in — recurring revenue จากภาครัฐ",
@@ -28,6 +29,7 @@ _TAG_NARRATIVES.update({
     "DEEP_VALUE": "PE ≤8 + PBV ≤1.0 — ถูกกว่าค่าเฉลี่ย",
     "QUALITY_DIVIDEND": "yield ≥5% + payout <70% + streak ≥10 ปี",
     "DIVIDEND_TRAP": "ระวัง — yield >8% + ROE declining + payout >100%",
+    "YIELD_SPIKE_FROM_PRICE_DROP": "yield สูงเพราะราคาเพิ่งตก — เช็คว่า DPS โตจริงหรือ trap (yield_now / 5y_avg > 1.8x)",
     "DATA_WARNING": "ข้อมูลผิดปกติ — ตรวจสอบก่อนใช้",
     "OVERPRICED": "valuation grade F — แพงกว่าคุณภาพ",
 })
